@@ -1,0 +1,12 @@
+logging:
+  structured:
+    format:
+      console: ""
+  level:
+    root: WARN
+    de.dukkan: INFO
+
+dukkan:
+  security:
+    jwt:
+      secret: integration-test-secret-0123456789abcdef

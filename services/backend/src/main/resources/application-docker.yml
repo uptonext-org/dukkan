@@ -1,0 +1,5 @@
+# Container profile (infrastructure/docker/compose.yaml). Structured JSON logs; secrets come from env only.
+logging:
+  structured:
+    format:
+      console: ecs

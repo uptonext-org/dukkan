@@ -1,0 +1,13 @@
+# Host development with `./gradlew bootRun --args='--spring.profiles.active=local'`.
+logging:
+  structured:
+    format:
+      console: ""
+  level:
+    de.dukkan: DEBUG
+
+dukkan:
+  security:
+    jwt:
+      # Development-only secret. Never use outside the local profile.
+      secret: ${DUKKAN_JWT_SECRET:local-dev-secret-change-me-0123456789abcdef}
