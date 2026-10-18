@@ -49,7 +49,9 @@ flowchart TB
     order[order<br/>simulated checkout]
     shared[shared<br/>money, errors, security, logging, clock]
   end
+  catalog --> promotion
   cart --> catalog
+  cart --> address
   cart --> promotion
   cart --> delivery
   delivery --> address
@@ -60,8 +62,9 @@ flowchart TB
 
 Each module exposes `api` (REST), `application` (service interfaces) and
 `domain` packages, and keeps its JPA repositories in `infrastructure`.
-Modules call each other only through application interfaces. An ArchUnit test
-in the backend enforces this.
+Modules call each other only through application interfaces; an `api` package may also reuse
+another module's response DTOs. Dependencies are acyclic (`/delivery-areas/check` lives in
+`delivery` for that reason), and ArchUnit tests in the backend enforce both rules.
 
 ## Cross-cutting concerns
 

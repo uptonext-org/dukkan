@@ -1,0 +1,20 @@
+flowchart TB
+  subgraph backend[Backend modular monolith]
+    identity[identity<br/>users, JWT]
+    catalog[catalog<br/>categories, products, prices, search]
+    promotion[promotion<br/>promotions, pricing engine]
+    cart[cart]
+    address[address<br/>addresses, delivery areas]
+    delivery[delivery<br/>hubs, slots, reservations]
+    order[order<br/>simulated checkout]
+    shared[shared<br/>money, errors, security, logging, clock]
+  end
+  catalog --> promotion
+  cart --> catalog
+  cart --> address
+  cart --> promotion
+  cart --> delivery
+  delivery --> address
+  order --> cart
+  order --> delivery
+  order --> address

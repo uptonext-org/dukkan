@@ -54,7 +54,7 @@ API references point to [`packages/shared-contracts/openapi.yaml`](../../package
 - **Business rules:** case-insensitive substring match on name, brand and tags. Suggestions need at least 2 characters and return at most 10 results. Sort orders: relevance, price ascending or descending, name.
 - **Edge cases:** no results shows an empty state with a hint. Whitespace-only queries are ignored. Queries over 100 characters are rejected with 400.
 - **API:** `GET /products?q=&sort=&promotedOnly=`, `GET /search/suggestions?q=`.
-- **Acceptance criteria:** searching "milch" finds products whose name contains "Milch" in any letter case; sorting changes the order; the filter limits results to promoted products.
+- **Acceptance criteria:** searching "MILK" finds "Fresh Whole Milk 3.5%"; prefix matches rank first; sorting changes the order; the filter limits results to promoted products.
 - **Complexity:** S. **Evidence:** none (A-04 Unknown, design choice).
 
 ### F-03 Product details
@@ -70,7 +70,7 @@ API references point to [`packages/shared-contracts/openapi.yaml`](../../package
 - **Preconditions:** signed in.
 - **Interaction:** a stepper on a tile, the detail screen or the cart → `PUT /cart/items/{id}` with the absolute quantity → the server returns the full cart.
 - **Business rules:** quantity can be 0–`maxOrderQuantity`, and 0 removes the line. Setting the quantity is idempotent. Totals are computed on the server: subtotal, discount, delivery fee (from the reserved slot) and total. The minimum order value is 3,500 cents after discounts, excluding the fee (design choice; sources conflict, see A-11).
-- **Edge cases:** a product becomes unavailable → 422 `PRODUCT_UNAVAILABLE`. Concurrent edits are handled by optimistic locking, so the last write wins with a retry. Over the maximum → 422 `MAX_QUANTITY_EXCEEDED`.
+- **Edge cases:** a product becomes unavailable → 422 `PRODUCT_UNAVAILABLE`. Concurrent edits on the same cart are detected by optimistic locking (`version`) and rejected with 409 `CONCURRENT_MODIFICATION`; the client re-reads the cart. Over the maximum → 422 `MAX_QUANTITY_EXCEEDED`.
 - **Data:** ShoppingCart, CartItem.
 - **API:** `GET/DELETE /cart`, `PUT/DELETE /cart/items/{productId}`.
 - **Acceptance criteria:** the totals match the pricing rules in `shared-contracts/README.md`; the cart persists across app restarts and devices; a progress bar for the minimum order is shown.

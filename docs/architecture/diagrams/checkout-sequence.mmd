@@ -1,0 +1,19 @@
+sequenceDiagram
+  actor U as Shopper
+  participant M as Mobile app
+  participant B as Backend
+  participant DB as PostgreSQL
+  U->>M: Add product (qty 3)
+  M->>B: PUT /cart/items/{id} {quantity:3}
+  B->>DB: upsert cart_item, load active promotions
+  B-->>M: Cart (server-priced totals)
+  U->>M: Choose slot
+  M->>B: GET /delivery-slots?addressId=
+  B-->>M: slots (capacity, fee, cutoff)
+  M->>B: PUT /cart/delivery {slotId,addressId}
+  B->>DB: SELECT slot FOR UPDATE, check capacity, reserve
+  B-->>M: Cart incl. reservation + fee
+  U->>M: Place order
+  M->>B: POST /orders (Idempotency-Key)
+  B->>DB: validate, snapshot items/prices/address, convert reservation, clear cart
+  B-->>M: 201 Order (PLACED)

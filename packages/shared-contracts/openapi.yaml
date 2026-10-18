@@ -452,7 +452,7 @@ components:
         application/problem+json:
           schema: { $ref: '#/components/schemas/Problem' }
     Conflict:
-      description: State conflict, e.g. EMAIL_TAKEN, SLOT_FULL.
+      description: State conflict (`code` = EMAIL_TAKEN, SLOT_FULL, CONCURRENT_MODIFICATION or CONFLICT).
       content:
         application/problem+json:
           schema: { $ref: '#/components/schemas/Problem' }
@@ -474,7 +474,10 @@ components:
         status: { type: integer }
         detail: { type: string }
         instance: { type: string }
-        code: { type: string, example: VALIDATION_FAILED }
+        code:
+          type: string
+          example: VALIDATION_FAILED
+          description: Stable machine-readable code. Besides the codes listed per response, any endpoint may return FORBIDDEN, METHOD_NOT_ALLOWED or INTERNAL_ERROR.
         errors:
           type: array
           items:

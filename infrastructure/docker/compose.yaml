@@ -29,7 +29,8 @@ services:
       DUKKAN_DB_URL: jdbc:postgresql://postgres:5432/dukkan
       DUKKAN_DB_USER: dukkan
       DUKKAN_DB_PASSWORD: ${POSTGRES_PASSWORD:-dukkan}
-      DUKKAN_JWT_SECRET: ${DUKKAN_JWT_SECRET:?set DUKKAN_JWT_SECRET (see .env.example)}
+      # Required (>= 32 bytes); the backend refuses to start without it. See .env.example.
+      DUKKAN_JWT_SECRET: ${DUKKAN_JWT_SECRET:-}
     ports:
       - "127.0.0.1:8080:8080"
     depends_on:

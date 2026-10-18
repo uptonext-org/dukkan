@@ -1,0 +1,7 @@
+stateDiagram-v2
+  [*] --> PLACED: POST /orders
+  PLACED --> CANCELLED: cancel before cutoff
+  PLACED --> OUT_FOR_DELIVERY: (future simulator)
+  OUT_FOR_DELIVERY --> DELIVERED: (future simulator)
+  CANCELLED --> [*]
+  DELIVERED --> [*]

@@ -1,0 +1,9 @@
+flowchart LR
+  app[Mobile app<br/>React Native 0.88 · TypeScript 6.0<br/>apps/mobile]
+  api[Backend API<br/>Java 25 · Spring Boot 4.1 · Spring MVC<br/>services/backend]
+  db[(PostgreSQL 18.6<br/>transactional data + Flyway)]
+  contract[[OpenAPI contract<br/>packages/shared-contracts]]
+  app -- HTTPS JSON, Bearer JWT --> api
+  api -- JDBC / JPA --> db
+  contract -. contract test .- api
+  contract -. typed client .- app

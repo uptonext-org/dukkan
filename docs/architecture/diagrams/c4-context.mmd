@@ -1,0 +1,12 @@
+flowchart TB
+  shopper([Shopper<br/>Android / iOS])
+  ops([Operations staff<br/>future])
+  subgraph dukkan[Dukkan system]
+    sys[Dukkan grocery platform]
+  end
+  psp[(Payment provider<br/>future, not integrated)]
+  push[(FCM / APNs<br/>future)]
+  shopper -- browses, orders --> sys
+  ops -. manages catalog .-> sys
+  sys -. charges .-> psp
+  sys -. notifies .-> push

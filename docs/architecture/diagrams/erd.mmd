@@ -1,0 +1,148 @@
+erDiagram
+  app_user ||--o{ address : owns
+  app_user ||--o| cart : has
+  app_user ||--o{ customer_order : places
+  hub ||--o{ delivery_area : serves
+  hub ||--o{ delivery_slot : offers
+  category ||--o{ category : parent_of
+  category ||--o{ product : contains
+  product ||--o{ product_price : priced_by
+  promotion ||--o{ promotion_product : targets
+  product ||--o{ promotion_product : promoted_in
+  cart ||--o{ cart_item : contains
+  product ||--o{ cart_item : in
+  delivery_slot |o--o{ cart : reserved_by
+  address |o--o{ cart : reserved_for
+  customer_order ||--|{ order_item : contains
+  product ||--o{ order_item : snapshot_of
+  delivery_slot ||--o{ customer_order : booked_in
+  recipe ||--o{ recipe_ingredient : lists
+  product |o--o{ recipe_ingredient : fulfils
+
+  app_user {
+    uuid id PK
+    varchar email UK "lower-case"
+    varchar password_hash "BCrypt"
+    varchar first_name
+    varchar last_name
+  }
+  address {
+    uuid id PK
+    uuid user_id FK
+    varchar street
+    varchar house_number
+    varchar postal_code "5 digits"
+    varchar city
+    varchar country_code "DE"
+    boolean is_default "max one per user"
+  }
+  hub {
+    uuid id PK
+    varchar code UK
+    varchar name
+  }
+  delivery_area {
+    varchar postal_code PK
+    uuid hub_id FK
+  }
+  category {
+    uuid id PK
+    uuid parent_id FK
+    varchar slug UK
+    varchar name
+    int sort_order
+  }
+  product {
+    uuid id PK
+    uuid category_id FK
+    varchar sku UK
+    varchar name
+    varchar brand
+    varchar unit_size
+    numeric net_quantity
+    varchar net_unit "kg, l, piece"
+    text_array allergens
+    text_array tags
+    int max_order_quantity "1-99"
+    boolean available
+  }
+  product_price {
+    uuid id PK
+    uuid product_id FK
+    bigint amount_cents
+    timestamptz valid_from
+    timestamptz valid_to "NULL = current, one per product"
+  }
+  promotion {
+    uuid id PK
+    varchar type "PERCENT_OFF, MULTI_BUY"
+    int percent_off
+    int bundle_quantity
+    bigint bundle_price_cents
+    timestamptz valid_from
+    timestamptz valid_until
+  }
+  promotion_product {
+    uuid promotion_id PK
+    uuid product_id PK
+  }
+  delivery_slot {
+    uuid id PK
+    uuid hub_id FK
+    timestamptz starts_at "UK with hub_id"
+    timestamptz ends_at
+    timestamptz order_cutoff_at
+    bigint fee_cents
+    int capacity
+    int used_capacity "0..capacity"
+    bigint version
+  }
+  cart {
+    uuid id PK
+    uuid user_id FK "UK"
+    uuid reserved_slot_id FK
+    uuid reserved_address_id FK "ON DELETE SET NULL"
+    timestamptz reservation_expires_at
+    bigint version
+  }
+  cart_item {
+    uuid id PK
+    uuid cart_id FK
+    uuid product_id FK "UK with cart_id"
+    int quantity "1-99"
+  }
+  customer_order {
+    uuid id PK
+    uuid user_id FK
+    varchar order_number UK "DK-yyyyMMdd-NNNNNN"
+    varchar status
+    timestamptz placed_at
+    varchar idempotency_key "UK with user_id"
+    bigint total_cents "= subtotal - discount + fee"
+    uuid slot_id FK
+    varchar address_snapshot "address_* columns"
+    bigint version
+  }
+  order_item {
+    uuid id PK
+    uuid order_id FK
+    int line_no
+    uuid product_id FK
+    varchar name "snapshot"
+    bigint unit_price_cents "snapshot"
+    int quantity
+    bigint line_total_cents
+  }
+  recipe {
+    uuid id PK
+    varchar slug UK
+    varchar title
+    int servings
+  }
+  recipe_ingredient {
+    uuid id PK
+    uuid recipe_id FK
+    uuid product_id FK
+    varchar description
+    int sort_order
+  }
