@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: dukkan-backend
+spec:
+  selector:
+    app.kubernetes.io/name: dukkan-backend
+  ports:
+    - name: http
+      port: 80
+      targetPort: http

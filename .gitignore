@@ -1,0 +1,32 @@
+# OS / editors
+.DS_Store
+.idea/
+.vscode/
+*.iml
+
+# Secrets — never commit
+.env
+.env.*
+!.env.example
+*.keystore
+!debug.keystore
+
+# Reverse-engineering inputs and captures stay out of git (may contain proprietary or personal data)
+investigation/
+*.apk
+*.xapk
+*.apks
+*.aab
+*.ipa
+*.har
+*.saz
+*.pcap
+*.pcapng
+
+# Node
+node_modules/
+
+# Gradle / Java
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar

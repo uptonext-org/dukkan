@@ -1,0 +1,741 @@
+openapi: 3.1.0
+info:
+  title: Dukkan Grocery API
+  version: 0.1.0
+  description: |
+    Contract-first API for the Dukkan grocery MVP. This contract is the single
+    source of truth shared by `services/backend` and `apps/mobile`.
+
+    Conventions:
+    - Base path: `/api/v1`.
+    - Money is always an integer amount in minor units (cents) plus an ISO 4217 currency.
+    - Timestamps are ISO 8601 with offset (`2026-10-19T08:00:00+02:00`).
+    - Errors use RFC 9457 problem details (`application/problem+json`) with an extra `code`.
+    - Authenticated endpoints require `Authorization: Bearer <jwt>`.
+    - Checkout and payment are simulated; no real payment provider is called.
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local development
+tags:
+  - name: auth
+  - name: catalog
+  - name: search
+  - name: promotions
+  - name: cart
+  - name: addresses
+  - name: delivery
+  - name: orders
+security:
+  - bearerAuth: []
+paths:
+  /auth/register:
+    post:
+      tags: [auth]
+      operationId: register
+      summary: Register
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RegisterRequest' }
+      responses:
+        '201':
+          description: Account created and signed in.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthResponse' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /auth/login:
+    post:
+      tags: [auth]
+      operationId: login
+      summary: Login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginRequest' }
+      responses:
+        '200':
+          description: Signed in.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthResponse' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /me:
+    get:
+      tags: [auth]
+      operationId: getCurrentUser
+      summary: Get current user
+      responses:
+        '200':
+          description: The signed-in user.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /categories:
+    get:
+      tags: [catalog]
+      operationId: listCategories
+      summary: List categories
+      security: []
+      description: Flat list of all categories ordered by `sortOrder`; build the tree via `parentId`.
+      responses:
+        '200':
+          description: Categories.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Category' }
+  /products:
+    get:
+      tags: [catalog, search]
+      operationId: listProducts
+      summary: List products
+      security: []
+      description: Browse and search products. All filters are optional and combinable.
+      parameters:
+        - { name: categoryId, in: query, schema: { type: string, format: uuid } }
+        - { name: q, in: query, description: 'Case-insensitive search over name, brand and tags.', schema: { type: string, minLength: 1, maxLength: 100 } }
+        - { name: promotedOnly, in: query, schema: { type: boolean, default: false } }
+        - name: sort
+          in: query
+          schema: { type: string, enum: [relevance, price_asc, price_desc, name], default: relevance }
+        - { name: page, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+        - { name: size, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+      responses:
+        '200':
+          description: A page of products.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProductPage' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+  /products/{productId}:
+    get:
+      tags: [catalog]
+      operationId: getProduct
+      summary: Get product
+      security: []
+      parameters:
+        - { $ref: '#/components/parameters/ProductId' }
+      responses:
+        '200':
+          description: Product details.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProductDetail' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /search/suggestions:
+    get:
+      tags: [search]
+      operationId: searchSuggestions
+      summary: Search suggestions
+      security: []
+      parameters:
+        - { name: q, in: query, required: true, schema: { type: string, minLength: 2, maxLength: 100 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 10, default: 5 } }
+      responses:
+        '200':
+          description: Product name suggestions, best match first.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { type: string }
+        '400': { $ref: '#/components/responses/ValidationError' }
+
+  /promotions:
+    get:
+      tags: [promotions]
+      operationId: listPromotions
+      summary: List promotions
+      security: []
+      description: Promotions active at request time.
+      responses:
+        '200':
+          description: Active promotions.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Promotion' }
+
+  /cart:
+    get:
+      tags: [cart]
+      operationId: getCart
+      summary: Get cart
+      description: Returns the user's active cart, creating an empty one if none exists.
+      responses:
+        '200':
+          description: The cart with server-computed totals.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Cart' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    delete:
+      tags: [cart]
+      operationId: clearCart
+      summary: Clear cart
+      responses:
+        '204': { description: Cart emptied (slot reservation released). }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /cart/items/{productId}:
+    put:
+      tags: [cart]
+      operationId: setCartItemQuantity
+      summary: Set cart item quantity
+      description: Idempotently sets the quantity of a product. Quantity 0 removes the line.
+      parameters:
+        - { $ref: '#/components/parameters/ProductId' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SetQuantityRequest' }
+      responses:
+        '200':
+          description: Updated cart.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Cart' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/BusinessRuleViolation' }
+    delete:
+      tags: [cart]
+      operationId: removeCartItem
+      summary: Remove cart item
+      parameters:
+        - { $ref: '#/components/parameters/ProductId' }
+      responses:
+        '200':
+          description: Updated cart.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Cart' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /cart/delivery:
+    put:
+      tags: [cart, delivery]
+      operationId: reserveDeliverySlot
+      summary: Reserve delivery slot
+      description: Reserves a delivery slot for the cart at one of the user's addresses. Replaces any previous reservation.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReserveSlotRequest' }
+      responses:
+        '200':
+          description: Updated cart including the reservation.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Cart' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/BusinessRuleViolation' }
+
+  /addresses:
+    get:
+      tags: [addresses]
+      operationId: listAddresses
+      summary: List addresses
+      responses:
+        '200':
+          description: The user's addresses, default first.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Address' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      tags: [addresses]
+      operationId: createAddress
+      summary: Create address
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AddressRequest' }
+      responses:
+        '201':
+          description: Address created. `serviceable` tells whether we deliver there.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Address' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /addresses/{addressId}:
+    parameters:
+      - { $ref: '#/components/parameters/AddressId' }
+    put:
+      tags: [addresses]
+      operationId: updateAddress
+      summary: Update address
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AddressRequest' }
+      responses:
+        '200':
+          description: Address updated.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Address' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [addresses]
+      operationId: deleteAddress
+      summary: Delete address
+      responses:
+        '204': { description: Address deleted. }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /delivery-areas/check:
+    get:
+      tags: [delivery]
+      operationId: checkDeliveryArea
+      summary: Check delivery area
+      security: []
+      parameters:
+        - name: postalCode
+          in: query
+          required: true
+          schema: { $ref: '#/components/schemas/PostalCode' }
+      responses:
+        '200':
+          description: Whether the postal code is served.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DeliveryAreaCheck' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+  /delivery-slots:
+    get:
+      tags: [delivery]
+      operationId: listDeliverySlots
+      summary: List delivery slots
+      description: Mock availability for the next 7 days for the hub serving the address.
+      parameters:
+        - { name: addressId, in: query, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Slots ordered by start time.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/DeliverySlot' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/BusinessRuleViolation' }
+
+  /orders:
+    get:
+      tags: [orders]
+      operationId: listOrders
+      summary: List orders
+      responses:
+        '200':
+          description: The user's orders, newest first.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Order' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      tags: [orders]
+      operationId: placeOrder
+      summary: Place order
+      description: |
+        Simulated checkout. Converts the cart (with a reserved slot) into an order,
+        snapshotting prices, and empties the cart. No payment is taken.
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: false
+          schema: { type: string, maxLength: 64 }
+      responses:
+        '201':
+          description: Order placed.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Order' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/BusinessRuleViolation' }
+  /orders/{orderId}:
+    get:
+      tags: [orders]
+      operationId: getOrder
+      summary: Get order
+      parameters:
+        - { $ref: '#/components/parameters/OrderId' }
+      responses:
+        '200':
+          description: Order.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Order' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /orders/{orderId}/cancel:
+    post:
+      tags: [orders]
+      operationId: cancelOrder
+      summary: Cancel order
+      description: Allowed only while status is PLACED and before the slot's order cutoff.
+      parameters:
+        - { $ref: '#/components/parameters/OrderId' }
+      responses:
+        '200':
+          description: Cancelled order.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Order' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/BusinessRuleViolation' }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    ProductId:
+      name: productId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    AddressId:
+      name: addressId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    OrderId:
+      name: orderId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+  responses:
+    ValidationError:
+      description: Request failed validation (`code` = VALIDATION_FAILED).
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    Unauthorized:
+      description: Missing/invalid credentials (`code` = UNAUTHORIZED or INVALID_CREDENTIALS).
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    NotFound:
+      description: Resource not found or not owned by the caller (`code` = NOT_FOUND).
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    Conflict:
+      description: State conflict, e.g. EMAIL_TAKEN, SLOT_FULL.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    BusinessRuleViolation:
+      description: |
+        Business rule violated. Codes: PRODUCT_UNAVAILABLE, MAX_QUANTITY_EXCEEDED,
+        ADDRESS_NOT_SERVICEABLE, SLOT_CUTOFF_PASSED, SLOT_NOT_RESERVED, CART_EMPTY,
+        MINIMUM_ORDER_NOT_MET, ORDER_NOT_CANCELLABLE.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+  schemas:
+    Problem:
+      type: object
+      required: [type, title, status, code]
+      properties:
+        type: { type: string, format: uri-reference, example: 'about:blank' }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string }
+        code: { type: string, example: VALIDATION_FAILED }
+        errors:
+          type: array
+          items:
+            type: object
+            required: [field, message]
+            properties:
+              field: { type: string }
+              message: { type: string }
+    Money:
+      type: object
+      required: [amountCents, currency]
+      properties:
+        amountCents: { type: integer, format: int64, example: 249 }
+        currency: { type: string, pattern: '^[A-Z]{3}$', example: EUR }
+    PostalCode:
+      type: string
+      description: German postal code (5 digits).
+      pattern: '^[0-9]{5}$'
+      example: '41460'
+    RegisterRequest:
+      type: object
+      required: [email, password, firstName, lastName]
+      properties:
+        email: { type: string, format: email, maxLength: 254 }
+        password: { type: string, minLength: 10, maxLength: 128 }
+        firstName: { type: string, minLength: 1, maxLength: 100 }
+        lastName: { type: string, minLength: 1, maxLength: 100 }
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, minLength: 1, maxLength: 128 }
+    AuthResponse:
+      type: object
+      required: [accessToken, tokenType, expiresIn, user]
+      properties:
+        accessToken: { type: string }
+        tokenType: { type: string, enum: [Bearer] }
+        expiresIn: { type: integer, description: Seconds until expiry. }
+        user: { $ref: '#/components/schemas/User' }
+    User:
+      type: object
+      required: [id, email, firstName, lastName]
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        firstName: { type: string }
+        lastName: { type: string }
+    Category:
+      type: object
+      required: [id, slug, name, sortOrder]
+      properties:
+        id: { type: string, format: uuid }
+        parentId: { type: [string, 'null'], format: uuid }
+        slug: { type: string, example: fruit-vegetables }
+        name: { type: string, example: Fruit & Vegetables }
+        iconKey: { type: [string, 'null'], description: Key of a bundled original icon. }
+        sortOrder: { type: integer }
+    PromotionBadge:
+      type: object
+      required: [promotionId, label, type]
+      properties:
+        promotionId: { type: string, format: uuid }
+        label: { type: string, example: '-20%' }
+        type: { $ref: '#/components/schemas/PromotionType' }
+    PromotionType:
+      type: string
+      enum: [PERCENT_OFF, MULTI_BUY]
+      description: |
+        PERCENT_OFF: every unit is discounted by `percentOff`.
+        MULTI_BUY: every complete group of `bundleQuantity` units costs `bundlePrice`.
+    ProductSummary:
+      type: object
+      required: [id, sku, name, unitSize, price, available]
+      properties:
+        id: { type: string, format: uuid }
+        sku: { type: string }
+        name: { type: string }
+        brand: { type: [string, 'null'] }
+        unitSize: { type: string, example: 500 g }
+        imageUrl: { type: [string, 'null'], format: uri }
+        price: { $ref: '#/components/schemas/Money' }
+        comparisonPrice:
+          description: Price per reference unit (Grundpreis), e.g. per kg.
+          oneOf:
+            - type: 'null'
+            - $ref: '#/components/schemas/UnitPrice'
+        promotion:
+          oneOf:
+            - type: 'null'
+            - $ref: '#/components/schemas/PromotionBadge'
+        available: { type: boolean }
+    UnitPrice:
+      type: object
+      required: [price, unit]
+      properties:
+        price: { $ref: '#/components/schemas/Money' }
+        unit: { type: string, enum: [kg, l, piece] }
+    ProductDetail:
+      allOf:
+        - $ref: '#/components/schemas/ProductSummary'
+        - type: object
+          required: [categoryId, allergens, maxOrderQuantity]
+          properties:
+            categoryId: { type: string, format: uuid }
+            description: { type: [string, 'null'] }
+            ingredients: { type: [string, 'null'] }
+            allergens: { type: array, items: { type: string } }
+            origin: { type: [string, 'null'] }
+            maxOrderQuantity: { type: integer, example: 24 }
+    ProductPage:
+      type: object
+      required: [items, page, size, totalItems, totalPages]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/ProductSummary' }
+        page: { type: integer }
+        size: { type: integer }
+        totalItems: { type: integer, format: int64 }
+        totalPages: { type: integer }
+    Promotion:
+      type: object
+      required: [id, title, type, validFrom, validUntil, productIds]
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string, example: Weekly deal }
+        description: { type: [string, 'null'] }
+        type: { $ref: '#/components/schemas/PromotionType' }
+        percentOff: { type: [integer, 'null'], minimum: 1, maximum: 90 }
+        bundleQuantity: { type: [integer, 'null'], minimum: 2 }
+        bundlePrice:
+          oneOf:
+            - type: 'null'
+            - $ref: '#/components/schemas/Money'
+        validFrom: { type: string, format: date-time }
+        validUntil: { type: string, format: date-time }
+        productIds:
+          type: array
+          items: { type: string, format: uuid }
+    SetQuantityRequest:
+      type: object
+      required: [quantity]
+      properties:
+        quantity: { type: integer, minimum: 0, maximum: 99 }
+    ReserveSlotRequest:
+      type: object
+      required: [slotId, addressId]
+      properties:
+        slotId: { type: string, format: uuid }
+        addressId: { type: string, format: uuid }
+    CartItem:
+      type: object
+      required: [productId, name, unitSize, unitPrice, quantity, lineSubtotal, lineDiscount, lineTotal]
+      properties:
+        productId: { type: string, format: uuid }
+        name: { type: string }
+        unitSize: { type: string }
+        imageUrl: { type: [string, 'null'], format: uri }
+        unitPrice: { $ref: '#/components/schemas/Money' }
+        quantity: { type: integer, minimum: 1 }
+        lineSubtotal: { $ref: '#/components/schemas/Money' }
+        lineDiscount: { $ref: '#/components/schemas/Money' }
+        lineTotal: { $ref: '#/components/schemas/Money' }
+        promotion:
+          oneOf:
+            - type: 'null'
+            - $ref: '#/components/schemas/PromotionBadge'
+    Cart:
+      type: object
+      required: [id, items, itemCount, subtotal, discountTotal, deliveryFee, total, minimumOrderValue, meetsMinimumOrderValue]
+      properties:
+        id: { type: string, format: uuid }
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/CartItem' }
+        itemCount: { type: integer, description: Sum of quantities. }
+        subtotal: { $ref: '#/components/schemas/Money' }
+        discountTotal: { $ref: '#/components/schemas/Money' }
+        deliveryFee: { $ref: '#/components/schemas/Money' }
+        total: { $ref: '#/components/schemas/Money' }
+        minimumOrderValue: { $ref: '#/components/schemas/Money' }
+        meetsMinimumOrderValue: { type: boolean }
+        delivery:
+          oneOf:
+            - type: 'null'
+            - $ref: '#/components/schemas/DeliveryReservation'
+    DeliveryReservation:
+      type: object
+      required: [slot, addressId, expiresAt]
+      properties:
+        slot: { $ref: '#/components/schemas/DeliverySlot' }
+        addressId: { type: string, format: uuid }
+        expiresAt: { type: string, format: date-time }
+    AddressRequest:
+      type: object
+      required: [street, houseNumber, postalCode, city]
+      properties:
+        label: { type: [string, 'null'], maxLength: 50, example: Home }
+        street: { type: string, minLength: 1, maxLength: 120 }
+        houseNumber: { type: string, minLength: 1, maxLength: 10 }
+        addition: { type: [string, 'null'], maxLength: 50 }
+        postalCode: { $ref: '#/components/schemas/PostalCode' }
+        city: { type: string, minLength: 1, maxLength: 80 }
+        deliveryInstructions: { type: [string, 'null'], maxLength: 300 }
+        isDefault: { type: boolean, default: false }
+    Address:
+      allOf:
+        - $ref: '#/components/schemas/AddressRequest'
+        - type: object
+          required: [id, countryCode, isDefault, serviceable]
+          properties:
+            id: { type: string, format: uuid }
+            countryCode: { type: string, enum: [DE] }
+            serviceable: { type: boolean }
+    DeliveryAreaCheck:
+      type: object
+      required: [postalCode, serviceable]
+      properties:
+        postalCode: { $ref: '#/components/schemas/PostalCode' }
+        serviceable: { type: boolean }
+        hubName: { type: [string, 'null'] }
+    DeliverySlot:
+      type: object
+      required: [id, startsAt, endsAt, orderCutoffAt, fee, available, remainingCapacity]
+      properties:
+        id: { type: string, format: uuid }
+        startsAt: { type: string, format: date-time }
+        endsAt: { type: string, format: date-time }
+        orderCutoffAt: { type: string, format: date-time, description: Last moment to order or change for this slot. }
+        fee: { $ref: '#/components/schemas/Money' }
+        available: { type: boolean, description: False when full or past cutoff. }
+        remainingCapacity: { type: integer, minimum: 0 }
+    OrderStatus:
+      type: string
+      enum: [PLACED, CANCELLED, OUT_FOR_DELIVERY, DELIVERED]
+      description: Only PLACED and CANCELLED are produced by the MVP; later states are simulated in a future iteration.
+    OrderItem:
+      type: object
+      required: [productId, name, unitPrice, quantity, lineTotal]
+      properties:
+        productId: { type: string, format: uuid }
+        name: { type: string }
+        unitPrice: { $ref: '#/components/schemas/Money' }
+        quantity: { type: integer }
+        lineTotal: { $ref: '#/components/schemas/Money' }
+    Order:
+      type: object
+      required: [id, orderNumber, status, placedAt, items, subtotal, discountTotal, deliveryFee, total, slot, address]
+      properties:
+        id: { type: string, format: uuid }
+        orderNumber: { type: string, example: DK-20261019-000042 }
+        status: { $ref: '#/components/schemas/OrderStatus' }
+        placedAt: { type: string, format: date-time }
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/OrderItem' }
+        subtotal: { $ref: '#/components/schemas/Money' }
+        discountTotal: { $ref: '#/components/schemas/Money' }
+        deliveryFee: { $ref: '#/components/schemas/Money' }
+        total: { $ref: '#/components/schemas/Money' }
+        slot: { $ref: '#/components/schemas/DeliverySlot' }
+        address: { $ref: '#/components/schemas/Address' }
