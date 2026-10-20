@@ -1,38 +1,100 @@
 openapi: 3.1.0
 info:
-  title: Dukkan Grocery API
-  version: 0.1.0
+  title: Dukkan Marketplace API
+  version: 0.2.0
   description: |
-    Contract-first API for the Dukkan grocery MVP. This contract is the single
-    source of truth shared by `services/backend` and `apps/mobile`.
+    Contract-first API for the Dukkan local-market marketplace. This file is the single
+    source of truth shared by `services/backend` and `apps/mobile`
+    (see `docs/product/marketplace.md` and `README.md` next to this file).
 
     Conventions:
-    - Base path: `/api/v1`.
-    - Money is always an integer amount in minor units (cents) plus an ISO 4217 currency.
-    - Timestamps are ISO 8601 with offset (`2026-10-19T08:00:00+02:00`).
+    - Base path: `/api/v1`. The API is pre-release, so breaking changes are allowed until 1.0.
+    - Localisation: clients send `Accept-Language` (`de`, `en`, `ar`, …). Content fields
+      (names, descriptions, banner text, category names) are returned in the best matching
+      enabled locale with the fallback chain requested → market primary locale → `de`.
+      Every localised response carries `Content-Language`. Error `code`s are never
+      localised; clients translate them.
+    - Money is an integer amount in minor units (cents) plus an ISO 4217 currency.
+    - Timestamps are ISO 8601 with offset. Coordinates are WGS84 decimal degrees.
     - Errors use RFC 9457 problem details (`application/problem+json`) with an extra `code`.
-    - Authenticated endpoints require `Authorization: Bearer <jwt>`.
-    - Checkout and payment are simulated; no real payment provider is called.
+    - Authenticated endpoints need `Authorization: Bearer <jwt>`. Browsing is public in
+      phase 1 (feature flag `dukkan.features.require-login-to-browse`, default false; when
+      it is true, public catalog endpoints answer 401).
+    - Checkout and payment are simulated; no payment provider is called.
 servers:
   - url: http://localhost:8080/api/v1
     description: Local development
 tags:
+  - name: meta
   - name: auth
+  - name: geo
+  - name: markets
   - name: catalog
   - name: search
-  - name: promotions
+  - name: favorites
   - name: cart
+  - name: fulfilment
   - name: addresses
-  - name: delivery
   - name: orders
+  - name: merchant
 security:
   - bearerAuth: []
+
 paths:
+  # ---------------------------------------------------------------- meta
+  /locales:
+    get:
+      tags: [meta]
+      operationId: listLocales
+      summary: List enabled content locales
+      security: []
+      responses:
+        '200':
+          description: Enabled locales in display order.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Locale' }
+  /market-types:
+    get:
+      tags: [meta]
+      operationId: listMarketTypes
+      summary: List market types for filter chips
+      security: []
+      parameters:
+        - { $ref: '#/components/parameters/AcceptLanguage' }
+      responses:
+        '200':
+          description: Market types with localised names.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/CodeName' }
+  /cuisines:
+    get:
+      tags: [meta]
+      operationId: listCuisines
+      summary: List cuisines (product origins) for filter chips
+      security: []
+      parameters:
+        - { $ref: '#/components/parameters/AcceptLanguage' }
+      responses:
+        '200':
+          description: Cuisines with localised names.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/CodeName' }
+
+  # ---------------------------------------------------------------- auth
   /auth/register:
     post:
       tags: [auth]
       operationId: register
-      summary: Register
+      summary: Register a customer or merchant account
       security: []
       requestBody:
         required: true
@@ -51,7 +113,7 @@ paths:
     post:
       tags: [auth]
       operationId: login
-      summary: Login
+      summary: Sign in
       security: []
       requestBody:
         required: true
@@ -70,7 +132,7 @@ paths:
     get:
       tags: [auth]
       operationId: getCurrentUser
-      summary: Get current user
+      summary: Get the signed-in user
       responses:
         '200':
           description: The signed-in user.
@@ -78,86 +140,215 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/User' }
         '401': { $ref: '#/components/responses/Unauthorized' }
-
-  /categories:
-    get:
-      tags: [catalog]
-      operationId: listCategories
-      summary: List categories
-      security: []
-      description: Flat list of all categories ordered by `sortOrder`; build the tree via `parentId`.
+    patch:
+      tags: [auth]
+      operationId: updateCurrentUser
+      summary: Update profile preferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateUserRequest' }
       responses:
         '200':
-          description: Categories.
+          description: Updated user.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  # ---------------------------------------------------------------- geo
+  /geo/search:
+    get:
+      tags: [geo]
+      operationId: searchPlaces
+      summary: Address and place autocomplete
+      description: |
+        Phase 1 uses a built-in Hamburg gazetteer (districts, postal codes, streets of the seed
+        data). The provider sits behind an interface and will be replaced by an external
+        geocoding service.
+      security: []
+      parameters:
+        - { name: q, in: query, required: true, schema: { type: string, minLength: 2, maxLength: 120 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 10, default: 5 } }
+        - { $ref: '#/components/parameters/AcceptLanguage' }
+      responses:
+        '200':
+          description: Matching places, best match first.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Place' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+  /geo/reverse:
+    get:
+      tags: [geo]
+      operationId: reverseGeocode
+      summary: Nearest known place for coordinates
+      security: []
+      parameters:
+        - { $ref: '#/components/parameters/Lat' }
+        - { $ref: '#/components/parameters/Lng' }
+      responses:
+        '200':
+          description: Nearest place.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Place' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  # ---------------------------------------------------------------- markets
+  /markets:
+    get:
+      tags: [markets]
+      operationId: listMarkets
+      summary: Markets near a location
+      security: []
+      parameters:
+        - { $ref: '#/components/parameters/Lat' }
+        - { $ref: '#/components/parameters/Lng' }
+        - { name: radiusKm, in: query, schema: { type: number, minimum: 0.5, maximum: 50, default: 10 } }
+        - name: types
+          in: query
+          description: Comma-separated market type codes.
+          style: form
+          explode: false
+          schema: { type: array, items: { type: string } }
+        - name: cuisines
+          in: query
+          description: Comma-separated cuisine codes.
+          style: form
+          explode: false
+          schema: { type: array, items: { type: string } }
+        - { name: fulfilment, in: query, schema: { $ref: '#/components/schemas/FulfilmentType' } }
+        - { name: openNow, in: query, schema: { type: boolean, default: false } }
+        - { name: hasOffers, in: query, schema: { type: boolean, default: false } }
+        - { name: q, in: query, description: Market name search., schema: { type: string, maxLength: 100 } }
+        - name: sort
+          in: query
+          schema: { type: string, enum: [distance, name, minimum_order, delivery_fee], default: distance }
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/Size' }
+        - { $ref: '#/components/parameters/AcceptLanguage' }
+      responses:
+        '200':
+          description: A page of markets.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MarketPage' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+  /markets/{marketId}:
+    get:
+      tags: [markets]
+      operationId: getMarket
+      summary: Market details
+      security: []
+      parameters:
+        - { $ref: '#/components/parameters/MarketId' }
+        - { name: lat, in: query, required: false, schema: { type: number, minimum: -90, maximum: 90 } }
+        - { name: lng, in: query, required: false, schema: { type: number, minimum: -180, maximum: 180 } }
+        - { $ref: '#/components/parameters/AcceptLanguage' }
+      responses:
+        '200':
+          description: Market details. Distance fields are set when lat/lng are given.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MarketDetail' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /markets/{marketId}/home:
+    get:
+      tags: [markets]
+      operationId: getMarketHome
+      summary: Market start page (banners and product sections)
+      security: []
+      parameters:
+        - { $ref: '#/components/parameters/MarketId' }
+        - { $ref: '#/components/parameters/AcceptLanguage' }
+      responses:
+        '200':
+          description: Composed start page.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MarketHome' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /markets/{marketId}/categories:
+    get:
+      tags: [catalog]
+      operationId: listMarketCategories
+      summary: Categories that have products in this market
+      security: []
+      parameters:
+        - { $ref: '#/components/parameters/MarketId' }
+        - { $ref: '#/components/parameters/AcceptLanguage' }
+      responses:
+        '200':
+          description: Flat list ordered by sortOrder; build the tree via parentId.
           content:
             application/json:
               schema:
                 type: array
                 items: { $ref: '#/components/schemas/Category' }
-  /products:
+        '404': { $ref: '#/components/responses/NotFound' }
+  /markets/{marketId}/products:
     get:
       tags: [catalog, search]
-      operationId: listProducts
-      summary: List products
+      operationId: listMarketProducts
+      summary: Browse and search one market
       security: []
-      description: Browse and search products. All filters are optional and combinable.
       parameters:
+        - { $ref: '#/components/parameters/MarketId' }
+        - { name: q, in: query, description: 'Matches names and keywords in every locale.', schema: { type: string, minLength: 1, maxLength: 100 } }
         - { name: categoryId, in: query, schema: { type: string, format: uuid } }
-        - { name: q, in: query, description: 'Case-insensitive search over name, brand and tags.', schema: { type: string, minLength: 1, maxLength: 100 } }
         - { name: promotedOnly, in: query, schema: { type: boolean, default: false } }
+        - { name: newOnly, in: query, schema: { type: boolean, default: false } }
+        - { name: organicOnly, in: query, schema: { type: boolean, default: false } }
         - name: sort
           in: query
           schema: { type: string, enum: [relevance, price_asc, price_desc, name], default: relevance }
-        - { name: page, in: query, schema: { type: integer, minimum: 0, default: 0 } }
-        - { name: size, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/Size' }
+        - { $ref: '#/components/parameters/AcceptLanguage' }
       responses:
         '200':
-          description: A page of products.
+          description: A page of this market's products.
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ProductPage' }
         '400': { $ref: '#/components/responses/ValidationError' }
-  /products/{productId}:
-    get:
-      tags: [catalog]
-      operationId: getProduct
-      summary: Get product
-      security: []
-      parameters:
-        - { $ref: '#/components/parameters/ProductId' }
-      responses:
-        '200':
-          description: Product details.
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/ProductDetail' }
         '404': { $ref: '#/components/responses/NotFound' }
-  /search/suggestions:
+  /markets/{marketId}/search/suggestions:
     get:
       tags: [search]
-      operationId: searchSuggestions
-      summary: Search suggestions
+      operationId: marketSearchSuggestions
+      summary: Product name suggestions in one market
       security: []
       parameters:
+        - { $ref: '#/components/parameters/MarketId' }
         - { name: q, in: query, required: true, schema: { type: string, minLength: 2, maxLength: 100 } }
         - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 10, default: 5 } }
+        - { $ref: '#/components/parameters/AcceptLanguage' }
       responses:
         '200':
-          description: Product name suggestions, best match first.
+          description: Localised product names, best match first.
           content:
             application/json:
               schema:
                 type: array
                 items: { type: string }
         '400': { $ref: '#/components/responses/ValidationError' }
-
-  /promotions:
+        '404': { $ref: '#/components/responses/NotFound' }
+  /markets/{marketId}/promotions:
     get:
-      tags: [promotions]
-      operationId: listPromotions
-      summary: List promotions
+      tags: [catalog]
+      operationId: listMarketPromotions
+      summary: Active promotions of one market
       security: []
-      description: Promotions active at request time.
+      parameters:
+        - { $ref: '#/components/parameters/MarketId' }
+        - { $ref: '#/components/parameters/AcceptLanguage' }
       responses:
         '200':
           description: Active promotions.
@@ -166,35 +357,174 @@ paths:
               schema:
                 type: array
                 items: { $ref: '#/components/schemas/Promotion' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /products/{productId}:
+    get:
+      tags: [catalog]
+      operationId: getProduct
+      summary: Product details (a market's listing)
+      security: []
+      parameters:
+        - { $ref: '#/components/parameters/ProductId' }
+        - { $ref: '#/components/parameters/AcceptLanguage' }
+      responses:
+        '200':
+          description: Product details.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProductDetail' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /search/products:
+    get:
+      tags: [search]
+      operationId: searchProductsNearby
+      summary: Search products across all markets near a location
+      security: []
+      parameters:
+        - { name: q, in: query, required: true, description: 'Matches names and keywords in every locale.', schema: { type: string, minLength: 2, maxLength: 100 } }
+        - { $ref: '#/components/parameters/Lat' }
+        - { $ref: '#/components/parameters/Lng' }
+        - { name: radiusKm, in: query, schema: { type: number, minimum: 0.5, maximum: 50, default: 10 } }
+        - name: sort
+          in: query
+          schema: { type: string, enum: [relevance, price_asc, distance], default: relevance }
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/Size' }
+        - { $ref: '#/components/parameters/AcceptLanguage' }
+      responses:
+        '200':
+          description: Market offers matching the query.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MarketOfferPage' }
+        '400': { $ref: '#/components/responses/ValidationError' }
 
-  /cart:
+  # ---------------------------------------------------------------- favorites
+  /favorites/markets:
+    get:
+      tags: [favorites]
+      operationId: listFavoriteMarkets
+      summary: Favourite markets
+      parameters:
+        - { name: lat, in: query, required: false, schema: { type: number, minimum: -90, maximum: 90 } }
+        - { name: lng, in: query, required: false, schema: { type: number, minimum: -180, maximum: 180 } }
+        - { $ref: '#/components/parameters/AcceptLanguage' }
+      responses:
+        '200':
+          description: Favourite markets.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/MarketSummary' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /favorites/markets/{marketId}:
+    parameters:
+      - { $ref: '#/components/parameters/MarketId' }
+    put:
+      tags: [favorites]
+      operationId: addFavoriteMarket
+      summary: Mark a market as favourite (idempotent)
+      responses:
+        '204': { description: Saved. }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [favorites]
+      operationId: removeFavoriteMarket
+      summary: Remove a favourite market (idempotent)
+      responses:
+        '204': { description: Removed. }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /markets/{marketId}/favorites:
+    get:
+      tags: [favorites]
+      operationId: listMarketFavorites
+      summary: Favourite and frequently ordered products in one market, grouped by category
+      parameters:
+        - { $ref: '#/components/parameters/MarketId' }
+        - { $ref: '#/components/parameters/AcceptLanguage' }
+      responses:
+        '200':
+          description: Groups ordered by category sortOrder; empty when there are none.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/FavoriteGroup' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /favorites/products/{productId}:
+    parameters:
+      - { $ref: '#/components/parameters/ProductId' }
+    put:
+      tags: [favorites]
+      operationId: addFavoriteProduct
+      summary: Mark a product as favourite (idempotent)
+      responses:
+        '204': { description: Saved. }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [favorites]
+      operationId: removeFavoriteProduct
+      summary: Remove a favourite product (idempotent)
+      responses:
+        '204': { description: Removed. }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  # ---------------------------------------------------------------- cart
+  /carts:
+    get:
+      tags: [cart]
+      operationId: listCarts
+      summary: All non-empty carts of the user (one per market)
+      parameters:
+        - { $ref: '#/components/parameters/AcceptLanguage' }
+      responses:
+        '200':
+          description: Cart summaries, most recently updated first.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/CartSummary' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /markets/{marketId}/cart:
+    parameters:
+      - { $ref: '#/components/parameters/MarketId' }
     get:
       tags: [cart]
       operationId: getCart
-      summary: Get cart
-      description: Returns the user's active cart, creating an empty one if none exists.
+      summary: The user's cart in this market (created empty if missing)
+      parameters:
+        - { $ref: '#/components/parameters/AcceptLanguage' }
       responses:
         '200':
-          description: The cart with server-computed totals.
+          description: Cart with server-computed totals.
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Cart' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
     delete:
       tags: [cart]
       operationId: clearCart
-      summary: Clear cart
+      summary: Empty the cart and release its reservation
       responses:
-        '204': { description: Cart emptied (slot reservation released). }
+        '204': { description: Cart emptied. }
         '401': { $ref: '#/components/responses/Unauthorized' }
-  /cart/items/{productId}:
+        '404': { $ref: '#/components/responses/NotFound' }
+  /markets/{marketId}/cart/items/{productId}:
+    parameters:
+      - { $ref: '#/components/parameters/MarketId' }
+      - { $ref: '#/components/parameters/ProductId' }
     put:
       tags: [cart]
       operationId: setCartItemQuantity
-      summary: Set cart item quantity
-      description: Idempotently sets the quantity of a product. Quantity 0 removes the line.
+      summary: Set the quantity of a product (0 removes it)
       parameters:
-        - { $ref: '#/components/parameters/ProductId' }
+        - { $ref: '#/components/parameters/AcceptLanguage' }
       requestBody:
         required: true
         content:
@@ -209,13 +539,14 @@ paths:
         '400': { $ref: '#/components/responses/ValidationError' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
         '422': { $ref: '#/components/responses/BusinessRuleViolation' }
     delete:
       tags: [cart]
       operationId: removeCartItem
-      summary: Remove cart item
+      summary: Remove a product from the cart
       parameters:
-        - { $ref: '#/components/parameters/ProductId' }
+        - { $ref: '#/components/parameters/AcceptLanguage' }
       responses:
         '200':
           description: Updated cart.
@@ -223,17 +554,21 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Cart' }
         '401': { $ref: '#/components/responses/Unauthorized' }
-  /cart/delivery:
+        '404': { $ref: '#/components/responses/NotFound' }
+  /markets/{marketId}/cart/fulfilment:
     put:
-      tags: [cart, delivery]
-      operationId: reserveDeliverySlot
-      summary: Reserve delivery slot
-      description: Reserves a delivery slot for the cart at one of the user's addresses. Replaces any previous reservation.
+      tags: [cart, fulfilment]
+      operationId: reserveFulfilment
+      summary: Reserve a delivery or pickup slot for the cart
+      description: Replaces any previous reservation. Delivery needs an address inside the market's delivery radius.
+      parameters:
+        - { $ref: '#/components/parameters/MarketId' }
+        - { $ref: '#/components/parameters/AcceptLanguage' }
       requestBody:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/ReserveSlotRequest' }
+            schema: { $ref: '#/components/schemas/ReserveFulfilmentRequest' }
       responses:
         '200':
           description: Updated cart including the reservation.
@@ -245,15 +580,38 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
         '409': { $ref: '#/components/responses/Conflict' }
         '422': { $ref: '#/components/responses/BusinessRuleViolation' }
+  /markets/{marketId}/slots:
+    get:
+      tags: [fulfilment]
+      operationId: listSlots
+      summary: Delivery or pickup slots of a market for the next 7 days
+      description: Public for browsing. With addressId the caller must be signed in and own the address.
+      security: []
+      parameters:
+        - { $ref: '#/components/parameters/MarketId' }
+        - { name: type, in: query, required: true, schema: { $ref: '#/components/schemas/FulfilmentType' } }
+        - { name: addressId, in: query, required: false, description: 'DELIVERY only; needs auth. Returns 422 ADDRESS_OUTSIDE_DELIVERY_AREA when outside the radius.', schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Slots ordered by start time.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Slot' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/BusinessRuleViolation' }
 
+  # ---------------------------------------------------------------- addresses
   /addresses:
     get:
       tags: [addresses]
       operationId: listAddresses
-      summary: List addresses
+      summary: The user's addresses, default first
       responses:
         '200':
-          description: The user's addresses, default first.
+          description: Addresses.
           content:
             application/json:
               schema:
@@ -263,7 +621,7 @@ paths:
     post:
       tags: [addresses]
       operationId: createAddress
-      summary: Create address
+      summary: Create an address
       requestBody:
         required: true
         content:
@@ -271,7 +629,7 @@ paths:
             schema: { $ref: '#/components/schemas/AddressRequest' }
       responses:
         '201':
-          description: Address created. `serviceable` tells whether we deliver there.
+          description: Address created.
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Address' }
@@ -283,7 +641,7 @@ paths:
     put:
       tags: [addresses]
       operationId: updateAddress
-      summary: Update address
+      summary: Update an address
       requestBody:
         required: true
         content:
@@ -301,76 +659,23 @@ paths:
     delete:
       tags: [addresses]
       operationId: deleteAddress
-      summary: Delete address
+      summary: Delete an address
       responses:
         '204': { description: Address deleted. }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
 
-  /delivery-areas/check:
-    get:
-      tags: [delivery]
-      operationId: checkDeliveryArea
-      summary: Check delivery area
-      security: []
-      parameters:
-        - name: postalCode
-          in: query
-          required: true
-          schema: { $ref: '#/components/schemas/PostalCode' }
-      responses:
-        '200':
-          description: Whether the postal code is served.
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/DeliveryAreaCheck' }
-        '400': { $ref: '#/components/responses/ValidationError' }
-  /delivery-slots:
-    get:
-      tags: [delivery]
-      operationId: listDeliverySlots
-      summary: List delivery slots
-      description: Mock availability for the next 7 days for the hub serving the address.
-      parameters:
-        - { name: addressId, in: query, required: true, schema: { type: string, format: uuid } }
-      responses:
-        '200':
-          description: Slots ordered by start time.
-          content:
-            application/json:
-              schema:
-                type: array
-                items: { $ref: '#/components/schemas/DeliverySlot' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '404': { $ref: '#/components/responses/NotFound' }
-        '422': { $ref: '#/components/responses/BusinessRuleViolation' }
-
-  /orders:
-    get:
-      tags: [orders]
-      operationId: listOrders
-      summary: List orders
-      responses:
-        '200':
-          description: The user's orders, newest first.
-          content:
-            application/json:
-              schema:
-                type: array
-                items: { $ref: '#/components/schemas/Order' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
+  # ---------------------------------------------------------------- orders
+  /markets/{marketId}/orders:
     post:
       tags: [orders]
       operationId: placeOrder
-      summary: Place order
-      description: |
-        Simulated checkout. Converts the cart (with a reserved slot) into an order,
-        snapshotting prices, and empties the cart. No payment is taken.
+      summary: Simulated checkout of this market's cart
+      description: Snapshots prices, address and slot; empties the cart. No payment is taken.
       parameters:
-        - name: Idempotency-Key
-          in: header
-          required: false
-          schema: { type: string, maxLength: 64 }
+        - { $ref: '#/components/parameters/MarketId' }
+        - { name: Idempotency-Key, in: header, required: false, schema: { type: string, maxLength: 64 } }
+        - { $ref: '#/components/parameters/AcceptLanguage' }
       responses:
         '201':
           description: Order placed.
@@ -378,15 +683,33 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Order' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
         '409': { $ref: '#/components/responses/Conflict' }
         '422': { $ref: '#/components/responses/BusinessRuleViolation' }
+  /orders:
+    get:
+      tags: [orders]
+      operationId: listOrders
+      summary: The user's orders, newest first
+      parameters:
+        - { $ref: '#/components/parameters/AcceptLanguage' }
+      responses:
+        '200':
+          description: Orders.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Order' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
   /orders/{orderId}:
     get:
       tags: [orders]
       operationId: getOrder
-      summary: Get order
+      summary: One order
       parameters:
         - { $ref: '#/components/parameters/OrderId' }
+        - { $ref: '#/components/parameters/AcceptLanguage' }
       responses:
         '200':
           description: Order.
@@ -399,8 +722,7 @@ paths:
     post:
       tags: [orders]
       operationId: cancelOrder
-      summary: Cancel order
-      description: Allowed only while status is PLACED and before the slot's order cutoff.
+      summary: Cancel an order (PLACED or ACCEPTED, before the slot cutoff)
       parameters:
         - { $ref: '#/components/parameters/OrderId' }
       responses:
@@ -413,6 +735,256 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
         '422': { $ref: '#/components/responses/BusinessRuleViolation' }
 
+  # ---------------------------------------------------------------- merchant
+  /merchant/markets:
+    get:
+      tags: [merchant]
+      operationId: listMyMarkets
+      summary: Markets owned by the signed-in merchant
+      parameters:
+        - { $ref: '#/components/parameters/AcceptLanguage' }
+      responses:
+        '200':
+          description: Owned markets.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/MerchantMarket' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [merchant]
+      operationId: createMyMarket
+      summary: Create a market
+      description: Status is PENDING_REVIEW, or ACTIVE when `dukkan.features.merchant-auto-approve` is on (default true in phase 1).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MarketProfileRequest' }
+      responses:
+        '201':
+          description: Market created.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MerchantMarket' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /merchant/markets/{marketId}:
+    parameters:
+      - { $ref: '#/components/parameters/MarketId' }
+    put:
+      tags: [merchant]
+      operationId: updateMyMarket
+      summary: Update the market profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MarketProfileRequest' }
+      responses:
+        '200':
+          description: Updated market.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MerchantMarket' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /merchant/catalog:
+    get:
+      tags: [merchant]
+      operationId: searchSharedCatalog
+      summary: Search the shared product catalog to add products
+      parameters:
+        - { name: q, in: query, schema: { type: string, maxLength: 100 } }
+        - { name: cuisine, in: query, schema: { type: string } }
+        - { name: categoryId, in: query, schema: { type: string, format: uuid } }
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/Size' }
+        - { $ref: '#/components/parameters/AcceptLanguage' }
+      responses:
+        '200':
+          description: A page of shared catalog products.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CatalogProductPage' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /merchant/markets/{marketId}/listings:
+    parameters:
+      - { $ref: '#/components/parameters/MarketId' }
+    get:
+      tags: [merchant]
+      operationId: listMyListings
+      summary: All products of my market including unavailable ones
+      parameters:
+        - { name: q, in: query, schema: { type: string, maxLength: 100 } }
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/Size' }
+        - { $ref: '#/components/parameters/AcceptLanguage' }
+      responses:
+        '200':
+          description: Listings.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ListingPage' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    post:
+      tags: [merchant]
+      operationId: createListing
+      summary: Add a product from the shared catalog or create a new one
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateListingRequest' }
+      responses:
+        '201':
+          description: Listing created.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Listing' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /merchant/markets/{marketId}/listings/{productId}:
+    parameters:
+      - { $ref: '#/components/parameters/MarketId' }
+      - { $ref: '#/components/parameters/ProductId' }
+    put:
+      tags: [merchant]
+      operationId: updateListing
+      summary: Change price, availability or limits of a listing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateListingRequest' }
+      responses:
+        '200':
+          description: Updated listing.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Listing' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [merchant]
+      operationId: deleteListing
+      summary: Remove a listing (soft delete; past orders keep their snapshot)
+      responses:
+        '204': { description: Removed. }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /merchant/markets/{marketId}/promotions:
+    parameters:
+      - { $ref: '#/components/parameters/MarketId' }
+    get:
+      tags: [merchant]
+      operationId: listMyPromotions
+      summary: All promotions of my market including expired ones
+      parameters:
+        - { $ref: '#/components/parameters/AcceptLanguage' }
+      responses:
+        '200':
+          description: Promotions.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Promotion' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    post:
+      tags: [merchant]
+      operationId: createPromotion
+      summary: Create a promotion
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PromotionRequest' }
+      responses:
+        '201':
+          description: Promotion created.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Promotion' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /merchant/markets/{marketId}/promotions/{promotionId}:
+    delete:
+      tags: [merchant]
+      operationId: deletePromotion
+      summary: End a promotion now
+      parameters:
+        - { $ref: '#/components/parameters/MarketId' }
+        - { name: promotionId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '204': { description: Ended. }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /merchant/markets/{marketId}/orders:
+    get:
+      tags: [merchant]
+      operationId: listMarketOrders
+      summary: Orders of my market, newest first
+      parameters:
+        - { $ref: '#/components/parameters/MarketId' }
+        - { name: status, in: query, schema: { $ref: '#/components/schemas/OrderStatus' } }
+        - { $ref: '#/components/parameters/AcceptLanguage' }
+      responses:
+        '200':
+          description: Orders.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Order' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /merchant/orders/{orderId}/status:
+    post:
+      tags: [merchant]
+      operationId: advanceOrderStatus
+      summary: Move an order to its next status (simulated fulfilment)
+      description: |
+        Allowed transitions: PLACED→ACCEPTED|REJECTED; ACCEPTED→READY_FOR_PICKUP (pickup) or
+        OUT_FOR_DELIVERY (delivery); READY_FOR_PICKUP|OUT_FOR_DELIVERY→COMPLETED.
+      parameters:
+        - { $ref: '#/components/parameters/OrderId' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/OrderStatusRequest' }
+      responses:
+        '200':
+          description: Updated order.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Order' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/BusinessRuleViolation' }
+
 components:
   securitySchemes:
     bearerAuth:
@@ -420,10 +992,39 @@ components:
       scheme: bearer
       bearerFormat: JWT
   parameters:
+    AcceptLanguage:
+      name: Accept-Language
+      in: header
+      required: false
+      schema: { type: string, example: de }
+    Lat:
+      name: lat
+      in: query
+      required: true
+      schema: { type: number, minimum: -90, maximum: 90, example: 53.5511 }
+    Lng:
+      name: lng
+      in: query
+      required: true
+      schema: { type: number, minimum: -180, maximum: 180, example: 9.9937 }
+    Page:
+      name: page
+      in: query
+      schema: { type: integer, minimum: 0, default: 0 }
+    Size:
+      name: size
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+    MarketId:
+      name: marketId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
     ProductId:
       name: productId
       in: path
       required: true
+      description: Id of a market listing (a product as sold by one market).
       schema: { type: string, format: uuid }
     AddressId:
       name: addressId
@@ -442,25 +1043,31 @@ components:
         application/problem+json:
           schema: { $ref: '#/components/schemas/Problem' }
     Unauthorized:
-      description: Missing/invalid credentials (`code` = UNAUTHORIZED or INVALID_CREDENTIALS).
+      description: Missing or invalid credentials (`code` = UNAUTHORIZED or INVALID_CREDENTIALS).
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    Forbidden:
+      description: Authenticated but not allowed, e.g. not a merchant or not the owner (`code` = FORBIDDEN).
       content:
         application/problem+json:
           schema: { $ref: '#/components/schemas/Problem' }
     NotFound:
-      description: Resource not found or not owned by the caller (`code` = NOT_FOUND).
+      description: Resource not found or not visible to the caller (`code` = NOT_FOUND).
       content:
         application/problem+json:
           schema: { $ref: '#/components/schemas/Problem' }
     Conflict:
-      description: State conflict (`code` = EMAIL_TAKEN, SLOT_FULL, CONCURRENT_MODIFICATION or CONFLICT).
+      description: State conflict (`code` = EMAIL_TAKEN, SLOT_FULL, LISTING_EXISTS, CONCURRENT_MODIFICATION or CONFLICT).
       content:
         application/problem+json:
           schema: { $ref: '#/components/schemas/Problem' }
     BusinessRuleViolation:
       description: |
-        Business rule violated. Codes: PRODUCT_UNAVAILABLE, MAX_QUANTITY_EXCEEDED,
-        ADDRESS_NOT_SERVICEABLE, SLOT_CUTOFF_PASSED, SLOT_NOT_RESERVED, CART_EMPTY,
-        MINIMUM_ORDER_NOT_MET, ORDER_NOT_CANCELLABLE.
+        Business rule violated. Codes: PRODUCT_UNAVAILABLE, MAX_QUANTITY_EXCEEDED, MARKET_NOT_ACTIVE,
+        FULFILMENT_NOT_OFFERED, ADDRESS_REQUIRED, ADDRESS_OUTSIDE_DELIVERY_AREA, SLOT_CUTOFF_PASSED,
+        SLOT_TYPE_MISMATCH, SLOT_NOT_RESERVED, CART_EMPTY, MINIMUM_ORDER_NOT_MET,
+        ORDER_NOT_CANCELLABLE, INVALID_STATUS_TRANSITION.
       content:
         application/problem+json:
           schema: { $ref: '#/components/schemas/Problem' }
@@ -472,7 +1079,7 @@ components:
         type: { type: string, format: uri-reference, example: 'about:blank' }
         title: { type: string }
         status: { type: integer }
-        detail: { type: string }
+        detail: { type: string, description: English developer message; clients show their own translation of `code`. }
         instance: { type: string }
         code:
           type: string
@@ -482,21 +1089,63 @@ components:
           type: array
           items:
             type: object
-            required: [field, message]
+            required: [field, code, message]
             properties:
               field: { type: string }
+              code: { type: string, description: 'Validation code, e.g. NotBlank, Size, Pattern, Email.' }
               message: { type: string }
+    Locale:
+      type: object
+      required: [code, nativeName, direction]
+      properties:
+        code: { type: string, example: ar }
+        nativeName: { type: string, example: العربية }
+        direction: { type: string, enum: [ltr, rtl] }
+    LocalizedText:
+      type: object
+      description: 'Map of locale code to text, e.g. {"de": "Äpfel", "en": "Apples", "ar": "تفاح"}. At least the primary locale must be present.'
+      additionalProperties: { type: string, maxLength: 2000 }
+      minProperties: 1
+    CodeName:
+      type: object
+      required: [code, name]
+      properties:
+        code: { type: string, example: BAKERY }
+        name: { type: string, example: Bäckerei }
+        iconKey: { type: [string, 'null'] }
     Money:
       type: object
       required: [amountCents, currency]
       properties:
         amountCents: { type: integer, format: int64, example: 249 }
         currency: { type: string, pattern: '^[A-Z]{3}$', example: EUR }
+    GeoPoint:
+      type: object
+      required: [lat, lng]
+      properties:
+        lat: { type: number, minimum: -90, maximum: 90 }
+        lng: { type: number, minimum: -180, maximum: 180 }
     PostalCode:
       type: string
       description: German postal code (5 digits).
       pattern: '^[0-9]{5}$'
-      example: '41460'
+      example: '20099'
+    Place:
+      type: object
+      required: [label, city, location]
+      properties:
+        label: { type: string, example: 'Lange Reihe 12, 20099 Hamburg (St. Georg)' }
+        street: { type: [string, 'null'] }
+        houseNumber: { type: [string, 'null'] }
+        postalCode: { type: [string, 'null'] }
+        district: { type: [string, 'null'], example: St. Georg }
+        city: { type: string, example: Hamburg }
+        location: { $ref: '#/components/schemas/GeoPoint' }
+
+    # ---- auth
+    Role:
+      type: string
+      enum: [CUSTOMER, MERCHANT, ADMIN]
     RegisterRequest:
       type: object
       required: [email, password, firstName, lastName]
@@ -505,12 +1154,20 @@ components:
         password: { type: string, minLength: 10, maxLength: 128 }
         firstName: { type: string, minLength: 1, maxLength: 100 }
         lastName: { type: string, minLength: 1, maxLength: 100 }
+        accountType: { type: string, enum: [CUSTOMER, MERCHANT], default: CUSTOMER }
+        preferredLocale: { type: [string, 'null'], example: de }
     LoginRequest:
       type: object
       required: [email, password]
       properties:
         email: { type: string, format: email }
         password: { type: string, minLength: 1, maxLength: 128 }
+    UpdateUserRequest:
+      type: object
+      properties:
+        firstName: { type: string, minLength: 1, maxLength: 100 }
+        lastName: { type: string, minLength: 1, maxLength: 100 }
+        preferredLocale: { type: string }
     AuthResponse:
       type: object
       required: [accessToken, tokenType, expiresIn, user]
@@ -521,48 +1178,173 @@ components:
         user: { $ref: '#/components/schemas/User' }
     User:
       type: object
-      required: [id, email, firstName, lastName]
+      required: [id, email, firstName, lastName, roles]
       properties:
         id: { type: string, format: uuid }
         email: { type: string, format: email }
         firstName: { type: string }
         lastName: { type: string }
+        roles: { type: array, items: { $ref: '#/components/schemas/Role' } }
+        preferredLocale: { type: [string, 'null'] }
+
+    # ---- markets
+    FulfilmentType:
+      type: string
+      enum: [DELIVERY, PICKUP]
+    MarketStatus:
+      type: string
+      enum: [PENDING_REVIEW, ACTIVE, SUSPENDED]
+    OpeningHours:
+      type: object
+      required: [dayOfWeek, opensAt, closesAt]
+      description: One opening interval in the market's local time (Europe/Berlin). Several intervals per day are allowed.
+      properties:
+        dayOfWeek: { type: integer, minimum: 1, maximum: 7, description: 1 = Monday (ISO 8601). }
+        opensAt: { type: string, pattern: '^[0-2][0-9]:[0-5][0-9]$', example: '08:00' }
+        closesAt: { type: string, pattern: '^[0-2][0-9]:[0-5][0-9]$', example: '20:00' }
+    FulfilmentOptions:
+      type: object
+      required: [delivery, pickup, minimumOrderValue]
+      properties:
+        delivery: { type: boolean }
+        pickup: { type: boolean }
+        deliveryRadiusKm: { type: [number, 'null'], minimum: 0.5, maximum: 50 }
+        deliveryFee:
+          oneOf:
+            - type: 'null'
+            - $ref: '#/components/schemas/Money'
+        freeDeliveryFrom:
+          oneOf:
+            - type: 'null'
+            - $ref: '#/components/schemas/Money'
+        minimumOrderValue: { $ref: '#/components/schemas/Money' }
+    MarketSummary:
+      type: object
+      required: [id, slug, name, type, cuisines, location, addressLine, openNow, fulfilment, activePromotionCount, tags]
+      properties:
+        id: { type: string, format: uuid }
+        slug: { type: string }
+        name: { type: string }
+        type: { $ref: '#/components/schemas/CodeName' }
+        cuisines: { type: array, items: { $ref: '#/components/schemas/CodeName' } }
+        logoUrl: { type: [string, 'null'], format: uri }
+        coverImageUrl: { type: [string, 'null'], format: uri }
+        location: { $ref: '#/components/schemas/GeoPoint' }
+        addressLine: { type: string, example: 'Steindamm 30, 20099 Hamburg' }
+        distanceMeters: { type: [integer, 'null'] }
+        deliversToLocation: { type: [boolean, 'null'], description: Whether the requested location is inside the delivery radius (null without lat/lng). }
+        openNow: { type: boolean }
+        todayHours: { type: [string, 'null'], example: '08:00–20:00' }
+        nextOpeningAt: { type: [string, 'null'], format: date-time }
+        fulfilment: { $ref: '#/components/schemas/FulfilmentOptions' }
+        activePromotionCount: { type: integer }
+        tags: { type: array, items: { type: string, enum: [ORGANIC, REGIONAL, HALAL, VEGAN_FRIENDLY] } }
+    MarketDetail:
+      allOf:
+        - $ref: '#/components/schemas/MarketSummary'
+        - type: object
+          required: [openingHours, primaryLocale, imprint]
+          properties:
+            description: { type: [string, 'null'] }
+            phone: { type: [string, 'null'] }
+            openingHours: { type: array, items: { $ref: '#/components/schemas/OpeningHours' } }
+            primaryLocale: { type: string, example: de }
+            imprint:
+              type: object
+              required: [legalName, addressLine]
+              properties:
+                legalName: { type: string }
+                addressLine: { type: string }
+                registerInfo: { type: [string, 'null'] }
+    MarketPage:
+      type: object
+      required: [items, page, size, totalItems, totalPages]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/MarketSummary' } }
+        page: { type: integer }
+        size: { type: integer }
+        totalItems: { type: integer, format: int64 }
+        totalPages: { type: integer }
+    Banner:
+      type: object
+      required: [id, title, target]
+      properties:
+        id: { type: string, format: uuid }
+        overline: { type: [string, 'null'], example: 'Saftig und frisch' }
+        title: { type: string, example: Obst und Gemüse der Saison }
+        imageUrl: { type: [string, 'null'], format: uri }
+        tint: { type: string, enum: [sage, sky, blush, sand, rose], default: sage, description: Placeholder tint when imageUrl is null. }
+        target:
+          type: object
+          required: [type]
+          properties:
+            type: { type: string, enum: [CATEGORY, PROMOTIONS, NEW, PRODUCT] }
+            id: { type: [string, 'null'], format: uuid }
+    HomeSection:
+      type: object
+      required: [key, title, items]
+      properties:
+        key: { type: string, enum: [PROMOTIONS, NEW, FREQUENTLY_ORDERED, CATEGORY] }
+        title: { type: string }
+        subtitle: { type: [string, 'null'] }
+        categoryId: { type: [string, 'null'], format: uuid }
+        items: { type: array, items: { $ref: '#/components/schemas/ProductSummary' } }
+    MarketHome:
+      type: object
+      required: [market, banners, sections]
+      properties:
+        market: { $ref: '#/components/schemas/MarketSummary' }
+        banners: { type: array, items: { $ref: '#/components/schemas/Banner' } }
+        sections: { type: array, items: { $ref: '#/components/schemas/HomeSection' } }
+
+    # ---- catalog
     Category:
       type: object
       required: [id, slug, name, sortOrder]
       properties:
         id: { type: string, format: uuid }
         parentId: { type: [string, 'null'], format: uuid }
-        slug: { type: string, example: fruit-vegetables }
-        name: { type: string, example: Fruit & Vegetables }
-        iconKey: { type: [string, 'null'], description: Key of a bundled original icon. }
+        slug: { type: string }
+        name: { type: string }
+        iconKey: { type: [string, 'null'] }
+        imageUrl: { type: [string, 'null'], format: uri }
         sortOrder: { type: integer }
+        productCount: { type: [integer, 'null'], description: Set on market-scoped lists. }
+    PromotionType:
+      type: string
+      enum: [PERCENT_OFF, MULTI_BUY]
     PromotionBadge:
       type: object
       required: [promotionId, label, type]
       properties:
         promotionId: { type: string, format: uuid }
-        label: { type: string, example: '-20%' }
+        label: { type: string, example: '20 % Rabatt', description: Localised badge text. }
         type: { $ref: '#/components/schemas/PromotionType' }
-    PromotionType:
-      type: string
-      enum: [PERCENT_OFF, MULTI_BUY]
-      description: |
-        PERCENT_OFF: every unit is discounted by `percentOff`.
-        MULTI_BUY: every complete group of `bundleQuantity` units costs `bundlePrice`.
+    UnitPrice:
+      type: object
+      required: [price, unit]
+      properties:
+        price: { $ref: '#/components/schemas/Money' }
+        unit: { type: string, enum: [kg, l, piece] }
     ProductSummary:
       type: object
-      required: [id, sku, name, unitSize, price, available]
+      required: [id, marketId, name, unitSize, price, available, organic, isNew, maxOrderQuantity]
       properties:
-        id: { type: string, format: uuid }
-        sku: { type: string }
+        id: { type: string, format: uuid, description: Listing id. }
+        marketId: { type: string, format: uuid }
+        catalogProductId: { type: string, format: uuid }
         name: { type: string }
         brand: { type: [string, 'null'] }
-        unitSize: { type: string, example: 500 g }
+        tagline: { type: [string, 'null'], example: süß-säuerlich }
+        unitSize: { type: string, example: 550 g }
         imageUrl: { type: [string, 'null'], format: uri }
         price: { $ref: '#/components/schemas/Money' }
+        promotionalPrice:
+          description: Effective unit price under a PERCENT_OFF promotion (show the regular price struck through).
+          oneOf:
+            - type: 'null'
+            - $ref: '#/components/schemas/Money'
         comparisonPrice:
-          description: Price per reference unit (Grundpreis), e.g. per kg.
           oneOf:
             - type: 'null'
             - $ref: '#/components/schemas/UnitPrice'
@@ -571,41 +1353,55 @@ components:
             - type: 'null'
             - $ref: '#/components/schemas/PromotionBadge'
         available: { type: boolean }
-    UnitPrice:
-      type: object
-      required: [price, unit]
-      properties:
-        price: { $ref: '#/components/schemas/Money' }
-        unit: { type: string, enum: [kg, l, piece] }
+        organic: { type: boolean }
+        isNew: { type: boolean }
+        maxOrderQuantity: { type: integer }
+        favorite: { type: [boolean, 'null'], description: Set for signed-in callers. }
     ProductDetail:
       allOf:
         - $ref: '#/components/schemas/ProductSummary'
         - type: object
-          required: [categoryId, allergens, maxOrderQuantity]
+          required: [categoryId, allergens, cuisines, market]
           properties:
             categoryId: { type: string, format: uuid }
             description: { type: [string, 'null'] }
             ingredients: { type: [string, 'null'] }
             allergens: { type: array, items: { type: string } }
             origin: { type: [string, 'null'] }
-            maxOrderQuantity: { type: integer, example: 24 }
+            cuisines: { type: array, items: { $ref: '#/components/schemas/CodeName' } }
+            barcode: { type: [string, 'null'] }
+            market: { $ref: '#/components/schemas/MarketSummary' }
     ProductPage:
       type: object
       required: [items, page, size, totalItems, totalPages]
       properties:
-        items:
-          type: array
-          items: { $ref: '#/components/schemas/ProductSummary' }
+        items: { type: array, items: { $ref: '#/components/schemas/ProductSummary' } }
+        page: { type: integer }
+        size: { type: integer }
+        totalItems: { type: integer, format: int64 }
+        totalPages: { type: integer }
+    MarketOffer:
+      type: object
+      required: [product, market]
+      properties:
+        product: { $ref: '#/components/schemas/ProductSummary' }
+        market: { $ref: '#/components/schemas/MarketSummary' }
+    MarketOfferPage:
+      type: object
+      required: [items, page, size, totalItems, totalPages]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/MarketOffer' } }
         page: { type: integer }
         size: { type: integer }
         totalItems: { type: integer, format: int64 }
         totalPages: { type: integer }
     Promotion:
       type: object
-      required: [id, title, type, validFrom, validUntil, productIds]
+      required: [id, marketId, title, type, validFrom, validUntil, productIds]
       properties:
         id: { type: string, format: uuid }
-        title: { type: string, example: Weekly deal }
+        marketId: { type: string, format: uuid }
+        title: { type: string }
         description: { type: [string, 'null'] }
         type: { $ref: '#/components/schemas/PromotionType' }
         percentOff: { type: [integer, 'null'], minimum: 1, maximum: 90 }
@@ -616,20 +1412,55 @@ components:
             - $ref: '#/components/schemas/Money'
         validFrom: { type: string, format: date-time }
         validUntil: { type: string, format: date-time }
-        productIds:
+        productIds: { type: array, items: { type: string, format: uuid } }
+    FavoriteGroup:
+      type: object
+      required: [category, items]
+      properties:
+        category: { $ref: '#/components/schemas/Category' }
+        items:
           type: array
-          items: { type: string, format: uuid }
+          items:
+            allOf:
+              - $ref: '#/components/schemas/ProductSummary'
+              - type: object
+                required: [favoriteReason]
+                properties:
+                  favoriteReason: { type: string, enum: [MANUAL, FREQUENTLY_ORDERED] }
+
+    # ---- cart and fulfilment
     SetQuantityRequest:
       type: object
       required: [quantity]
       properties:
         quantity: { type: integer, minimum: 0, maximum: 99 }
-    ReserveSlotRequest:
+    ReserveFulfilmentRequest:
       type: object
-      required: [slotId, addressId]
+      required: [type, slotId]
       properties:
+        type: { $ref: '#/components/schemas/FulfilmentType' }
         slotId: { type: string, format: uuid }
-        addressId: { type: string, format: uuid }
+        addressId: { type: [string, 'null'], format: uuid, description: Required for DELIVERY. }
+    Slot:
+      type: object
+      required: [id, type, startsAt, endsAt, orderCutoffAt, fee, available, remainingCapacity]
+      properties:
+        id: { type: string, format: uuid }
+        type: { $ref: '#/components/schemas/FulfilmentType' }
+        startsAt: { type: string, format: date-time }
+        endsAt: { type: string, format: date-time }
+        orderCutoffAt: { type: string, format: date-time }
+        fee: { $ref: '#/components/schemas/Money' }
+        available: { type: boolean }
+        remainingCapacity: { type: integer, minimum: 0 }
+    FulfilmentReservation:
+      type: object
+      required: [type, slot, expiresAt]
+      properties:
+        type: { $ref: '#/components/schemas/FulfilmentType' }
+        slot: { $ref: '#/components/schemas/Slot' }
+        addressId: { type: [string, 'null'], format: uuid }
+        expiresAt: { type: string, format: date-time }
     CartItem:
       type: object
       required: [productId, name, unitSize, unitPrice, quantity, lineSubtotal, lineDiscount, lineTotal]
@@ -647,75 +1478,71 @@ components:
           oneOf:
             - type: 'null'
             - $ref: '#/components/schemas/PromotionBadge'
+        available: { type: boolean }
     Cart:
       type: object
-      required: [id, items, itemCount, subtotal, discountTotal, deliveryFee, total, minimumOrderValue, meetsMinimumOrderValue]
+      required: [id, market, items, itemCount, subtotal, discountTotal, deliveryFee, total, minimumOrderValue, meetsMinimumOrderValue]
       properties:
         id: { type: string, format: uuid }
-        items:
-          type: array
-          items: { $ref: '#/components/schemas/CartItem' }
-        itemCount: { type: integer, description: Sum of quantities. }
+        market: { $ref: '#/components/schemas/MarketSummary' }
+        items: { type: array, items: { $ref: '#/components/schemas/CartItem' } }
+        itemCount: { type: integer }
         subtotal: { $ref: '#/components/schemas/Money' }
         discountTotal: { $ref: '#/components/schemas/Money' }
         deliveryFee: { $ref: '#/components/schemas/Money' }
         total: { $ref: '#/components/schemas/Money' }
         minimumOrderValue: { $ref: '#/components/schemas/Money' }
         meetsMinimumOrderValue: { type: boolean }
-        delivery:
+        fulfilment:
           oneOf:
             - type: 'null'
-            - $ref: '#/components/schemas/DeliveryReservation'
-    DeliveryReservation:
+            - $ref: '#/components/schemas/FulfilmentReservation'
+    CartSummary:
       type: object
-      required: [slot, addressId, expiresAt]
+      required: [cartId, market, itemCount, total, updatedAt]
       properties:
-        slot: { $ref: '#/components/schemas/DeliverySlot' }
-        addressId: { type: string, format: uuid }
-        expiresAt: { type: string, format: date-time }
+        cartId: { type: string, format: uuid }
+        market: { $ref: '#/components/schemas/MarketSummary' }
+        itemCount: { type: integer }
+        total: { $ref: '#/components/schemas/Money' }
+        updatedAt: { type: string, format: date-time }
+
+    # ---- addresses
     AddressRequest:
       type: object
       required: [street, houseNumber, postalCode, city]
       properties:
-        label: { type: [string, 'null'], maxLength: 50, example: Home }
+        label: { type: [string, 'null'], maxLength: 50 }
         street: { type: string, minLength: 1, maxLength: 120 }
         houseNumber: { type: string, minLength: 1, maxLength: 10 }
         addition: { type: [string, 'null'], maxLength: 50 }
         postalCode: { $ref: '#/components/schemas/PostalCode' }
         city: { type: string, minLength: 1, maxLength: 80 }
         deliveryInstructions: { type: [string, 'null'], maxLength: 300 }
+        location:
+          description: Coordinates from /geo/search or the map pin. When absent the server geocodes the address (and stores null if it cannot).
+          oneOf:
+            - type: 'null'
+            - $ref: '#/components/schemas/GeoPoint'
         isDefault: { type: boolean, default: false }
     Address:
       allOf:
         - $ref: '#/components/schemas/AddressRequest'
         - type: object
-          required: [id, countryCode, isDefault, serviceable]
+          required: [id, countryCode, isDefault]
           properties:
             id: { type: string, format: uuid }
             countryCode: { type: string, enum: [DE] }
-            serviceable: { type: boolean }
-    DeliveryAreaCheck:
-      type: object
-      required: [postalCode, serviceable]
-      properties:
-        postalCode: { $ref: '#/components/schemas/PostalCode' }
-        serviceable: { type: boolean }
-        hubName: { type: [string, 'null'] }
-    DeliverySlot:
-      type: object
-      required: [id, startsAt, endsAt, orderCutoffAt, fee, available, remainingCapacity]
-      properties:
-        id: { type: string, format: uuid }
-        startsAt: { type: string, format: date-time }
-        endsAt: { type: string, format: date-time }
-        orderCutoffAt: { type: string, format: date-time, description: Last moment to order or change for this slot. }
-        fee: { $ref: '#/components/schemas/Money' }
-        available: { type: boolean, description: False when full or past cutoff. }
-        remainingCapacity: { type: integer, minimum: 0 }
+
+    # ---- orders
     OrderStatus:
       type: string
-      enum: [PLACED, CANCELLED, OUT_FOR_DELIVERY, DELIVERED]
-      description: Only PLACED and CANCELLED are produced by the MVP; later states are simulated in a future iteration.
+      enum: [PLACED, ACCEPTED, REJECTED, READY_FOR_PICKUP, OUT_FOR_DELIVERY, COMPLETED, CANCELLED]
+    OrderStatusRequest:
+      type: object
+      required: [status]
+      properties:
+        status: { $ref: '#/components/schemas/OrderStatus' }
     OrderItem:
       type: object
       required: [productId, name, unitPrice, quantity, lineTotal]
@@ -727,18 +1554,144 @@ components:
         lineTotal: { $ref: '#/components/schemas/Money' }
     Order:
       type: object
-      required: [id, orderNumber, status, placedAt, items, subtotal, discountTotal, deliveryFee, total, slot, address]
+      required: [id, orderNumber, status, placedAt, market, fulfilmentType, items, subtotal, discountTotal, deliveryFee, total, slot]
       properties:
         id: { type: string, format: uuid }
-        orderNumber: { type: string, example: DK-20261019-000042 }
+        orderNumber: { type: string, example: DK-20261020-000042 }
         status: { $ref: '#/components/schemas/OrderStatus' }
         placedAt: { type: string, format: date-time }
-        items:
-          type: array
-          items: { $ref: '#/components/schemas/OrderItem' }
+        market: { $ref: '#/components/schemas/MarketSummary' }
+        fulfilmentType: { $ref: '#/components/schemas/FulfilmentType' }
+        items: { type: array, items: { $ref: '#/components/schemas/OrderItem' } }
         subtotal: { $ref: '#/components/schemas/Money' }
         discountTotal: { $ref: '#/components/schemas/Money' }
         deliveryFee: { $ref: '#/components/schemas/Money' }
         total: { $ref: '#/components/schemas/Money' }
-        slot: { $ref: '#/components/schemas/DeliverySlot' }
-        address: { $ref: '#/components/schemas/Address' }
+        slot: { $ref: '#/components/schemas/Slot' }
+        deliveryAddress:
+          description: Snapshot; null for PICKUP.
+          oneOf:
+            - type: 'null'
+            - $ref: '#/components/schemas/Address'
+        customerName: { type: [string, 'null'], description: Only in merchant views. }
+
+    # ---- merchant
+    MarketProfileRequest:
+      type: object
+      required: [name, typeCode, primaryLocale, addressLine, location, fulfilment, openingHours, legalName]
+      properties:
+        name: { type: string, minLength: 2, maxLength: 80 }
+        typeCode: { type: string, example: GROCERY }
+        cuisineCodes: { type: array, items: { type: string }, maxItems: 5 }
+        description: { $ref: '#/components/schemas/LocalizedText' }
+        primaryLocale: { type: string, example: de }
+        addressLine: { type: string, minLength: 5, maxLength: 200 }
+        location: { $ref: '#/components/schemas/GeoPoint' }
+        phone: { type: [string, 'null'], maxLength: 30 }
+        logoUrl: { type: [string, 'null'], format: uri }
+        coverImageUrl: { type: [string, 'null'], format: uri }
+        tags: { type: array, items: { type: string, enum: [ORGANIC, REGIONAL, HALAL, VEGAN_FRIENDLY] } }
+        fulfilment: { $ref: '#/components/schemas/FulfilmentOptions' }
+        openingHours: { type: array, items: { $ref: '#/components/schemas/OpeningHours' }, minItems: 1 }
+        legalName: { type: string, minLength: 2, maxLength: 120 }
+        registerInfo: { type: [string, 'null'], maxLength: 120 }
+    MerchantMarket:
+      allOf:
+        - $ref: '#/components/schemas/MarketDetail'
+        - type: object
+          required: [status]
+          properties:
+            status: { $ref: '#/components/schemas/MarketStatus' }
+    CatalogProduct:
+      type: object
+      required: [id, name, unitSize, categoryId, cuisines, organic]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        brand: { type: [string, 'null'] }
+        unitSize: { type: string }
+        imageUrl: { type: [string, 'null'], format: uri }
+        categoryId: { type: string, format: uuid }
+        cuisines: { type: array, items: { $ref: '#/components/schemas/CodeName' } }
+        organic: { type: boolean }
+        barcode: { type: [string, 'null'] }
+        alreadyListed: { type: [boolean, 'null'], description: Whether the merchant's market already sells it (when marketId context is known). }
+    CatalogProductPage:
+      type: object
+      required: [items, page, size, totalItems, totalPages]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/CatalogProduct' } }
+        page: { type: integer }
+        size: { type: integer }
+        totalItems: { type: integer, format: int64 }
+        totalPages: { type: integer }
+    NewCatalogProduct:
+      type: object
+      description: A market-private product when the shared catalog has no match.
+      required: [name, unitSize, categoryId]
+      properties:
+        name: { $ref: '#/components/schemas/LocalizedText' }
+        description: { $ref: '#/components/schemas/LocalizedText' }
+        tagline: { $ref: '#/components/schemas/LocalizedText' }
+        keywords: { type: array, items: { type: string, maxLength: 60 }, maxItems: 30, description: Search keywords in any language. }
+        brand: { type: [string, 'null'], maxLength: 80 }
+        unitSize: { type: string, minLength: 1, maxLength: 40 }
+        netQuantity: { type: [number, 'null'], exclusiveMinimum: 0 }
+        netUnit: { type: [string, 'null'], enum: [kg, l, piece, null] }
+        categoryId: { type: string, format: uuid }
+        cuisineCodes: { type: array, items: { type: string } }
+        organic: { type: boolean, default: false }
+        allergens: { type: array, items: { type: string } }
+        imageUrl: { type: [string, 'null'], format: uri }
+        barcode: { type: [string, 'null'], maxLength: 20 }
+    CreateListingRequest:
+      type: object
+      description: Exactly one of catalogProductId or newProduct.
+      required: [price]
+      properties:
+        catalogProductId: { type: [string, 'null'], format: uuid }
+        newProduct:
+          oneOf:
+            - type: 'null'
+            - $ref: '#/components/schemas/NewCatalogProduct'
+        price: { $ref: '#/components/schemas/Money' }
+        available: { type: boolean, default: true }
+        maxOrderQuantity: { type: integer, minimum: 1, maximum: 99, default: 24 }
+    UpdateListingRequest:
+      type: object
+      properties:
+        price: { $ref: '#/components/schemas/Money' }
+        available: { type: boolean }
+        maxOrderQuantity: { type: integer, minimum: 1, maximum: 99 }
+    Listing:
+      allOf:
+        - $ref: '#/components/schemas/ProductSummary'
+        - type: object
+          required: [privateProduct]
+          properties:
+            privateProduct: { type: boolean, description: True when created by this market instead of picked from the shared catalog. }
+    ListingPage:
+      type: object
+      required: [items, page, size, totalItems, totalPages]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/Listing' } }
+        page: { type: integer }
+        size: { type: integer }
+        totalItems: { type: integer, format: int64 }
+        totalPages: { type: integer }
+    PromotionRequest:
+      type: object
+      required: [title, type, validFrom, validUntil, productIds]
+      properties:
+        title: { $ref: '#/components/schemas/LocalizedText' }
+        description: { $ref: '#/components/schemas/LocalizedText' }
+        type: { $ref: '#/components/schemas/PromotionType' }
+        percentOff: { type: [integer, 'null'], minimum: 1, maximum: 90 }
+        bundleQuantity: { type: [integer, 'null'], minimum: 2, maximum: 20 }
+        bundlePrice:
+          oneOf:
+            - type: 'null'
+            - $ref: '#/components/schemas/Money'
+        validFrom: { type: string, format: date-time }
+        validUntil: { type: string, format: date-time }
+        productIds: { type: array, items: { type: string, format: uuid }, minItems: 1, maxItems: 200 }
