@@ -1,104 +1,85 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import type { Cart } from '../../../shared/api';
-import { formatDayLabel, formatTimeRange } from '../../../shared/format/dates';
-import { formatMoney, formatMoneyForAccessibility } from '../../../shared/format/money';
-import { colors, radii, spacing, typography } from '../../../shared/theme';
-import { Button, SummaryRow } from '../../../shared/ui';
+import { formatMoney, formatMoneyForAccessibility } from '../../../shared/format';
+import { makeStyles } from '../../../shared/theme';
+import { AppText, ProgressBar } from '../../../shared/ui';
 import { minimumOrderProgress } from '../model';
 
-export function MinimumOrderNotice({ cart }: { cart: Cart }) {
-  if (cart.meetsMinimumOrderValue) {
-    return null;
-  }
-  const { ratio, remaining } = minimumOrderProgress(cart);
-  const min = cart.minimumOrderValue;
+function Row({ label, value, spoken, strong = false, accent = false }: { label: string; value: string; spoken: string; strong?: boolean; accent?: boolean }) {
+  const styles = useStyles();
   return (
-    <View
-      style={styles.notice}
-      accessible
-      accessibilityRole="text"
-      accessibilityLiveRegion="polite"
-      accessibilityLabel={`Minimum order value is ${formatMoneyForAccessibility(
-        min,
-      )}. Add ${formatMoneyForAccessibility(remaining)} more to check out.`}>
-      <Text style={styles.noticeText}>
-        Minimum order value is {formatMoney(min)}. Add {formatMoney(remaining)} more to check out.
-      </Text>
-      <View style={styles.track}>
-        <View style={[styles.bar, { width: `${Math.round(ratio * 100)}%` }]} />
-      </View>
+    <View style={styles.row} accessible accessibilityLabel={`${label}: ${spoken}`}>
+      <AppText variant={strong ? 'title' : 'body'} style={styles.flex}>
+        {label}
+      </AppText>
+      <AppText variant={strong ? 'title' : 'body'} color={accent ? 'primary' : 'text'} dense>
+        {value}
+      </AppText>
     </View>
   );
 }
 
-export function DeliveryCard({ cart, onChoose }: { cart: Cart; onChoose: () => void }) {
-  const delivery = cart.delivery;
+/** Rabatt, Lieferung (Gratis or amount), Total (inkl. MwSt.) and the minimum-order progress. */
+export function CartSummary({ cart }: { cart: Cart }) {
+  const styles = useStyles();
+  const { t } = useTranslation();
+  const progress = minimumOrderProgress(cart);
+  const pickup = cart.fulfilment?.type === 'PICKUP';
+  const feeIsFree = cart.deliveryFee.amountCents === 0;
   return (
-    <View style={styles.card}>
-      <Text style={styles.cardTitle} accessibilityRole="header">
-        Delivery
-      </Text>
-      {delivery ? (
-        <Text style={styles.cardText}>
-          {formatDayLabel(delivery.slot.startsAt)},{' '}
-          {formatTimeRange(delivery.slot.startsAt, delivery.slot.endsAt)}
-        </Text>
-      ) : (
-        <Text style={styles.cardText}>No delivery slot reserved yet.</Text>
-      )}
-      <Button
-        title={delivery ? 'Change delivery slot' : 'Choose delivery slot'}
-        variant="secondary"
-        onPress={onChoose}
-        style={styles.cardButton}
-      />
-    </View>
-  );
-}
-
-export function CartTotals({ cart }: { cart: Cart }) {
-  return (
-    <View style={styles.card}>
-      <SummaryRow label="Subtotal" money={cart.subtotal} />
+    <View style={styles.box} testID="cart-summary">
       {cart.discountTotal.amountCents > 0 && (
-        <SummaryRow label="Discount" money={cart.discountTotal} negative />
+        <Row
+          label={t('cart.discount')}
+          value={`−${formatMoney(cart.discountTotal)}`}
+          spoken={t('cart.minus', { amount: formatMoneyForAccessibility(cart.discountTotal) })}
+          accent
+        />
       )}
-      <SummaryRow label="Delivery fee" money={cart.deliveryFee} />
+      {!pickup && cart.market.fulfilment.delivery && (
+        <Row
+          label={t('cart.delivery')}
+          value={feeIsFree ? t('fulfilment.free') : formatMoney(cart.deliveryFee)}
+          spoken={feeIsFree ? t('fulfilment.free') : formatMoneyForAccessibility(cart.deliveryFee)}
+        />
+      )}
+      {pickup && <Row label={t('cart.pickup')} value={t('fulfilment.free')} spoken={t('fulfilment.free')} />}
       <View style={styles.divider} />
-      <SummaryRow label="Total" money={cart.total} emphasized />
+      <View style={styles.row} accessible accessibilityLabel={`${t('cart.total')}: ${formatMoneyForAccessibility(cart.total)}`} testID="cart-total">
+        <AppText variant="title" style={styles.flex}>
+          {t('cart.total')}{' '}
+          <AppText variant="subhead" color="textSecondary">
+            {t('cart.inclVat')}
+          </AppText>
+        </AppText>
+        <AppText variant="title" dense>
+          {formatMoney(cart.total)}
+        </AppText>
+      </View>
+      {!cart.meetsMinimumOrderValue && (
+        <View style={styles.minimum}>
+          <AppText variant="subhead" color="textSecondary">
+            {t('cart.minimumMissing', { missing: formatMoney(progress.remaining), minimum: formatMoney(cart.minimumOrderValue) })}
+          </AppText>
+          <ProgressBar
+            ratio={progress.ratio}
+            accessibilityLabel={t('cart.minimumMissing', {
+              missing: formatMoneyForAccessibility(progress.remaining),
+              minimum: formatMoneyForAccessibility(cart.minimumOrderValue),
+            })}
+          />
+        </View>
+      )}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  notice: {
-    margin: spacing.lg,
-    marginBottom: 0,
-    padding: spacing.md,
-    borderRadius: radii.md,
-    backgroundColor: colors.warningMuted,
-  },
-  noticeText: { ...typography.body, color: colors.warning },
-  track: {
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: colors.surface,
-    marginTop: spacing.sm,
-    overflow: 'hidden',
-  },
-  bar: { height: 6, backgroundColor: colors.warning },
-  card: {
-    margin: spacing.lg,
-    marginBottom: 0,
-    padding: spacing.lg,
-    borderRadius: radii.lg,
-    backgroundColor: colors.surface,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-  },
-  cardTitle: { ...typography.bodyStrong, color: colors.text },
-  cardText: { ...typography.body, color: colors.textMuted, marginTop: spacing.xs },
-  cardButton: { marginTop: spacing.md },
-  divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border, marginVertical: spacing.sm },
-});
+const useStyles = makeStyles((t) => ({
+  box: { paddingTop: t.spacing.xl, gap: t.spacing.sm },
+  row: { flexDirection: 'row', alignItems: 'baseline', gap: t.spacing.md },
+  flex: { flex: 1 },
+  divider: { height: 1, backgroundColor: t.colors.separator, marginVertical: t.spacing.xs },
+  minimum: { gap: t.spacing.sm, marginTop: t.spacing.md },
+}));

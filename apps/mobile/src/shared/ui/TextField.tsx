@@ -1,51 +1,62 @@
-import { StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
+import { TextInput, View, type TextInputProps } from 'react-native';
 
-import { colors, radii, spacing, touchTarget, typography } from '../theme';
+import { makeStyles, useTheme } from '../theme';
+import { AppText } from './AppText';
 
 export interface TextFieldProps extends Omit<TextInputProps, 'style'> {
   label: string;
   error?: string | undefined;
   hint?: string | undefined;
+  /** Writing direction of the typed content when it differs from the UI (e.g. an Arabic name field in German UI). */
+  inputDirection?: 'ltr' | 'rtl';
 }
 
-export function TextField({ label, error, hint, accessibilityHint, ...inputProps }: TextFieldProps) {
+export function TextField({ label, error, hint, accessibilityHint, inputDirection, ...inputProps }: TextFieldProps) {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const hasError = error !== undefined && error !== '';
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>{label}</Text>
-      <TextInput
-        accessibilityLabel={label}
-        accessibilityHint={hasError ? error : accessibilityHint ?? hint}
-        placeholderTextColor={colors.textMuted}
-        style={[styles.input, hasError && styles.inputError]}
-        {...inputProps}
-      />
+      <AppText variant="subhead" color="textSecondary" style={styles.label}>
+        {label}
+      </AppText>
+      <View style={inputDirection !== undefined ? { direction: inputDirection } : undefined}>
+        <TextInput
+          accessibilityLabel={label}
+          accessibilityHint={hasError ? error : (accessibilityHint ?? hint)}
+          placeholderTextColor={colors.textPlaceholder}
+          style={[styles.input, hasError && styles.inputError]}
+          {...inputProps}
+        />
+      </View>
       {hasError ? (
-        <Text style={styles.error} accessibilityLiveRegion="polite" accessibilityRole="alert">
+        <AppText variant="caption" color="accent" style={styles.below} accessibilityLiveRegion="polite" accessibilityRole="alert">
           {error}
-        </Text>
+        </AppText>
       ) : (
-        hint !== undefined && <Text style={styles.hint}>{hint}</Text>
+        hint !== undefined && (
+          <AppText variant="caption" color="textSecondary" style={styles.below}>
+            {hint}
+          </AppText>
+        )
       )}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { marginBottom: spacing.lg },
-  label: { ...typography.bodyStrong, color: colors.text, marginBottom: spacing.xs },
+const useStyles = makeStyles((t) => ({
+  container: { marginBottom: t.spacing.lg },
+  label: { marginBottom: t.spacing.xs },
   input: {
-    ...typography.body,
-    minHeight: touchTarget + 4,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    backgroundColor: colors.surface,
-    color: colors.text,
+    ...t.type.body,
+    minHeight: 48,
+    borderRadius: t.radii.pill,
+    paddingHorizontal: t.spacing.md,
+    paddingVertical: t.spacing.sm,
+    backgroundColor: t.colors.surfaceMuted,
+    color: t.colors.text,
+    textAlign: 'auto' as const,
   },
-  inputError: { borderColor: colors.danger, borderWidth: 1.5 },
-  error: { ...typography.caption, color: colors.danger, marginTop: spacing.xs },
-  hint: { ...typography.caption, color: colors.textMuted, marginTop: spacing.xs },
-});
+  inputError: { borderWidth: 1.5, borderColor: t.colors.accent },
+  below: { marginTop: t.spacing.xs },
+}));

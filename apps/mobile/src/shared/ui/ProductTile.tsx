@@ -1,123 +1,168 @@
 import { memo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import type { ProductSummary } from '../api/types';
-import { formatMoneyForAccessibility, unitLabel } from '../format/money';
-import { colors, radii, spacing, touchTarget, typography } from '../theme';
-import { Badge } from './Badge';
-import { InitialsTile } from './InitialsTile';
+import { formatMoney, formatMoneyForAccessibility } from '../format/money';
+import { makeStyles, useTheme } from '../theme';
+import { AppText } from './AppText';
+import { IconButton } from './Button';
+import { Icon } from './Icon';
+import { ImageTile } from './ImageTile';
+import { PromoPill } from './Pills';
 import { Price } from './Price';
 import { QuantityStepper } from './QuantityStepper';
-
-/** Business default from the contract; the server enforces the real per-product limit. */
-export const DEFAULT_MAX_ORDER_QUANTITY = 24;
 
 export interface ProductTileProps {
   product: ProductSummary;
   quantity: number;
-  onPress: (productId: string) => void;
-  onChangeQuantity: (productId: string, quantity: number) => void;
+  onPress: (product: ProductSummary) => void;
+  onChangeQuantity: (product: ProductSummary, quantity: number) => void;
+  onToggleFavorite?: (product: ProductSummary) => void;
   busy?: boolean;
+  /** Fixed width for carousel items; grid tiles stretch. */
   width?: number;
 }
 
-function ProductTileComponent({
-  product,
-  quantity,
-  onPress,
-  onChangeQuantity,
-  busy = false,
-  width,
-}: ProductTileProps) {
-  const { id, name, brand, unitSize, price, comparisonPrice, promotion, available } = product;
-  const summary = [
-    name,
-    brand ?? undefined,
+/**
+ * Product tile per design-system.md §4.3: photo on `tileSage` (r16), promo pill bottom-start,
+ * white "+" bottom-end that turns into − n +, gold tagline, "Bio " prefix, name ›, price
+ * (accent + struck-through regular price when discounted), "550 g · 5,07 €/kg".
+ */
+function ProductTileComponent({ product, quantity, onPress, onChangeQuantity, onToggleFavorite, busy = false, width }: ProductTileProps) {
+  const styles = useStyles();
+  const { colors } = useTheme();
+  const { t } = useTranslation();
+  const { name, unitSize, price, promotionalPrice, comparisonPrice, promotion, available, organic, tagline } = product;
+  const discounted = promotionalPrice != null;
+  const effective = promotionalPrice ?? price;
+  const unitLine = [
     unitSize,
-    formatMoneyForAccessibility(price),
-    promotion ? `Offer ${promotion.label}` : undefined,
-    available ? undefined : 'Currently unavailable',
+    comparisonPrice != null ? `${formatMoney(comparisonPrice.price)}/${t(`units.${comparisonPrice.unit}`)}` : undefined,
   ]
-    .filter((part): part is string => part !== undefined)
+    .filter(Boolean)
+    .join(' · ');
+
+  const spoken = [
+    organic ? `${t('product.organic')} ${name}` : name,
+    tagline ?? undefined,
+    discounted
+      ? t('product.spokenDiscounted', { price: formatMoneyForAccessibility(effective), was: formatMoneyForAccessibility(price) })
+      : formatMoneyForAccessibility(price),
+    unitLine,
+    promotion?.label,
+    available ? undefined : t('product.unavailable'),
+    quantity > 0 ? t('product.inCart', { count: quantity }) : undefined,
+  ]
+    .filter((part): part is string => part !== undefined && part !== '')
     .join(', ');
 
   return (
-    <View style={[styles.card, width !== undefined && { width }]}>
-      <Pressable
-        onPress={() => onPress(id)}
-        accessibilityRole="button"
-        accessibilityLabel={summary}
-        accessibilityHint="Opens product details"
-        style={({ pressed }) => [styles.body, pressed && styles.pressed]}>
-        <View style={styles.imageRow}>
-          <InitialsTile name={name} size={64} />
-          {promotion && <Badge label={promotion.label} tone="promo" />}
+    <View style={[styles.card, width !== undefined ? { width } : styles.grid]} testID={`product-tile-${product.id}`}>
+      <View>
+        <Pressable onPress={() => onPress(product)} accessibilityRole="button" accessibilityLabel={spoken} accessibilityHint={t('product.openHint')}>
+          <ImageTile uri={product.imageUrl} tint="sage" />
+        </Pressable>
+        {promotion != null && (
+          <View style={styles.promo} pointerEvents="none">
+            <PromoPill label={promotion.label} />
+          </View>
+        )}
+        {onToggleFavorite !== undefined && (
+          <View style={styles.heart}>
+            <IconButton
+              icon="heart"
+              filled={product.favorite === true}
+              color={product.favorite === true ? colors.accent : colors.text}
+              label={product.favorite === true ? t('favorites.remove', { name }) : t('favorites.add', { name })}
+              selected={product.favorite === true}
+              onPress={() => onToggleFavorite(product)}
+              size={20}
+            />
+          </View>
+        )}
+        <View style={styles.action}>
+          {!available ? null : quantity > 0 ? (
+            <QuantityStepper
+              appearance="floating"
+              value={quantity}
+              max={product.maxOrderQuantity}
+              itemName={name}
+              busy={busy}
+              onChange={(next) => onChangeQuantity(product, next)}
+            />
+          ) : (
+            <Pressable
+              onPress={() => onChangeQuantity(product, 1)}
+              disabled={busy}
+              accessibilityRole="button"
+              accessibilityLabel={t('product.add', { name })}
+              accessibilityState={{ disabled: busy, busy }}
+              style={({ pressed }) => [styles.plus, pressed && styles.pressed]}>
+              <Icon name="plus" size={22} color={colors.text} />
+            </Pressable>
+          )}
         </View>
-        <Text style={styles.name} numberOfLines={2}>
-          {name}
-        </Text>
-        <Text style={styles.meta} numberOfLines={1}>
-          {[brand, unitSize].filter(Boolean).join(' · ')}
-        </Text>
-        <Price money={price} />
-        {comparisonPrice && (
-          <Text style={styles.meta}>
-            <Price money={comparisonPrice.price} size="small" /> / {unitLabel(comparisonPrice.unit)}
-          </Text>
+      </View>
+      <Pressable
+        onPress={() => onPress(product)}
+        accessible={false}
+        importantForAccessibility="no-hide-descendants"
+        style={styles.texts}>
+        {tagline != null && tagline !== '' && (
+          <AppText variant="caption" color="taste" dense numberOfLines={1}>
+            {tagline}
+          </AppText>
+        )}
+        <View style={styles.nameRow}>
+          <AppText variant="headline" dense numberOfLines={2} style={styles.name}>
+            {organic && <AppText variant="headline" color="primary" dense>{`${t('product.organic')} `}</AppText>}
+            {name}
+          </AppText>
+          <Icon name="chevron" size={18} color={colors.text} style={styles.chevron} />
+        </View>
+        <View style={styles.priceRow}>
+          <Price money={effective} color={discounted ? 'accent' : 'text'} />
+          {discounted && <Price money={price} variant="subhead" color="textSecondary" strike />}
+        </View>
+        <AppText variant="subhead" color="textSecondary" dense numberOfLines={1}>
+          {unitLine}
+        </AppText>
+        {!available && (
+          <AppText variant="caption" color="accent" dense>
+            {t('product.unavailable')}
+          </AppText>
         )}
       </Pressable>
-      <View style={styles.actions}>
-        {!available ? (
-          <Badge label="Unavailable" tone="neutral" />
-        ) : quantity > 0 ? (
-          <QuantityStepper
-            value={quantity}
-            max={DEFAULT_MAX_ORDER_QUANTITY}
-            itemName={name}
-            busy={busy}
-            onChange={(next) => onChangeQuantity(id, next)}
-          />
-        ) : (
-          <Pressable
-            onPress={() => onChangeQuantity(id, 1)}
-            disabled={busy}
-            accessibilityRole="button"
-            accessibilityLabel={`Add ${name} to cart`}
-            accessibilityState={{ disabled: busy, busy }}
-            style={({ pressed }) => [styles.add, pressed && styles.addPressed]}>
-            <Text style={styles.addText}>Add</Text>
-          </Pressable>
-        )}
-      </View>
     </View>
   );
 }
 
 export const ProductTile = memo(ProductTileComponent);
 
-const styles = StyleSheet.create({
-  card: {
-    flex: 1,
-    margin: spacing.xs,
-    backgroundColor: colors.surface,
-    borderRadius: radii.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    overflow: 'hidden',
-  },
-  body: { padding: spacing.md, gap: spacing.xs },
-  pressed: { backgroundColor: colors.primaryMuted },
-  imageRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  name: { ...typography.bodyStrong, color: colors.text },
-  meta: { ...typography.caption, color: colors.textMuted },
-  actions: { paddingHorizontal: spacing.md, paddingBottom: spacing.md },
-  add: {
-    minHeight: touchTarget,
-    borderRadius: radii.md,
-    backgroundColor: colors.primary,
+const useStyles = makeStyles((t) => ({
+  card: { gap: t.spacing.sm },
+  grid: { flex: 1 },
+  promo: { position: 'absolute', bottom: t.spacing.sm, start: t.spacing.sm },
+  heart: { position: 'absolute', top: 2, end: 2 },
+  action: { position: 'absolute', bottom: t.spacing.sm, end: t.spacing.sm },
+  plus: {
+    width: 44,
+    height: 44,
+    borderRadius: t.radii.pill,
+    backgroundColor: t.colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: t.colors.shadow,
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 2,
   },
-  addPressed: { backgroundColor: colors.primaryPressed },
-  addText: { ...typography.bodyStrong, color: colors.onPrimary },
-});
+  pressed: { opacity: 0.7 },
+  texts: { gap: 2, paddingHorizontal: 2 },
+  nameRow: { flexDirection: 'row', alignItems: 'center' },
+  name: { flexShrink: 1 },
+  chevron: { marginStart: 2 },
+  priceRow: { flexDirection: 'row', alignItems: 'baseline', gap: t.spacing.sm },
+}));

@@ -1,25 +1,37 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import { useIsOffline } from '../network/useIsOffline';
-import { colors, spacing, typography } from '../theme';
+import { makeStyles, useTheme } from '../theme';
+import { AppText } from './AppText';
+import { Icon } from './Icon';
 
 export function OfflineBanner() {
   const offline = useIsOffline();
+  const styles = useStyles();
+  const { colors } = useTheme();
+  const { t } = useTranslation();
   if (!offline) {
     return null;
   }
   return (
     <View style={styles.banner} accessibilityRole="alert" accessibilityLiveRegion="assertive">
-      <Text style={styles.text}>You are offline. Some content may be out of date.</Text>
+      <Icon name="offline" size={16} color={colors.onPromo} />
+      <AppText variant="caption" color="onPromo" dense>
+        {t('states.offlineBanner')}
+      </AppText>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((t) => ({
   banner: {
-    backgroundColor: colors.warningMuted,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.lg,
+    flexDirection: 'row',
+    gap: t.spacing.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: t.colors.promo,
+    paddingVertical: t.spacing.sm,
+    paddingHorizontal: t.layout.gutter,
   },
-  text: { ...typography.caption, color: colors.warning, fontWeight: '600', textAlign: 'center' },
-});
+}));

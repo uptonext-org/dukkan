@@ -5,7 +5,13 @@
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
-	<string>en</string>
+	<string>de</string>
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>de</string>
+		<string>en</string>
+		<string>ar</string>
+	</array>
 	<key>CFBundleDisplayName</key>
 	<string>Dukkan</string>
 	<key>CFBundleExecutable</key>
@@ -34,6 +40,19 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Dukkan nutzt deinen Standort, um Märkte in deiner Nähe und ihre Entfernung anzuzeigen.</string>
+	<key>UIAppFonts</key>
+	<array>
+		<string>Inter-Regular.ttf</string>
+		<string>Inter-Medium.ttf</string>
+		<string>Inter-SemiBold.ttf</string>
+		<string>Inter-Bold.ttf</string>
+		<string>IBMPlexSansArabic-Regular.ttf</string>
+		<string>IBMPlexSansArabic-Medium.ttf</string>
+		<string>IBMPlexSansArabic-SemiBold.ttf</string>
+		<string>IBMPlexSansArabic-Bold.ttf</string>
+	</array>
 	<key>RCTNewArchEnabled</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>

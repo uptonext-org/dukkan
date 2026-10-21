@@ -1,54 +1,62 @@
 import { memo } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
-import { colors, radii, spacing, touchTarget, typography } from '../theme';
+import { makeStyles, useTheme } from '../theme';
+import { AppText } from './AppText';
+import { Icon } from './Icon';
 
 interface QuantityStepperProps {
   value: number;
   onChange: (next: number) => void;
-  min?: number;
   max: number;
-  /** Used in accessibility labels, e.g. "Increase quantity of Oat milk". */
   itemName: string;
-  disabled?: boolean;
   busy?: boolean;
+  disabled?: boolean;
+  /** `floating`: white pill over a photo tile; `inline`: muted pill in rows/detail. */
+  appearance?: 'floating' | 'inline';
 }
 
+/** − n + stepper bounded by maxOrderQuantity. 0 removes the item. */
 export const QuantityStepper = memo(function QuantityStepper({
   value,
   onChange,
-  min = 0,
   max,
   itemName,
-  disabled = false,
   busy = false,
+  disabled = false,
+  appearance = 'inline',
 }: QuantityStepperProps) {
-  const canDecrement = !disabled && value > min;
-  const canIncrement = !disabled && value < max;
+  const styles = useStyles();
+  const { colors } = useTheme();
+  const { t } = useTranslation();
+  const canDecrement = !disabled && !busy && value > 0;
+  const canIncrement = !disabled && !busy && value < max;
   return (
-    <View style={styles.container} accessible={false} accessibilityLabel={`Quantity of ${itemName}`}>
+    <View style={[styles.container, appearance === 'floating' ? styles.floating : styles.inline]}>
       <StepButton
-        symbol="−"
-        label={value - 1 <= 0 && min === 0 ? `Remove ${itemName}` : `Decrease quantity of ${itemName}`}
+        icon={value <= 1 ? 'trash' : 'minus'}
+        label={value <= 1 ? t('product.remove', { name: itemName }) : t('product.decrease', { name: itemName })}
         enabled={canDecrement}
-        onPress={() => onChange(Math.max(min, value - 1))}
+        onPress={() => onChange(Math.max(0, value - 1))}
       />
       <View style={styles.valueBox}>
         {busy ? (
-          <ActivityIndicator color={colors.primary} accessibilityLabel="Updating quantity" />
+          <ActivityIndicator color={colors.primary} accessibilityLabel={t('product.updating')} />
         ) : (
-          <Text
-            style={styles.value}
-            accessibilityLabel={`Quantity ${value}`}
+          <AppText
+            variant="bodyStrong"
+            dense
+            accessibilityLabel={t('product.quantityValue', { count: value })}
             accessibilityLiveRegion="polite">
-            {value}
-          </Text>
+            {String(value)}
+          </AppText>
         )}
       </View>
       <StepButton
-        symbol="+"
-        label={`Increase quantity of ${itemName}`}
-        hint={value >= max ? `Maximum of ${max} reached` : undefined}
+        icon="plus"
+        label={t('product.increase', { name: itemName })}
+        {...(value >= max ? { hint: t('product.maxReached', { count: max }) } : {})}
         enabled={canIncrement}
         onPress={() => onChange(Math.min(max, value + 1))}
       />
@@ -56,15 +64,20 @@ export const QuantityStepper = memo(function QuantityStepper({
   );
 });
 
-interface StepButtonProps {
-  symbol: string;
+function StepButton({
+  icon,
+  label,
+  hint,
+  enabled,
+  onPress,
+}: {
+  icon: 'plus' | 'minus' | 'trash';
   label: string;
-  hint?: string | undefined;
+  hint?: string;
   enabled: boolean;
   onPress: () => void;
-}
-
-function StepButton({ symbol, label, hint, enabled, onPress }: StepButtonProps) {
+}) {
+  const { colors, touchTarget } = useTheme();
   return (
     <Pressable
       onPress={onPress}
@@ -73,32 +86,26 @@ function StepButton({ symbol, label, hint, enabled, onPress }: StepButtonProps) 
       accessibilityLabel={label}
       accessibilityHint={hint}
       accessibilityState={{ disabled: !enabled }}
-      style={({ pressed }) => [styles.button, pressed && styles.pressed, !enabled && styles.disabled]}>
-      <Text style={[styles.symbol, !enabled && styles.symbolDisabled]}>{symbol}</Text>
+      style={({ pressed }) => [
+        { minWidth: touchTarget, minHeight: touchTarget, alignItems: 'center', justifyContent: 'center' },
+        pressed && { opacity: 0.5 },
+        !enabled && { opacity: 0.35 },
+      ]}>
+      <Icon name={icon} size={20} color={colors.text} />
     </Pressable>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.primary,
-    backgroundColor: colors.surface,
-    alignSelf: 'flex-start',
+const useStyles = makeStyles((t) => ({
+  container: { flexDirection: 'row', alignItems: 'center', borderRadius: t.radii.pill },
+  floating: {
+    backgroundColor: t.colors.surface,
+    shadowColor: t.colors.shadow,
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 2,
   },
-  button: {
-    minWidth: touchTarget,
-    minHeight: touchTarget,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  pressed: { backgroundColor: colors.primaryMuted },
-  disabled: { opacity: 0.4 },
-  symbol: { fontSize: 22, fontWeight: '700', color: colors.primary },
-  symbolDisabled: { color: colors.textMuted },
-  valueBox: { minWidth: 36, alignItems: 'center', paddingHorizontal: spacing.xs },
-  value: { ...typography.bodyStrong, color: colors.text },
-});
+  inline: { backgroundColor: t.colors.surfaceMuted, alignSelf: 'flex-start' },
+  valueBox: { minWidth: 28, alignItems: 'center' },
+}));

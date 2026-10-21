@@ -1,26 +1,60 @@
-import { EmptyState, Screen, queryState } from '../../../shared/ui';
-import type { RootStackScreenProps } from '../../../navigation/types';
-import { useProductPages } from '../api/hooks';
+import { useState } from 'react';
+import { ScrollView, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
+
+import type { MarketStackScreenProps } from '../../../navigation/types';
+import type { ProductSort } from '../../../shared/api';
+import { makeStyles } from '../../../shared/theme';
+import { CardSkeletons, Chip, EmptyState, ErrorState, Screen, ScreenHeader } from '../../../shared/ui';
+import { useMarketContext } from '../../market/MarketContext';
+import { useMarketProducts } from '../api/hooks';
 import { ProductGrid } from '../components/ProductGrid';
 
-export function CategoryProductsScreen({ route }: RootStackScreenProps<'CategoryProducts'>) {
-  const products = useProductPages({ categoryId: route.params.categoryId });
+export const PRODUCT_SORTS: ProductSort[] = ['relevance', 'price_asc', 'price_desc', 'name'];
 
-  const state = queryState(products);
-  if (state) {
-    return <Screen padded={false}>{state}</Screen>;
-  }
+/** Product list for a category, a banner or a quick link (offers, new, organic). */
+export function CategoryProductsScreen({ route, navigation }: MarketStackScreenProps<'MarketProducts'>) {
+  const styles = useStyles();
+  const { t } = useTranslation();
+  const { marketId } = useMarketContext();
+  const [sort, setSort] = useState<ProductSort>('relevance');
+  const query = useMarketProducts(marketId, { ...route.params.filter, sort, size: 20 });
+
   return (
-    <Screen padded={false}>
-      <ProductGrid
-        products={products.data ?? []}
-        hasNextPage={products.hasNextPage}
-        isFetchingNextPage={products.isFetchingNextPage}
-        fetchNextPage={products.fetchNextPage}
-        refreshing={products.isRefetching && !products.isFetchingNextPage}
-        onRefresh={() => void products.refetch()}
-        ListEmptyComponent={<EmptyState title="No products here yet" message="Try another category." />}
-      />
+    <Screen padded={false} header={<ScreenHeader title={route.params.title} onBack={() => navigation.goBack()} />}>
+      {query.isPending ? (
+        <CardSkeletons count={2} />
+      ) : query.isError ? (
+        <ErrorState error={query.error} onRetry={() => void query.refetch()} />
+      ) : (
+        <ProductGrid
+          marketId={marketId}
+          products={query.products}
+          header={
+            <View style={styles.header}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips} accessibilityLabel={t('marketSearch.sortLabel')}>
+                {PRODUCT_SORTS.map((s) => (
+                  <Chip key={s} label={t(`marketSearch.sort.${s}`)} selected={sort === s} onPress={() => setSort(s)} />
+                ))}
+              </ScrollView>
+            </View>
+          }
+          empty={<EmptyState icon="package" title={t('marketSearch.noProductsTitle')} message={t('marketSearch.noProductsMessage')} />}
+          onEndReached={() => {
+            if (query.hasNextPage && !query.isFetchingNextPage) {
+              void query.fetchNextPage();
+            }
+          }}
+          loadingMore={query.isFetchingNextPage}
+          refreshing={query.isRefetching && !query.isFetchingNextPage}
+          onRefresh={() => void query.refetch()}
+        />
+      )}
     </Screen>
   );
 }
+
+const useStyles = makeStyles((t) => ({
+  header: { marginHorizontal: -t.layout.gutter, marginBottom: t.spacing.lg },
+  chips: { gap: t.spacing.sm, paddingHorizontal: t.layout.gutter },
+}));

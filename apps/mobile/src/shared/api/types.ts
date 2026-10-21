@@ -1,61 +1,74 @@
 /**
- * Hand-written TypeScript mirror of packages/shared-contracts/openapi.yaml (v0.1.0).
- *
- * openapi-typescript 7.13.0 declares `typescript: ^5.x` as a peer and therefore
- * cannot be installed next to the mandated TypeScript 6.0.3, so these types are
- * maintained by hand. Keep them in sync with the contract.
+ * Hand-written types mirroring packages/shared-contracts/openapi.yaml (v0.2.0).
+ * openapi-typescript 7.x does not support TypeScript 6 (see VERSIONS.md), so keep these in
+ * sync with the contract by hand. Nullable contract fields are `T | null`; optional ones `?`.
  */
 
-export type Uuid = string;
-/** ISO 8601 timestamp with offset, e.g. `2026-10-19T08:00:00+02:00`. */
-export type IsoDateTime = string;
-
-export interface Money {
-  /** Integer amount in minor units (cents). */
-  amountCents: number;
-  /** ISO 4217 currency code, e.g. `EUR`. */
-  currency: string;
-}
-
-export interface ProblemFieldError {
-  field: string;
-  message: string;
-}
-
-/** RFC 9457 problem details with an extra machine-readable `code`. */
+// ---------------------------------------------------------------- common
 export interface Problem {
   type: string;
   title: string;
   status: number;
+  code: string;
   detail?: string;
   instance?: string;
-  code: string;
-  errors?: ProblemFieldError[];
+  errors?: { field: string; code: string; message: string }[];
 }
 
-export type ErrorCode =
-  | 'VALIDATION_FAILED'
-  | 'UNAUTHORIZED'
-  | 'INVALID_CREDENTIALS'
-  | 'NOT_FOUND'
-  | 'EMAIL_TAKEN'
-  | 'SLOT_FULL'
-  | 'PRODUCT_UNAVAILABLE'
-  | 'MAX_QUANTITY_EXCEEDED'
-  | 'ADDRESS_NOT_SERVICEABLE'
-  | 'SLOT_CUTOFF_PASSED'
-  | 'SLOT_NOT_RESERVED'
-  | 'CART_EMPTY'
-  | 'MINIMUM_ORDER_NOT_MET'
-  | 'ORDER_NOT_CANCELLABLE';
+export interface Locale {
+  code: string;
+  nativeName: string;
+  direction: 'ltr' | 'rtl';
+}
 
-export type PostalCode = string;
+/** Map of locale code to text, e.g. `{ de: 'Äpfel', en: 'Apples', ar: 'تفاح' }`. */
+export type LocalizedText = Record<string, string>;
+
+export interface CodeName {
+  code: string;
+  name: string;
+  iconKey?: string | null;
+}
+
+export interface Money {
+  amountCents: number;
+  currency: string;
+}
+
+export interface GeoPoint {
+  lat: number;
+  lng: number;
+}
+
+export interface Place {
+  label: string;
+  street?: string | null;
+  houseNumber?: string | null;
+  postalCode?: string | null;
+  district?: string | null;
+  city: string;
+  location: GeoPoint;
+}
+
+export interface Page<T> {
+  items: T[];
+  page: number;
+  size: number;
+  totalItems: number;
+  totalPages: number;
+}
+
+// ---------------------------------------------------------------- auth
+export type Role = 'CUSTOMER' | 'MERCHANT' | 'ADMIN';
+export type AccountType = 'CUSTOMER' | 'MERCHANT';
 
 export interface RegisterRequest {
   email: string;
   password: string;
   firstName: string;
   lastName: string;
+  accountType?: AccountType;
+  preferredLocale?: string | null;
 }
 
 export interface LoginRequest {
@@ -63,34 +76,135 @@ export interface LoginRequest {
   password: string;
 }
 
+export interface UpdateUserRequest {
+  firstName?: string;
+  lastName?: string;
+  preferredLocale?: string;
+}
+
 export interface User {
-  id: Uuid;
+  id: string;
   email: string;
   firstName: string;
   lastName: string;
+  roles: Role[];
+  preferredLocale?: string | null;
 }
 
 export interface AuthResponse {
   accessToken: string;
   tokenType: 'Bearer';
-  /** Seconds until expiry. */
   expiresIn: number;
   user: User;
 }
 
+// ---------------------------------------------------------------- markets
+export type FulfilmentType = 'DELIVERY' | 'PICKUP';
+export type MarketStatus = 'PENDING_REVIEW' | 'ACTIVE' | 'SUSPENDED';
+export type MarketTag = 'ORGANIC' | 'REGIONAL' | 'HALAL' | 'VEGAN_FRIENDLY';
+
+export interface OpeningHours {
+  /** 1 = Monday (ISO 8601). */
+  dayOfWeek: number;
+  opensAt: string;
+  closesAt: string;
+}
+
+export interface FulfilmentOptions {
+  delivery: boolean;
+  pickup: boolean;
+  deliveryRadiusKm?: number | null;
+  deliveryFee?: Money | null;
+  freeDeliveryFrom?: Money | null;
+  minimumOrderValue: Money;
+}
+
+export interface MarketSummary {
+  id: string;
+  slug: string;
+  name: string;
+  type: CodeName;
+  cuisines: CodeName[];
+  logoUrl?: string | null;
+  coverImageUrl?: string | null;
+  location: GeoPoint;
+  addressLine: string;
+  distanceMeters?: number | null;
+  deliversToLocation?: boolean | null;
+  openNow: boolean;
+  todayHours?: string | null;
+  nextOpeningAt?: string | null;
+  fulfilment: FulfilmentOptions;
+  activePromotionCount: number;
+  tags: MarketTag[];
+}
+
+export interface MarketDetail extends MarketSummary {
+  description?: string | null;
+  phone?: string | null;
+  openingHours: OpeningHours[];
+  primaryLocale: string;
+  imprint: { legalName: string; addressLine: string; registerInfo?: string | null };
+}
+
+export type MarketSort = 'distance' | 'name' | 'minimum_order' | 'delivery_fee';
+
+export interface ListMarketsParams {
+  lat: number;
+  lng: number;
+  radiusKm?: number;
+  types?: readonly string[];
+  cuisines?: readonly string[];
+  fulfilment?: FulfilmentType;
+  openNow?: boolean;
+  hasOffers?: boolean;
+  q?: string;
+  sort?: MarketSort;
+  page?: number;
+  size?: number;
+}
+
+export type BannerTint = 'sage' | 'sky' | 'blush' | 'sand' | 'rose';
+
+export interface Banner {
+  id: string;
+  overline?: string | null;
+  title: string;
+  imageUrl?: string | null;
+  tint?: BannerTint;
+  target: { type: 'CATEGORY' | 'PROMOTIONS' | 'NEW' | 'PRODUCT'; id?: string | null };
+}
+
+export interface HomeSection {
+  key: 'PROMOTIONS' | 'NEW' | 'FREQUENTLY_ORDERED' | 'CATEGORY';
+  title: string;
+  subtitle?: string | null;
+  categoryId?: string | null;
+  items: ProductSummary[];
+}
+
+export interface MarketHome {
+  market: MarketSummary;
+  banners: Banner[];
+  sections: HomeSection[];
+}
+
+// ---------------------------------------------------------------- catalog
 export interface Category {
-  id: Uuid;
-  parentId?: Uuid | null;
+  id: string;
+  parentId?: string | null;
   slug: string;
   name: string;
   iconKey?: string | null;
+  imageUrl?: string | null;
   sortOrder: number;
+  productCount?: number | null;
 }
 
 export type PromotionType = 'PERCENT_OFF' | 'MULTI_BUY';
 
 export interface PromotionBadge {
-  promotionId: Uuid;
+  promotionId: string;
   label: string;
   type: PromotionType;
 }
@@ -101,71 +215,118 @@ export interface UnitPrice {
 }
 
 export interface ProductSummary {
-  id: Uuid;
-  sku: string;
+  id: string;
+  marketId: string;
+  catalogProductId?: string;
   name: string;
   brand?: string | null;
+  tagline?: string | null;
   unitSize: string;
   imageUrl?: string | null;
   price: Money;
-  /** Price per reference unit (Grundpreis). */
+  promotionalPrice?: Money | null;
   comparisonPrice?: UnitPrice | null;
   promotion?: PromotionBadge | null;
   available: boolean;
+  organic: boolean;
+  isNew: boolean;
+  maxOrderQuantity: number;
+  favorite?: boolean | null;
 }
 
 export interface ProductDetail extends ProductSummary {
-  categoryId: Uuid;
+  categoryId: string;
   description?: string | null;
   ingredients?: string | null;
   allergens: string[];
   origin?: string | null;
-  maxOrderQuantity: number;
-}
-
-export interface ProductPage {
-  items: ProductSummary[];
-  page: number;
-  size: number;
-  totalItems: number;
-  totalPages: number;
+  cuisines: CodeName[];
+  barcode?: string | null;
+  market: MarketSummary;
 }
 
 export type ProductSort = 'relevance' | 'price_asc' | 'price_desc' | 'name';
 
-export interface ListProductsParams {
-  categoryId?: Uuid | undefined;
-  q?: string | undefined;
-  promotedOnly?: boolean | undefined;
-  sort?: ProductSort | undefined;
-  page?: number | undefined;
-  size?: number | undefined;
+export interface ListMarketProductsParams {
+  q?: string;
+  categoryId?: string;
+  promotedOnly?: boolean;
+  newOnly?: boolean;
+  organicOnly?: boolean;
+  sort?: ProductSort;
+  page?: number;
+  size?: number;
+}
+
+export interface MarketOffer {
+  product: ProductSummary;
+  market: MarketSummary;
+}
+
+export type OfferSort = 'relevance' | 'price_asc' | 'distance';
+
+export interface SearchProductsParams {
+  q: string;
+  lat: number;
+  lng: number;
+  radiusKm?: number;
+  sort?: OfferSort;
+  page?: number;
+  size?: number;
 }
 
 export interface Promotion {
-  id: Uuid;
+  id: string;
+  marketId: string;
   title: string;
   description?: string | null;
   type: PromotionType;
   percentOff?: number | null;
   bundleQuantity?: number | null;
   bundlePrice?: Money | null;
-  validFrom: IsoDateTime;
-  validUntil: IsoDateTime;
-  productIds: Uuid[];
+  validFrom: string;
+  validUntil: string;
+  productIds: string[];
 }
 
+export type FavoriteReason = 'MANUAL' | 'FREQUENTLY_ORDERED';
+
+export interface FavoriteGroup {
+  category: Category;
+  items: (ProductSummary & { favoriteReason: FavoriteReason })[];
+}
+
+// ---------------------------------------------------------------- cart and fulfilment
 export interface SetQuantityRequest {
   quantity: number;
 }
 
-export interface ReserveSlotRequest {
-  slotId: Uuid;
-  addressId: Uuid;
+export interface ReserveFulfilmentRequest {
+  type: FulfilmentType;
+  slotId: string;
+  addressId?: string | null;
+}
+
+export interface Slot {
+  id: string;
+  type: FulfilmentType;
+  startsAt: string;
+  endsAt: string;
+  orderCutoffAt: string;
+  fee: Money;
+  available: boolean;
+  remainingCapacity: number;
+}
+
+export interface FulfilmentReservation {
+  type: FulfilmentType;
+  slot: Slot;
+  addressId?: string | null;
+  expiresAt: string;
 }
 
 export interface CartItem {
-  productId: Uuid;
+  productId: string;
   name: string;
   unitSize: string;
   imageUrl?: string | null;
@@ -175,29 +336,13 @@ export interface CartItem {
   lineDiscount: Money;
   lineTotal: Money;
   promotion?: PromotionBadge | null;
-}
-
-export interface DeliverySlot {
-  id: Uuid;
-  startsAt: IsoDateTime;
-  endsAt: IsoDateTime;
-  orderCutoffAt: IsoDateTime;
-  fee: Money;
-  /** False when full or past cutoff. */
-  available: boolean;
-  remainingCapacity: number;
-}
-
-export interface DeliveryReservation {
-  slot: DeliverySlot;
-  addressId: Uuid;
-  expiresAt: IsoDateTime;
+  available?: boolean;
 }
 
 export interface Cart {
-  id: Uuid;
+  id: string;
+  market: MarketSummary;
   items: CartItem[];
-  /** Sum of quantities. */
   itemCount: number;
   subtotal: Money;
   discountTotal: Money;
@@ -205,37 +350,48 @@ export interface Cart {
   total: Money;
   minimumOrderValue: Money;
   meetsMinimumOrderValue: boolean;
-  delivery?: DeliveryReservation | null;
+  fulfilment?: FulfilmentReservation | null;
 }
 
+export interface CartSummary {
+  cartId: string;
+  market: MarketSummary;
+  itemCount: number;
+  total: Money;
+  updatedAt: string;
+}
+
+// ---------------------------------------------------------------- addresses
 export interface AddressRequest {
   label?: string | null;
   street: string;
   houseNumber: string;
   addition?: string | null;
-  postalCode: PostalCode;
+  postalCode: string;
   city: string;
   deliveryInstructions?: string | null;
+  location?: GeoPoint | null;
   isDefault?: boolean;
 }
 
 export interface Address extends AddressRequest {
-  id: Uuid;
+  id: string;
   countryCode: 'DE';
   isDefault: boolean;
-  serviceable: boolean;
 }
 
-export interface DeliveryAreaCheck {
-  postalCode: PostalCode;
-  serviceable: boolean;
-  hubName?: string | null;
-}
-
-export type OrderStatus = 'PLACED' | 'CANCELLED' | 'OUT_FOR_DELIVERY' | 'DELIVERED';
+// ---------------------------------------------------------------- orders
+export type OrderStatus =
+  | 'PLACED'
+  | 'ACCEPTED'
+  | 'REJECTED'
+  | 'READY_FOR_PICKUP'
+  | 'OUT_FOR_DELIVERY'
+  | 'COMPLETED'
+  | 'CANCELLED';
 
 export interface OrderItem {
-  productId: Uuid;
+  productId: string;
   name: string;
   unitPrice: Money;
   quantity: number;
@@ -243,15 +399,111 @@ export interface OrderItem {
 }
 
 export interface Order {
-  id: Uuid;
+  id: string;
   orderNumber: string;
   status: OrderStatus;
-  placedAt: IsoDateTime;
+  placedAt: string;
+  market: MarketSummary;
+  fulfilmentType: FulfilmentType;
   items: OrderItem[];
   subtotal: Money;
   discountTotal: Money;
   deliveryFee: Money;
   total: Money;
-  slot: DeliverySlot;
-  address: Address;
+  slot: Slot;
+  deliveryAddress?: Address | null;
+  customerName?: string | null;
+}
+
+// ---------------------------------------------------------------- merchant
+export interface MarketProfileRequest {
+  name: string;
+  typeCode: string;
+  cuisineCodes?: string[];
+  description?: LocalizedText;
+  primaryLocale: string;
+  addressLine: string;
+  location: GeoPoint;
+  phone?: string | null;
+  logoUrl?: string | null;
+  coverImageUrl?: string | null;
+  tags?: MarketTag[];
+  fulfilment: FulfilmentOptions;
+  openingHours: OpeningHours[];
+  legalName: string;
+  registerInfo?: string | null;
+}
+
+export interface MerchantMarket extends MarketDetail {
+  status: MarketStatus;
+}
+
+export interface CatalogProduct {
+  id: string;
+  name: string;
+  brand?: string | null;
+  unitSize: string;
+  imageUrl?: string | null;
+  categoryId: string;
+  cuisines: CodeName[];
+  organic: boolean;
+  barcode?: string | null;
+  alreadyListed?: boolean | null;
+}
+
+export interface SearchCatalogParams {
+  /** Own market: the server fills `alreadyListed` for it (404 if not owned). */
+  marketId?: string;
+  q?: string;
+  cuisine?: string;
+  categoryId?: string;
+  page?: number;
+  size?: number;
+}
+
+export interface NewCatalogProduct {
+  name: LocalizedText;
+  description?: LocalizedText;
+  tagline?: LocalizedText;
+  keywords?: string[];
+  brand?: string | null;
+  unitSize: string;
+  netQuantity?: number | null;
+  netUnit?: 'kg' | 'l' | 'piece' | null;
+  categoryId: string;
+  cuisineCodes?: string[];
+  organic?: boolean;
+  allergens?: string[];
+  imageUrl?: string | null;
+  barcode?: string | null;
+}
+
+export interface CreateListingRequest {
+  catalogProductId?: string | null;
+  newProduct?: NewCatalogProduct | null;
+  price: Money;
+  available?: boolean;
+  maxOrderQuantity?: number;
+}
+
+export interface UpdateListingRequest {
+  price?: Money;
+  available?: boolean;
+  maxOrderQuantity?: number;
+}
+
+export interface Listing extends ProductSummary {
+  privateProduct: boolean;
+}
+
+export interface PromotionRequest {
+  title: LocalizedText;
+  description?: LocalizedText;
+  type: PromotionType;
+  percentOff?: number | null;
+  bundleQuantity?: number | null;
+  bundlePrice?: Money | null;
+  validFrom: string;
+  validUntil: string;
+  productIds: string[];
 }

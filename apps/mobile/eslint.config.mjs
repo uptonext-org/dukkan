@@ -33,6 +33,11 @@ export default defineConfig(
     },
   },
   {
+    // Jest's asymmetric matchers (expect.objectContaining, expect.any) are typed `any`.
+    files: ['**/__tests__/**/*.{ts,tsx}'],
+    rules: { '@typescript-eslint/no-unsafe-assignment': 'off' },
+  },
+  {
     files: ['eslint.config.mjs'],
     extends: [tseslint.configs.disableTypeChecked],
   },

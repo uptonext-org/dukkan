@@ -1,89 +1,69 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
-import { colors } from '../shared/theme';
-import { LoadingState } from '../shared/ui';
-import { AddressFormScreen } from '../features/address/screens/AddressFormScreen';
-import { AddressListScreen } from '../features/address/screens/AddressListScreen';
+import { AddressFormScreen } from '../features/addresses/screens/AddressFormScreen';
+import { AddressListScreen } from '../features/addresses/screens/AddressListScreen';
 import { useAuth } from '../features/auth/AuthProvider';
-import { LoginScreen } from '../features/auth/screens/LoginScreen';
-import { RegisterScreen } from '../features/auth/screens/RegisterScreen';
-import { CategoryProductsScreen } from '../features/catalog/screens/CategoryProductsScreen';
-import { DeliverySlotPickerScreen } from '../features/delivery/screens/DeliverySlotPickerScreen';
-import { OrderConfirmationScreen } from '../features/orders/screens/OrderConfirmationScreen';
+import { MarketNavigator } from '../features/market/MarketNavigator';
+import { AddProductScreen } from '../features/merchant/screens/AddProductScreen';
+import { ListingsScreen } from '../features/merchant/screens/ListingsScreen';
+import { MarketHubScreen } from '../features/merchant/screens/MarketHubScreen';
+import { MarketProfileFormScreen } from '../features/merchant/screens/MarketProfileFormScreen';
+import { MerchantMarketsScreen } from '../features/merchant/screens/MerchantMarketsScreen';
+import { MerchantOrdersScreen } from '../features/merchant/screens/MerchantOrdersScreen';
+import { PromotionFormScreen } from '../features/merchant/screens/PromotionFormScreen';
+import { PromotionsScreen } from '../features/merchant/screens/PromotionsScreen';
+import { MapPickerScreen } from '../features/onboarding/screens/MapPickerScreen';
+import { OnboardingScreen } from '../features/onboarding/screens/OnboardingScreen';
 import { OrderDetailScreen } from '../features/orders/screens/OrderDetailScreen';
 import { OrderListScreen } from '../features/orders/screens/OrderListScreen';
-import { ProductDetailScreen } from '../features/product/screens/ProductDetailScreen';
-import { PromotionsScreen } from '../features/promotions/screens/PromotionsScreen';
-import { TabNavigator } from './TabNavigator';
+import { useChosenPlace } from '../shared/location';
+import { useTheme } from '../shared/theme';
+import { LoadingState } from '../shared/ui';
+import { ShellTabs } from './ShellTabs';
 import type { RootStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
+/**
+ * All headers are JS (`headerShown: false`, ScreenHeader) so they mirror instantly in Arabic.
+ * The native stack still provides the iOS back swipe and Android back button.
+ */
 export function RootNavigator() {
   const { status } = useAuth();
+  const { status: placeStatus, place } = useChosenPlace();
+  const { colors } = useTheme();
 
-  if (status === 'restoring') {
-    return <LoadingState label="Starting Dukkan" />;
+  if (status === 'restoring' || placeStatus === 'restoring') {
+    return <LoadingState />;
   }
 
   return (
-    <Stack.Navigator
-      screenOptions={{
-        headerStyle: { backgroundColor: colors.background },
-        headerTintColor: colors.primary,
-        headerTitleStyle: { color: colors.text },
-        contentStyle: { backgroundColor: colors.background },
-        headerBackButtonDisplayMode: 'minimal',
-      }}>
-      {status === 'signedOut' ? (
+    // First launch uses its own route names (Welcome, WelcomeMap): once a place exists those
+    // routes disappear from the config and React Navigation lands on the shell.
+    <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }}>
+      {place === null ? (
         <Stack.Group>
-          <Stack.Screen
-            name="Login"
-            component={LoginScreen}
-            options={{ title: 'Sign in', animationTypeForReplace: 'pop' }}
-          />
-          <Stack.Screen name="Register" component={RegisterScreen} options={{ title: 'Create account' }} />
+          <Stack.Screen name="Welcome" component={OnboardingScreen} />
+          <Stack.Screen name="WelcomeMap" component={MapPickerScreen} />
         </Stack.Group>
       ) : (
         <Stack.Group>
-          <Stack.Screen name="Tabs" component={TabNavigator} options={{ headerShown: false }} />
-          <Stack.Screen
-            name="CategoryProducts"
-            component={CategoryProductsScreen}
-            options={({ route }) => ({ title: route.params.title })}
-          />
-          <Stack.Screen
-            name="ProductDetail"
-            component={ProductDetailScreen}
-            options={({ route }) => ({ title: route.params.name ?? 'Product' })}
-          />
-          <Stack.Screen name="Promotions" component={PromotionsScreen} options={{ title: 'Offers' }} />
-          <Stack.Screen
-            name="AddressList"
-            component={AddressListScreen}
-            options={({ route }) => ({
-              title: route.params?.selectForDelivery === true ? 'Deliver to' : 'Addresses',
-            })}
-          />
-          <Stack.Screen
-            name="AddressForm"
-            component={AddressFormScreen}
-            options={({ route }) => ({
-              title: route.params?.addressId !== undefined ? 'Edit address' : 'New address',
-            })}
-          />
-          <Stack.Screen
-            name="DeliverySlotPicker"
-            component={DeliverySlotPickerScreen}
-            options={{ title: 'Delivery slot' }}
-          />
-          <Stack.Screen
-            name="OrderConfirmation"
-            component={OrderConfirmationScreen}
-            options={{ title: 'Order placed', headerBackVisible: false, gestureEnabled: false }}
-          />
-          <Stack.Screen name="OrderList" component={OrderListScreen} options={{ title: 'Orders' }} />
-          <Stack.Screen name="OrderDetail" component={OrderDetailScreen} options={{ title: 'Order' }} />
+          <Stack.Screen name="Shell" component={ShellTabs} />
+          <Stack.Screen name="Market" component={MarketNavigator} />
+          <Stack.Screen name="Onboarding" component={OnboardingScreen} options={{ presentation: 'modal' }} />
+          <Stack.Screen name="MapPicker" component={MapPickerScreen} />
+          <Stack.Screen name="Addresses" component={AddressListScreen} />
+          <Stack.Screen name="AddressForm" component={AddressFormScreen} />
+          <Stack.Screen name="Orders" component={OrderListScreen} />
+          <Stack.Screen name="OrderDetail" component={OrderDetailScreen} />
+          <Stack.Screen name="MerchantMarkets" component={MerchantMarketsScreen} />
+          <Stack.Screen name="MerchantMarketForm" component={MarketProfileFormScreen} />
+          <Stack.Screen name="MerchantMarketHub" component={MarketHubScreen} />
+          <Stack.Screen name="MerchantListings" component={ListingsScreen} />
+          <Stack.Screen name="MerchantAddProduct" component={AddProductScreen} />
+          <Stack.Screen name="MerchantPromotions" component={PromotionsScreen} />
+          <Stack.Screen name="MerchantPromotionForm" component={PromotionFormScreen} />
+          <Stack.Screen name="MerchantOrders" component={MerchantOrdersScreen} />
         </Stack.Group>
       )}
     </Stack.Navigator>

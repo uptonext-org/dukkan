@@ -1,54 +1,81 @@
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import {
   useNavigation,
-  useRoute,
   type CompositeScreenProps,
   type NavigatorScreenParams,
-  type RouteProp,
 } from '@react-navigation/native';
 import type { NativeStackNavigationProp, NativeStackScreenProps } from '@react-navigation/native-stack';
 
-export type TabParamList = {
-  Home: undefined;
-  Search: { promotedOnly?: boolean } | undefined;
-  Cart: undefined;
+import type { ListMarketProductsParams } from '../shared/api';
+
+export type ShellTabParamList = {
+  Discover: undefined;
+  GlobalSearch: undefined;
+  Carts: undefined;
   Profile: undefined;
 };
 
-export type RootStackParamList = {
-  Login: undefined;
-  Register: undefined;
-  Tabs: NavigatorScreenParams<TabParamList> | undefined;
-  CategoryProducts: { categoryId: string; title: string };
-  ProductDetail: { productId: string; name?: string };
-  Promotions: undefined;
-  AddressList: { selectForDelivery?: boolean } | undefined;
-  AddressForm: { addressId?: string; selectForDelivery?: boolean } | undefined;
-  DeliverySlotPicker: { addressId: string };
-  OrderConfirmation: { orderId: string };
-  OrderList: undefined;
-  OrderDetail: { orderId: string };
+export type MarketTabParamList = {
+  MarketHome: undefined;
+  MarketFavorites: undefined;
+  MarketSearch: undefined;
+  MarketCart: undefined;
 };
 
-export type RootStackScreenProps<T extends keyof RootStackParamList> = NativeStackScreenProps<
-  RootStackParamList,
-  T
+export type ProductFilter = Pick<ListMarketProductsParams, 'categoryId' | 'promotedOnly' | 'newOnly' | 'organicOnly'>;
+
+export type MarketStackParamList = {
+  MarketTabs: NavigatorScreenParams<MarketTabParamList> | undefined;
+  MarketProduct: { productId: string };
+  MarketProducts: { title: string; filter: ProductFilter };
+  OrderConfirmation: { orderId: string };
+};
+
+export type RootStackParamList = {
+  /** First launch ("Wo wohnst du?") and its map. */
+  Welcome: undefined;
+  WelcomeMap: undefined;
+  /** Changing the place later (from the shell header or profile). */
+  Onboarding: { change?: boolean } | undefined;
+  MapPicker: undefined;
+  Shell: NavigatorScreenParams<ShellTabParamList> | undefined;
+  /** The market sub-app; `marketId` is read by every nested screen through MarketContext. */
+  Market: { marketId: string } & NavigatorScreenParams<MarketStackParamList>;
+  Addresses: undefined;
+  AddressForm: { addressId?: string } | undefined;
+  Orders: undefined;
+  OrderDetail: { orderId: string };
+  MerchantMarkets: undefined;
+  MerchantMarketForm: { marketId?: string } | undefined;
+  MerchantMarketHub: { marketId: string };
+  MerchantListings: { marketId: string };
+  MerchantAddProduct: { marketId: string };
+  MerchantPromotions: { marketId: string };
+  MerchantPromotionForm: { marketId: string };
+  MerchantOrders: { marketId: string };
+};
+
+export type RootStackScreenProps<T extends keyof RootStackParamList> = NativeStackScreenProps<RootStackParamList, T>;
+
+export type ShellTabScreenProps<T extends keyof ShellTabParamList> = CompositeScreenProps<
+  BottomTabScreenProps<ShellTabParamList, T>,
+  NativeStackScreenProps<RootStackParamList>
 >;
 
-export type TabScreenProps<T extends keyof TabParamList> = CompositeScreenProps<
-  BottomTabScreenProps<TabParamList, T>,
+export type MarketStackScreenProps<T extends keyof MarketStackParamList> = CompositeScreenProps<
+  NativeStackScreenProps<MarketStackParamList, T>,
   NativeStackScreenProps<RootStackParamList>
+>;
+
+export type MarketTabScreenProps<T extends keyof MarketTabParamList> = CompositeScreenProps<
+  BottomTabScreenProps<MarketTabParamList, T>,
+  MarketStackScreenProps<'MarketTabs'>
 >;
 
 export type RootNavigation = NativeStackNavigationProp<RootStackParamList>;
 
-/** Typed `useNavigation` for screens and components anywhere in the tree. */
 export function useRootNavigation(): RootNavigation {
   return useNavigation<RootNavigation>();
-}
-
-export function useRootRoute<T extends keyof RootStackParamList>(): RouteProp<RootStackParamList, T> {
-  return useRoute<RouteProp<RootStackParamList, T>>();
 }
 
 declare global {

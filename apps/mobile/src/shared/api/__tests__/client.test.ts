@@ -13,7 +13,8 @@ describe('createFetchApiClient', () => {
     const fetchImpl = jest.fn<Promise<Response>, Parameters<typeof fetch>>(() =>
       Promise.resolve(jsonResponse(200, { ok: true })),
     );
-    const client = createFetchApiClient({ baseUrl: `${BASE}/`, getToken: () => 'jwt-123', fetchImpl });
+    const client = createFetchApiClient({ baseUrl: `${BASE}/`, getLanguage: () => 'de',
+      getToken: () => 'jwt-123', fetchImpl });
 
     const result = await client.request<{ ok: boolean }>({
       method: 'PUT',
@@ -31,11 +32,23 @@ describe('createFetchApiClient', () => {
     expect(init?.body).toBe(JSON.stringify({ quantity: 2 }));
   });
 
+  it('sends the UI language as Accept-Language on every request', async () => {
+    let language = 'ar';
+    const fetchImpl = jest.fn<Promise<Response>, Parameters<typeof fetch>>(() => Promise.resolve(jsonResponse(200, [])));
+    const client = createFetchApiClient({ baseUrl: BASE, getToken: () => null, getLanguage: () => language, fetchImpl });
+    await client.request({ method: 'GET', path: '/market-types' });
+    language = 'en';
+    await client.request({ method: 'POST', path: '/auth/login', body: {} });
+    const sent = fetchImpl.mock.calls.map(([, init]) => (init?.headers as Record<string, string>)['Accept-Language']);
+    expect(sent).toEqual(['ar', 'en']);
+  });
+
   it('omits the Authorization header when signed out', async () => {
     const fetchImpl = jest.fn<Promise<Response>, Parameters<typeof fetch>>(() =>
       Promise.resolve(jsonResponse(200, [])),
     );
-    const client = createFetchApiClient({ baseUrl: BASE, getToken: () => null, fetchImpl });
+    const client = createFetchApiClient({ baseUrl: BASE, getLanguage: () => 'de',
+      getToken: () => null, fetchImpl });
     await client.request({ method: 'GET', path: '/categories' });
     const headers = fetchImpl.mock.calls[0]?.[1]?.headers as Record<string, string>;
     expect(headers.Authorization).toBeUndefined();
@@ -55,6 +68,7 @@ describe('createFetchApiClient', () => {
     };
     const client = createFetchApiClient({
       baseUrl: BASE,
+      getLanguage: () => 'de',
       getToken: () => null,
       fetchImpl: () => Promise.resolve(jsonResponse(400, problem, 'application/problem+json')),
     });
@@ -76,6 +90,7 @@ describe('createFetchApiClient', () => {
   it('falls back to HTTP_<status> when the body is not a problem document', async () => {
     const client = createFetchApiClient({
       baseUrl: BASE,
+      getLanguage: () => 'de',
       getToken: () => null,
       fetchImpl: () =>
         Promise.resolve(new Response('oops', { status: 502, headers: { 'Content-Type': 'text/plain' } })),
@@ -96,6 +111,7 @@ describe('createFetchApiClient', () => {
 
     const authed = createFetchApiClient({
       baseUrl: BASE,
+      getLanguage: () => 'de',
       getToken: () => 'expired',
       onUnauthorized,
       fetchImpl: unauthorized,
@@ -105,6 +121,7 @@ describe('createFetchApiClient', () => {
 
     const anonymous = createFetchApiClient({
       baseUrl: BASE,
+      getLanguage: () => 'de',
       getToken: () => null,
       onUnauthorized,
       fetchImpl: unauthorized,
@@ -118,6 +135,7 @@ describe('createFetchApiClient', () => {
   it('resolves 204 No Content to undefined', async () => {
     const client = createFetchApiClient({
       baseUrl: BASE,
+      getLanguage: () => 'de',
       getToken: () => 't',
       fetchImpl: () => Promise.resolve(new Response(null, { status: 204 })),
     });
@@ -127,6 +145,7 @@ describe('createFetchApiClient', () => {
   it('turns a network TypeError into an offline ApiError', async () => {
     const client = createFetchApiClient({
       baseUrl: BASE,
+      getLanguage: () => 'de',
       getToken: () => null,
       fetchImpl: () => Promise.reject(new TypeError('Network request failed')),
     });
@@ -148,7 +167,8 @@ describe('createFetchApiClient', () => {
         });
       const client = createFetchApiClient({
         baseUrl: BASE,
-        getToken: () => null,
+        getLanguage: () => 'de',
+      getToken: () => null,
         timeoutMs: 1000,
         fetchImpl,
       });
@@ -170,7 +190,8 @@ describe('createFetchApiClient', () => {
       new Promise<Response>((_resolve, reject) => {
         init?.signal?.addEventListener('abort', () => reject(abortError));
       });
-    const client = createFetchApiClient({ baseUrl: BASE, getToken: () => null, fetchImpl });
+    const client = createFetchApiClient({ baseUrl: BASE, getLanguage: () => 'de',
+      getToken: () => null, fetchImpl });
     const pending = client.request({ method: 'GET', path: '/products', signal: controller.signal });
     controller.abort();
     await expect(pending).rejects.toBe(abortError);
@@ -178,6 +199,10 @@ describe('createFetchApiClient', () => {
 });
 
 describe('buildUrl', () => {
+  it('sends arrays comma-separated (style form, explode false) and skips empty ones', () => {
+    expect(buildUrl(BASE, '/markets', { types: ['BAKERY', 'BUTCHER'], cuisines: [] })).toBe(`${BASE}/markets?types=BAKERY,BUTCHER`);
+  });
+
   it('encodes query values', () => {
     expect(buildUrl(BASE, '/products', { q: 'oat & honey', promotedOnly: true })).toBe(
       `${BASE}/products?q=oat%20%26%20honey&promotedOnly=true`,

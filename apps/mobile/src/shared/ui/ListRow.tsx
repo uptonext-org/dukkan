@@ -1,71 +1,96 @@
 import type { ReactNode } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
-import { colors, spacing, touchTarget, typography } from '../theme';
+import { makeStyles, useTheme } from '../theme';
+import { AppText } from './AppText';
+import { Icon, type IconName } from './Icon';
 
 interface ListRowProps {
   title: string;
-  subtitle?: string | undefined;
-  right?: ReactNode;
-  onPress?: (() => void) | undefined;
+  subtitle?: string;
+  icon?: IconName;
+  leading?: ReactNode;
+  trailing?: ReactNode;
+  onPress?: () => void;
+  chevron?: boolean;
+  accessibilityLabel?: string;
   accessibilityHint?: string;
+  selected?: boolean;
   disabled?: boolean;
-  indent?: number;
+  testID?: string;
 }
 
+/** Row with optional leading tile, title/subtitle and a direction-aware chevron. */
 export function ListRow({
   title,
   subtitle,
-  right,
+  icon,
+  leading,
+  trailing,
   onPress,
+  chevron = onPress !== undefined,
+  accessibilityLabel,
   accessibilityHint,
+  selected,
   disabled = false,
-  indent = 0,
+  testID,
 }: ListRowProps) {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const content = (
     <>
+      {leading}
+      {icon !== undefined && leading === undefined && <Icon name={icon} size={22} color={colors.text} />}
       <View style={styles.texts}>
-        <Text style={styles.title}>{title}</Text>
-        {subtitle !== undefined && <Text style={styles.subtitle}>{subtitle}</Text>}
+        <AppText variant="body" dense numberOfLines={2}>
+          {title}
+        </AppText>
+        {subtitle !== undefined && (
+          <AppText variant="subhead" color="textSecondary" dense numberOfLines={2}>
+            {subtitle}
+          </AppText>
+        )}
       </View>
-      {right}
+      {trailing}
+      {chevron && <Icon name="chevron" size={20} color={colors.textSecondary} />}
     </>
   );
   if (onPress === undefined) {
-    return <View style={[styles.row, { paddingLeft: spacing.lg + indent }]}>{content}</View>;
+    return (
+      <View style={styles.row} testID={testID} accessible accessibilityLabel={accessibilityLabel}>
+        {content}
+      </View>
+    );
   }
   return (
     <Pressable
+      testID={testID}
       onPress={onPress}
       disabled={disabled}
       accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? (subtitle !== undefined ? `${title}, ${subtitle}` : title)}
       accessibilityHint={accessibilityHint}
-      accessibilityState={{ disabled }}
-      style={({ pressed }) => [
-        styles.row,
-        { paddingLeft: spacing.lg + indent },
-        pressed && styles.pressed,
-        disabled && styles.disabled,
-      ]}>
+      accessibilityState={{ disabled, ...(selected !== undefined ? { selected } : {}) }}
+      style={({ pressed }) => [styles.row, pressed && styles.pressed, disabled && styles.disabled]}>
       {content}
     </Pressable>
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((t) => ({
   row: {
-    minHeight: touchTarget + 12,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing.md,
-    paddingRight: spacing.lg,
-    backgroundColor: colors.surface,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
+    gap: t.spacing.md,
+    minHeight: 56,
+    paddingVertical: t.spacing.sm,
   },
-  pressed: { backgroundColor: colors.primaryMuted },
-  disabled: { opacity: 0.55 },
-  texts: { flex: 1 },
-  title: { ...typography.body, color: colors.text },
-  subtitle: { ...typography.caption, color: colors.textMuted, marginTop: 2 },
-});
+  texts: { flex: 1, gap: 2 },
+  pressed: { opacity: 0.6 },
+  disabled: { opacity: 0.4 },
+}));
+
+export function Separator() {
+  const { colors } = useTheme();
+  return <View style={{ height: 1, backgroundColor: colors.separator }} />;
+}

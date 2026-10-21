@@ -1,7 +1,13 @@
+import type de from '../../i18n/locales/de.json';
+
+/** Keys under `validation.*` in the locale files. Validators return keys; screens translate them. */
+export type ValidationKey = keyof (typeof de)['validation'];
+
+export type FieldErrors<K extends string> = { [P in K]?: ValidationKey | undefined };
+
 // Pragmatic email check; the server performs the authoritative validation.
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-export type FieldErrors<K extends string> = { [P in K]?: string | undefined };
+export const MIN_PASSWORD_LENGTH = 10;
 
 export interface LoginValues {
   email: string;
@@ -12,12 +18,12 @@ export function validateLogin(values: LoginValues): FieldErrors<keyof LoginValue
   const errors: FieldErrors<keyof LoginValues> = {};
   const email = values.email.trim();
   if (email === '') {
-    errors.email = 'Please enter your email address.';
+    errors.email = 'emailRequired';
   } else if (!EMAIL_PATTERN.test(email)) {
-    errors.email = 'Please enter a valid email address.';
+    errors.email = 'emailInvalid';
   }
   if (values.password === '') {
-    errors.password = 'Please enter your password.';
+    errors.password = 'passwordRequired';
   }
   return errors;
 }
@@ -27,30 +33,28 @@ export interface RegisterValues extends LoginValues {
   lastName: string;
 }
 
-export const MIN_PASSWORD_LENGTH = 10;
-
 export function validateRegister(values: RegisterValues): FieldErrors<keyof RegisterValues> {
   const errors: FieldErrors<keyof RegisterValues> = {};
   const email = values.email.trim();
   if (values.firstName.trim() === '') {
-    errors.firstName = 'Please enter your first name.';
+    errors.firstName = 'required';
   } else if (values.firstName.trim().length > 100) {
-    errors.firstName = 'First name is too long.';
+    errors.firstName = 'tooLong';
   }
   if (values.lastName.trim() === '') {
-    errors.lastName = 'Please enter your last name.';
+    errors.lastName = 'required';
   } else if (values.lastName.trim().length > 100) {
-    errors.lastName = 'Last name is too long.';
+    errors.lastName = 'tooLong';
   }
   if (email === '') {
-    errors.email = 'Please enter your email address.';
+    errors.email = 'emailRequired';
   } else if (!EMAIL_PATTERN.test(email) || email.length > 254) {
-    errors.email = 'Please enter a valid email address.';
+    errors.email = 'emailInvalid';
   }
   if (values.password.length < MIN_PASSWORD_LENGTH) {
-    errors.password = `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`;
+    errors.password = 'passwordTooShort';
   } else if (values.password.length > 128) {
-    errors.password = 'Password must be at most 128 characters.';
+    errors.password = 'tooLong';
   }
   return errors;
 }

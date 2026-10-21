@@ -35,6 +35,28 @@ Direct dependencies are pinned exactly in `package.json`, and `package-lock.json
 | react-native-keychain | prefer | 10.0.0 | no peerDependencies; TurboModule (`codegenConfig`), its devDeps were built against RN 0.77.1 | Latest release (2025-03-23). JS API verified by tsc and a jest mock. Native compile against RN 0.88 **not verified here**. It sits behind the `TokenStorage` interface, so the backend can be swapped |
 | @react-native-community/netinfo | if compatible | 12.0.1 | peer `react *`, `react-native >=0.59` | Used by React Query `onlineManager` and the offline banner. The jest mock it ships is used in tests |
 
+## Marketplace rebuild (2026-10-20/21)
+
+Checked with `npm view <pkg>@<ver> peerDependencies engines time` against the public registry. All pinned exactly.
+
+| Component | Used | Peers / verification | Notes |
+|---|---|---|---|
+| i18next | 26.5.3 | optional peer `typescript ^5 \|\| ^6 \|\| ^7` (includes 6.0.3) | Typed keys via `CustomTypeOptions` (`src/shared/i18n/i18next.d.ts`). `initAsync: false` with bundled resources |
+| react-i18next | 17.1.0 | peers `react >=16.8`, `i18next >=26.2.0`, TS `^5 \|\| ^6 \|\| ^7` | |
+| react-native-localize | 3.7.2 | peers `react *`, `react-native *` | Only `getLocales()` is used. Mocked in Jest. Native compile **not verified** |
+| @react-native-async-storage/async-storage | 3.1.1 | peers `react *`, `react-native *` | Language and chosen place only (never the token). Package is ESM-only; mocked in Jest |
+| @react-native-community/geolocation | 3.4.0 | peers `react *`, `react-native *`; engines node >=18 | Last release 2024-09-01, older than RN 0.88; native compile **not verified**. Wrapped behind `LocationService`, configured `authorizationLevel: 'whenInUse'` |
+| react-native-maps | 1.29.11 | peers `react >=18.3.1`, `react-native >=0.76` | Apple Maps (iOS), Google Maps (Android, `DUKKAN_MAPS_API_KEY`). Mocked in Jest. Native compile **not verified** |
+| lucide-react-native | 1.52.0 | peers `react ^16.5.1 … ^19`, `react-native *`, `react-native-svg ^12 … ^15` | Chosen icon set (ISC). 1.52.0 (2026-10-04) instead of the daily latest 1.60.0 (published the day of the check) to avoid a same-day release. Imported per icon (`lucide-react-native/icons/<name>`) so Metro bundles only the ~36 icons used. Jest needs the `.mjs` transform (`jest.config.js`) |
+| react-native-svg | 15.16.0 | peers `react *`, `react-native *`; README table only says `>=6 → RN >=0.50` | Released 2026-10-15, same day as RN 0.88. Required by lucide and the favourites illustration. Native compile **not verified** |
+| @expo-google-fonts/inter, @expo-google-fonts/ibm-plex-sans-arabic | 0.4.2 (not installed) | n/a | Fetched with `npm pack` into a scratch folder only; the 400/500/600/700 TTFs plus `LICENSE_FONT` (SIL OFL 1.1) were copied to `assets/fonts` and renamed to their PostScript names. They are **not** dependencies |
+
+### npm audit after the rebuild (real output, 2026-10-21)
+
+- `npm audit --omit=dev --audit-level=critical`: exit code 0. Totals: **21 high, 0 critical**. All from the same
+  `braces <=3.0.3` advisory via `micromatch`/`fast-glob` in Metro and the RN CLI (see below); the extra one
+  compared with before is `react-native-maps`, flagged only because it peers on `react-native`.
+
 ## Tooling
 
 | Component | Requested | Used | Verification | Notes |

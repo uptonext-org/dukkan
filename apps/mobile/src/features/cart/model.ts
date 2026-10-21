@@ -3,13 +3,12 @@ import type { Cart, Money } from '../../shared/api';
 export interface MinimumOrderProgress {
   /** 0..1, for the progress bar. */
   ratio: number;
-  /** Amount still missing, for display only (server decides `meetsMinimumOrderValue`). */
+  /** Amount still missing, display only (the server decides `meetsMinimumOrderValue`). */
   remaining: Money;
 }
 
 /**
- * Display helper for the minimum-order hint. The contract defines the threshold against
- * the goods value after discounts (subtotal - discountTotal), excluding the delivery fee.
+ * Minimum order value applies to goods after discounts, excluding delivery (contract README).
  * Eligibility itself always comes from `cart.meetsMinimumOrderValue`.
  */
 export function minimumOrderProgress(cart: Cart): MinimumOrderProgress {
@@ -23,4 +22,19 @@ export function minimumOrderProgress(cart: Cart): MinimumOrderProgress {
       currency: cart.minimumOrderValue.currency,
     },
   };
+}
+
+export type CartCta =
+  | { kind: 'chooseSlot'; fulfilment: 'DELIVERY' | 'PICKUP' }
+  | { kind: 'order'; total: Money; enabled: boolean };
+
+/**
+ * Sticky CTA: "Lieferzeit/Abholzeit wählen" until a slot is reserved, then "Bestellen · 23,40 €",
+ * enabled only when the server says the minimum order value is met.
+ */
+export function cartCta(cart: Cart): CartCta {
+  if (cart.fulfilment == null) {
+    return { kind: 'chooseSlot', fulfilment: cart.market.fulfilment.delivery ? 'DELIVERY' : 'PICKUP' };
+  }
+  return { kind: 'order', total: cart.total, enabled: cart.meetsMinimumOrderValue && cart.items.length > 0 };
 }

@@ -11,6 +11,6 @@
     "noUnusedParameters": true,
     "allowJs": false
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "jest.setup.ts"],
+  "include": ["src/**/*.ts", "src/**/*.tsx", "jest.setup.ts", "jest.afterEach.ts"],
   "exclude": ["**/node_modules", "**/Pods", "android", "ios", "coverage"]
 }

@@ -1,41 +1,72 @@
-import { StyleSheet, Text, type StyleProp, type TextStyle } from 'react-native';
+import { View, type StyleProp, type ViewStyle } from 'react-native';
 
 import type { Money } from '../api/types';
-import { formatMoney, formatMoneyForAccessibility } from '../format/money';
-import { colors, typography } from '../theme';
+import { formatMoney, formatMoneyForAccessibility, splitMoney } from '../format/money';
+import type { ColorTokens, TextVariant } from '../theme';
+import { AppText } from './AppText';
 
 interface PriceProps {
   money: Money;
-  size?: 'small' | 'regular' | 'large';
-  /** Shown struck through, e.g. an original price next to a discount. */
-  strikethrough?: boolean;
-  /** Optional spoken prefix, e.g. "Total". */
+  variant?: TextVariant;
+  color?: keyof ColorTokens;
+  strike?: boolean;
+  /** Spoken prefix, e.g. "Total". */
   accessibilityPrefix?: string;
-  style?: StyleProp<TextStyle>;
+  dense?: boolean;
+  testID?: string;
 }
 
-/** Displays a server-computed amount. The app never derives prices itself. */
-export function Price({
-  money,
-  size = 'regular',
-  strikethrough = false,
-  accessibilityPrefix,
-  style,
-}: PriceProps) {
+/** A server-computed amount in de-DE format (`2,49 €`) in every language. */
+export function Price({ money, variant = 'price', color = 'text', strike = false, accessibilityPrefix, dense = true, testID }: PriceProps) {
   const spoken = formatMoneyForAccessibility(money);
   return (
-    <Text
+    <AppText
+      testID={testID}
+      variant={variant}
+      color={color}
+      strike={strike}
+      dense={dense}
       accessible
-      accessibilityLabel={accessibilityPrefix !== undefined ? `${accessibilityPrefix} ${spoken}` : spoken}
-      style={[styles[size], strikethrough && styles.strike, style]}>
+      accessibilityLabel={accessibilityPrefix !== undefined ? `${accessibilityPrefix} ${spoken}` : spoken}>
       {formatMoney(money)}
-    </Text>
+    </AppText>
   );
 }
 
-const styles = StyleSheet.create({
-  small: { ...typography.caption, color: colors.textMuted },
-  regular: { ...typography.bodyStrong, color: colors.text },
-  large: { ...typography.heading, color: colors.text },
-  strike: { textDecorationLine: 'line-through' },
-});
+/**
+ * Cart-row style price with superscript cents (`2¹⁴`), no currency sign (design-system.md §4.3).
+ * Digits always run left-to-right, also inside an RTL row (right-to-left.md › Numbers).
+ */
+export function SuperscriptPrice({
+  money,
+  color = 'text',
+  strike = false,
+  small = false,
+  style,
+  accessibilityPrefix,
+}: {
+  money: Money;
+  color?: keyof ColorTokens;
+  strike?: boolean;
+  small?: boolean;
+  style?: StyleProp<ViewStyle>;
+  accessibilityPrefix?: string;
+}) {
+  const { units, cents, negative } = splitMoney(money);
+  const spoken = formatMoneyForAccessibility(money);
+  return (
+    <View
+      style={[{ flexDirection: 'row', alignItems: 'flex-start', direction: 'ltr' }, style]}
+      accessible
+      accessibilityRole="text"
+      accessibilityLabel={accessibilityPrefix !== undefined ? `${accessibilityPrefix} ${spoken}` : spoken}>
+      <AppText variant={small ? 'callout' : 'title'} color={color} strike={strike} dense>
+        {negative ? '−' : ''}
+        {units}
+      </AppText>
+      <AppText variant={small ? 'caption' : 'subhead'} color={color} strike={strike} dense style={{ marginTop: small ? 0 : 1 }}>
+        {cents}
+      </AppText>
+    </View>
+  );
+}

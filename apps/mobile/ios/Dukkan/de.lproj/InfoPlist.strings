@@ -1,0 +1,3 @@
+/* Shown in the system location prompt. */
+"NSLocationWhenInUseUsageDescription" = "Dukkan nutzt deinen Standort, um Märkte in deiner Nähe und ihre Entfernung anzuzeigen.";
+"CFBundleDisplayName" = "Dukkan";

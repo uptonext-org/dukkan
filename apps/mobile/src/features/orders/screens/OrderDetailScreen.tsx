@@ -1,72 +1,59 @@
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import { Alert, ScrollView, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
-import { errorMessage } from '../../../shared/api';
-import { formatDateTime } from '../../../shared/format/dates';
-import { colors, spacing, typography } from '../../../shared/theme';
-import { Badge, Button, Screen, queryState } from '../../../shared/ui';
 import type { RootStackScreenProps } from '../../../navigation/types';
+import { errorMessageKey } from '../../../shared/api';
+import { formatDateTime } from '../../../shared/format';
+import { makeStyles } from '../../../shared/theme';
+import { AppText, Button, Screen, ScreenHeader, queryState } from '../../../shared/ui';
+import { formatAddressLine } from '../../addresses/validation';
 import { useCancelOrder, useOrder } from '../api/hooks';
-import { ORDER_STATUS_LABEL, ORDER_STATUS_TONE, canCancel } from '../model';
 import { OrderSummary } from '../components/OrderSummary';
+import { StatusTimeline } from '../components/StatusTimeline';
+import { orderSlotLabel } from '../format';
+import { canCancel } from '../model';
 
-export function OrderDetailScreen({ route }: RootStackScreenProps<'OrderDetail'>) {
-  const order = useOrder(route.params.orderId);
+export function OrderDetailScreen({ route, navigation }: RootStackScreenProps<'OrderDetail'>) {
+  const styles = useStyles();
+  const { t } = useTranslation();
+  const query = useOrder(route.params.orderId);
   const cancel = useCancelOrder();
-
-  const state = queryState(order);
-  if (state) {
-    return <Screen>{state}</Screen>;
+  const header = <ScreenHeader title={t('order.title')} onBack={() => navigation.goBack()} />;
+  const state = queryState(query);
+  if (state !== null || query.data === undefined) {
+    return <Screen header={header}>{state}</Screen>;
   }
-  const o = order.data;
-  if (o === undefined) {
-    return null;
-  }
-
+  const order = query.data;
   const confirmCancel = () =>
-    Alert.alert('Cancel this order?', `Order ${o.orderNumber} will be cancelled.`, [
-      { text: 'Keep order', style: 'cancel' },
-      { text: 'Cancel order', style: 'destructive', onPress: () => cancel.mutate(o.id) },
+    Alert.alert(t('order.cancelTitle'), t('order.cancelMessage'), [
+      { text: t('common.no'), style: 'cancel' },
+      { text: t('order.cancel'), style: 'destructive', onPress: () => cancel.mutate(order.id) },
     ]);
-
   return (
-    <Screen scroll>
-      <View style={styles.header}>
-        <Text style={styles.title} accessibilityRole="header">
-          {o.orderNumber}
-        </Text>
-        <Badge
-          label={ORDER_STATUS_LABEL[o.status]}
-          tone={ORDER_STATUS_TONE[o.status]}
-          accessibilityLabel={`Status: ${ORDER_STATUS_LABEL[o.status]}`}
-        />
-      </View>
-      <Text style={styles.meta}>Placed {formatDateTime(o.placedAt)}</Text>
-      <OrderSummary order={o} />
-      {cancel.isError && (
-        <Text style={styles.error} accessibilityRole="alert">
-          {errorMessage(cancel.error)}
-        </Text>
-      )}
-      {canCancel(o) && (
-        <>
-          <Text style={styles.meta}>You can cancel until {formatDateTime(o.slot.orderCutoffAt)}.</Text>
-          <Button
-            title="Cancel order"
-            variant="danger"
-            onPress={confirmCancel}
-            loading={cancel.isPending}
-            style={styles.button}
-          />
-        </>
-      )}
+    <Screen padded={false} header={header}>
+      <ScrollView contentContainerStyle={styles.content}>
+        <View style={styles.card}>
+          <AppText variant="headline">{order.market.name}</AppText>
+          <AppText variant="subhead" color="textSecondary" selectable>
+            {`${order.orderNumber} · ${formatDateTime(order.placedAt)}`}
+          </AppText>
+          <AppText variant="body">{orderSlotLabel(t, order)}</AppText>
+          {order.deliveryAddress != null && <AppText variant="body">{formatAddressLine(order.deliveryAddress)}</AppText>}
+        </View>
+        <StatusTimeline order={order} />
+        <OrderSummary order={order} />
+        {cancel.isError && (
+          <AppText variant="subhead" color="accent" accessibilityRole="alert">
+            {t(errorMessageKey(cancel.error))}
+          </AppText>
+        )}
+        {canCancel(order) && <Button title={t('order.cancel')} variant="danger" onPress={confirmCancel} loading={cancel.isPending} />}
+      </ScrollView>
     </Screen>
   );
 }
 
-const styles = StyleSheet.create({
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
-  title: { ...typography.heading, color: colors.text, flex: 1 },
-  meta: { ...typography.caption, color: colors.textMuted, marginVertical: spacing.sm },
-  error: { ...typography.body, color: colors.danger, marginTop: spacing.md },
-  button: { marginTop: spacing.sm },
-});
+const useStyles = makeStyles((t) => ({
+  content: { padding: t.layout.gutter, gap: t.spacing.xl, paddingBottom: t.spacing.xxxl },
+  card: { backgroundColor: t.colors.surfaceMuted, borderRadius: t.radii.tile, padding: t.spacing.lg, gap: 4 },
+}));

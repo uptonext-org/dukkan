@@ -1,13 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { createContext, use, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 
-import {
-  queryKeys,
-  useApi,
-  type AuthResponse,
-  type LoginRequest,
-  type RegisterRequest,
-} from '../../shared/api';
+import { queryKeys, useApi, type AuthResponse, type LoginRequest, type RegisterRequest } from '../../shared/api';
 import type { AuthSession } from './session';
 
 export type AuthStatus = 'restoring' | 'signedOut' | 'signedIn';
@@ -42,11 +36,16 @@ export function AuthProvider({ session, children }: { session: AuthSession; chil
       });
     const unsubscribe = session.subscribe((token) => {
       if (token === null) {
-        // Session ended (logout or 401): drop all user data from the cache.
-        queryClient.clear();
+        // Session ended (logout or 401): drop user data, keep browsing data usable.
+        queryClient.removeQueries({ queryKey: queryKeys.me });
+        for (const key of ['carts', 'cart', 'addresses', 'orders', 'order', 'marketFavorites', 'favoriteMarkets', 'myMarkets', 'listings', 'myPromotions', 'marketOrders']) {
+          queryClient.removeQueries({ queryKey: [key] });
+        }
         setStatus('signedOut');
       } else {
         setStatus('signedIn');
+        // Public content now carries `favorite` flags etc.: refresh it.
+        void queryClient.invalidateQueries();
       }
     });
     return () => {

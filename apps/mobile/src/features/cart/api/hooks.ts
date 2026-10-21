@@ -1,85 +1,91 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useCallback, useMemo, useRef } from 'react';
+import { useCallback, useMemo } from 'react';
 
-import { queryKeys, useApi, type Cart, type Order, type ReserveSlotRequest } from '../../../shared/api';
+import { queryKeys, useApi, type Cart } from '../../../shared/api';
+import { useLang } from '../../../shared/i18n';
+import { useAuth } from '../../auth/AuthProvider';
+import { useAuthGate } from '../../auth/AuthGate';
 
-export function useCart() {
+/** All non-empty carts (one per market). Only for signed-in users. */
+export function useCarts() {
   const api = useApi();
+  const lang = useLang();
+  const { status } = useAuth();
   return useQuery({
-    queryKey: queryKeys.cart,
-    queryFn: ({ signal }) => api.getCart(signal),
-    staleTime: 10_000,
+    queryKey: queryKeys.carts(lang),
+    queryFn: ({ signal }) => api.listCarts(signal),
+    enabled: status === 'signedIn',
   });
 }
 
-/** Sets a line quantity (0 removes). The server's returned Cart replaces the cache. */
-export function useSetCartQuantity() {
+export function useCart(marketId: string) {
   const api = useApi();
+  const lang = useLang();
+  const { status } = useAuth();
+  return useQuery({
+    queryKey: queryKeys.cart(lang, marketId),
+    queryFn: ({ signal }) => api.getCart(marketId, signal),
+    enabled: status === 'signedIn' && marketId !== '',
+  });
+}
+
+/** Writes a server cart into the cache and refreshes the cart list (tab badge, Warenkörbe). */
+export function useStoreCart(marketId: string) {
   const queryClient = useQueryClient();
+  const lang = useLang();
+  return useCallback(
+    (cart: Cart) => {
+      queryClient.setQueryData(queryKeys.cart(lang, marketId), cart);
+      void queryClient.invalidateQueries({ queryKey: ['carts'] });
+    },
+    [queryClient, lang, marketId],
+  );
+}
+
+export function useSetCartQuantity(marketId: string) {
+  const api = useApi();
+  const store = useStoreCart(marketId);
   return useMutation({
     mutationFn: ({ productId, quantity }: { productId: string; quantity: number }) =>
-      quantity === 0 ? api.removeCartItem(productId) : api.setCartItemQuantity(productId, quantity),
-    onSuccess: (cart) => queryClient.setQueryData<Cart>(queryKeys.cart, cart),
-    onError: () => queryClient.invalidateQueries({ queryKey: queryKeys.cart }),
+      quantity <= 0 ? api.removeCartItem(marketId, productId) : api.setCartItemQuantity(marketId, productId, quantity),
+    onSuccess: store,
   });
 }
 
-/** productId -> quantity lookup for showing cart state on product tiles. */
-export function useCartQuantities(): ReadonlyMap<string, number> {
-  const { data } = useCart();
-  return useMemo(() => new Map((data?.items ?? []).map((item) => [item.productId, item.quantity])), [data]);
-}
-
-/** Convenience for lists: stable change handler plus the product currently being updated. */
-export function useCartUpdater() {
-  const mutation = useSetCartQuantity();
-  const { mutate } = mutation;
-  const onChangeQuantity = useCallback(
-    (productId: string, quantity: number) => mutate({ productId, quantity }),
-    [mutate],
-  );
-  const pendingProductId = mutation.isPending ? mutation.variables.productId : undefined;
-  return { onChangeQuantity, pendingProductId, error: mutation.error };
-}
-
-export function useReserveSlot() {
+export function useClearCart(marketId: string) {
   const api = useApi();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (request: ReserveSlotRequest) => api.reserveDeliverySlot(request),
-    onSuccess: (cart, request) => {
-      queryClient.setQueryData<Cart>(queryKeys.cart, cart);
-      void queryClient.invalidateQueries({ queryKey: queryKeys.deliverySlots(request.addressId) });
+    mutationFn: () => api.clearCart(marketId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['cart'] });
+      void queryClient.invalidateQueries({ queryKey: ['carts'] });
     },
   });
-}
-
-function newIdempotencyKey(): string {
-  const random = () => Math.random().toString(16).slice(2, 10);
-  return `${Date.now().toString(16)}-${random()}-${random()}`;
 }
 
 /**
- * Simulated checkout. One idempotency key is reused across retries of the same attempt
- * and rotated after a successful order.
+ * Quantities in this market's cart plus a setter that asks guests to sign in first and then
+ * continues (AuthGate). Errors surface through `error` of the returned mutation.
  */
-export function usePlaceOrder() {
-  const api = useApi();
-  const queryClient = useQueryClient();
-  const keyRef = useRef<string | null>(null);
-  return useMutation({
-    mutationFn: () => {
-      keyRef.current ??= newIdempotencyKey();
-      return api.placeOrder(keyRef.current);
+export function useCartQuantities(marketId: string) {
+  const { data: cart } = useCart(marketId);
+  const mutation = useSetCartQuantity(marketId);
+  const { requireAuth } = useAuthGate();
+  const quantities = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const item of cart?.items ?? []) {
+      map.set(item.productId, item.quantity);
+    }
+    return map;
+  }, [cart]);
+  const { mutate } = mutation;
+  const setQuantity = useCallback(
+    (productId: string, quantity: number) => {
+      requireAuth('cart', () => mutate({ productId, quantity }));
     },
-    onSuccess: (order: Order) => {
-      keyRef.current = null;
-      queryClient.setQueryData(queryKeys.order(order.id), order);
-      void queryClient.invalidateQueries({ queryKey: queryKeys.cart });
-      void queryClient.invalidateQueries({ queryKey: queryKeys.orders });
-    },
-    onError: () => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.cart });
-    },
-  });
+    [requireAuth, mutate],
+  );
+  const busyProductId = mutation.isPending ? mutation.variables.productId : null;
+  return { cart, quantities, setQuantity, busyProductId, error: mutation.error, reset: mutation.reset };
 }

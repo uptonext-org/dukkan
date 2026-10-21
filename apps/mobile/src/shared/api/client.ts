@@ -1,9 +1,10 @@
 import { ApiError } from './ApiError';
 import type { Problem } from './types';
 
-export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE';
+export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
-export type QueryValue = string | number | boolean | null | undefined;
+/** Arrays are sent comma-separated (`style: form, explode: false` in the contract). */
+export type QueryValue = string | number | boolean | readonly string[] | null | undefined;
 
 export interface ApiRequest {
   method: HttpMethod;
@@ -25,6 +26,8 @@ export interface FetchApiClientOptions {
   baseUrl: string;
   /** Returns the current bearer token, or null when signed out. */
   getToken: () => string | null;
+  /** Current UI language (`de`, `en`, `ar`), sent as `Accept-Language` on every request. */
+  getLanguage: () => string;
   /** Called when an authenticated request is rejected with 401. */
   onUnauthorized?: (() => void) | undefined;
   timeoutMs?: number | undefined;
@@ -39,6 +42,13 @@ export function buildUrl(baseUrl: string, path: string, query?: ApiRequest['quer
   if (query) {
     for (const [key, value] of Object.entries(query)) {
       if (value === undefined || value === null || value === '') {
+        continue;
+      }
+      if (Array.isArray(value)) {
+        const list = value as readonly string[];
+        if (list.length > 0) {
+          params.push(`${encodeURIComponent(key)}=${list.map(encodeURIComponent).join(',')}`);
+        }
         continue;
       }
       params.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
@@ -76,6 +86,7 @@ export function createFetchApiClient(options: FetchApiClientOptions): ApiClient 
       const token = options.getToken();
       const headers: Record<string, string> = {
         Accept: 'application/json, application/problem+json',
+        'Accept-Language': options.getLanguage(),
         ...request.headers,
       };
       if (request.body !== undefined) {

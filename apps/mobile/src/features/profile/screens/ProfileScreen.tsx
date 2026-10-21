@@ -1,56 +1,89 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { ScrollView, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
-import { colors, spacing, typography } from '../../../shared/theme';
-import { Button, ListRow, Screen } from '../../../shared/ui';
-import type { TabScreenProps } from '../../../navigation/types';
+import type { ShellTabScreenProps } from '../../../navigation/types';
+import { LANGUAGES, useLanguage } from '../../../shared/i18n';
+import { useChosenPlace } from '../../../shared/location';
+import { makeStyles } from '../../../shared/theme';
+import { AppText, Button, ListRow, LoadingState } from '../../../shared/ui';
+import { useIsMerchant, useMe } from '../../auth/api/useMe';
 import { useAuth } from '../../auth/AuthProvider';
-import { useMe } from '../../auth/api/useMe';
+import { AuthForm } from '../../auth/components/AuthForm';
+import { ShellHeader } from '../../marketplace/components/ShellHeader';
+import { LanguageSheet } from '../components/LanguageSheet';
 
-export function ProfileScreen({ navigation }: TabScreenProps<'Profile'>) {
-  const { logout } = useAuth();
+/** Profil: sign-in/registration when signed out; account, language, addresses, orders, Mein Markt, logout. */
+export function ProfileScreen({ navigation }: ShellTabScreenProps<'Profile'>) {
+  const styles = useStyles();
+  const { t } = useTranslation();
+  const { status, logout } = useAuth();
+  const { language } = useLanguage();
+  const { place } = useChosenPlace();
   const me = useMe();
+  const merchant = useIsMerchant();
+  const [languageOpen, setLanguageOpen] = useState(false);
+  const languageName = LANGUAGES.find((l) => l.code === language)?.nativeName ?? language;
+
+  const common = (
+    <>
+      <ListRow title={t('profile.language')} subtitle={languageName} icon="globe" onPress={() => setLanguageOpen(true)} testID="profile-language" />
+      <ListRow
+        title={t('profile.location')}
+        subtitle={place?.label ?? t('shell.chooseLocation')}
+        icon="pin"
+        onPress={() => navigation.navigate('Onboarding', { change: true })}
+      />
+    </>
+  );
 
   return (
-    <Screen scroll padded={false}>
-      <View style={styles.header}>
-        {me.data ? (
+    <View style={styles.root}>
+      <ShellHeader title={t('profile.title')} showAccount={false} />
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        {status !== 'signedIn' ? (
           <>
-            <Text style={styles.name} accessibilityRole="header">
-              {me.data.firstName} {me.data.lastName}
-            </Text>
-            <Text style={styles.email}>{me.data.email}</Text>
+            <AppText variant="body" color="textSecondary" style={styles.intro}>
+              {t('profile.signedOutIntro')}
+            </AppText>
+            <AuthForm />
+            <View style={styles.section}>{common}</View>
           </>
+        ) : me.isPending ? (
+          <LoadingState />
         ) : (
-          <Text style={styles.email}>
-            {me.isError ? 'Could not load your profile.' : 'Loading your profile…'}
-          </Text>
+          <>
+            <View style={styles.account} accessible accessibilityRole="summary">
+              <AppText variant="title">{me.data ? `${me.data.firstName} ${me.data.lastName}` : ''}</AppText>
+              <AppText variant="subhead" color="textSecondary">
+                {me.data?.email ?? ''}
+              </AppText>
+              {merchant && (
+                <AppText variant="caption" color="primary">
+                  {t('profile.merchantAccount')}
+                </AppText>
+              )}
+            </View>
+            <View style={styles.section}>
+              {common}
+              <ListRow title={t('profile.addresses')} icon="home" onPress={() => navigation.navigate('Addresses')} />
+              <ListRow title={t('profile.orders')} icon="receipt" onPress={() => navigation.navigate('Orders')} testID="profile-orders" />
+              {merchant && <ListRow title={t('profile.myMarket')} icon="store" onPress={() => navigation.navigate('MerchantMarkets')} testID="profile-my-market" />}
+            </View>
+            <Button title={t('profile.logout')} variant="danger" icon="logout" onPress={() => void logout()} style={styles.logout} />
+          </>
         )}
-      </View>
-      <ListRow
-        title="Addresses"
-        subtitle="Manage delivery addresses"
-        onPress={() => navigation.navigate('AddressList')}
-      />
-      <ListRow
-        title="Orders"
-        subtitle="View and cancel your orders"
-        onPress={() => navigation.navigate('OrderList')}
-      />
-      <ListRow
-        title="Offers"
-        subtitle="Current promotions"
-        onPress={() => navigation.navigate('Promotions')}
-      />
-      <View style={styles.logout}>
-        <Button title="Sign out" variant="danger" onPress={() => void logout()} />
-      </View>
-    </Screen>
+      </ScrollView>
+      <LanguageSheet visible={languageOpen} onClose={() => setLanguageOpen(false)} />
+    </View>
   );
 }
 
-const styles = StyleSheet.create({
-  header: { padding: spacing.lg },
-  name: { ...typography.title, color: colors.text },
-  email: { ...typography.body, color: colors.textMuted, marginTop: spacing.xs },
-  logout: { padding: spacing.lg },
-});
+const useStyles = makeStyles((t) => ({
+  root: { flex: 1, backgroundColor: t.colors.bg },
+  content: { padding: t.layout.gutter, paddingBottom: t.spacing.xxxl },
+  intro: { marginBottom: t.spacing.lg },
+  account: { gap: 2, marginBottom: t.spacing.lg },
+  section: { marginTop: t.spacing.lg },
+  logout: { marginTop: t.spacing.xxl },
+}));

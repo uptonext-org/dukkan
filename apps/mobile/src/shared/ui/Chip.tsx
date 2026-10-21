@@ -1,39 +1,62 @@
-import { Pressable, StyleSheet, Text } from 'react-native';
+import { Pressable } from 'react-native';
 
-import { colors, radii, spacing, touchTarget, typography } from '../theme';
+import { makeStyles } from '../theme';
+import { AppText } from './AppText';
+import { Icon, type IconName } from './Icon';
 
 interface ChipProps {
   label: string;
-  selected: boolean;
-  onPress: () => void;
-  accessibilityRole?: 'radio' | 'button' | 'switch';
+  selected?: boolean;
+  onPress?: () => void;
+  icon?: IconName;
+  accessibilityHint?: string;
+  disabled?: boolean;
+  testID?: string;
 }
 
-export function Chip({ label, selected, onPress, accessibilityRole = 'radio' }: ChipProps) {
+/** Filter chip (toggle) or static label chip when `onPress` is absent. */
+export function Chip({ label, selected = false, onPress, icon, accessibilityHint, disabled = false, testID }: ChipProps) {
+  const styles = useStyles();
+  const interactive = onPress !== undefined;
   return (
     <Pressable
+      testID={testID}
       onPress={onPress}
-      accessibilityRole={accessibilityRole}
+      disabled={!interactive || disabled}
+      accessibilityRole={interactive ? 'button' : 'text'}
       accessibilityLabel={label}
-      accessibilityState={accessibilityRole === 'button' ? { selected } : { checked: selected }}
-      style={[styles.chip, selected && styles.selected]}>
-      <Text style={[styles.text, selected && styles.textSelected]}>{label}</Text>
+      accessibilityHint={accessibilityHint}
+      accessibilityState={interactive ? { selected, disabled } : undefined}
+      style={({ pressed }) => [
+        styles.chip,
+        interactive && styles.interactive,
+        selected && styles.selected,
+        pressed && styles.pressed,
+        disabled && styles.disabled,
+      ]}>
+      {icon !== undefined && <Icon name={icon} size={16} color={selected ? styles.selectedText.color : styles.text.color} />}
+      <AppText variant="caption" dense style={selected ? styles.selectedText : styles.text} numberOfLines={1}>
+        {label}
+      </AppText>
     </Pressable>
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((t) => ({
   chip: {
-    minHeight: touchTarget,
-    justifyContent: 'center',
-    paddingHorizontal: spacing.md,
-    borderRadius: radii.pill,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    marginRight: spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: t.spacing.xs,
+    borderRadius: t.radii.full,
+    paddingHorizontal: t.spacing.md,
+    paddingVertical: t.spacing.xs,
+    backgroundColor: t.colors.surfaceMuted,
+    alignSelf: 'flex-start',
   },
-  selected: { backgroundColor: colors.primary, borderColor: colors.primary },
-  text: { ...typography.body, color: colors.text },
-  textSelected: { color: colors.onPrimary, fontWeight: '600' },
-});
+  interactive: { minHeight: 44, paddingHorizontal: t.spacing.lg },
+  selected: { backgroundColor: t.colors.primaryStrong },
+  pressed: { opacity: 0.75 },
+  disabled: { opacity: 0.4 },
+  text: { color: t.colors.text },
+  selectedText: { color: t.colors.onAccent },
+}));

@@ -1,68 +1,46 @@
-import { memo, useCallback } from 'react';
-import { FlatList, StyleSheet, View, type ListRenderItem } from 'react-native';
+import { FlatList, RefreshControl, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
-import type { Order } from '../../../shared/api';
-import { formatDateTime } from '../../../shared/format/dates';
-import { spacing } from '../../../shared/theme';
-import { Badge, EmptyState, ListRow, Price, Screen, queryState } from '../../../shared/ui';
 import type { RootStackScreenProps } from '../../../navigation/types';
+import { formatDate, formatMoney } from '../../../shared/format';
+import { makeStyles, useTheme } from '../../../shared/theme';
+import { AppText, EmptyState, ListRow, Screen, ScreenHeader, queryState } from '../../../shared/ui';
 import { useOrders } from '../api/hooks';
-import { ORDER_STATUS_LABEL, ORDER_STATUS_TONE } from '../model';
 
-const OrderRow = memo(function OrderRow({
-  order,
-  onOpen,
-}: {
-  order: Order;
-  onOpen: (orderId: string) => void;
-}) {
+export function OrderListScreen({ navigation }: RootStackScreenProps<'Orders'>) {
+  const styles = useStyles();
+  const { colors } = useTheme();
+  const { t } = useTranslation();
+  const query = useOrders();
   return (
-    <ListRow
-      title={order.orderNumber}
-      subtitle={`Placed ${formatDateTime(order.placedAt)}`}
-      onPress={() => onOpen(order.id)}
-      accessibilityHint="Shows order details"
-      right={
-        <View style={styles.right}>
-          <Badge label={ORDER_STATUS_LABEL[order.status]} tone={ORDER_STATUS_TONE[order.status]} />
-          <Price money={order.total} accessibilityPrefix="Total" />
-        </View>
-      }
-    />
-  );
-});
-
-export function OrderListScreen({ navigation }: RootStackScreenProps<'OrderList'>) {
-  const orders = useOrders();
-  const onOpen = useCallback(
-    (orderId: string) => navigation.navigate('OrderDetail', { orderId }),
-    [navigation],
-  );
-  const renderItem = useCallback<ListRenderItem<Order>>(
-    ({ item }) => <OrderRow order={item} onOpen={onOpen} />,
-    [onOpen],
-  );
-
-  const state = queryState(orders);
-  if (state) {
-    return <Screen padded={false}>{state}</Screen>;
-  }
-  return (
-    <Screen padded={false}>
-      <FlatList
-        data={orders.data}
-        keyExtractor={(item) => item.id}
-        renderItem={renderItem}
-        refreshing={orders.isRefetching}
-        onRefresh={() => void orders.refetch()}
-        contentContainerStyle={styles.list}
-        ListEmptyComponent={<EmptyState title="No orders yet" message="Your orders will appear here." />}
-      />
+    <Screen padded={false} header={<ScreenHeader title={t('profile.orders')} onBack={() => navigation.goBack()} />}>
+      {queryState(query) ?? (
+        <FlatList
+          data={query.data ?? []}
+          keyExtractor={(o) => o.id}
+          contentContainerStyle={styles.list}
+          refreshControl={<RefreshControl refreshing={query.isRefetching} onRefresh={() => void query.refetch()} tintColor={colors.primary} />}
+          ListEmptyComponent={<EmptyState icon="receipt" title={t('order.emptyTitle')} message={t('order.emptyMessage')} />}
+          renderItem={({ item }) => (
+            <ListRow
+              title={item.market.name}
+              subtitle={`${formatDate(item.placedAt)} · ${t(`orderStatus.${item.status}`)}`}
+              trailing={
+                <View>
+                  <AppText variant="bodyStrong" dense>
+                    {formatMoney(item.total)}
+                  </AppText>
+                </View>
+              }
+              onPress={() => navigation.navigate('OrderDetail', { orderId: item.id })}
+            />
+          )}
+        />
+      )}
     </Screen>
   );
 }
 
-const styles = StyleSheet.create({
-  list: { flexGrow: 1 },
-  right: { alignItems: 'flex-end', gap: spacing.xs },
-});
+const useStyles = makeStyles((t) => ({
+  list: { paddingHorizontal: t.layout.gutter, flexGrow: 1 },
+}));

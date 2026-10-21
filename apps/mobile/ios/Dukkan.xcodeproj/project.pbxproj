@@ -12,6 +12,15 @@
 		761780ED2CA45674006654EE /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761780EC2CA45674006654EE /* AppDelegate.swift */; };
 		761780EF2CA45674006654EF /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761780EE2CA45674006654EF /* SceneDelegate.swift */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
+		3C6BDCC2E043D08C6D79A99A /* Inter-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = D9E02D99BF5657E76CF20CDE /* Inter-Regular.ttf */; };
+		548D4099B1C8CBC01BFAAC66 /* Inter-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 1503A908CE0742C477DF58DD /* Inter-Medium.ttf */; };
+		DE4D28BDFB1CA5BA8387CCD7 /* Inter-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 886159B30BF362E181553EC2 /* Inter-SemiBold.ttf */; };
+		8E6435AE3A2C3186F1AB3899 /* Inter-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B7D821BC4AA46D0F9583E8D9 /* Inter-Bold.ttf */; };
+		0BBED20A7DBA1C69867EDC6D /* IBMPlexSansArabic-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 984830212E9E2E94960F2DD9 /* IBMPlexSansArabic-Regular.ttf */; };
+		D9C13AAC9155FB0CB290C62A /* IBMPlexSansArabic-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 33904BC6A46B9AA43CD1491E /* IBMPlexSansArabic-Medium.ttf */; };
+		9FEFE6629FEB253CB9DC063F /* IBMPlexSansArabic-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = FDE065675EC0912FF7EF8777 /* IBMPlexSansArabic-SemiBold.ttf */; };
+		EE00F44C1A0204643A45F5C8 /* IBMPlexSansArabic-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 56EC6936525482C50F814129 /* IBMPlexSansArabic-Bold.ttf */; };
+		F100CDF28DFAED9719BE8946 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = FA1B455C313BE5D8F3A548EB /* InfoPlist.strings */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -26,6 +35,17 @@
 		761780EE2CA45674006654EF /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SceneDelegate.swift; path = Dukkan/SceneDelegate.swift; sourceTree = "<group>"; };
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = Dukkan/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
+		D9E02D99BF5657E76CF20CDE /* Inter-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = "Inter-Regular.ttf"; path = "../assets/fonts/Inter-Regular.ttf"; sourceTree = "<group>"; };
+		1503A908CE0742C477DF58DD /* Inter-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = "Inter-Medium.ttf"; path = "../assets/fonts/Inter-Medium.ttf"; sourceTree = "<group>"; };
+		886159B30BF362E181553EC2 /* Inter-SemiBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = "Inter-SemiBold.ttf"; path = "../assets/fonts/Inter-SemiBold.ttf"; sourceTree = "<group>"; };
+		B7D821BC4AA46D0F9583E8D9 /* Inter-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = "Inter-Bold.ttf"; path = "../assets/fonts/Inter-Bold.ttf"; sourceTree = "<group>"; };
+		984830212E9E2E94960F2DD9 /* IBMPlexSansArabic-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = "IBMPlexSansArabic-Regular.ttf"; path = "../assets/fonts/IBMPlexSansArabic-Regular.ttf"; sourceTree = "<group>"; };
+		33904BC6A46B9AA43CD1491E /* IBMPlexSansArabic-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = "IBMPlexSansArabic-Medium.ttf"; path = "../assets/fonts/IBMPlexSansArabic-Medium.ttf"; sourceTree = "<group>"; };
+		FDE065675EC0912FF7EF8777 /* IBMPlexSansArabic-SemiBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = "IBMPlexSansArabic-SemiBold.ttf"; path = "../assets/fonts/IBMPlexSansArabic-SemiBold.ttf"; sourceTree = "<group>"; };
+		56EC6936525482C50F814129 /* IBMPlexSansArabic-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; name = "IBMPlexSansArabic-Bold.ttf"; path = "../assets/fonts/IBMPlexSansArabic-Bold.ttf"; sourceTree = "<group>"; };
+		5EF25D48CBB147E93AC2A203 /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		2BA966D491DF7839A6069782 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		153F60547E258052FE33DEBC /* ar */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ar; path = ar.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -49,6 +69,7 @@
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */,
 				13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */,
+				FA1B455C313BE5D8F3A548EB /* InfoPlist.strings */,
 			);
 			name = Dukkan;
 			sourceTree = "<group>";
@@ -73,6 +94,7 @@
 			isa = PBXGroup;
 			children = (
 				13B07FAE1A68108700A75B9A /* Dukkan */,
+				3B9437C8F03F44973BEB139F /* Fonts */,
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
 				83CBBA001A601CBA00E9B192 /* Products */,
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
@@ -98,6 +120,21 @@
 				5709B34CF0A7D63546082F79 /* Pods-Dukkan.release.xcconfig */,
 			);
 			path = Pods;
+			sourceTree = "<group>";
+		};
+		3B9437C8F03F44973BEB139F /* Fonts */ = {
+			isa = PBXGroup;
+			children = (
+				D9E02D99BF5657E76CF20CDE /* Inter-Regular.ttf */,
+				1503A908CE0742C477DF58DD /* Inter-Medium.ttf */,
+				886159B30BF362E181553EC2 /* Inter-SemiBold.ttf */,
+				B7D821BC4AA46D0F9583E8D9 /* Inter-Bold.ttf */,
+				984830212E9E2E94960F2DD9 /* IBMPlexSansArabic-Regular.ttf */,
+				33904BC6A46B9AA43CD1491E /* IBMPlexSansArabic-Medium.ttf */,
+				FDE065675EC0912FF7EF8777 /* IBMPlexSansArabic-SemiBold.ttf */,
+				56EC6936525482C50F814129 /* IBMPlexSansArabic-Bold.ttf */,
+			);
+			name = Fonts;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -139,10 +176,12 @@
 			};
 			buildConfigurationList = 83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject "Dukkan" */;
 			compatibilityVersion = "Xcode 12.0";
-			developmentRegion = en;
+			developmentRegion = de;
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
+				de,
+				ar,
 				Base,
 			);
 			mainGroup = 83CBB9F61A601CBA00E9B192;
@@ -162,6 +201,15 @@
 			files = (
 				81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
+				3C6BDCC2E043D08C6D79A99A /* Inter-Regular.ttf in Resources */,
+				548D4099B1C8CBC01BFAAC66 /* Inter-Medium.ttf in Resources */,
+				DE4D28BDFB1CA5BA8387CCD7 /* Inter-SemiBold.ttf in Resources */,
+				8E6435AE3A2C3186F1AB3899 /* Inter-Bold.ttf in Resources */,
+				0BBED20A7DBA1C69867EDC6D /* IBMPlexSansArabic-Regular.ttf in Resources */,
+				D9C13AAC9155FB0CB290C62A /* IBMPlexSansArabic-Medium.ttf in Resources */,
+				9FEFE6629FEB253CB9DC063F /* IBMPlexSansArabic-SemiBold.ttf in Resources */,
+				EE00F44C1A0204643A45F5C8 /* IBMPlexSansArabic-Bold.ttf in Resources */,
+				F100CDF28DFAED9719BE8946 /* InfoPlist.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -253,6 +301,20 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXVariantGroup section */
+		FA1B455C313BE5D8F3A548EB /* InfoPlist.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				5EF25D48CBB147E93AC2A203 /* de */,
+				2BA966D491DF7839A6069782 /* en */,
+				153F60547E258052FE33DEBC /* ar */,
+			);
+			name = InfoPlist.strings;
+			path = Dukkan;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
 		13B07F941A680F5B00A75B9A /* Debug */ = {

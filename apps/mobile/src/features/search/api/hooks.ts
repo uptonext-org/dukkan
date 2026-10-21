@@ -1,17 +1,18 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery } from '@tanstack/react-query';
 
-import { queryKeys, useApi } from '../../../shared/api';
+import { flattenPages, nextPage, queryKeys, useApi, type SearchProductsParams } from '../../../shared/api';
+import { useLang } from '../../../shared/i18n';
 
-export const MIN_SUGGESTION_LENGTH = 2;
-
-export function useSuggestions(query: string, enabled: boolean) {
+/** Product offers across all markets near the chosen place. */
+export function useNearbyOffers(params: Omit<SearchProductsParams, 'page'>) {
   const api = useApi();
-  const q = query.trim();
-  return useQuery({
-    queryKey: queryKeys.suggestions(q),
-    queryFn: ({ signal }) => api.searchSuggestions(q, 5, signal),
-    enabled: enabled && q.length >= MIN_SUGGESTION_LENGTH && q.length <= 100,
-    placeholderData: keepPreviousData,
-    staleTime: 60_000,
+  const lang = useLang();
+  const query = useInfiniteQuery({
+    queryKey: queryKeys.offers(lang, params),
+    queryFn: ({ pageParam, signal }) => api.searchProductsNearby({ ...params, page: pageParam }, signal),
+    initialPageParam: 0,
+    getNextPageParam: nextPage,
+    enabled: params.q.trim().length >= 2,
   });
+  return { ...query, offers: flattenPages(query.data) };
 }

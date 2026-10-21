@@ -80,6 +80,10 @@ android {
     namespace "app.dukkan.mobile"
     defaultConfig {
         applicationId "app.dukkan.mobile"
+        // Google Maps key: `-PDUKKAN_MAPS_API_KEY=...`, ~/.gradle/gradle.properties or the env var.
+        // Empty by default; the map then shows a blank grid on Android (see README).
+        manifestPlaceholders["dukkanMapsApiKey"] =
+            project.findProperty("DUKKAN_MAPS_API_KEY") ?: System.getenv("DUKKAN_MAPS_API_KEY") ?: ""
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
@@ -92,6 +96,10 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+    }
+    sourceSets {
+        // Bundles apps/mobile/assets/fonts (Inter, IBM Plex Sans Arabic + OFL texts) as assets/fonts.
+        main { assets.srcDirs += ["../../assets"] }
     }
     buildTypes {
         debug {

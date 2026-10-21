@@ -1,92 +1,77 @@
 import { useCallback, type ReactElement } from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, View, type ListRenderItem } from 'react-native';
+import { FlatList, RefreshControl, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import type { ProductSummary } from '../../../shared/api';
-import { colors, spacing } from '../../../shared/theme';
-import { ProductTile } from '../../../shared/ui';
-import { useCartQuantities, useCartUpdater } from '../../cart/api/hooks';
-import { useRootNavigation } from '../../../navigation/types';
+import { makeStyles, useTheme } from '../../../shared/theme';
+import { AppText, ProductTile } from '../../../shared/ui';
+import { useProductActions } from '../useProductActions';
 
 interface ProductGridProps {
-  products: readonly ProductSummary[];
-  hasNextPage: boolean;
-  isFetchingNextPage: boolean;
-  fetchNextPage: () => unknown;
-  refreshing: boolean;
-  onRefresh: () => void;
-  ListEmptyComponent?: ReactElement;
-  ListHeaderComponent?: ReactElement;
+  marketId: string;
+  products: ProductSummary[];
+  header?: ReactElement;
+  empty?: ReactElement;
+  onEndReached?: () => void;
+  loadingMore?: boolean;
+  refreshing?: boolean;
+  onRefresh?: () => void;
+  showFavorite?: boolean;
+  testID?: string;
 }
 
-const keyExtractor = (item: ProductSummary) => item.id;
-
-/** Two-column, infinitely scrolling product list shared by category and search screens. */
-export function ProductGrid({
-  products,
-  hasNextPage,
-  isFetchingNextPage,
-  fetchNextPage,
-  refreshing,
-  onRefresh,
-  ListEmptyComponent,
-  ListHeaderComponent,
-}: ProductGridProps) {
-  const navigation = useRootNavigation();
-  const quantities = useCartQuantities();
-  const { onChangeQuantity, pendingProductId } = useCartUpdater();
-
-  const openProduct = useCallback(
-    (productId: string) => navigation.navigate('ProductDetail', { productId }),
-    [navigation],
-  );
-
-  const renderItem = useCallback<ListRenderItem<ProductSummary>>(
-    ({ item }) => (
-      <ProductTile
-        product={item}
-        quantity={quantities.get(item.id) ?? 0}
-        busy={pendingProductId === item.id}
-        onPress={openProduct}
-        onChangeQuantity={onChangeQuantity}
-      />
+/** Two-column grid of product tiles; rows mirror automatically in RTL. */
+export function ProductGrid({ marketId, products, header, empty, onEndReached, loadingMore = false, refreshing, onRefresh, showFavorite = true, testID }: ProductGridProps) {
+  const styles = useStyles();
+  const { colors } = useTheme();
+  const { t } = useTranslation();
+  const actions = useProductActions(marketId);
+  const renderItem = useCallback(
+    ({ item }: { item: ProductSummary }) => (
+      <View style={styles.cell}>
+        <ProductTile
+          product={item}
+          quantity={actions.quantities.get(item.id) ?? 0}
+          busy={actions.busyProductId === item.id}
+          onPress={actions.openProduct}
+          onChangeQuantity={actions.changeQuantity}
+          {...(showFavorite ? { onToggleFavorite: actions.toggleFavorite } : {})}
+        />
+      </View>
     ),
-    [quantities, pendingProductId, openProduct, onChangeQuantity],
+    [actions, showFavorite, styles.cell],
   );
-
-  const onEndReached = useCallback(() => {
-    if (hasNextPage && !isFetchingNextPage) {
-      void fetchNextPage();
-    }
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
-
   return (
     <FlatList
       data={products}
-      keyExtractor={keyExtractor}
-      renderItem={renderItem}
+      keyExtractor={(p) => p.id}
       numColumns={2}
+      renderItem={renderItem}
+      columnWrapperStyle={styles.columns}
       contentContainerStyle={styles.content}
-      onEndReached={onEndReached}
+      {...(header !== undefined ? { ListHeaderComponent: header } : {})}
+      {...(empty !== undefined ? { ListEmptyComponent: empty } : {})}
       onEndReachedThreshold={0.5}
-      refreshing={refreshing}
-      onRefresh={onRefresh}
-      ListHeaderComponent={ListHeaderComponent}
-      ListEmptyComponent={ListEmptyComponent}
+      {...(onEndReached !== undefined ? { onEndReached } : {})}
+      {...(onRefresh !== undefined
+        ? { refreshControl: <RefreshControl refreshing={refreshing ?? false} onRefresh={onRefresh} tintColor={colors.primary} /> }
+        : {})}
       ListFooterComponent={
-        isFetchingNextPage ? (
-          <View style={styles.footer}>
-            <ActivityIndicator color={colors.primary} accessibilityLabel="Loading more products" />
-          </View>
+        loadingMore ? (
+          <AppText variant="subhead" color="textSecondary" center style={styles.footer}>
+            {t('common.loadingMore')}
+          </AppText>
         ) : undefined
       }
-      initialNumToRender={8}
-      windowSize={7}
-      removeClippedSubviews
+      keyboardShouldPersistTaps="handled"
+      testID={testID}
     />
   );
 }
 
-const styles = StyleSheet.create({
-  content: { padding: spacing.sm, flexGrow: 1 },
-  footer: { padding: spacing.lg },
-});
+const useStyles = makeStyles((t) => ({
+  content: { paddingHorizontal: t.layout.gutter, paddingBottom: t.spacing.xxxl, flexGrow: 1 },
+  columns: { gap: t.spacing.md, marginBottom: t.spacing.xxl },
+  cell: { flex: 1, maxWidth: '50%' },
+  footer: { padding: t.spacing.lg },
+}));

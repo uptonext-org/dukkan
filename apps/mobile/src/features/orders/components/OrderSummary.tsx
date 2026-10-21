@@ -1,63 +1,62 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import type { Order } from '../../../shared/api';
-import { formatDayLabel, formatTimeRange } from '../../../shared/format/dates';
-import { colors, radii, spacing, typography } from '../../../shared/theme';
-import { Price, SummaryRow } from '../../../shared/ui';
-import { formatAddressLine } from '../../address/validation';
+import { formatMoney, formatMoneyForAccessibility } from '../../../shared/format';
+import { makeStyles } from '../../../shared/theme';
+import { AppText } from '../../../shared/ui';
 
+/** Lines and totals of a placed order (server snapshot). */
 export function OrderSummary({ order }: { order: Order }) {
+  const styles = useStyles();
+  const { t } = useTranslation();
+  const rows: [string, string, string][] = [
+    [t('order.subtotal'), formatMoney(order.subtotal), formatMoneyForAccessibility(order.subtotal)],
+    ...(order.discountTotal.amountCents > 0
+      ? [[t('cart.discount'), `−${formatMoney(order.discountTotal)}`, t('cart.minus', { amount: formatMoneyForAccessibility(order.discountTotal) })] as [string, string, string]]
+      : []),
+    ...(order.fulfilmentType === 'DELIVERY'
+      ? [[t('cart.delivery'), order.deliveryFee.amountCents === 0 ? t('fulfilment.free') : formatMoney(order.deliveryFee), formatMoneyForAccessibility(order.deliveryFee)] as [string, string, string]]
+      : []),
+  ];
   return (
-    <View style={styles.card}>
-      <Text style={styles.heading} accessibilityRole="header">
-        Delivery
-      </Text>
-      <Text style={styles.body}>
-        {formatDayLabel(order.slot.startsAt)}, {formatTimeRange(order.slot.startsAt, order.slot.endsAt)}
-      </Text>
-      <Text style={styles.muted}>{formatAddressLine(order.address)}</Text>
-
-      <Text style={[styles.heading, styles.spaced]} accessibilityRole="header">
-        Items
-      </Text>
+    <View style={styles.box}>
       {order.items.map((item) => (
-        <View key={item.productId} style={styles.item}>
-          <Text style={styles.body}>
-            {item.quantity} × {item.name}
-          </Text>
-          <Price money={item.lineTotal} accessibilityPrefix={`${item.quantity} times ${item.name}`} />
+        <View key={item.productId} style={styles.row} accessible accessibilityLabel={`${item.quantity} × ${item.name}, ${formatMoneyForAccessibility(item.lineTotal)}`}>
+          <AppText variant="body" style={styles.flex}>
+            {`${item.quantity} × ${item.name}`}
+          </AppText>
+          <AppText variant="body" dense>
+            {formatMoney(item.lineTotal)}
+          </AppText>
         </View>
       ))}
-
       <View style={styles.divider} />
-      <SummaryRow label="Subtotal" money={order.subtotal} />
-      {order.discountTotal.amountCents > 0 && (
-        <SummaryRow label="Discount" money={order.discountTotal} negative />
-      )}
-      <SummaryRow label="Delivery fee" money={order.deliveryFee} />
-      <SummaryRow label="Total" money={order.total} emphasized />
-      <Text style={styles.muted}>Payment is simulated in this version. Nothing was charged.</Text>
+      {rows.map(([label, value, spoken]) => (
+        <View key={label} style={styles.row} accessible accessibilityLabel={`${label}: ${spoken}`}>
+          <AppText variant="body" color="textSecondary" style={styles.flex}>
+            {label}
+          </AppText>
+          <AppText variant="body" dense>
+            {value}
+          </AppText>
+        </View>
+      ))}
+      <View style={styles.row} accessible accessibilityLabel={`${t('cart.total')}: ${formatMoneyForAccessibility(order.total)}`}>
+        <AppText variant="headline" style={styles.flex}>
+          {t('cart.total')}
+        </AppText>
+        <AppText variant="headline" dense>
+          {formatMoney(order.total)}
+        </AppText>
+      </View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    padding: spacing.lg,
-    borderRadius: radii.lg,
-    backgroundColor: colors.surface,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-  },
-  heading: { ...typography.bodyStrong, color: colors.text, marginBottom: spacing.xs },
-  spaced: { marginTop: spacing.lg },
-  body: { ...typography.body, color: colors.text, flexShrink: 1 },
-  muted: { ...typography.caption, color: colors.textMuted, marginTop: spacing.xs },
-  item: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-    paddingVertical: spacing.xs,
-  },
-  divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border, marginVertical: spacing.md },
-});
+const useStyles = makeStyles((t) => ({
+  box: { gap: t.spacing.sm },
+  row: { flexDirection: 'row', gap: t.spacing.md, alignItems: 'baseline' },
+  flex: { flex: 1 },
+  divider: { height: 1, backgroundColor: t.colors.separator, marginVertical: t.spacing.xs },
+}));
