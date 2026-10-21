@@ -11,6 +11,7 @@ import { AppText } from './AppText';
 import { IconButton } from './Button';
 import { Icon } from './Icon';
 import { ImageTile } from './ImageTile';
+import { placeholderProps } from './productPlaceholder';
 import { PromoPill } from './Pills';
 import { Price } from './Price';
 import { QuantityStepper } from './QuantityStepper';
@@ -72,7 +73,7 @@ function ProductTileComponent({ product, quantity, onPress, onChangeQuantity, on
     <View style={[styles.card, width !== undefined ? { width } : styles.grid]} testID={`product-tile-${product.id}`}>
       <View>
         <Pressable onPress={() => onPress(product)} accessibilityRole="button" accessibilityLabel={forSpeech(spoken)} accessibilityHint={t('product.openHint')}>
-          <ImageTile uri={product.imageUrl} tint="sage" />
+          <ImageTile uri={product.imageUrl} {...placeholderProps(product.iconKey)} />
         </Pressable>
         {promotion != null && (
           // Bottom start next to the "+"; once the − n + stepper takes the bottom row, the pill moves

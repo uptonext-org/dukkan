@@ -90,6 +90,7 @@ pairs below were checked against WCAG AA (≥ 4.5:1 for body text).
 ### 4.3 Market sub-app: its own bottom tabs **Entdecken · Favoriten · Suchen · Warenkorb**
 A close/back control at the top start returns to the marketplace. The market's name and logo appear in the header.
 - **Entdecken:** green "Lieferzeit wählen ›" or "Abholzeit wählen ›" link on the start side of the header and the account icon on the end side. Then a hero carousel of banners (cover photo, white overline and title on a scrim, rounded 16 corners, next card peeks), the market info card on `surfaceRose` (opening hours, "Lieferung (2,90 €) · Abholung", minimum order, free delivery threshold), and horizontal sections ("Angebote der Woche", "Neu im Markt", top categories) of product tiles.
+- **Placeholders without photo:** the tile shows a line icon for the product's `iconKey` (apple, carrot, bread, milk, fish, …) on a matching tint (`src/shared/ui/productPlaceholder.ts`); unknown keys use the generic package icon.
 - **Product tile (2-column grid or carousel item):**
   - Photo on `tileSage` with radius 16. A yellow promo pill at the bottom start, and a white square "+" button at the bottom end (it becomes a − n + stepper once added).
   - Below the photo: an optional gold tagline (in carousels the line is reserved when any tile of the row has one, so names line up), then the name in `headline` with a green "Bio " prefix when organic and a trailing ›. The prefix is left out when the localised name already contains the localised word ("Bio-Vollmilch", case- and diacritic-insensitive).

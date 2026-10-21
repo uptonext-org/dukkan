@@ -7,7 +7,7 @@ import { errorMessageKey, type Listing } from '../../../shared/api';
 import { centsToInput, formatMoney, forSpeech, parseMoneyInput } from '../../../shared/format';
 import { useDebouncedValue } from '../../../shared/hooks/useDebouncedValue';
 import { makeStyles } from '../../../shared/theme';
-import { AppText, Button, EmptyState, IconButton, ImageTile, queryState, Screen, ScreenHeader, SearchField, ToggleSwitch } from '../../../shared/ui';
+import { AppText, Button, EmptyState, IconButton, ImageTile, Screen, ScreenHeader, SearchField, ToggleSwitch, placeholderProps, queryState } from '../../../shared/ui';
 import { useListings, useUpdateListing } from '../api/hooks';
 
 const ListingRow = memo(function ListingRow({ listing, marketId }: { listing: Listing; marketId: string }) {
@@ -20,7 +20,7 @@ const ListingRow = memo(function ListingRow({ listing, marketId }: { listing: Li
   return (
     <View style={styles.row}>
       <View style={styles.main}>
-        <ImageTile uri={listing.imageUrl} size={52} radius={10} />
+        <ImageTile uri={listing.imageUrl} size={52} radius={10} {...placeholderProps(listing.iconKey)} />
         <View style={styles.flex}>
           <AppText variant="body" dense numberOfLines={2}>
             {listing.name}

@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import type { MarketStackScreenProps } from '../../../navigation/types';
 import { formatMoney, formatMoneyForAccessibility, forSpeech, isolate, needsOrganicPrefix } from '../../../shared/format';
 import { makeStyles, useTheme } from '../../../shared/theme';
-import { AppText, Button, IconButton, ImageTile, Price, PromoPill, QuantityStepper, Screen, ScreenHeader, queryState } from '../../../shared/ui';
+import { AppText, Button, IconButton, ImageTile, Price, PromoPill, QuantityStepper, Screen, ScreenHeader, placeholderProps, queryState } from '../../../shared/ui';
 import { useCartQuantities } from '../../cart/api/hooks';
 import { useMarketContext } from '../../market/MarketContext';
 import { useToggleProductFavorite } from '../../favorites/api/hooks';
@@ -81,7 +81,7 @@ export function ProductDetailScreen({ route, navigation }: MarketStackScreenProp
       }>
       <ScrollView contentContainerStyle={styles.content} testID="product-detail">
         <View>
-          <ImageTile uri={product.imageUrl} aspectRatio={1.1} />
+          <ImageTile uri={product.imageUrl} aspectRatio={1.1} {...placeholderProps(product.iconKey)} />
           {product.promotion != null && (
             <View style={styles.promo}>
               <PromoPill label={product.promotion.label} />

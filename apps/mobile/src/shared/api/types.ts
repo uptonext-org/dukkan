@@ -223,6 +223,8 @@ export interface ProductSummary {
   tagline?: string | null;
   unitSize: string;
   imageUrl?: string | null;
+  /** Placeholder hint while there is no photo (contract ProductSummary.iconKey). */
+  iconKey?: string | null;
   price: Money;
   promotionalPrice?: Money | null;
   comparisonPrice?: UnitPrice | null;
@@ -330,6 +332,8 @@ export interface CartItem {
   name: string;
   unitSize: string;
   imageUrl?: string | null;
+  /** Placeholder hint while there is no photo (contract ProductSummary.iconKey). */
+  iconKey?: string | null;
   unitPrice: Money;
   quantity: number;
   lineSubtotal: Money;
@@ -445,6 +449,8 @@ export interface CatalogProduct {
   brand?: string | null;
   unitSize: string;
   imageUrl?: string | null;
+  /** Placeholder hint while there is no photo (contract ProductSummary.iconKey). */
+  iconKey?: string | null;
   categoryId: string;
   cuisines: CodeName[];
   organic: boolean;

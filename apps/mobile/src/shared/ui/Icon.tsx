@@ -3,40 +3,67 @@
  * only what we use. One consistent stroke style (icons.md: "one visual language").
  * Icons are decorative: the surrounding control carries the accessibility label.
  */
+import Apple from 'lucide-react-native/icons/apple';
 import ArrowLeft from 'lucide-react-native/icons/arrow-left';
 import ArrowUpDown from 'lucide-react-native/icons/arrow-up-down';
+import Banana from 'lucide-react-native/icons/banana';
+import Bean from 'lucide-react-native/icons/bean';
+import Beef from 'lucide-react-native/icons/beef';
+import Beer from 'lucide-react-native/icons/beer';
+import CakeSlice from 'lucide-react-native/icons/cake-slice';
+import Candy from 'lucide-react-native/icons/candy';
+import Carrot from 'lucide-react-native/icons/carrot';
 import Check from 'lucide-react-native/icons/check';
+import Cherry from 'lucide-react-native/icons/cherry';
 import ChevronDown from 'lucide-react-native/icons/chevron-down';
 import ChevronRight from 'lucide-react-native/icons/chevron-right';
 import CircleAlert from 'lucide-react-native/icons/circle-alert';
 import CircleCheck from 'lucide-react-native/icons/circle-check';
+import Citrus from 'lucide-react-native/icons/citrus';
 import ClipboardList from 'lucide-react-native/icons/clipboard-list';
 import Clock from 'lucide-react-native/icons/clock';
+import Coffee from 'lucide-react-native/icons/coffee';
+import Croissant from 'lucide-react-native/icons/croissant';
+import CupSoda from 'lucide-react-native/icons/cup-soda';
+import Droplet from 'lucide-react-native/icons/droplet';
+import Drumstick from 'lucide-react-native/icons/drumstick';
+import Egg from 'lucide-react-native/icons/egg';
 import Ellipsis from 'lucide-react-native/icons/ellipsis';
+import FishIcon from 'lucide-react-native/icons/fish';
+import Flame from 'lucide-react-native/icons/flame';
 import Globe from 'lucide-react-native/icons/globe';
+import Ham from 'lucide-react-native/icons/ham';
 import Heart from 'lucide-react-native/icons/heart';
 import House from 'lucide-react-native/icons/house';
 import Leaf from 'lucide-react-native/icons/leaf';
+import LeafyGreen from 'lucide-react-native/icons/leafy-green';
 import List from 'lucide-react-native/icons/list';
 import LocateFixed from 'lucide-react-native/icons/locate-fixed';
 import LogOut from 'lucide-react-native/icons/log-out';
 import MapIcon from 'lucide-react-native/icons/map';
 import MapPin from 'lucide-react-native/icons/map-pin';
+import Milk from 'lucide-react-native/icons/milk';
 import Minus from 'lucide-react-native/icons/minus';
+import Nut from 'lucide-react-native/icons/nut';
 import Package from 'lucide-react-native/icons/package';
 import Pencil from 'lucide-react-native/icons/pencil';
 import Percent from 'lucide-react-native/icons/percent';
 import Plus from 'lucide-react-native/icons/plus';
 import ReceiptText from 'lucide-react-native/icons/receipt-text';
+import Salad from 'lucide-react-native/icons/salad';
+import Sandwich from 'lucide-react-native/icons/sandwich';
 import Search from 'lucide-react-native/icons/search';
 import ShoppingBasket from 'lucide-react-native/icons/shopping-basket';
 import SlidersHorizontal from 'lucide-react-native/icons/sliders-horizontal';
+import Snowflake from 'lucide-react-native/icons/snowflake';
+import Soup from 'lucide-react-native/icons/soup';
 import Sparkles from 'lucide-react-native/icons/sparkles';
 import Store from 'lucide-react-native/icons/store';
 import Tag from 'lucide-react-native/icons/tag';
 import Trash from 'lucide-react-native/icons/trash';
 import Truck from 'lucide-react-native/icons/truck';
 import UserRound from 'lucide-react-native/icons/user-round';
+import Wheat from 'lucide-react-native/icons/wheat';
 import WifiOff from 'lucide-react-native/icons/wifi-off';
 import X from 'lucide-react-native/icons/x';
 import type { ComponentType } from 'react';
@@ -83,6 +110,34 @@ const ICONS = {
   user: UserRound,
   offline: WifiOff,
   close: X,
+  // Product placeholders (see productPlaceholder.ts)
+  apple: Apple,
+  banana: Banana,
+  bean: Bean,
+  beef: Beef,
+  beer: Beer,
+  cake: CakeSlice,
+  candy: Candy,
+  carrot: Carrot,
+  cherry: Cherry,
+  citrus: Citrus,
+  coffee: Coffee,
+  croissant: Croissant,
+  soda: CupSoda,
+  droplet: Droplet,
+  drumstick: Drumstick,
+  egg: Egg,
+  fish: FishIcon,
+  flame: Flame,
+  ham: Ham,
+  leafyGreen: LeafyGreen,
+  milk: Milk,
+  nut: Nut,
+  salad: Salad,
+  sandwich: Sandwich,
+  snowflake: Snowflake,
+  soup: Soup,
+  wheat: Wheat,
 } satisfies Record<string, ComponentType<SvgProps & { size?: number; strokeWidth?: number }>>;
 
 export type IconName = keyof typeof ICONS;

@@ -9,7 +9,7 @@ import { formatDistance, formatMoney, formatMoneyForAccessibility, forSpeech } f
 import { useDebouncedValue } from '../../../shared/hooks/useDebouncedValue';
 import { HAMBURG, useChosenPlace } from '../../../shared/location';
 import { makeStyles, useTheme } from '../../../shared/theme';
-import { AppText, CardSkeletons, Chip, ChipScroller, EmptyState, ErrorState, Icon, ImageTile, SearchField } from '../../../shared/ui';
+import { AppText, CardSkeletons, Chip, ChipScroller, EmptyState, ErrorState, Icon, ImageTile, SearchField, placeholderProps } from '../../../shared/ui';
 import { ShellHeader } from '../../marketplace/components/ShellHeader';
 import { useNearbyOffers } from '../api/hooks';
 
@@ -19,6 +19,7 @@ export interface OfferGroup {
   key: string;
   name: string;
   imageUrl: string | null | undefined;
+  iconKey: string | null | undefined;
   offers: MarketOffer[];
 }
 
@@ -32,7 +33,7 @@ export function groupOffers(offers: readonly MarketOffer[]): OfferGroup[] {
     const key = offer.product.catalogProductId ?? offer.product.name.toLowerCase();
     let group = groups.get(key);
     if (!group) {
-      group = { key, name: offer.product.name, imageUrl: offer.product.imageUrl, offers: [] };
+      group = { key, name: offer.product.name, imageUrl: offer.product.imageUrl, iconKey: offer.product.iconKey, offers: [] };
       groups.set(key, group);
     }
     group.offers.push(offer);
@@ -78,7 +79,7 @@ export function GlobalSearchScreen({ navigation }: ShellTabScreenProps<'GlobalSe
         renderItem={({ item: group }) => (
           <View style={styles.group}>
             <View style={styles.groupHeader}>
-              <ImageTile uri={group.imageUrl} size={56} radius={12} />
+              <ImageTile uri={group.imageUrl} size={56} radius={12} {...placeholderProps(group.iconKey)} />
               <AppText variant="headline" accessibilityRole="header" style={styles.flex}>
                 {group.name}
               </AppText>

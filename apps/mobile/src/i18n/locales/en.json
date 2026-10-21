@@ -49,6 +49,7 @@
     "ORDER_NOT_CANCELLABLE": "This order can no longer be cancelled.",
     "INVALID_STATUS_TRANSITION": "This status change isn't allowed.",
     "IDEMPOTENCY_KEY_REUSED": "This order was already sent for another market. Please reload the cart and order again.",
+    "RATE_LIMITED": "Too many attempts. Please wait a moment and try again.",
     "field": {
       "MaxUtf8Bytes": "The password is too long. Arabic characters count double.",
       "Future": "The end date must be in the future."

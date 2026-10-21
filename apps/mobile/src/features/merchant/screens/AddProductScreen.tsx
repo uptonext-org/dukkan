@@ -8,7 +8,7 @@ import { withOrganicPrefix } from '../../../shared/format';
 import { useDebouncedValue } from '../../../shared/hooks/useDebouncedValue';
 import { isLanguage, type Language } from '../../../shared/i18n';
 import { makeStyles } from '../../../shared/theme';
-import { AppText, Button, Chip, ChipScroller, EmptyState, ErrorState, ImageTile, LoadingState, Screen, ScreenHeader, SearchField, SegmentedControl, TextField, ToggleSwitch } from '../../../shared/ui';
+import { AppText, Button, Chip, ChipScroller, EmptyState, ErrorState, ImageTile, LoadingState, Screen, ScreenHeader, SearchField, SegmentedControl, TextField, ToggleSwitch, placeholderProps } from '../../../shared/ui';
 import { hasErrors } from '../../auth/validation';
 import { useAllCategories } from '../../catalog/api/hooks';
 import { useCuisines } from '../../marketplace/api/hooks';
@@ -48,7 +48,7 @@ function CatalogRow({ product, marketId, onAdded }: { product: CatalogProduct; m
   return (
     <View style={styles.catalogRow} testID={`catalog-${product.id}`}>
       <View style={styles.rowMain}>
-        <ImageTile uri={product.imageUrl} size={52} radius={10} />
+        <ImageTile uri={product.imageUrl} size={52} radius={10} {...placeholderProps(product.iconKey)} />
         <View style={styles.flex}>
           <AppText variant="body" dense numberOfLines={2}>
             {withOrganicPrefix(product.name, product.organic, t('product.organic'))}

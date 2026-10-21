@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import type { CartItem } from '../../../shared/api';
 import { formatMoneyForAccessibility, forSpeech } from '../../../shared/format';
 import { makeStyles } from '../../../shared/theme';
-import { AppText, DiscountLabel, ImageTile, QuantityStepper, SuperscriptPrice } from '../../../shared/ui';
+import { AppText, DiscountLabel, ImageTile, QuantityStepper, SuperscriptPrice, placeholderProps } from '../../../shared/ui';
 
 interface CartRowProps {
   item: CartItem;
@@ -39,7 +39,7 @@ function CartRowComponent({ item, maxQuantity, busy, onChangeQuantity }: CartRow
             {String(item.quantity)}
           </AppText>
         </Pressable>
-        <ImageTile uri={item.imageUrl} size={64} radius={12} />
+        <ImageTile uri={item.imageUrl} size={64} radius={12} {...placeholderProps(item.iconKey)} />
         <View style={styles.texts}>
           <AppText variant="body" dense numberOfLines={2}>
             {item.name}

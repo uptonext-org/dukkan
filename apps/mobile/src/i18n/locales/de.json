@@ -49,6 +49,7 @@
     "ORDER_NOT_CANCELLABLE": "Diese Bestellung kann nicht mehr storniert werden.",
     "INVALID_STATUS_TRANSITION": "Dieser Statuswechsel ist nicht erlaubt.",
     "IDEMPOTENCY_KEY_REUSED": "Diese Bestellung wurde schon in einem anderen Markt abgeschickt. Bitte lade den Warenkorb neu und bestell noch einmal.",
+    "RATE_LIMITED": "Zu viele Versuche. Bitte warte kurz und versuch es dann noch einmal.",
     "field": {
       "MaxUtf8Bytes": "Das Passwort ist zu lang. Arabische Zeichen zählen doppelt.",
       "Future": "Das Enddatum muss in der Zukunft liegen."

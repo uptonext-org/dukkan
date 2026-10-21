@@ -18,3 +18,4 @@ export * from './Sheet';
 export * from './States';
 export * from './TextField';
 export * from './ToggleSwitch';
+export * from './productPlaceholder';
