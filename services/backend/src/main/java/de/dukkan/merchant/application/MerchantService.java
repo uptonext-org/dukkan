@@ -60,8 +60,8 @@ public class MerchantService {
   }
 
   /**
-   * Shared catalog search. The contract has no market parameter here, so {@code alreadyListed} is
-   * only computed when the merchant owns exactly one market (null otherwise).
+   * Shared catalog search. {@code alreadyListed} is computed for {@code marketId} (which must be
+   * owned by the caller) or, without it, for the merchant's only market; otherwise it is null.
    */
   @Transactional(readOnly = true)
   public PageResponse<CatalogProduct> searchCatalog(
@@ -69,11 +69,18 @@ public class MerchantService {
       @Nullable String q,
       @Nullable String cuisine,
       @Nullable UUID categoryId,
+      @Nullable UUID marketId,
       int page,
       int size,
       ContentLocale locale) {
-    List<UUID> owned = markets.ownedMarketIds(userId);
-    UUID context = owned.size() == 1 ? owned.getFirst() : null;
+    UUID context;
+    if (marketId != null) {
+      requireOwner(userId, marketId);
+      context = marketId;
+    } else {
+      List<UUID> owned = markets.ownedMarketIds(userId);
+      context = owned.size() == 1 ? owned.getFirst() : null;
+    }
     return catalog.sharedCatalog(q, cuisine, categoryId, context, page, size, locale);
   }
 

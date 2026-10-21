@@ -81,10 +81,11 @@ final class MerchantController {
       @RequestParam(required = false) @Nullable @Size(max = 100) String q,
       @RequestParam(required = false) @Nullable String cuisine,
       @RequestParam(required = false) @Nullable UUID categoryId,
+      @RequestParam(required = false) @Nullable UUID marketId,
       @Min(0) @RequestParam(defaultValue = "0") int page,
       @Max(100) @Min(1) @RequestParam(defaultValue = "20") int size,
       @RequestAttribute(ContentLocale.REQUEST_ATTRIBUTE) ContentLocale locale) {
-    return merchant.searchCatalog(CurrentUser.id(security), q, cuisine, categoryId, page, size, locale);
+    return merchant.searchCatalog(CurrentUser.id(security), q, cuisine, categoryId, marketId, page, size, locale);
   }
 
   @GetMapping("/markets/{marketId}/listings")

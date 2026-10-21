@@ -105,6 +105,23 @@ class MerchantIntegrationTest extends IntegrationTest {
     UUID apples = addListing(merchant, market, "Äpfel Elstar", 279);
     MvcResult again = mvc.perform(auth(get("/api/v1/merchant/catalog").param("q", "apple"), merchant)).andReturn();
     assertThat(booleans(again, "$.items[?(@.name == 'Äpfel Elstar')].alreadyListed")).containsExactly(true);
+    // With a second market the context must be explicit; marketId selects it (and must be owned).
+    UUID second = createMarket(merchant, "Zweiter Testmarkt");
+    MvcResult ambiguous = mvc.perform(auth(get("/api/v1/merchant/catalog").param("q", "apple"), merchant)).andExpect(status().isOk()).andReturn();
+    assertThat(booleans(ambiguous, "$.items[?(@.name == 'Äpfel Elstar')].alreadyListed")).containsOnlyNulls();
+    MvcResult inFirst =
+        mvc.perform(auth(get("/api/v1/merchant/catalog").param("q", "apple").param("marketId", market.toString()), merchant))
+            .andExpect(status().isOk())
+            .andReturn();
+    assertThat(booleans(inFirst, "$.items[?(@.name == 'Äpfel Elstar')].alreadyListed")).containsExactly(true);
+    MvcResult inSecond =
+        mvc.perform(auth(get("/api/v1/merchant/catalog").param("q", "apple").param("marketId", second.toString()), merchant))
+            .andExpect(status().isOk())
+            .andReturn();
+    assertThat(booleans(inSecond, "$.items[?(@.name == 'Äpfel Elstar')].alreadyListed")).containsExactly(false);
+    String stranger = registerMerchant();
+    mvc.perform(auth(get("/api/v1/merchant/catalog").param("marketId", market.toString()), stranger))
+        .andExpect(status().isNotFound());
     UUID catalogApples =
         UUID.fromString(strings(again, "$.items[?(@.name == 'Äpfel Elstar')].id").getFirst());
     mvc.perform(

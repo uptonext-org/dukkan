@@ -93,7 +93,7 @@ public class CatalogProductRepository {
     }
     String listed =
         listedInMarket == null
-            ? "NULL"
+            ? "CAST(NULL AS boolean)"
             : "EXISTS (SELECT 1 FROM market_product mp WHERE mp.catalog_product_id = cp.id AND mp.market_id = :market"
                 + " AND mp.deleted_at IS NULL)";
     String sql =

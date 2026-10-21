@@ -803,6 +803,7 @@ paths:
         - { name: q, in: query, schema: { type: string, maxLength: 100 } }
         - { name: cuisine, in: query, schema: { type: string } }
         - { name: categoryId, in: query, schema: { type: string, format: uuid } }
+        - { name: marketId, in: query, description: 'Own market used to compute alreadyListed (404 if not owned).', schema: { type: string, format: uuid } }
         - { $ref: '#/components/parameters/Page' }
         - { $ref: '#/components/parameters/Size' }
         - { $ref: '#/components/parameters/AcceptLanguage' }
@@ -1615,7 +1616,7 @@ components:
         cuisines: { type: array, items: { $ref: '#/components/schemas/CodeName' } }
         organic: { type: boolean }
         barcode: { type: [string, 'null'] }
-        alreadyListed: { type: [boolean, 'null'], description: Whether the merchant's market already sells it (when marketId context is known). }
+        alreadyListed: { type: [boolean, 'null'], description: Whether the market given by marketId (or the merchant's only market) already sells it. }
     CatalogProductPage:
       type: object
       required: [items, page, size, totalItems, totalPages]
