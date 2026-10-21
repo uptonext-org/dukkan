@@ -1,5 +1,6 @@
 package de.dukkan.shared.api;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.PositiveOrZero;
@@ -13,6 +14,7 @@ public record Money(@PositiveOrZero long amountCents, @NotNull @Pattern(regexp =
     return new Money(amountCents, EUR);
   }
 
+  @JsonIgnore
   public boolean isEuro() {
     return EUR.equals(currency);
   }

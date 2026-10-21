@@ -67,6 +67,28 @@ public final class OpenApiContract {
     return required;
   }
 
+  /** All declared property names of a component schema, following {@code allOf} and {@code $ref}. */
+  public Set<String> declaredFields(String schemaName) {
+    Set<String> declared = new LinkedHashSet<>();
+    collectDeclared(schema(schemaName), declared);
+    return declared;
+  }
+
+  private void collectDeclared(Map<String, Object> schema, Set<String> into) {
+    Object ref = schema.get("$ref");
+    if (ref instanceof String r) {
+      collectDeclared(schema(r.substring(r.lastIndexOf('/') + 1)), into);
+    }
+    Map<String, Object> properties = cast(schema.get("properties"));
+    if (properties != null) {
+      into.addAll(properties.keySet());
+    }
+    List<Map<String, Object>> allOf = cast(schema.get("allOf"));
+    if (allOf != null) {
+      allOf.forEach(part -> collectDeclared(part, into));
+    }
+  }
+
   public static String normalise(String path) {
     return path.replaceAll("\\{[^}]+}", "{}");
   }

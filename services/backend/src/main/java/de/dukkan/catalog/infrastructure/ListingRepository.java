@@ -102,6 +102,10 @@ public class ListingRepository {
           LIMIT 1) loc ON true
       """;
 
+  private static final String ANY_NAME_FIRST_WORD =
+      "EXISTS (SELECT 1 FROM catalog_product_translation t3 WHERE t3.catalog_product_id = cp.id"
+          + " AND (t3.search_name = :word OR t3.search_name LIKE :firstWord ESCAPE '\\'))";
+
   private static final String ANY_NAME_PREFIX =
       "EXISTS (SELECT 1 FROM catalog_product_translation t2 WHERE t2.catalog_product_id = cp.id"
           + " AND t2.search_name LIKE :prefix ESCAPE '\\')";
@@ -321,9 +325,19 @@ public class ListingRepository {
     }
   }
 
-  /** 0: localised name starts with the term, 1: any translation starts with it, 2: substring match. */
+  /**
+   * Relevance tiers, best first: 0 the localised name's first word is the term ("apfel" → "Äpfel
+   * Elstar"), 1 any translation's first word is the term, 2 the localised name starts with the term
+   * ("Apfelschorle"), 3 any translation starts with it, 4 a later word of the localised name is the
+   * term ("Bio Äpfel"), 5 any other match (substring, keyword, brand).
+   */
   private static String rankExpression() {
-    return "CASE WHEN loc.search_name LIKE :prefix ESCAPE '\\' THEN 0 WHEN " + ANY_NAME_PREFIX + " THEN 1 ELSE 2 END";
+    return "CASE WHEN (loc.search_name = :word OR loc.search_name LIKE :firstWord ESCAPE '\\') THEN 0 WHEN "
+        + ANY_NAME_FIRST_WORD
+        + " THEN 1 WHEN loc.search_name LIKE :prefix ESCAPE '\\' THEN 2 WHEN "
+        + ANY_NAME_PREFIX
+        + " THEN 3 WHEN (loc.search_name LIKE :innerWord ESCAPE '\\' OR loc.search_name LIKE :lastWord ESCAPE '\\')"
+        + " THEN 4 ELSE 5 END";
   }
 
   private static String orderBy(MarketSearch search) {
@@ -347,7 +361,15 @@ public class ListingRepository {
             .param("l1", locale(locales, 1))
             .param("l2", locale(locales, 2));
     if (search.term() != null) {
-      bound = bound.param("pattern", "%" + escape(search.term()) + "%").param("prefix", escape(search.term()) + "%");
+      String term = escape(search.term());
+      bound =
+          bound
+              .param("pattern", "%" + term + "%")
+              .param("prefix", term + "%")
+              .param("word", search.term())
+              .param("firstWord", term + " %")
+              .param("innerWord", "% " + term + " %")
+              .param("lastWord", "% " + term);
     }
     if (search.categoryId() != null) {
       bound = bound.param("categoryId", search.categoryId());

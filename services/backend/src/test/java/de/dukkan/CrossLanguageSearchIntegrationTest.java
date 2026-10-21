@@ -109,6 +109,20 @@ class CrossLanguageSearchIntegrationTest extends IntegrationTest {
                     .param("sort", "distance"))
             .andReturn();
     assertThat(ints(byDistance, "$.items[*].market.distanceMeters")).isSorted();
+    // Relevance: a whole first word ("apfel" = "Äpfel Elstar") beats a longer prefix ("Apfelschorle"),
+    // in German and Arabic (in English "apple" is the first word of "Apple spritzer", so that one wins).
+    for (String q : new String[] {"apfel", "Äpfel", "تفاح"}) {
+      MvcResult relevant =
+          mvc.perform(
+                  get("/api/v1/search/products")
+                      .param("q", q)
+                      .param("lat", String.valueOf(ST_GEORG_LAT))
+                      .param("lng", String.valueOf(ST_GEORG_LNG))
+                      .param("radiusKm", "15")
+                      .header(HttpHeaders.ACCEPT_LANGUAGE, "de"))
+              .andReturn();
+      assertThat(strings(relevant, "$.items[*].product.name")).as(q).first().isEqualTo("Äpfel Elstar");
+    }
     mvc.perform(get("/api/v1/search/products").param("q", "a").param("lat", "53.5").param("lng", "10"))
         .andExpect(status().isBadRequest());
   }

@@ -29,6 +29,22 @@ class ResponseSchemaIntegrationTest extends IntegrationTest {
     assertThat(node).as(schema).isInstanceOf(Map.class);
     List<String> keys = ((Map<?, ?>) node).keySet().stream().map(String::valueOf).toList();
     assertThat(keys).as(schema).containsAll(CONTRACT.requiredFields(schema));
+    assertThat(keys).as("%s has no undocumented properties", schema).isSubsetOf(CONTRACT.declaredFields(schema));
+    assertMoneyIsExact(node);
+  }
+
+  /** Every nested Money object has exactly amountCents and currency (no leaked helper getters). */
+  private static void assertMoneyIsExact(Object node) {
+    if (node instanceof Map<?, ?> map) {
+      if (map.containsKey("amountCents")) {
+        assertThat(map.keySet().stream().map(String::valueOf).toList())
+            .as("Money")
+            .containsExactlyInAnyOrder("amountCents", "currency");
+      }
+      map.values().forEach(ResponseSchemaIntegrationTest::assertMoneyIsExact);
+    } else if (node instanceof List<?> list) {
+      list.forEach(ResponseSchemaIntegrationTest::assertMoneyIsExact);
+    }
   }
 
   private Object first(MvcResult result, String path) throws Exception {
