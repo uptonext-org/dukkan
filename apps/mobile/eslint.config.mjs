@@ -14,6 +14,8 @@ export default defineConfig(
     '*.config.js',
     '.prettierrc.js',
     'index.js',
+    // Node build scripts (plain ESM, run by CI).
+    'scripts/',
   ]),
   js.configs.recommended,
   tseslint.configs.strictTypeChecked,

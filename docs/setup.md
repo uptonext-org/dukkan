@@ -179,6 +179,12 @@ the right columns; save as "CSV UTF-8". Checks: `npm run lint`, `npm test`, `npm
 
 ## 4. Quality checks
 
+Native builds (B-28) run in `.github/workflows/native.yml` when `apps/mobile` changes, or by hand
+(Actions → Native builds → Run workflow): an Android release APK (artifact
+`dukkan-android-release-apk`, signed with the debug keystore, not for the stores) and an iOS
+simulator build. Locally, `npm run bundle:check` in `apps/mobile` builds both release JS bundles and
+compiles them to Hermes bytecode without an SDK.
+
 | Check | Command | Result on this branch (2026-10-21) |
 |---|---|---|
 | Backend compile + Error Prone + all tests | `cd services/backend && ./gradlew clean build` | Pass: 207 tests in 40 classes, 0 failures (incl. security-review regressions, admin, rate limit, slot clean-up, media upload) |

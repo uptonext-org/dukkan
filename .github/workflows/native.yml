@@ -1,0 +1,83 @@
+name: Native builds
+
+# B-28: compiles the app for Android and iOS. Runs when the mobile app changes (and on demand),
+# because macOS runners are slow and expensive. No signing secrets are used: the Android release
+# APK is signed with the template's debug keystore, iOS builds for the simulator without signing.
+
+on:
+  push:
+    branches: [main, "feature/**", "claude/**"]
+    paths: ["apps/mobile/**", ".github/workflows/native.yml", ".nvmrc"]
+  pull_request:
+    paths: ["apps/mobile/**", ".github/workflows/native.yml", ".nvmrc"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: native-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android:
+    name: Android release build (APK)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: apps/mobile/package-lock.json
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v5
+      - run: npm ci
+      # compileSdk 37, build tools 37.0.0 and NDK 27.1 are installed by the Android Gradle plugin
+      # on first use; the runner's SDK has the licences accepted.
+      - name: Assemble release APK
+        working-directory: apps/mobile/android
+        run: ./gradlew assembleRelease --no-daemon --stacktrace
+      - uses: actions/upload-artifact@v5
+        with:
+          name: dukkan-android-release-apk
+          path: apps/mobile/android/app/build/outputs/apk/release/*.apk
+          retention-days: 7
+
+  ios:
+    name: iOS simulator build
+    runs-on: macos-15
+    timeout-minutes: 90
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: apps/mobile/package-lock.json
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+          working-directory: apps/mobile
+      - run: npm ci
+      - name: Install pods
+        working-directory: apps/mobile/ios
+        run: bundle exec pod install
+      - name: Build for the simulator
+        working-directory: apps/mobile/ios
+        run: |
+          set -o pipefail
+          xcodebuild -workspace Dukkan.xcworkspace -scheme Dukkan -configuration Release \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build CODE_SIGNING_ALLOWED=NO build | tail -n 200
