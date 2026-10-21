@@ -59,7 +59,9 @@ public class SecurityConfiguration {
 
   /** Always public: languages, filter chips and the address search used during onboarding. */
   private static final String[] META =
-      new String[] {API + "/locales", API + "/market-types", API + "/cuisines", API + "/geo/search", API + "/geo/reverse"};
+      new String[] {
+        API + "/locales", API + "/market-types", API + "/cuisines", API + "/categories", API + "/geo/search", API + "/geo/reverse"
+      };
 
   @Bean
   SecurityFilterChain securityFilterChain(

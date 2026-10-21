@@ -61,6 +61,9 @@ class ResponseSchemaIntegrationTest extends IntegrationTest {
     conforms("User", read(mvc.perform(auth(get("/api/v1/me"), token)).andReturn(), "$"));
     conforms("Locale", first(mvc.perform(get("/api/v1/locales")).andReturn(), "$"));
     conforms("CodeName", first(mvc.perform(get("/api/v1/cuisines")).andReturn(), "$"));
+    MvcResult allCategories = mvc.perform(get("/api/v1/categories")).andExpect(status().isOk()).andReturn();
+    conforms("Category", first(allCategories, "$"));
+    assertThat(strings(allCategories, "$[*].slug")).hasSizeGreaterThanOrEqualTo(12);
     conforms("Place", first(mvc.perform(get("/api/v1/geo/search").param("q", "Lange Reihe")).andReturn(), "$"));
 
     MvcResult page = mvc.perform(get("/api/v1/markets").param("lat", "53.5551").param("lng", "10.0128")).andReturn();

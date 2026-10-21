@@ -18,8 +18,6 @@ import { CartRow } from '../components/CartRow';
 import { CartSummary } from '../components/CartSummary';
 import { cartCta } from '../model';
 
-/** The contract caps any line at 99; CartItem carries no per-listing limit, the server enforces it. */
-const CART_LINE_HARD_CAP = 99;
 
 /** Warenkorb of one market: fulfilment bar, rows, summary, sticky CTA. */
 export function MarketCartScreen({ navigation }: MarketTabScreenProps<'MarketCart'>) {
@@ -135,7 +133,7 @@ export function MarketCartScreen({ navigation }: MarketTabScreenProps<'MarketCar
           <CartRow
             key={item.productId}
             item={item}
-            maxQuantity={CART_LINE_HARD_CAP}
+            maxQuantity={item.maxOrderQuantity}
             busy={setQuantity.isPending && setQuantity.variables.productId === item.productId}
             onChangeQuantity={(productId, quantity) => setQuantity.mutate({ productId, quantity })}
           />

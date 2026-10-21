@@ -21,6 +21,7 @@ export const queryKeys = {
   market: (lang: string, marketId: string) => ['market', lang, marketId] as const,
   marketHome: (lang: string, marketId: string) => ['marketHome', lang, marketId] as const,
   categories: (lang: string, marketId: string) => ['categories', lang, marketId] as const,
+  allCategories: (lang: string) => ['allCategories', lang] as const,
   products: (lang: string, marketId: string, params: Omit<ListMarketProductsParams, 'page'>) =>
     ['products', lang, marketId, params] as const,
   suggestions: (lang: string, marketId: string, q: string) => ['suggestions', lang, marketId, q] as const,

@@ -22,7 +22,7 @@ function setup(extra: Parameters<typeof createFakeApiClient>[0] = {}) {
       { code: 'ARABIC', name: 'Arabisch' },
     ],
     'GET /merchant/catalog': page([ayran, listed]),
-    [`GET /markets/${MARKET_ID}/categories`]: [{ id: 'cat-drinks', parentId: null, slug: 'getraenke', name: 'Getränke', sortOrder: 1 }],
+    'GET /categories': [{ id: 'cat-drinks', parentId: null, slug: 'getraenke', name: 'Getränke', sortOrder: 1, productCount: null }],
     [`POST /merchant/markets/${MARKET_ID}/listings`]: { ...ayran, marketId: MARKET_ID, price: eur(129), available: true, organic: false, isNew: true, maxOrderQuantity: 24, privateProduct: false },
     ...extra,
   });

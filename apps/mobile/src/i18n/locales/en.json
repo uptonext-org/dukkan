@@ -494,7 +494,6 @@
     "brand": "Brand",
     "unitSize": "Pack size",
     "category": "Category",
-    "noCategories": "This market has no categories yet. Add a product from the catalog first.",
     "organic": "Organic",
     "allergens": "Allergens",
     "allergensHint": "Comma-separated",

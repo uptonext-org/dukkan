@@ -9,7 +9,7 @@ import { isLanguage, type Language } from '../../../shared/i18n';
 import { makeStyles, useTheme } from '../../../shared/theme';
 import { AppText, Button, Chip, EmptyState, ErrorState, ImageTile, LoadingState, Screen, ScreenHeader, SearchField, SegmentedControl, TextField } from '../../../shared/ui';
 import { hasErrors } from '../../auth/validation';
-import { useCategories } from '../../catalog/api/hooks';
+import { useAllCategories } from '../../catalog/api/hooks';
 import { useCuisines } from '../../marketplace/api/hooks';
 import { toggle } from '../../marketplace/model';
 import { useCatalogSearch, useCreateListing, useMyMarkets } from '../api/hooks';
@@ -85,7 +85,7 @@ function NewProductForm({ marketId, primaryLocale, onAdded }: { marketId: string
   const styles = useStyles();
   const { colors } = useTheme();
   const { t } = useTranslation();
-  const categories = useCategories(marketId);
+  const categories = useAllCategories();
   const cuisines = useCuisines();
   const create = useCreateListing(marketId);
   const [values, setValues] = useState<NewProductValues>(emptyNewProduct);
@@ -117,11 +117,6 @@ function NewProductForm({ marketId, primaryLocale, onAdded }: { marketId: string
           <Chip key={c.id} label={c.name} selected={values.categoryId === c.id} onPress={() => set('categoryId', c.id)} />
         ))}
       </View>
-      {categories.isSuccess && categories.data.length === 0 && (
-        <AppText variant="caption" color="textSecondary">
-          {t('merchant.noCategories')}
-        </AppText>
-      )}
       {err('categoryId') !== undefined && (
         <AppText variant="caption" color="accent" accessibilityRole="alert">
           {err('categoryId')}

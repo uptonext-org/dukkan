@@ -101,6 +101,7 @@ describeLive('live API (app client against the real backend)', () => {
       cart = await customer.setCartItemQuantity(shop.id, product.id, Math.min(3, product.maxOrderQuantity));
     }
     expect(cart.meetsMinimumOrderValue).toBe(true);
+    expect(cart.items.every((i) => i.maxOrderQuantity >= i.quantity)).toBe(true);
     money(cart.total);
     expect((await customer.listCarts()).map((c) => c.market.id)).toContain(shop.id);
 
@@ -126,7 +127,9 @@ describeLive('live API (app client against the real backend)', () => {
     expect((await customer.cancelOrder(order.id)).status).toBe('CANCELLED');
 
     // Merchant adds a private product with three languages and finds it by an Arabic search.
-    const category = required((await customer.listMarketCategories(shop.id))[0], 'category');
+    const allCategories = await api('ar').listCategories();
+    expect(allCategories.length).toBeGreaterThanOrEqual(12);
+    const category = required(allCategories.find((c) => c.parentId === null), 'category');
     const unique = `Livetest ${Date.now()}`;
     const listing = await merchant.createListing(shop.id, {
       newProduct: {

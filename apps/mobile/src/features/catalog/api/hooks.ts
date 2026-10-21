@@ -13,6 +13,17 @@ export function useCategories(marketId: string) {
   });
 }
 
+/** The whole category tree (not only categories with products), e.g. for creating a first product. */
+export function useAllCategories() {
+  const api = useApi();
+  const lang = useLang();
+  return useQuery({
+    queryKey: queryKeys.allCategories(lang),
+    queryFn: ({ signal }) => api.listCategories(signal),
+    staleTime: 60 * 60_000,
+  });
+}
+
 export function useMarketProducts(marketId: string, params: Omit<ListMarketProductsParams, 'page'>, enabled = true) {
   const api = useApi();
   const lang = useLang();

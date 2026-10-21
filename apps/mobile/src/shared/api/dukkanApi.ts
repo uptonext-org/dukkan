@@ -66,6 +66,7 @@ export interface DukkanApi {
   getMarket(marketId: string, at?: { lat: number; lng: number }, signal?: Signal): Promise<MarketDetail>;
   getMarketHome(marketId: string, signal?: Signal): Promise<MarketHome>;
   listMarketCategories(marketId: string, signal?: Signal): Promise<Category[]>;
+  listCategories(signal?: Signal): Promise<Category[]>;
   listMarketProducts(
     marketId: string,
     params: ListMarketProductsParams,
@@ -147,6 +148,7 @@ export function createDukkanApi(client: ApiClient): DukkanApi {
     getMarketHome: (marketId, signal) => get(`/markets/${enc(marketId)}/home`, undefined, signal),
     listMarketCategories: (marketId, signal) =>
       get(`/markets/${enc(marketId)}/categories`, undefined, signal),
+    listCategories: (signal) => get('/categories', undefined, signal),
     listMarketProducts: (marketId, params, signal) =>
       get(`/markets/${enc(marketId)}/products`, { ...params }, signal),
     marketSearchSuggestions: (marketId, q, signal) =>

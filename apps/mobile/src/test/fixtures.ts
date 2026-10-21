@@ -94,6 +94,7 @@ export function cartItem(overrides: Partial<CartItem> = {}): CartItem {
     lineTotal: eur(214),
     promotion: { promotionId: '00000000-0000-4000-8000-0000000000p2', label: '10 % Rabatt', type: 'PERCENT_OFF' },
     available: true,
+    maxOrderQuantity: 24,
     ...overrides,
   };
 }

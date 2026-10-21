@@ -337,6 +337,7 @@ export interface CartItem {
   lineTotal: Money;
   promotion?: PromotionBadge | null;
   available?: boolean;
+  maxOrderQuantity: number;
 }
 
 export interface Cart {

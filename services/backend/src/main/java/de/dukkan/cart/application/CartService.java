@@ -257,7 +257,8 @@ public class CartService {
               line.discountCents(),
               line.totalCents(),
               line.promotion() == null ? null : listing.promotionBadge(),
-              listing.available()));
+              listing.available(),
+              listing.maxOrderQuantity()));
     }
     return new CartView(
         cart.getId(),

@@ -17,4 +17,5 @@ public record CartLineView(
     long discountCents,
     long totalCents,
     @Nullable PromotionBadge promotion,
-    boolean available) {}
+    boolean available,
+    int maxOrderQuantity) {}

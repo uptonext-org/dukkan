@@ -38,7 +38,8 @@ record CartResponse(
       Money lineDiscount,
       Money lineTotal,
       @Nullable PromotionBadge promotion,
-      boolean available) {
+      boolean available,
+      int maxOrderQuantity) {
 
     static Item from(CartLineView line) {
       return new Item(
@@ -52,7 +53,8 @@ record CartResponse(
           Money.eur(line.discountCents()),
           Money.eur(line.totalCents()),
           line.promotion(),
-          line.available());
+          line.available(),
+          line.maxOrderQuantity());
     }
   }
 

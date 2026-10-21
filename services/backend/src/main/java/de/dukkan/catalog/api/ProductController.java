@@ -1,6 +1,7 @@
 package de.dukkan.catalog.api;
 
 import de.dukkan.catalog.application.CatalogService;
+import de.dukkan.catalog.application.CategoryView;
 import de.dukkan.catalog.application.MarketOffer;
 import de.dukkan.catalog.application.ProductDetail;
 import de.dukkan.i18n.application.ContentLocale;
@@ -13,6 +14,7 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.security.core.annotation.CurrentSecurityContext;
 import org.springframework.security.core.context.SecurityContext;
@@ -31,6 +33,11 @@ final class ProductController {
 
   ProductController(CatalogService catalog) {
     this.catalog = catalog;
+  }
+
+  @GetMapping("/categories")
+  List<CategoryView> categories(@RequestAttribute(ContentLocale.REQUEST_ATTRIBUTE) ContentLocale locale) {
+    return catalog.allCategories(locale);
   }
 
   @GetMapping("/products/{productId}")

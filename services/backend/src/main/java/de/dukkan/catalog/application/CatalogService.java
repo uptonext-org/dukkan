@@ -108,6 +108,11 @@ public class CatalogService {
         .toList();
   }
 
+  /** The whole localised category tree (no counts), e.g. for merchants creating a first product. */
+  public List<CategoryView> allCategories(ContentLocale locale) {
+    return categoryRows().stream().map(row -> category(row, locale, null, null)).toList();
+  }
+
   /** Localised categories by id (no counts), in sort order. */
   public List<CategoryView> categories(Collection<UUID> ids, ContentLocale locale, @Nullable String primaryLocale) {
     return categoryRows().stream()

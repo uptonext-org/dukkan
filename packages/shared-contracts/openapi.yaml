@@ -89,6 +89,23 @@ paths:
                 type: array
                 items: { $ref: '#/components/schemas/CodeName' }
 
+  /categories:
+    get:
+      tags: [meta]
+      operationId: listCategories
+      summary: The whole category tree (for merchants creating products)
+      security: []
+      parameters:
+        - { $ref: '#/components/parameters/AcceptLanguage' }
+      responses:
+        '200':
+          description: Flat list ordered by sortOrder (productCount is null); build the tree via parentId.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Category' }
+
   # ---------------------------------------------------------------- auth
   /auth/register:
     post:
@@ -1464,7 +1481,7 @@ components:
         expiresAt: { type: string, format: date-time }
     CartItem:
       type: object
-      required: [productId, name, unitSize, unitPrice, quantity, lineSubtotal, lineDiscount, lineTotal]
+      required: [productId, name, unitSize, unitPrice, quantity, lineSubtotal, lineDiscount, lineTotal, maxOrderQuantity]
       properties:
         productId: { type: string, format: uuid }
         name: { type: string }
@@ -1480,6 +1497,7 @@ components:
             - type: 'null'
             - $ref: '#/components/schemas/PromotionBadge'
         available: { type: boolean }
+        maxOrderQuantity: { type: integer, minimum: 1, maximum: 99 }
     Cart:
       type: object
       required: [id, market, items, itemCount, subtotal, discountTotal, deliveryFee, total, minimumOrderValue, meetsMinimumOrderValue]
