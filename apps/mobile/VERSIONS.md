@@ -51,6 +51,15 @@ Checked with `npm view <pkg>@<ver> peerDependencies engines time` against the pu
 | react-native-svg | 15.16.0 | peers `react *`, `react-native *`; README table only says `>=6 → RN >=0.50` | Released 2026-10-15, same day as RN 0.88. Required by lucide and the favourites illustration. Native compile **not verified** |
 | @expo-google-fonts/inter, @expo-google-fonts/ibm-plex-sans-arabic | 0.4.2 (not installed) | n/a | Fetched with `npm pack` into a scratch folder only; the 400/500/600/700 TTFs plus `LICENSE_FONT` (SIL OFL 1.1) were copied to `assets/fonts` and renamed to their PostScript names. They are **not** dependencies |
 
+### Image upload (B-32, 2026-10-21)
+
+| Component | Used | Peers / verification | Notes |
+|---|---|---|---|
+| react-native-image-picker | 8.3.0 | `npm view react-native-image-picker@8.3.0 peerDependencies` → `react *`, `react-native *` (RN 0.88.0 / React 19.3.1 satisfy them); `codegenConfig` `RNImagePickerSpec` (TurboModule, New Architecture; `newArchEnabled=true` here); `latest` dist-tag = 8.3.0, published 2026-10-13 | 8.3.1 was published a minute later but is not tagged `latest`, so the tagged release is pinned. Android uses AndroidX `PickVisualMedia` (no storage permission) and an `ACTION_IMAGE_CAPTURE` intent; iOS PHPicker / UIImagePicker. Its podspec ships a privacy manifest. Wrapped behind `PhotoPicker` (`src/shared/media`); mocked in Jest and stubbed in the web preview. Native compile **not verified** (no SDKs in the sandbox). `pod install` not run, so iOS autolinking happens on the next `pod install` |
+
+`npm audit --omit=dev --audit-level=critical` after adding it: exit code 0, **21 high, 0 critical** (unchanged,
+all `braces`; the picker is not flagged).
+
 ### npm audit after the rebuild (real output, 2026-10-21)
 
 - `npm audit --omit=dev --audit-level=critical`: exit code 0. Totals: **21 high, 0 critical**. All from the same

@@ -10,6 +10,7 @@ import type { ApiClient, GeoPoint } from '../shared/api';
 import { forSpeech } from '../shared/format/bidi';
 import { createI18n, createLanguageStore, type Language } from '../shared/i18n';
 import type { ChosenPlace, LocationService } from '../shared/location';
+import { createFakePhotoPicker, type PhotoPicker } from '../shared/media';
 import { createMemoryKeyValueStorage, createMemoryTokenStorage, STORAGE_KEYS } from '../shared/storage';
 
 export const ST_GEORG: ChosenPlace = { label: 'Lange Reihe 12, 20099 Hamburg (St. Georg)', shortLabel: 'St. Georg', location: { lat: 53.5552, lng: 10.0105 } };
@@ -19,6 +20,7 @@ export interface TestOptions {
   language?: Language;
   place?: ChosenPlace | null;
   location?: LocationService;
+  photoPicker?: PhotoPicker;
 }
 
 const clients = new Set<QueryClient>();
@@ -50,6 +52,7 @@ export function createTestDependencies(apiClient: ApiClient, options: TestOption
     i18n: createI18n(language),
     storage,
     locationService: options.location ?? { getCurrentPosition: () => Promise.resolve<GeoPoint>(ST_GEORG.location) },
+    photoPicker: options.photoPicker ?? createFakePhotoPicker({ status: 'cancelled' }),
   };
 }
 

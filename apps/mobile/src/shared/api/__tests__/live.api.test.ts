@@ -8,6 +8,7 @@
 import { createFetchApiClient } from '../client';
 import { createDukkanApi, type DukkanApi } from '../dukkanApi';
 import type { MarketSummary } from '../types';
+import { blobOf } from '../../../test/formData';
 
 declare const process: { env: Record<string, string | undefined> };
 
@@ -38,6 +39,51 @@ function api(language: string, token: () => string | null = () => null): DukkanA
 async function signIn(email: string): Promise<DukkanApi> {
   const auth = await api('de').login({ email, password: DEMO_PASSWORD });
   return api('de', () => auth.accessToken);
+}
+
+// ---------------------------------------------------------------- tiny PNG encoder (no zlib needed)
+
+const CRC_TABLE = Array.from({ length: 256 }, (_, n) => {
+  let c = n;
+  for (let k = 0; k < 8; k++) {
+    c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+  }
+  return c >>> 0;
+});
+
+function crc32(bytes: Uint8Array): number {
+  let c = 0xffffffff;
+  for (const b of bytes) {
+    c = (CRC_TABLE[(c ^ b) & 0xff] ?? 0) ^ (c >>> 8);
+  }
+  return (c ^ 0xffffffff) >>> 0;
+}
+
+const u32 = (n: number) => [(n >>> 24) & 0xff, (n >>> 16) & 0xff, (n >>> 8) & 0xff, n & 0xff];
+
+function chunk(type: string, data: number[]): number[] {
+  const body = Array.from({ length: type.length }, (_, i) => type.charCodeAt(i)).concat(data);
+  return [...u32(data.length), ...body, ...u32(crc32(Uint8Array.from(body)))];
+}
+
+/** An RGB PNG of one colour, deflate "stored" blocks (valid zlib without compression). */
+function solidPng(width: number, height: number, rgb: [number, number, number]): Uint8Array {
+  const raw: number[] = [];
+  for (let y = 0; y < height; y++) {
+    raw.push(0); // filter: none
+    for (let x = 0; x < width; x++) {
+      raw.push(...rgb);
+    }
+  }
+  let a = 1;
+  let b = 0;
+  for (const byte of raw) {
+    a = (a + byte) % 65521;
+    b = (b + a) % 65521;
+  }
+  const zlib = [0x78, 0x01, 0x01, raw.length & 0xff, raw.length >>> 8, ~raw.length & 0xff, (~raw.length >>> 8) & 0xff, ...raw, ...u32(((b << 16) | a) >>> 0)];
+  const ihdr = [...u32(width), ...u32(height), 8, 2, 0, 0, 0];
+  return Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, ...chunk('IHDR', ihdr), ...chunk('IDAT', zlib), ...chunk('IEND', [])]);
 }
 
 function money(value: { amountCents: number; currency: string }): void {
@@ -144,5 +190,40 @@ describeLive('live API (app client against the real backend)', () => {
     const found = await api('de').listMarketProducts(shop.id, { q: 'منتج اختبار' });
     expect(found.items.map((p) => p.id)).toContain(listing.id);
     await merchant.deleteListing(shop.id, listing.id);
+  });
+
+  it('uploads a photo as the demo merchant, attaches it to a listing and serves it publicly', async () => {
+    const merchant = await signIn('haendler@dukkan.local');
+    const shop = required((await merchant.listMyMarkets())[0], 'demo merchant market');
+    const listing = required((await merchant.listMyListings(shop.id, { size: 1 })).items[0], 'listing');
+
+    const seed = Date.now() % 250;
+    const png = solidPng(12, 8, [seed, 120, 200]);
+    const media = await merchant.uploadMedia(shop.id, { blob: blobOf(png, 'image/png'), name: 'live.png' }, 'PRODUCT');
+    expect(media).toMatchObject({ width: 12, height: 8, contentType: 'image/png', sizeBytes: png.length });
+    expect(media.url).toMatch(/^https?:\/\/.+\/api\/v1\/media\/[0-9a-f]{64}\.png$/);
+    // Same bytes → same content-addressed URL.
+    expect((await merchant.uploadMedia(shop.id, { blob: blobOf(png, 'image/png'), name: 'again.png' }, 'LOGO')).url).toBe(media.url);
+
+    try {
+      expect((await merchant.updateListing(shop.id, listing.id, { imageUrl: media.url })).imageUrl).toBe(media.url);
+      const product = await api('en').getProduct(listing.id);
+      expect(product.imageUrl).toBe(media.url);
+
+      const served = await fetch(required(product.imageUrl, 'imageUrl'));
+      expect(served.status).toBe(200);
+      expect(served.headers.get('content-type')).toBe('image/png');
+      expect(served.headers.get('cache-control')).toContain('immutable');
+      expect(served.headers.get('x-content-type-options')).toBe('nosniff');
+      expect(new Uint8Array(await served.arrayBuffer())).toEqual(png);
+    } finally {
+      // Seed listings have no own photo; null restores the catalog image.
+      expect((await merchant.updateListing(shop.id, listing.id, { imageUrl: null })).imageUrl).not.toBe(media.url);
+    }
+
+    // Spoofed content: a text file declared as JPEG is rejected by its bytes.
+    await expect(
+      merchant.uploadMedia(shop.id, { blob: blobOf('<html></html>', 'image/jpeg'), name: 'fake.jpg' }, 'PRODUCT'),
+    ).rejects.toMatchObject({ status: 415, code: 'UNSUPPORTED_MEDIA_TYPE' });
   });
 });

@@ -4,9 +4,11 @@ package de.dukkan.shared.error;
 public abstract sealed class DomainException extends RuntimeException
     permits BusinessRuleException,
         ConflictException,
+        ContentRejectedException,
         InvalidCredentialsException,
         InvalidRequestException,
         NotFoundException,
+        RateLimitedException,
         UnauthorizedException {
 
   private static final long serialVersionUID = 1L;

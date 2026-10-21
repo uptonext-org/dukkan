@@ -9,12 +9,14 @@ import { useDebouncedValue } from '../../../shared/hooks/useDebouncedValue';
 import { makeStyles } from '../../../shared/theme';
 import { AppText, Button, EmptyState, IconButton, ImageTile, Screen, ScreenHeader, SearchField, ToggleSwitch, placeholderProps, queryState } from '../../../shared/ui';
 import { useListings, useUpdateListing } from '../api/hooks';
+import { PhotoField } from '../components/PhotoField';
 
 const ListingRow = memo(function ListingRow({ listing, marketId }: { listing: Listing; marketId: string }) {
   const styles = useStyles();
   const { t } = useTranslation();
   const update = useUpdateListing(marketId);
   const [editing, setEditing] = useState(false);
+  const [photo, setPhoto] = useState(false);
   const [price, setPrice] = useState(centsToInput(listing.price.amountCents));
   const cents = parseMoneyInput(price);
   return (
@@ -29,6 +31,7 @@ const ListingRow = memo(function ListingRow({ listing, marketId }: { listing: Li
             {`${listing.unitSize} · ${formatMoney(listing.price)}${listing.promotion != null ? ` · ${listing.promotion.label}` : ''}`}
           </AppText>
         </View>
+        <IconButton icon="camera" label={t('merchant.photo.editFor', { name: listing.name })} onPress={() => setPhoto((p) => !p)} selected={photo} testID={`photo-toggle-${listing.id}`} />
         <IconButton icon="edit" label={t('merchant.editPrice', { name: listing.name })} onPress={() => setEditing((e) => !e)} />
         <ToggleSwitch
           value={listing.available}
@@ -60,6 +63,18 @@ const ListingRow = memo(function ListingRow({ listing, marketId }: { listing: Li
             }}
           />
         </View>
+      )}
+      {photo && (
+        <PhotoField
+          label={t('merchant.productPhoto')}
+          marketId={marketId}
+          purpose="PRODUCT"
+          value={listing.imageUrl ?? null}
+          saving={update.isPending}
+          onChange={(imageUrl) => update.mutate({ productId: listing.id, request: { imageUrl } })}
+          placeholderIcon="package"
+          testID={`listing-photo-${listing.id}`}
+        />
       )}
       {update.isError && (
         <AppText variant="caption" color="accent" accessibilityRole="alert">

@@ -86,7 +86,8 @@ public class ListingRepository {
       """
       SELECT mp.id, mp.market_id, mp.catalog_product_id, mp.price_cents, mp.available, mp.max_order_quantity,
              mp.created_at, mp.deleted_at IS NOT NULL AS deleted, cp.owner_market_id, cp.category_id, cp.brand,
-             cp.unit_size, cp.net_quantity, cp.net_unit, cp.organic, cp.allergens, cp.barcode, cp.image_url, cp.origin,
+             cp.unit_size, cp.net_quantity, cp.net_unit, cp.organic, cp.allergens, cp.barcode,
+             COALESCE(mp.image_url, cp.image_url) AS image_url, cp.origin,
              COALESCE(cp.icon_key, (SELECT c.icon_key FROM category c WHERE c.id = cp.category_id)) AS icon_key
         FROM market_product mp JOIN catalog_product cp ON cp.id = mp.catalog_product_id
       """;
@@ -278,6 +279,15 @@ public class ListingRepository {
         .param("id", id)
         .param("available", available, java.sql.Types.BOOLEAN)
         .param("maxQty", maxQty, java.sql.Types.INTEGER)
+        .param("now", Timestamp.from(now))
+        .update();
+  }
+
+  /** The market's own photo of a listing (null falls back to the catalog product image). */
+  public void updateImage(UUID id, @Nullable String imageUrl, Instant now) {
+    jdbc.sql("UPDATE market_product SET image_url = :imageUrl, updated_at = :now WHERE id = :id")
+        .param("id", id)
+        .param("imageUrl", imageUrl, java.sql.Types.VARCHAR)
         .param("now", Timestamp.from(now))
         .update();
   }

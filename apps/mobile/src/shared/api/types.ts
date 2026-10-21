@@ -497,7 +497,30 @@ export interface UpdateListingRequest {
   price?: Money;
   available?: boolean;
   maxOrderQuantity?: number;
+  /** Absent = unchanged, null = remove the market's photo (a shared catalog image shows again). */
+  imageUrl?: string | null;
 }
+
+export type MediaPurpose = 'LOGO' | 'COVER' | 'BANNER' | 'PRODUCT';
+
+export type MediaContentType = 'image/jpeg' | 'image/png' | 'image/webp';
+
+/** Response of `POST /merchant/markets/{marketId}/media`. */
+export interface MediaUpload {
+  key: string;
+  /** Absolute URL; put it into logoUrl, coverImageUrl, newProduct.imageUrl or UpdateListingRequest.imageUrl. */
+  url: string;
+  width: number;
+  height: number;
+  contentType: MediaContentType;
+  sizeBytes: number;
+}
+
+/**
+ * The file part of an upload: a local file URI (React Native's FormData reads it natively) or a
+ * Blob (tests and other JS runtimes).
+ */
+export type UploadFile = { uri: string; type: string; name: string } | { blob: Blob; name: string };
 
 export interface Listing extends ProductSummary {
   privateProduct: boolean;

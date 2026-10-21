@@ -35,7 +35,8 @@ class JwtTokenServiceTest {
         new DukkanProperties.Catalog(14, 24),
         new DukkanProperties.Markets(10, 50),
         new DukkanProperties.Security(
-            new DukkanProperties.Jwt(secret, ttl, "dukkan"), new DukkanProperties.RateLimit(true, 20, 10)));
+            new DukkanProperties.Jwt(secret, ttl, "dukkan"), new DukkanProperties.RateLimit(true, 20, 10)),
+        new DukkanProperties.Media(null, null, org.springframework.util.unit.DataSize.ofMegabytes(5), 40_000_000, 60));
   }
 
   private static NimbusJwtDecoder decoder(String secret) {

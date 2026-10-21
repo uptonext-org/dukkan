@@ -233,6 +233,14 @@ public class CatalogProductRepository {
     return List.copyOf(sources.values());
   }
 
+  public void updateImage(UUID id, @Nullable String imageUrl, Instant now) {
+    jdbc.sql("UPDATE catalog_product SET image_url = :imageUrl, updated_at = :now WHERE id = :id")
+        .param("id", id)
+        .param("imageUrl", imageUrl, Types.VARCHAR)
+        .param("now", Timestamp.from(now))
+        .update();
+  }
+
   public void updateSearchText(UUID id, String searchText) {
     jdbc.sql("UPDATE catalog_product SET search_text = :text WHERE id = :id").param("id", id).param("text", searchText).update();
   }

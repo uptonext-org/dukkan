@@ -52,6 +52,8 @@ export interface NewProductValues {
   allergens: string;
   price: string;
   maxOrderQuantity: string;
+  /** Uploaded product photo (URL), or null. */
+  imageUrl: string | null;
 }
 
 export type NewProductField = 'name' | 'keywords' | 'brand' | 'unitSize' | 'categoryId' | 'price' | 'maxOrderQuantity';
@@ -68,6 +70,7 @@ export function emptyNewProduct(): NewProductValues {
     allergens: '',
     price: '',
     maxOrderQuantity: '24',
+    imageUrl: null,
   };
 }
 
@@ -138,6 +141,7 @@ export function toNewProductListing(values: NewProductValues): CreateListingRequ
       cuisineCodes: values.cuisineCodes,
       organic: values.organic,
       allergens,
+      ...(values.imageUrl !== null ? { imageUrl: values.imageUrl } : {}),
     },
     price: { amountCents: parseMoneyInput(values.price) ?? 0, currency: 'EUR' },
     available: true,

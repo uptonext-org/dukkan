@@ -31,6 +31,10 @@ export const KNOWN_ERROR_CODES = [
   'MINIMUM_ORDER_NOT_MET',
   'ORDER_NOT_CANCELLABLE',
   'INVALID_STATUS_TRANSITION',
+  'UNSUPPORTED_MEDIA_TYPE',
+  'FILE_TOO_LARGE',
+  'INVALID_IMAGE',
+  'IMAGE_TOO_LARGE',
 ] as const;
 
 export type KnownErrorCode = (typeof KNOWN_ERROR_CODES)[number];

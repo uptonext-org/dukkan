@@ -10,7 +10,9 @@ import {
   type OrderStatus,
   type PromotionRequest,
   type SearchCatalogParams,
+  type MediaPurpose,
   type UpdateListingRequest,
+  type UploadFile,
 } from '../../../shared/api';
 import { useLang } from '../../../shared/i18n';
 
@@ -134,5 +136,13 @@ export function useAdvanceOrder() {
   return useMutation({
     mutationFn: ({ orderId, status }: { orderId: string; status: OrderStatus }) => api.advanceOrderStatus(orderId, status),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['marketOrders'] }),
+  });
+}
+
+/** Uploads a photo for the market and resolves to the stored media (its `url` goes into a form field). */
+export function useUploadMedia(marketId: string) {
+  const api = useApi();
+  return useMutation({
+    mutationFn: ({ file, purpose }: { file: UploadFile; purpose: MediaPurpose }) => api.uploadMedia(marketId, file, purpose),
   });
 }

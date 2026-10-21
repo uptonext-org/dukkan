@@ -6,3 +6,6 @@ data:
   SPRING_PROFILES_ACTIVE: docker
   DUKKAN_DB_URL: jdbc:postgresql://dukkan-postgres:5432/dukkan
   DUKKAN_DB_USER: dukkan
+  DUKKAN_MEDIA_DIRECTORY: /var/lib/dukkan/media
+  # Public prefix of uploaded image URLs (set to the ingress host or CDN); empty = derived from the request.
+  DUKKAN_MEDIA_PUBLIC_BASE_URL: ""

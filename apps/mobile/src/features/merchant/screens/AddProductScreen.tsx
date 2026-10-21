@@ -15,6 +15,7 @@ import { useCuisines } from '../../marketplace/api/hooks';
 import { toggle } from '../../marketplace/model';
 import { useCatalogSearch, useCreateListing, useMyMarkets } from '../api/hooks';
 import { LocalizedFields } from '../components/LocalizedFields';
+import { PhotoField } from '../components/PhotoField';
 import {
   emptyNewProduct,
   toCatalogListing,
@@ -137,6 +138,7 @@ function NewProductForm({ marketId, primaryLocale, onAdded }: { marketId: string
         <ToggleSwitch value={values.organic} onValueChange={(v) => set('organic', v)} accessibilityLabel={t('merchant.organic')} />
       </View>
       <TextField label={t('merchant.allergens')} value={values.allergens} onChangeText={(v) => set('allergens', v)} hint={t('merchant.allergensHint')} />
+      <PhotoField label={t('merchant.productPhoto')} marketId={marketId} purpose="PRODUCT" value={values.imageUrl} onChange={(url) => set('imageUrl', url)} placeholderIcon="package" testID="new-photo" />
       <TextField label={t('merchant.price')} value={values.price} onChangeText={(v) => set('price', v)} error={err('price')} keyboardType="decimal-pad" inputDirection="ltr" testID="new-price" />
       <TextField label={t('merchant.maxQuantity')} value={values.maxOrderQuantity} onChangeText={(v) => set('maxOrderQuantity', v)} error={err('maxOrderQuantity')} keyboardType="number-pad" inputDirection="ltr" />
       {create.isError && (

@@ -49,3 +49,9 @@ from the Boot BOM and are not overridden. Exact resolved versions are in `gradle
   instead of a custom `HandlerMethodArgumentResolver`.
 - Jackson 3 serialises `@JsonUnwrapped` record components (used for the contract's `allOf` schemas such as
   `MarketDetail`, `ProductDetail`, `Listing`); verified by `ResponseSchemaIntegrationTest`.
+- Image upload (B-32, 2026-10-21): no dependency or version changed, lockfiles untouched. Image decoding uses
+  `javax.imageio` from the JDK (`java.desktop`, included in the Temurin JRE image; Spring Boot runs headless);
+  WebP dimensions are read from the RIFF header by own code because the JDK has no WebP reader. Multipart parsing
+  is Tomcat's (via `spring-boot-starter-webmvc`). No AWS/MinIO SDK was added; S3 storage is backlog B-32a.
+  Spring Framework 7 removed the `MockHttpServletRequestBuilder` supertype from `MockMultipartHttpServletRequestBuilder`,
+  so multipart tests set the `Authorization` header directly instead of using the `auth(...)` helper.

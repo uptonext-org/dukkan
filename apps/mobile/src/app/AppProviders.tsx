@@ -9,6 +9,7 @@ import type { AuthSession } from '../features/auth/session';
 import { ApiProvider, type ApiClient } from '../shared/api';
 import { LanguageProvider, type LanguageStore } from '../shared/i18n';
 import { LocationProvider, type LocationService } from '../shared/location';
+import { PhotoPickerProvider, type PhotoPicker } from '../shared/media';
 import type { KeyValueStorage } from '../shared/storage';
 import { ThemeProvider } from '../shared/theme';
 
@@ -20,6 +21,7 @@ export interface AppDependencies {
   i18n: I18n;
   storage: KeyValueStorage;
   locationService: LocationService;
+  photoPicker: PhotoPicker;
 }
 
 /** All app-wide providers. Tests pass in-memory dependencies (fake ApiClient, memory storage). */
@@ -40,7 +42,9 @@ export function AppProviders({
             <QueryClientProvider client={dependencies.queryClient}>
               <AuthProvider session={dependencies.session}>
                 <LocationProvider storage={dependencies.storage} service={dependencies.locationService}>
-                  <AuthGate>{children}</AuthGate>
+                  <PhotoPickerProvider picker={dependencies.photoPicker}>
+                    <AuthGate>{children}</AuthGate>
+                  </PhotoPickerProvider>
                 </LocationProvider>
               </AuthProvider>
             </QueryClientProvider>

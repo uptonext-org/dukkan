@@ -52,6 +52,8 @@ search and everything else work). iOS uses Apple Maps and needs no key.
 | Android | `ACCESS_COARSE_LOCATION`, `ACCESS_FINE_LOCATION` (foreground only), `android:supportsRtl="true"` | `AndroidManifest.xml` |
 | Android | Maps key meta-data `com.google.android.geo.API_KEY = ${dukkanMapsApiKey}` | `AndroidManifest.xml`, `app/build.gradle` |
 | Android | Fonts: `sourceSets.main.assets.srcDirs += ["../../assets"]` → `assets/fonts/*.ttf` in the APK | `app/build.gradle` |
+| iOS | `NSPhotoLibraryUsageDescription`, `NSCameraUsageDescription` (merchant photos), localised in `{de,en,ar}.lproj/InfoPlist.strings`; privacy manifest declares Photos (linked, app functionality) | `Info.plist`, `InfoPlist.strings`, `PrivacyInfo.xcprivacy` |
+| Android | No permission for photos: the system Photo Picker (react-native-image-picker) needs none, and the camera opens via an `ACTION_IMAGE_CAPTURE` intent, so `CAMERA` is deliberately not declared. `uses-feature android.hardware.camera required=false`; the `ModuleDependencies` service lets Play services install the backported Photo Picker on Android 11/12 | `AndroidManifest.xml` |
 | Both | `react-native.config.js` lists `./assets/fonts/` for asset linkers such as `react-native-asset` (linking above was done by hand) | |
 
 Fonts (OFL 1.1, licence texts next to them): Inter and IBM Plex Sans Arabic, weights 400/500/600/700, in
@@ -95,6 +97,7 @@ src/
     theme/        Light/dark tokens (design-system.md §1), typography (Inter / IBM Plex Sans Arabic), makeStyles
     location/     LocationService (geolocation), chosen place (persisted), PlaceSearch (/geo/search)
     storage/      Keychain TokenStorage, AsyncStorage KeyValueStorage
+    media/        PhotoPicker interface (+ fake), react-native-image-picker implementation, PhotoPickerProvider
     format/       de-DE money, numbers, dates (Europe/Berlin)
     ui/           AppText, Button/IconButton, Icon, Chip, SegmentedControl, Sheet, ProductTile, stepper, prices, states …
   test/           Fake ApiClient, fixtures, render helpers
@@ -144,6 +147,16 @@ src/
   English text.
 - **Offline**: NetInfo drives React Query's `onlineManager` and a floating offline banner; error states
   distinguish offline from other errors and offer retry.
+- **Merchant photos**: "Foto wählen" / "Choose photo" / "اختيار صورة" (library) and "Foto aufnehmen" (camera)
+  for the market logo and cover (when editing an existing market; a new market gets photos after it is created),
+  the photo of a new private product, and the photo of an existing listing (camera button in the listings row).
+  The picker downsizes to 2048 px and re-encodes as JPEG (quality 0.8), then `PhotoField` uploads right away
+  (`POST /merchant/markets/{id}/media`, multipart through the same `ApiClient`, 60 s timeout) and stores the
+  returned URL in the form, or for a listing sends `PUT … { imageUrl }`; "Entfernen" sends `null`. While
+  uploading, the `ImageTile` preview shows a spinner (fetch has no upload progress events). Server codes
+  `FILE_TOO_LARGE`, `UNSUPPORTED_MEDIA_TYPE`, `INVALID_IMAGE`, `IMAGE_TOO_LARGE` and picker failures (permission,
+  no camera) are translated in de/en/ar. The picker is injected like `TokenStorage`
+  (`AppDependencies.photoPicker`), so tests use `createFakePhotoPicker`.
 - **Accessibility**: roles, labels, states and hints on interactive elements; 44 pt minimum targets; prices
   spoken as "2,49 Euro"; the visible product-tile text block is hidden from screen readers because the
   photo button carries the full summary (avoids reading it twice); progress bars expose values; Reduce

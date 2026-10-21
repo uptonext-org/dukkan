@@ -79,6 +79,8 @@ public class SecurityConfiguration {
             auth -> {
               auth.requestMatchers(POST, API + "/auth/register", API + "/auth/login").permitAll();
               auth.requestMatchers(GET, META).permitAll();
+              // Uploaded images: always public (image views load them without a token).
+              auth.requestMatchers(GET, API + "/media/*").permitAll();
               if (loginToBrowse) {
                 auth.requestMatchers(GET, BROWSE).authenticated();
               } else {

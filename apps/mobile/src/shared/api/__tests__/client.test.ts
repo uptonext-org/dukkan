@@ -1,5 +1,7 @@
 import { ApiError } from '../ApiError';
 import { buildUrl, createFetchApiClient } from '../client';
+import { createDukkanApi, mediaForm, UPLOAD_TIMEOUT_MS } from '../dukkanApi';
+import { blobOf, readForm } from '../../../test/formData';
 import { errorMessageKey } from '../errorMessages';
 import { shouldRetry } from '../queryClient';
 
@@ -31,6 +33,60 @@ describe('createFetchApiClient', () => {
     expect(headers.Authorization).toBe('Bearer jwt-123');
     expect(headers['Content-Type']).toBe('application/json');
     expect(init?.body).toBe(JSON.stringify({ quantity: 2 }));
+  });
+
+  it('passes FormData through unchanged and lets the platform set the multipart Content-Type', async () => {
+    const fetchImpl = jest.fn<Promise<Response>, Parameters<typeof fetch>>(() =>
+      Promise.resolve(jsonResponse(201, { key: 'k.png', url: 'http://x/api/v1/media/k.png', width: 1, height: 1, contentType: 'image/png', sizeBytes: 3 })),
+    );
+    const client = createFetchApiClient({ baseUrl: BASE, getLanguage: () => 'ar', getToken: () => 'jwt-9', fetchImpl });
+    const api = createDukkanApi(client);
+
+    const result = await api.uploadMedia('m 1', { uri: 'file:///tmp/photo.jpg', type: 'image/jpeg', name: 'photo.jpg' }, 'LOGO');
+
+    expect(result.url).toBe('http://x/api/v1/media/k.png');
+    const [url, init] = fetchImpl.mock.calls[0] ?? [];
+    expect(url).toBe(`${BASE}/merchant/markets/m%201/media`);
+    expect(init?.method).toBe('POST');
+    const headers = init?.headers as Record<string, string>;
+    expect(Object.keys(headers).map((h) => h.toLowerCase())).not.toContain('content-type');
+    expect(headers.Authorization).toBe('Bearer jwt-9');
+    expect(headers['Accept-Language']).toBe('ar');
+    expect(init?.body).toBeInstanceOf(FormData);
+    const form = readForm(init?.body);
+    expect(form.get('purpose')).toBe('LOGO');
+    expect(form.get('file')).not.toBeNull();
+  });
+
+  it('builds the multipart parts for a local file URI and for a Blob', () => {
+    const fromUri = readForm(mediaForm({ uri: 'file:///tmp/a.jpg', type: 'image/jpeg', name: 'a.jpg' }, 'PRODUCT'));
+    expect(fromUri.get('purpose')).toBe('PRODUCT');
+    expect(fromUri.has('file')).toBe(true);
+    const fromBlob = readForm(mediaForm({ blob: blobOf(new Uint8Array([137, 80, 78, 71]), 'image/png'), name: 'b.png' }, 'COVER'));
+    expect(fromBlob.get('purpose')).toBe('COVER');
+    expect(fromBlob.has('file')).toBe(true);
+  });
+
+  it('gives uploads their own, longer timeout', async () => {
+    jest.useFakeTimers();
+    try {
+      const fetchImpl = jest.fn<Promise<Response>, Parameters<typeof fetch>>(
+        (_url, init) =>
+          new Promise((_resolve, reject) => {
+            init?.signal?.addEventListener('abort', () => reject(new Error('aborted')));
+          }),
+      );
+      const client = createFetchApiClient({ baseUrl: BASE, getLanguage: () => 'de', getToken: () => null, timeoutMs: 1_000, fetchImpl });
+      const pending = client.request({ method: 'POST', path: '/merchant/markets/m/media', body: new FormData(), timeoutMs: UPLOAD_TIMEOUT_MS });
+      const settled = jest.fn();
+      pending.then(settled, settled);
+      await jest.advanceTimersByTimeAsync(5_000);
+      expect(settled).not.toHaveBeenCalled();
+      await jest.advanceTimersByTimeAsync(UPLOAD_TIMEOUT_MS);
+      await expect(pending).rejects.toMatchObject({ code: 'TIMEOUT' });
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   it('sends the UI language as Accept-Language on every request', async () => {
@@ -208,6 +264,11 @@ describe('errorMessageKey', () => {
     expect(errorMessageKey(problem('VALIDATION_FAILED', [{ field: 'validUntil', code: 'Future', message: 'must be in the future' }]))).toBe('errors.field.Future');
     expect(errorMessageKey(problem('VALIDATION_FAILED', [{ field: 'city', code: 'NotBlank', message: 'blank' }]))).toBe('errors.VALIDATION_FAILED');
     expect(errorMessageKey(problem('SOMETHING_NEW'))).toBe('errors.UNKNOWN');
+    // Upload errors (413, 415, 400).
+    expect(errorMessageKey(problem('FILE_TOO_LARGE'))).toBe('errors.FILE_TOO_LARGE');
+    expect(errorMessageKey(problem('UNSUPPORTED_MEDIA_TYPE'))).toBe('errors.UNSUPPORTED_MEDIA_TYPE');
+    expect(errorMessageKey(problem('INVALID_IMAGE'))).toBe('errors.INVALID_IMAGE');
+    expect(errorMessageKey(problem('IMAGE_TOO_LARGE'))).toBe('errors.IMAGE_TOO_LARGE');
     expect(errorMessageKey(new Error('x'))).toBe('errors.UNKNOWN');
   });
 });

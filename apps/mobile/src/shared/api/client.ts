@@ -11,10 +11,16 @@ export interface ApiRequest {
   /** Path relative to the base URL, starting with `/`, e.g. `/products`. */
   path: string;
   query?: Readonly<Record<string, QueryValue>> | undefined;
+  /**
+   * JSON-serialised, except a `FormData` (multipart upload), which is passed through unchanged and
+   * without a `Content-Type` header so that the platform adds `multipart/form-data; boundary=…`.
+   */
   body?: unknown;
   headers?: Readonly<Record<string, string>> | undefined;
   /** Caller-provided cancellation (e.g. from React Query). */
   signal?: AbortSignal | undefined;
+  /** Overrides the client's timeout, e.g. for uploads. */
+  timeoutMs?: number | undefined;
 }
 
 /** Transport abstraction. Screens never call it directly; they use the typed `DukkanApi`. */
@@ -73,6 +79,18 @@ async function readJson(response: Response): Promise<unknown> {
   }
 }
 
+/** True for a multipart body. `FormData` is a global in React Native and in Node ≥ 18. */
+export function isFormData(body: unknown): body is FormData {
+  return typeof FormData !== 'undefined' && body instanceof FormData;
+}
+
+function encodeBody(body: unknown): FormData | string | null {
+  if (body === undefined) {
+    return null;
+  }
+  return isFormData(body) ? body : JSON.stringify(body);
+}
+
 function isProblemLike(value: unknown): value is Partial<Problem> {
   return typeof value === 'object' && value !== null;
 }
@@ -89,7 +107,7 @@ export function createFetchApiClient(options: FetchApiClientOptions): ApiClient 
         'Accept-Language': options.getLanguage(),
         ...request.headers,
       };
-      if (request.body !== undefined) {
+      if (request.body !== undefined && !isFormData(request.body)) {
         headers['Content-Type'] = 'application/json';
       }
       if (token !== null) {
@@ -102,7 +120,7 @@ export function createFetchApiClient(options: FetchApiClientOptions): ApiClient 
       const timer = setTimeout(() => {
         timeout.fired = true;
         controller.abort();
-      }, timeoutMs);
+      }, request.timeoutMs ?? timeoutMs);
       const onCallerAbort = () => controller.abort();
       request.signal?.addEventListener('abort', onCallerAbort);
 
@@ -111,7 +129,7 @@ export function createFetchApiClient(options: FetchApiClientOptions): ApiClient 
         response = await fetchImpl(buildUrl(options.baseUrl, request.path, request.query), {
           method: request.method,
           headers,
-          body: request.body === undefined ? null : JSON.stringify(request.body),
+          body: encodeBody(request.body),
           signal: controller.signal,
         });
       } catch (cause) {

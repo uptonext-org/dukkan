@@ -12,6 +12,11 @@ public final class ErrorCodes {
   public static final String UNSUPPORTED_MEDIA_TYPE = "UNSUPPORTED_MEDIA_TYPE";
   public static final String INTERNAL_ERROR = "INTERNAL_ERROR";
 
+  // uploads: 413, 415, 400
+  public static final String FILE_TOO_LARGE = "FILE_TOO_LARGE";
+  public static final String INVALID_IMAGE = "INVALID_IMAGE";
+  public static final String IMAGE_TOO_LARGE = "IMAGE_TOO_LARGE";
+
   // 409
   public static final String CONFLICT = "CONFLICT";
   public static final String CONCURRENT_MODIFICATION = "CONCURRENT_MODIFICATION";

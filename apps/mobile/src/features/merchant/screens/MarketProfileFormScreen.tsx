@@ -14,6 +14,7 @@ import { useCuisines, useMarketTypes } from '../../marketplace/api/hooks';
 import { toggle } from '../../marketplace/model';
 import { useMyMarkets, useSaveMarket } from '../api/hooks';
 import { LocalizedFields } from '../components/LocalizedFields';
+import { PhotoField } from '../components/PhotoField';
 import {
   emptyMarketProfile,
   fromMerchantMarket,
@@ -74,7 +75,7 @@ function MarketProfileForm({ route, navigation, initial }: RootStackScreenProps<
     const key = errors[field];
     return key !== undefined ? t(`validation.${key}`) : undefined;
   };
-  const text = (field: 'name' | 'phone' | 'logoUrl' | 'coverImageUrl' | 'legalName' | 'registerInfo' | 'deliveryRadiusKm' | 'deliveryFee' | 'freeDeliveryFrom' | 'minimumOrderValue') => ({
+  const text = (field: 'name' | 'phone' | 'legalName' | 'registerInfo' | 'deliveryRadiusKm' | 'deliveryFee' | 'freeDeliveryFrom' | 'minimumOrderValue') => ({
     value: values[field],
     onChangeText: (value: string) => set(field, value),
     error: err(field),
@@ -218,8 +219,21 @@ function MarketProfileForm({ route, navigation, initial }: RootStackScreenProps<
         </Section>
 
         <Section title={t('merchant.images')}>
-          <TextField label={t('merchant.logoUrl')} {...text('logoUrl')} autoCapitalize="none" keyboardType="url" hint={t('merchant.imagesHint')} />
-          <TextField label={t('merchant.coverUrl')} {...text('coverImageUrl')} autoCapitalize="none" keyboardType="url" />
+          {marketId !== undefined ? (
+            <>
+              <PhotoField label={t('merchant.logo')} marketId={marketId} purpose="LOGO" value={values.logoUrl === '' ? null : values.logoUrl} onChange={(url) => set('logoUrl', url ?? '')} placeholderIcon="store" testID="logo-photo" />
+              <PhotoField label={t('merchant.cover')} marketId={marketId} purpose="COVER" aspectRatio={16 / 9} value={values.coverImageUrl === '' ? null : values.coverImageUrl} onChange={(url) => set('coverImageUrl', url ?? '')} testID="cover-photo" />
+              {(err('logoUrl') ?? err('coverImageUrl')) !== undefined && (
+                <AppText variant="caption" color="accent">
+                  {err('logoUrl') ?? err('coverImageUrl')}
+                </AppText>
+              )}
+            </>
+          ) : (
+            <AppText variant="subhead" color="textSecondary" testID="photos-after-create">
+              {t('merchant.photo.afterCreate')}
+            </AppText>
+          )}
         </Section>
 
         <Section title={t('merchant.imprint')}>

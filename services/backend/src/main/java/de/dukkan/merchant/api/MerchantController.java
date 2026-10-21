@@ -4,6 +4,10 @@ import de.dukkan.catalog.application.CatalogProduct;
 import de.dukkan.catalog.application.Listing;
 import de.dukkan.i18n.application.ContentLocale;
 import de.dukkan.market.application.MerchantMarket;
+import de.dukkan.media.api.MediaUploadResponse;
+import de.dukkan.media.api.MediaUrls;
+import de.dukkan.media.application.MediaPurpose;
+import de.dukkan.media.application.StoredMedia;
 import de.dukkan.merchant.api.MerchantRequests.CreateListingRequest;
 import de.dukkan.merchant.api.MerchantRequests.MarketProfileRequest;
 import de.dukkan.merchant.api.MerchantRequests.OrderStatusRequest;
@@ -21,10 +25,13 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.CurrentSecurityContext;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -36,8 +43,10 @@ import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 /** Merchant mode ({@code /merchant/**}, role MERCHANT). Other merchants' resources answer 404. */
 @RequestMapping("/api/v1/merchant")
@@ -46,11 +55,13 @@ final class MerchantController {
 
   private final MerchantService merchant;
   private final OrderResponses orderResponses;
+  private final MediaUrls mediaUrls;
   private final int defaultMaxOrderQuantity;
 
-  MerchantController(MerchantService merchant, OrderResponses orderResponses, DukkanProperties properties) {
+  MerchantController(MerchantService merchant, OrderResponses orderResponses, MediaUrls mediaUrls, DukkanProperties properties) {
     this.merchant = merchant;
     this.orderResponses = orderResponses;
+    this.mediaUrls = mediaUrls;
     this.defaultMaxOrderQuantity = properties.catalog().defaultMaxOrderQuantity();
   }
 
@@ -73,6 +84,18 @@ final class MerchantController {
       @RequestBody @Valid MarketProfileRequest request,
       @RequestAttribute(ContentLocale.REQUEST_ATTRIBUTE) ContentLocale locale) {
     return merchant.updateMarket(CurrentUser.id(security), marketId, request.toProfile(), locale);
+  }
+
+  /** Multipart upload; the part's declared content type is ignored (magic bytes decide). */
+  @PostMapping(path = "/markets/{marketId}/media", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+  ResponseEntity<MediaUploadResponse> uploadMedia(
+      @CurrentSecurityContext SecurityContext security,
+      @PathVariable UUID marketId,
+      @RequestPart("file") MultipartFile file,
+      @RequestParam MediaPurpose purpose) {
+    StoredMedia stored = merchant.uploadMedia(CurrentUser.id(security), marketId, purpose, file.getSize(), file);
+    String url = mediaUrls.urlFor(stored.key());
+    return ResponseEntity.created(URI.create(url)).body(MediaUploadResponse.of(stored, url));
   }
 
   @GetMapping("/catalog")

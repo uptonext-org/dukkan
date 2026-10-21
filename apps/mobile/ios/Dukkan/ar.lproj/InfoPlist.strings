@@ -1,3 +1,6 @@
 /* Shown in the system location prompt. */
 "NSLocationWhenInUseUsageDescription" = "يستخدم دكّان موقعكم لعرض الأسواق القريبة والمسافة إليها.";
 "CFBundleDisplayName" = "Dukkan";
+/* Shown in the system photo library and camera prompts (merchant photos). */
+"NSPhotoLibraryUsageDescription" = "يستخدم دكّان صوركم فقط عند اختيار شعار أو صورة غلاف أو صورة منتج لسوقكم.";
+"NSCameraUsageDescription" = "يستخدم دكّان الكاميرا فقط عند التقاط صورة لسوقكم.";

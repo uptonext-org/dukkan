@@ -40,6 +40,8 @@ availability it receives.
 | Promotion stacking | At most one active promotion per listing. The most recently created one wins |
 | "New" | A listing created within the last 14 days |
 | Frequently ordered | A listing that appears in ≥ 2 of the user's non-cancelled orders in that market. Shown in favourites with reason `FREQUENTLY_ORDERED` |
+| Image upload | `POST /merchant/markets/{id}/media` (multipart `file` + `purpose`). JPEG, PNG or WebP detected from the bytes (declared type ignored) → else 415 `UNSUPPORTED_MEDIA_TYPE`; ≤ 5 MB → else 413 `FILE_TOO_LARGE`; must decode → else 400 `INVALID_IMAGE`; ≤ 40 megapixels → else 400 `IMAGE_TOO_LARGE`; 60 uploads per user per hour → 429. Key = SHA-256 of the bytes + extension (same bytes, same URL). `GET /media/{key}` is public and immutable |
+| Listing photo | `UpdateListingRequest.imageUrl`: absent = unchanged, `null` = remove. For a shared catalog product it applies to this market's listing only |
 | Merchant scope | Merchants can only read and change their own markets, listings, promotions and orders (other markets return 404) |
 
 All seed data (markets in Hamburg, products, prices, people) is invented test data.

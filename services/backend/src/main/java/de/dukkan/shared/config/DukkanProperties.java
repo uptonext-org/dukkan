@@ -2,9 +2,13 @@ package de.dukkan.shared.config;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+import java.net.URI;
+import java.nio.file.Path;
 import java.time.Duration;
+import org.jspecify.annotations.Nullable;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.DefaultValue;
+import org.springframework.util.unit.DataSize;
 
 /**
  * All application settings under {@code dukkan.*}. Validation happens in the compact constructors
@@ -16,7 +20,8 @@ public record DukkanProperties(
     @DefaultValue Fulfilment fulfilment,
     @DefaultValue Catalog catalog,
     @DefaultValue Markets markets,
-    @DefaultValue Security security) {
+    @DefaultValue Security security,
+    @DefaultValue Media media) {
 
   /** Feature flags. */
   public record Features(
@@ -106,6 +111,39 @@ public record DukkanProperties(
     @Override
     public String toString() {
       return "Jwt[secret=***, ttl=" + ttl + ", issuer=" + issuer + "]";
+    }
+  }
+
+  /**
+   * Image uploads (module {@code media}). {@code directory} is where the filesystem storage keeps
+   * the files ({@code application.yml}: {@code ${java.io.tmpdir}/dukkan-media}, docker profile: a
+   * volume). {@code publicBaseUrl} is the absolute URL prefix under which keys are served, e.g.
+   * {@code https://api.dukkan.app/api/v1/media} or a CDN; when empty it is derived from each
+   * upload request ({@code <origin>/api/v1/media}). Keep {@code maxFileSize} in line with {@code
+   * spring.servlet.multipart.max-file-size}.
+   */
+  public record Media(
+      @Nullable Path directory,
+      @Nullable String publicBaseUrl,
+      @DefaultValue("5MB") DataSize maxFileSize,
+      @DefaultValue("40000000") long maxPixels,
+      @DefaultValue("60") int uploadsPerHour) {
+    public Media {
+      if (directory == null) {
+        directory = Path.of(System.getProperty("java.io.tmpdir"), "dukkan-media");
+      }
+      if (publicBaseUrl != null && publicBaseUrl.isBlank()) {
+        publicBaseUrl = null;
+      }
+      if (publicBaseUrl != null) {
+        URI uri = URI.create(publicBaseUrl);
+        if (!uri.isAbsolute() || !("http".equals(uri.getScheme()) || "https".equals(uri.getScheme()))) {
+          throw new IllegalArgumentException("dukkan.media.public-base-url must be an absolute http(s) URL");
+        }
+      }
+      if (maxFileSize.toBytes() < 1 || maxPixels < 1 || uploadsPerHour < 1) {
+        throw new IllegalArgumentException("dukkan.media limits must be >= 1");
+      }
     }
   }
 }

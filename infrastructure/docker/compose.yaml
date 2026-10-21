@@ -31,11 +31,17 @@ services:
       DUKKAN_DB_PASSWORD: ${POSTGRES_PASSWORD:-dukkan}
       # Required (>= 32 bytes); the backend refuses to start without it. See .env.example.
       DUKKAN_JWT_SECRET: ${DUKKAN_JWT_SECRET:-}
+      # Absolute prefix of image URLs returned by uploads; empty = derived from the request host.
+      DUKKAN_MEDIA_PUBLIC_BASE_URL: ${DUKKAN_MEDIA_PUBLIC_BASE_URL:-}
     ports:
       - "127.0.0.1:8080:8080"
+    volumes:
+      # Uploaded images (dukkan.media.directory, docker profile). Local stand-in for S3/MinIO (backlog).
+      - media:/var/lib/dukkan/media
     depends_on:
       postgres:
         condition: service_healthy
 
 volumes:
   postgres-data:
+  media:

@@ -367,6 +367,16 @@ public class CatalogService {
     if (update.available() != null || update.maxOrderQuantity() != null) {
       listings.updateFlags(listingId, update.available(), update.maxOrderQuantity(), now);
     }
+    if (update.changeImage()) {
+      if (row.ownerMarketId() != null) {
+        // A private product belongs to this market: its own image is the product image.
+        products.updateImage(row.catalogProductId(), update.imageUrl(), now);
+        listings.updateImage(listingId, null, now);
+      } else {
+        // Shared catalog product: the photo overrides the catalog image for this listing only.
+        listings.updateImage(listingId, update.imageUrl(), now);
+      }
+    }
     return listing(listingId, locale);
   }
 

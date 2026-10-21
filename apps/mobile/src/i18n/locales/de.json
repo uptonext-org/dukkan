@@ -53,7 +53,11 @@
     "field": {
       "MaxUtf8Bytes": "Das Passwort ist zu lang. Arabische Zeichen zählen doppelt.",
       "Future": "Das Enddatum muss in der Zukunft liegen."
-    }
+    },
+    "UNSUPPORTED_MEDIA_TYPE": "Dieses Dateiformat wird nicht unterstützt. Bitte ein JPEG-, PNG- oder WebP-Foto wählen.",
+    "FILE_TOO_LARGE": "Das Foto ist zu groß (höchstens 5 MB).",
+    "INVALID_IMAGE": "Die Datei ist kein lesbares Bild. Bitte ein anderes Foto wählen.",
+    "IMAGE_TOO_LARGE": "Das Foto hat zu viele Pixel (höchstens 40 Megapixel)."
   },
   "validation": {
     "required": "Bitte ausfüllen.",
@@ -479,9 +483,6 @@
       "VEGAN_FRIENDLY": "Vegan-freundlich"
     },
     "images": "Bilder",
-    "imagesHint": "In Phase 1 als Link (https://…).",
-    "logoUrl": "Logo-Link",
-    "coverUrl": "Titelfoto-Link",
     "imprint": "Impressum",
     "legalName": "Firmenname",
     "registerInfo": "Registereintrag",
@@ -547,6 +548,23 @@
       "COMPLETED": "Abschließen",
       "PLACED": "Bestellt",
       "CANCELLED": "Storniert"
+    },
+    "logo": "Logo",
+    "cover": "Titelfoto",
+    "productPhoto": "Produktfoto",
+    "photo": {
+      "choose": "Foto wählen",
+      "take": "Foto aufnehmen",
+      "remove": "Foto entfernen",
+      "uploading": "Foto wird hochgeladen …",
+      "chooseFor": "{{label}}: Foto wählen",
+      "takeFor": "{{label}}: Foto aufnehmen",
+      "removeFor": "{{label}}: Foto entfernen",
+      "editFor": "Foto von {{name}}",
+      "permissionDenied": "Kein Zugriff auf Fotos oder Kamera. Bitte in den Einstellungen erlauben.",
+      "cameraUnavailable": "Auf diesem Gerät ist keine Kamera verfügbar.",
+      "pickFailed": "Das Foto konnte nicht geöffnet werden. Bitte ein anderes wählen.",
+      "afterCreate": "Logo und Titelfoto kannst du hinzufügen, sobald der Markt angelegt ist."
     }
   }
 }

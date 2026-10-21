@@ -53,6 +53,14 @@ spec:
           volumeMounts:
             - name: tmp
               mountPath: /tmp
+            - name: media
+              mountPath: /var/lib/dukkan/media
       volumes:
         - name: tmp
           emptyDir: {}
+        # Uploaded images. NOT production-grade: an emptyDir is per pod and lost on rescheduling, and with
+        # 2 replicas each pod only serves what it stored itself. Replace with S3-compatible storage (backlog
+        # B-32 follow-up) or a ReadWriteMany PersistentVolumeClaim before real merchants upload photos.
+        - name: media
+          emptyDir:
+            sizeLimit: 2Gi

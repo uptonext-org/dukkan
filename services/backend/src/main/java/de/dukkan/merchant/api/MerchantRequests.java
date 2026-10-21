@@ -1,5 +1,6 @@
 package de.dukkan.merchant.api;
 
+import com.fasterxml.jackson.annotation.JsonSetter;
 import de.dukkan.catalog.application.ListingDraft;
 import de.dukkan.catalog.application.ListingUpdate;
 import de.dukkan.catalog.application.NewProduct;
@@ -120,11 +121,42 @@ final class MerchantRequests {
     }
   }
 
-  record UpdateListingRequest(
-      @Nullable @Valid Money price, @Nullable Boolean available, @Nullable @Max(99) @Min(1) Integer maxOrderQuantity) {
+  /**
+   * Partial listing update. A class rather than a record because {@code imageUrl} is tri-state:
+   * absent (unchanged), {@code null} (remove) or a URL; the setter records that it was present.
+   */
+  static final class UpdateListingRequest {
+
+    private @Nullable @Valid Money price;
+    private @Nullable Boolean available;
+    private @Nullable @Max(99) @Min(1) Integer maxOrderQuantity;
+    private @Nullable @Size(max = 500) @URL String imageUrl;
+    private boolean imageUrlPresent;
+
+    @JsonSetter("price")
+    void setPrice(@Nullable Money price) {
+      this.price = price;
+    }
+
+    @JsonSetter("available")
+    void setAvailable(@Nullable Boolean available) {
+      this.available = available;
+    }
+
+    @JsonSetter("maxOrderQuantity")
+    void setMaxOrderQuantity(@Nullable Integer maxOrderQuantity) {
+      this.maxOrderQuantity = maxOrderQuantity;
+    }
+
+    @JsonSetter("imageUrl")
+    void setImageUrl(@Nullable String imageUrl) {
+      this.imageUrl = imageUrl;
+      this.imageUrlPresent = true;
+    }
 
     ListingUpdate toUpdate() {
-      return new ListingUpdate(price == null ? null : euroCents(price, "price"), available, maxOrderQuantity);
+      return new ListingUpdate(
+          price == null ? null : euroCents(price, "price"), available, maxOrderQuantity, imageUrlPresent, imageUrl);
     }
   }
 

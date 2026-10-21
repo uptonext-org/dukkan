@@ -57,6 +57,7 @@ export default defineConfig({
       { find: /^@react-native-community\/geolocation$/, replacement: stub('geolocation.js') },
       { find: /^@react-native-community\/netinfo$/, replacement: stub('netinfo.js') },
       { find: /^react-native-localize$/, replacement: stub('localize.js') },
+      { find: /^react-native-image-picker$/, replacement: stub('image-picker.js') },
       { find: /^@react-native\/assets-registry\/registry$/, replacement: stub('assets-registry.js') },
     ],
     extensions: ['.web.tsx', '.web.ts', '.web.mjs', '.web.jsx', '.web.js', '.tsx', '.ts', '.mjs', '.jsx', '.js', '.json'],

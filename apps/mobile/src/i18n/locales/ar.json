@@ -53,7 +53,11 @@
     "field": {
       "MaxUtf8Bytes": "كلمة المرور طويلة جدًا. الحروف العربية تُحسب مرتين.",
       "Future": "يجب أن يكون تاريخ الانتهاء في المستقبل."
-    }
+    },
+    "UNSUPPORTED_MEDIA_TYPE": "صيغة الملف غير مدعومة. يُرجى اختيار صورة بصيغة JPEG أو PNG أو WebP.",
+    "FILE_TOO_LARGE": "حجم الصورة كبير جدًا (5 ميغابايت كحد أقصى).",
+    "INVALID_IMAGE": "الملف ليس صورة قابلة للقراءة. يُرجى اختيار صورة أخرى.",
+    "IMAGE_TOO_LARGE": "عدد بكسلات الصورة كبير جدًا (40 ميغابكسل كحد أقصى)."
   },
   "validation": {
     "required": "هذا الحقل مطلوب.",
@@ -531,9 +535,6 @@
       "VEGAN_FRIENDLY": "مناسب للنباتيين"
     },
     "images": "الصور",
-    "imagesHint": "في المرحلة الأولى كرابط (https://…).",
-    "logoUrl": "رابط الشعار",
-    "coverUrl": "رابط صورة الغلاف",
     "imprint": "البيانات القانونية",
     "legalName": "اسم الشركة",
     "registerInfo": "بيانات السجل التجاري",
@@ -607,6 +608,23 @@
     "productCount_two": "منتجان",
     "productCount_few": "{{count}} منتجات",
     "productCount_many": "{{count}} منتجًا",
-    "productCount_other": "{{count}} منتج"
+    "productCount_other": "{{count}} منتج",
+    "logo": "الشعار",
+    "cover": "صورة الغلاف",
+    "productPhoto": "صورة المنتج",
+    "photo": {
+      "choose": "اختيار صورة",
+      "take": "التقاط صورة",
+      "remove": "إزالة الصورة",
+      "uploading": "جارٍ رفع الصورة …",
+      "chooseFor": "{{label}}: اختيار صورة",
+      "takeFor": "{{label}}: التقاط صورة",
+      "removeFor": "{{label}}: إزالة الصورة",
+      "editFor": "صورة {{name}}",
+      "permissionDenied": "لا يوجد إذن بالوصول إلى الصور أو الكاميرا. يُرجى السماح بذلك من الإعدادات.",
+      "cameraUnavailable": "لا تتوفر كاميرا على هذا الجهاز.",
+      "pickFailed": "تعذّر فتح الصورة. يُرجى اختيار صورة أخرى.",
+      "afterCreate": "يمكن إضافة الشعار وصورة الغلاف بعد إنشاء السوق."
+    }
   }
 }

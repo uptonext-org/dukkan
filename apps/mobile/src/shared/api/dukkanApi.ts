@@ -36,6 +36,9 @@ import type {
   SearchProductsParams,
   Slot,
   UpdateListingRequest,
+  UploadFile,
+  MediaPurpose,
+  MediaUpload,
   UpdateUserRequest,
   User,
 } from './types';
@@ -119,6 +122,24 @@ export interface DukkanApi {
   deletePromotion(marketId: string, promotionId: string): Promise<void>;
   listMarketOrders(marketId: string, status?: OrderStatus, signal?: Signal): Promise<Order[]>;
   advanceOrderStatus(orderId: string, status: OrderStatus): Promise<Order>;
+  /** Multipart upload of a JPEG, PNG or WebP photo (≤ 5 MB) for one of my markets. */
+  uploadMedia(marketId: string, file: UploadFile, purpose: MediaPurpose): Promise<MediaUpload>;
+}
+
+/** Uploads may take longer than ordinary requests on mobile networks. */
+export const UPLOAD_TIMEOUT_MS = 60_000;
+
+export function mediaForm(file: UploadFile, purpose: MediaPurpose): FormData {
+  const form = new FormData();
+  form.append('purpose', purpose);
+  if ('blob' in file) {
+    // The three-argument form (file name) exists at runtime; React Native's typings only declare two.
+    (form as unknown as { append(name: string, value: Blob, fileName: string): void }).append('file', file.blob, file.name);
+  } else {
+    // React Native's FormData sends { uri, type, name } as a file part read from the device.
+    form.append('file', { uri: file.uri, type: file.type, name: file.name });
+  }
+  return form;
 }
 
 export function createDukkanApi(client: ApiClient): DukkanApi {
@@ -235,5 +256,12 @@ export function createDukkanApi(client: ApiClient): DukkanApi {
       get(`/merchant/markets/${enc(marketId)}/orders`, { status }, signal),
     advanceOrderStatus: (orderId, status) =>
       client.request({ method: 'POST', path: `/merchant/orders/${enc(orderId)}/status`, body: { status } }),
+    uploadMedia: (marketId, file, purpose) =>
+      client.request({
+        method: 'POST',
+        path: `/merchant/markets/${enc(marketId)}/media`,
+        body: mediaForm(file, purpose),
+        timeoutMs: UPLOAD_TIMEOUT_MS,
+      }),
   };
 }

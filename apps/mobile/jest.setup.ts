@@ -45,6 +45,12 @@ jest.mock('@react-native-async-storage/async-storage', () => {
   };
 });
 
+/** The native photo picker; screens use the injected PhotoPicker fake, this only keeps imports loadable. */
+jest.mock('react-native-image-picker', () => ({
+  launchImageLibrary: jest.fn(() => Promise.resolve({ didCancel: true })),
+  launchCamera: jest.fn(() => Promise.resolve({ didCancel: true })),
+}));
+
 jest.mock('react-native-localize', () => ({
   getLocales: jest.fn(() => [{ languageTag: 'de-DE', languageCode: 'de', countryCode: 'DE', isRTL: false }]),
 }));

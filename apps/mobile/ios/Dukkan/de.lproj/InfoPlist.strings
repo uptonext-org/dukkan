@@ -1,3 +1,6 @@
 /* Shown in the system location prompt. */
 "NSLocationWhenInUseUsageDescription" = "Dukkan nutzt deinen Standort, um Märkte in deiner Nähe und ihre Entfernung anzuzeigen.";
 "CFBundleDisplayName" = "Dukkan";
+/* Shown in the system photo library and camera prompts (merchant photos). */
+"NSPhotoLibraryUsageDescription" = "Dukkan nutzt deine Fotos nur, wenn du für deinen Markt ein Logo, Titelfoto oder Produktfoto auswählst.";
+"NSCameraUsageDescription" = "Dukkan nutzt die Kamera nur, wenn du für deinen Markt ein Foto aufnimmst.";

@@ -13,3 +13,12 @@ kubectl -n dukkan create secret generic dukkan-backend \
 ```
 
 Helm is not used: one service with static configuration does not need templating.
+
+## Uploaded images
+
+Merchant photos (B-32) are stored by the backend's filesystem `MediaStorage` under
+`/var/lib/dukkan/media`, mounted as an `emptyDir` (2 GiB limit). That is **not production-grade**:
+the files disappear when a pod is rescheduled, and with two replicas each pod only serves the images
+it stored itself. Before production, switch to S3-compatible object storage (backlog follow-up of
+B-32) or mount a ReadWriteMany PersistentVolumeClaim, and set `DUKKAN_MEDIA_PUBLIC_BASE_URL` in the
+ConfigMap to the public ingress/CDN prefix (for example `https://api.dukkan.app/api/v1/media`).

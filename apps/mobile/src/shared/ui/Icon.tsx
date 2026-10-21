@@ -11,6 +11,7 @@ import Bean from 'lucide-react-native/icons/bean';
 import Beef from 'lucide-react-native/icons/beef';
 import Beer from 'lucide-react-native/icons/beer';
 import CakeSlice from 'lucide-react-native/icons/cake-slice';
+import Camera from 'lucide-react-native/icons/camera';
 import Candy from 'lucide-react-native/icons/candy';
 import Carrot from 'lucide-react-native/icons/carrot';
 import Check from 'lucide-react-native/icons/check';
@@ -35,6 +36,7 @@ import Globe from 'lucide-react-native/icons/globe';
 import Ham from 'lucide-react-native/icons/ham';
 import Heart from 'lucide-react-native/icons/heart';
 import House from 'lucide-react-native/icons/house';
+import ImageIcon from 'lucide-react-native/icons/image';
 import Leaf from 'lucide-react-native/icons/leaf';
 import LeafyGreen from 'lucide-react-native/icons/leafy-green';
 import List from 'lucide-react-native/icons/list';
@@ -87,6 +89,8 @@ const ICONS = {
   globe: Globe,
   heart: Heart,
   home: House,
+  image: ImageIcon,
+  camera: Camera,
   leaf: Leaf,
   list: List,
   locate: LocateFixed,

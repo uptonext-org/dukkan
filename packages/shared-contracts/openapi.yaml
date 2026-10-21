@@ -37,6 +37,8 @@ tags:
   - name: addresses
   - name: orders
   - name: merchant
+  - name: media
+    description: Image upload (merchants) and public image delivery.
   - name: admin
 security:
   - bearerAuth: []
@@ -1006,6 +1008,94 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
         '422': { $ref: '#/components/responses/BusinessRuleViolation' }
 
+  /merchant/markets/{marketId}/media:
+    parameters:
+      - { $ref: '#/components/parameters/MarketId' }
+    post:
+      tags: [merchant, media]
+      operationId: uploadMedia
+      summary: Upload a photo (logo, cover, banner or product) for my market
+      description: |
+        Stores an image and returns its public, absolute URL. Put the URL into `logoUrl` /
+        `coverImageUrl` (MarketProfileRequest), `newProduct.imageUrl` (CreateListingRequest) or
+        `imageUrl` (UpdateListingRequest); uploading alone changes nothing else.
+
+        - Accepted formats are detected from the file's **magic bytes** (the part's declared
+          content type is ignored): JPEG, PNG and WebP. Anything else (GIF, SVG, HEIC, PDF, …)
+          answers 415 `UNSUPPORTED_MEDIA_TYPE`.
+        - At most 5 MB (5 × 1024 × 1024 bytes) per file → otherwise 413 `FILE_TOO_LARGE`.
+        - JPEG and PNG must decode completely, WebP must have a consistent RIFF/VP8 header →
+          otherwise 400 `INVALID_IMAGE`. At most 40 megapixels → otherwise 400 `IMAGE_TOO_LARGE`.
+        - The file is stored unchanged under a content-addressed key (SHA-256 of the bytes plus
+          the extension), so uploading the same bytes again returns the same URL.
+        - 60 uploads per user per hour (per instance) → 429 `RATE_LIMITED` with `Retry-After`.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file, purpose]
+              properties:
+                file: { type: string, format: binary, description: 'The image (JPEG, PNG or WebP, ≤ 5 MB).' }
+                purpose: { $ref: '#/components/schemas/MediaPurpose' }
+            encoding:
+              file:
+                contentType: image/jpeg, image/png, image/webp
+      responses:
+        '201':
+          description: Stored (or already stored with the same bytes).
+          headers:
+            Location:
+              description: Same as `url`.
+              schema: { type: string, format: uri }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MediaUpload' }
+        '400':
+          description: |
+            `VALIDATION_FAILED` (missing `file` part, unknown `purpose`), `INVALID_IMAGE` (bytes do
+            not decode) or `IMAGE_TOO_LARGE` (more than 40 megapixels).
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
+        '415': { $ref: '#/components/responses/UnsupportedMediaType' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+  /media/{key}:
+    get:
+      tags: [media]
+      operationId: getMedia
+      summary: Serve an uploaded image
+      description: |
+        Public (also when `require-login-to-browse` is on) so that image views can load it without
+        a token. Keys are content-addressed and never change, so responses carry
+        `Cache-Control: public, max-age=31536000, immutable`, plus `ETag`,
+        `X-Content-Type-Options: nosniff` and a restrictive `Content-Security-Policy`.
+      security: []
+      parameters:
+        - name: key
+          in: path
+          required: true
+          description: SHA-256 of the file (64 lowercase hex characters) plus extension.
+          schema: { type: string, pattern: '^[0-9a-f]{64}\.(jpg|png|webp)$', example: 3a7bd3e2360a3d29eea436fcfb7e44c735d117c42d1c1835420b6b9942dd4f1b.jpg }
+      responses:
+        '200':
+          description: The image bytes as uploaded.
+          headers:
+            Cache-Control: { schema: { type: string, example: 'public, max-age=31536000, immutable' } }
+            ETag: { schema: { type: string } }
+            X-Content-Type-Options: { schema: { type: string, example: nosniff } }
+          content:
+            image/jpeg: { schema: { type: string, format: binary } }
+            image/png: { schema: { type: string, format: binary } }
+            image/webp: { schema: { type: string, format: binary } }
+        '304': { description: Not modified (`If-None-Match` matched the ETag). }
+        '404': { $ref: '#/components/responses/NotFound' }
+
   # ---------------------------------------------------------------- admin
   /admin/markets:
     get:
@@ -1118,10 +1208,20 @@ components:
         application/problem+json:
           schema: { $ref: '#/components/schemas/Problem' }
     TooManyRequests:
-      description: Rate limit per client IP exceeded (`code` = RATE_LIMITED); see the `Retry-After` header (seconds).
+      description: Rate limit exceeded (per client IP for login/registration, per user for uploads; `code` = RATE_LIMITED); see the `Retry-After` header (seconds).
       headers:
         Retry-After:
           schema: { type: integer, minimum: 1 }
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    PayloadTooLarge:
+      description: The uploaded file is larger than 5 MB (`code` = FILE_TOO_LARGE).
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    UnsupportedMediaType:
+      description: The file is not a JPEG, PNG or WebP image by its content (`code` = UNSUPPORTED_MEDIA_TYPE). Also returned when the request body is not multipart/form-data.
       content:
         application/problem+json:
           schema: { $ref: '#/components/schemas/Problem' }
@@ -1162,7 +1262,7 @@ components:
         code:
           type: string
           example: VALIDATION_FAILED
-          description: Stable machine-readable code. Besides the codes listed per response, any endpoint may return FORBIDDEN, METHOD_NOT_ALLOWED or INTERNAL_ERROR.
+          description: Stable machine-readable code. Besides the codes listed per response, any endpoint may return FORBIDDEN, METHOD_NOT_ALLOWED, UNSUPPORTED_MEDIA_TYPE or INTERNAL_ERROR. Upload codes are FILE_TOO_LARGE, UNSUPPORTED_MEDIA_TYPE, INVALID_IMAGE and IMAGE_TOO_LARGE.
         errors:
           type: array
           items:
@@ -1741,10 +1841,20 @@ components:
         maxOrderQuantity: { type: integer, minimum: 1, maximum: 99, default: 24 }
     UpdateListingRequest:
       type: object
+      description: Partial update; absent properties stay unchanged.
       properties:
         price: { $ref: '#/components/schemas/Money' }
         available: { type: boolean }
         maxOrderQuantity: { type: integer, minimum: 1, maximum: 99 }
+        imageUrl:
+          type: [string, 'null']
+          format: uri
+          maxLength: 500
+          description: |
+            The market's own photo of the product (e.g. a `url` from uploadMedia). Absent = unchanged,
+            `null` = remove it. For a shared catalog product it only applies to this market's listing
+            (the catalog image, if any, shows again after removal); for a private product it is the
+            product image.
     Listing:
       allOf:
         - $ref: '#/components/schemas/ProductSummary'
@@ -1761,6 +1871,20 @@ components:
         size: { type: integer }
         totalItems: { type: integer, format: int64 }
         totalPages: { type: integer }
+    MediaPurpose:
+      type: string
+      enum: [LOGO, COVER, BANNER, PRODUCT]
+      description: Where the image will be used. Recorded for logging; the same limits apply to all.
+    MediaUpload:
+      type: object
+      required: [key, url, width, height, contentType, sizeBytes]
+      properties:
+        key: { type: string, example: 3a7bd3e2360a3d29eea436fcfb7e44c735d117c42d1c1835420b6b9942dd4f1b.jpg }
+        url: { type: string, format: uri, description: 'Absolute public URL (`dukkan.media.public-base-url` + `/` + key; by default derived from the request: `<origin>/api/v1/media/<key>`).' }
+        width: { type: integer, minimum: 1 }
+        height: { type: integer, minimum: 1 }
+        contentType: { type: string, enum: [image/jpeg, image/png, image/webp] }
+        sizeBytes: { type: integer, format: int64 }
     PromotionRequest:
       type: object
       required: [title, type, validFrom, validUntil, productIds]

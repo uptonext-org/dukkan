@@ -3,3 +3,8 @@ logging:
   structured:
     format:
       console: ecs
+
+dukkan:
+  media:
+    # Volume mounted by infrastructure/docker/compose.yaml and the Kubernetes deployment.
+    directory: ${DUKKAN_MEDIA_DIRECTORY:/var/lib/dukkan/media}

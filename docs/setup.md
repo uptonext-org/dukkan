@@ -40,6 +40,21 @@ Feature flags (`application.yml`, under `dukkan.features`):
 - `require-login-to-browse`: default `false`. When `true`, browsing needs an account.
 - `merchant-auto-approve`: default `true`. When `true`, new markets go live immediately.
 
+**Uploaded images** (merchant photos, `POST /api/v1/merchant/markets/{id}/media`):
+
+| Setting | Env var | Default |
+|---|---|---|
+| `dukkan.media.directory` | `DUKKAN_MEDIA_DIRECTORY` | `${java.io.tmpdir}/dukkan-media` (e.g. `/tmp/dukkan-media`); docker profile `/var/lib/dukkan/media` (Compose volume `media`) |
+| `dukkan.media.public-base-url` | `DUKKAN_MEDIA_PUBLIC_BASE_URL` | empty: URLs are derived from the upload request (`http://<host>:8080/api/v1/media/<key>`) |
+| `dukkan.media.max-file-size` / `spring.servlet.multipart.max-file-size` | | 5 MB (413 `FILE_TOO_LARGE`) |
+| `dukkan.media.max-pixels` | | 40,000,000 (400 `IMAGE_TOO_LARGE`) |
+| `dukkan.media.uploads-per-hour` | | 60 per user and instance (429 `RATE_LIMITED`) |
+
+Image URLs are stored as absolute URLs. A photo uploaded from the Android emulator therefore points to
+`http://10.0.2.2:8080/…`, which other devices cannot load; for shared test setups set
+`DUKKAN_MEDIA_PUBLIC_BASE_URL` to an address every client reaches. Files in the default temp directory may be
+removed by the OS; set `DUKKAN_MEDIA_DIRECTORY` to keep them.
+
 To run the full stack in containers:
 ```bash
 docker compose -f infrastructure/docker/compose.yaml --profile app up --build
@@ -64,13 +79,13 @@ npm run android           # or: npm run ios  (first: cd ios && bundle install &&
 
 | Check | Command | Result on this branch (2026-10-21) |
 |---|---|---|
-| Backend compile + Error Prone + all tests | `cd services/backend && ./gradlew clean build` | Pass: 192 tests, 0 failures (incl. security-review regressions, admin, rate limit, slot clean-up) |
+| Backend compile + Error Prone + all tests | `cd services/backend && ./gradlew clean build` | Pass: 207 tests in 40 classes, 0 failures (incl. security-review regressions, admin, rate limit, slot clean-up, media upload) |
 | Contract conformance | part of the backend build: `ContractMappingTest`, `ResponseSchemaIntegrationTest` | Pass: every operation is mapped in both directions; responses have the required fields and no undocumented ones |
 | Mobile type check (strict) | `cd apps/mobile && npm run typecheck` | Pass, 0 errors |
 | Mobile lint | `npm run lint` | Pass, 0 problems |
-| Mobile tests | `npm test` | Pass: 19 suites, 80 tests. Jest prints a worker-exit warning (open handle not yet found) |
+| Mobile tests | `npm test` | Pass: 20 suites, 88 tests (live test skipped). Jest prints a worker-exit warning (open handle not yet found) |
 | Visual QA (web preview) | `cd tools/web-preview && npm ci && npm run build && npm run screenshots` (backend running) | 59 screenshots in de/ar, light/dark; reviewed after each design change. Known preview artefacts: Latin text alignment and start/end paddings in Arabic, map placeholder |
-| **Live API test (app client ↔ real backend)** | backend running, then `DUKKAN_LIVE_API_URL=http://localhost:8080/api/v1 npx jest live.api` | Pass: 2 tests covering discovery in 3 languages, cart, slot, order, merchant accept, cancel, a new 3-language product found via Arabic search |
+| **Live API test (app client ↔ real backend)** | backend running, then `DUKKAN_LIVE_API_URL=http://localhost:8080/api/v1 npx jest live.api` | Pass: 3 tests covering discovery in 3 languages, cart, slot, order, merchant accept, cancel, a new 3-language product found via Arabic search, and a photo upload (PNG generated in the test) set as a listing image and served by `GET /media/{key}` |
 | Metro release bundles | `npx react-native bundle --platform android\|ios --dev false …` | Built |
 | Contract lint | `npx -y @redocly/cli@2.64.1 lint packages/shared-contracts/openapi.yaml` | Valid, 0 errors (warnings only) |
 | Mermaid diagrams | `@mermaid-js/mermaid-cli@11.12.0` on every block | All render |

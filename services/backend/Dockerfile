@@ -14,12 +14,15 @@ RUN ./gradlew --no-daemon bootJar \
 
 FROM eclipse-temurin:25.0.4.1_1-jre-noble@sha256:3f2223fe04b750aa5a8179e29b5c9a1ddf7665fc9bb08bfe11ad01d143bc13a5 AS runtime
 RUN groupadd --system --gid 10001 dukkan \
- && useradd --system --uid 10001 --gid dukkan --no-create-home --shell /usr/sbin/nologin dukkan
+ && useradd --system --uid 10001 --gid dukkan --no-create-home --shell /usr/sbin/nologin dukkan \
+ && install -d -o 10001 -g 10001 -m 0750 /var/lib/dukkan/media
 WORKDIR /app
 COPY --from=build --chown=dukkan:dukkan /workspace/extracted/dependencies/ ./
 COPY --from=build --chown=dukkan:dukkan /workspace/extracted/spring-boot-loader/ ./
 COPY --from=build --chown=dukkan:dukkan /workspace/extracted/snapshot-dependencies/ ./
 COPY --from=build --chown=dukkan:dukkan /workspace/extracted/application/ ./
+# Uploaded images (dukkan.media.directory in the docker profile). A fresh named volume copies this ownership.
+VOLUME /var/lib/dukkan/media
 USER 10001:10001
 ENV SPRING_PROFILES_ACTIVE=docker
 EXPOSE 8080

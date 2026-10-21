@@ -18,6 +18,13 @@ spring:
           time_zone: UTC
   flyway:
     enabled: true
+  servlet:
+    multipart:
+      # Uploads (POST /merchant/markets/{id}/media): 5 MB per file, matching dukkan.media.max-file-size.
+      # Larger bodies answer 413 FILE_TOO_LARGE (ApiExceptionHandler).
+      max-file-size: 5MB
+      max-request-size: 6MB
+      file-size-threshold: 1MB
   mvc:
     problemdetails:
       enabled: false
@@ -25,6 +32,10 @@ spring:
 server:
   port: 8080
   shutdown: graceful
+  tomcat:
+    # Read (and discard) up to this much of a rejected oversized upload so the client still gets the 413
+    # instead of a reset connection.
+    max-swallow-size: 16MB
   error:
     include-stacktrace: never
     include-message: never
@@ -72,6 +83,15 @@ dukkan:
   markets:
     default-radius-km: 10
     max-radius-km: 50
+  media:
+    # Filesystem storage for uploaded images (content-addressed). The docker profile uses a volume.
+    directory: ${DUKKAN_MEDIA_DIRECTORY:${java.io.tmpdir}/dukkan-media}
+    # Absolute URL prefix of GET /media/{key}, e.g. https://api.dukkan.app/api/v1/media or a CDN.
+    # Empty: derived from each upload request (<origin>/api/v1/media).
+    public-base-url: ${DUKKAN_MEDIA_PUBLIC_BASE_URL:}
+    max-file-size: 5MB
+    max-pixels: 40000000
+    uploads-per-hour: 60
   security:
     jwt:
       # No default: must be provided via DUKKAN_JWT_SECRET (>= 32 bytes). Startup fails otherwise.

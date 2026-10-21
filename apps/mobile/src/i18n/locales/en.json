@@ -53,7 +53,11 @@
     "field": {
       "MaxUtf8Bytes": "The password is too long. Arabic characters count double.",
       "Future": "The end date must be in the future."
-    }
+    },
+    "UNSUPPORTED_MEDIA_TYPE": "This file format is not supported. Please choose a JPEG, PNG or WebP photo.",
+    "FILE_TOO_LARGE": "The photo is too large (5 MB at most).",
+    "INVALID_IMAGE": "The file is not a readable image. Please choose another photo.",
+    "IMAGE_TOO_LARGE": "The photo has too many pixels (40 megapixels at most)."
   },
   "validation": {
     "required": "Please fill this in.",
@@ -479,9 +483,6 @@
       "VEGAN_FRIENDLY": "Vegan-friendly"
     },
     "images": "Images",
-    "imagesHint": "In phase 1 as a link (https://…).",
-    "logoUrl": "Logo link",
-    "coverUrl": "Cover photo link",
     "imprint": "Legal notice",
     "legalName": "Company name",
     "registerInfo": "Register entry",
@@ -547,6 +548,23 @@
       "COMPLETED": "Complete",
       "PLACED": "Placed",
       "CANCELLED": "Cancelled"
+    },
+    "logo": "Logo",
+    "cover": "Cover photo",
+    "productPhoto": "Product photo",
+    "photo": {
+      "choose": "Choose photo",
+      "take": "Take photo",
+      "remove": "Remove photo",
+      "uploading": "Uploading photo …",
+      "chooseFor": "{{label}}: choose photo",
+      "takeFor": "{{label}}: take photo",
+      "removeFor": "{{label}}: remove photo",
+      "editFor": "Photo of {{name}}",
+      "permissionDenied": "No access to photos or camera. Please allow it in Settings.",
+      "cameraUnavailable": "No camera is available on this device.",
+      "pickFailed": "The photo could not be opened. Please choose another one.",
+      "afterCreate": "You can add a logo and cover photo once the market has been created."
     }
   }
 }

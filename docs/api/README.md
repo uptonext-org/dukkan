@@ -22,7 +22,8 @@
 | Addresses | `GET/POST /addresses`, `PUT/DELETE /addresses/{id}` | JWT |
 | Orders | `POST /markets/{id}/orders`, `GET /orders`, `GET /orders/{id}`, `POST /orders/{id}/cancel` | JWT |
 | Admin | `GET /admin/markets?status=`, `POST /admin/markets/{id}/status` (ACTIVE / SUSPENDED / PENDING_REVIEW) | JWT + ADMIN |
-| Merchant | `GET/POST /merchant/markets`, `PUT /merchant/markets/{id}`, `GET /merchant/catalog?marketId=`, listings (CRUD), promotions, `GET /merchant/markets/{id}/orders`, `POST /merchant/orders/{id}/status` | JWT + MERCHANT |
+| Merchant | `GET/POST /merchant/markets`, `PUT /merchant/markets/{id}`, `GET /merchant/catalog?marketId=`, listings (CRUD, `imageUrl` on update), promotions, `GET /merchant/markets/{id}/orders`, `POST /merchant/orders/{id}/status`, `POST /merchant/markets/{id}/media` (photo upload) | JWT + MERCHANT |
+| Media | `GET /media/{sha256}.{jpg\|png\|webp}` (uploaded images, long-lived cache) | public (always) |
 
 \* Public while `dukkan.features.require-login-to-browse=false` (phase 1 default).
 
@@ -90,6 +91,39 @@ cancelling, and a new three-language product found by an Arabic search, is
 automated in `apps/mobile/src/shared/api/__tests__/live.api.test.ts`. It runs
 the app's own API client against the backend and also runs in CI as job
 `e2e-api`.
+
+### Photo upload (merchant)
+`multipart/form-data` with a `file` part and a `purpose` field (`LOGO`, `COVER`, `BANNER`, `PRODUCT`). The
+format is detected from the bytes (JPEG, PNG, WebP); the part's declared content type is ignored.
+```bash
+TOKEN=$(curl -s -H 'Content-Type: application/json' \
+  -d '{"email":"haendler@dukkan.local","password":"dukkan-demo-2026"}' localhost:8080/api/v1/auth/login | jq -r .accessToken)
+curl -s -H "Authorization: Bearer $TOKEN" -F file=@photo.png -F purpose=PRODUCT \
+  localhost:8080/api/v1/merchant/markets/$MARKET/media                                  # → 201 + Location
+```
+```json
+{"key":"3fd6e6be528c182d768563a63b65ac5a70d022149a01eeeaaa30396d75f426e0.png",
+ "url":"http://localhost:8080/api/v1/media/3fd6e6be528c182d768563a63b65ac5a70d022149a01eeeaaa30396d75f426e0.png",
+ "width":4,"height":4,"contentType":"image/png","sizeBytes":73}
+```
+Put `url` into `logoUrl` / `coverImageUrl` (`PUT /merchant/markets/{id}`), `newProduct.imageUrl` (new private
+product) or `imageUrl` of `PUT /merchant/markets/{id}/listings/{productId}` (`null` removes the market's photo; a
+shared catalog image then shows again). The same bytes always give the same URL.
+
+| Status | `code` | When |
+|---|---|---|
+| 201 | | stored (or already stored) |
+| 400 | `VALIDATION_FAILED` | `file` or `purpose` missing/unknown |
+| 400 | `INVALID_IMAGE` | JPEG/PNG does not decode completely, WebP header inconsistent, empty file |
+| 400 | `IMAGE_TOO_LARGE` | more than 40 megapixels |
+| 403 / 404 | `FORBIDDEN` / `NOT_FOUND` | not a merchant / not the owner of the market |
+| 413 | `FILE_TOO_LARGE` | more than 5 MB |
+| 415 | `UNSUPPORTED_MEDIA_TYPE` | not JPEG, PNG or WebP by content (GIF, SVG, HEIC, HTML …), or the body is not multipart |
+| 429 | `RATE_LIMITED` | more than 60 uploads per user and hour (`Retry-After`) |
+
+`GET /media/{key}` answers with the stored bytes, `Content-Type` from the detected format,
+`Cache-Control: max-age=31536000, public, immutable`, an `ETag` (304 on `If-None-Match`),
+`X-Content-Type-Options: nosniff` and `Content-Security-Policy: default-src 'none'; sandbox`.
 
 ### Errors
 Every error is `application/problem+json` with a stable `code`. Validation

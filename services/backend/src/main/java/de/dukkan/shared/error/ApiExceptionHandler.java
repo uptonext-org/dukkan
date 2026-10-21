@@ -30,6 +30,9 @@ import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.MultipartException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 /**
@@ -55,6 +58,13 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
           case InvalidCredentialsException _ -> HttpStatus.UNAUTHORIZED;
           case InvalidRequestException _ -> HttpStatus.BAD_REQUEST;
           case UnauthorizedException _ -> HttpStatus.UNAUTHORIZED;
+          case RateLimitedException _ -> HttpStatus.TOO_MANY_REQUESTS;
+          case ContentRejectedException rejected ->
+              switch (rejected.reason()) {
+                case TOO_LARGE -> HttpStatus.CONTENT_TOO_LARGE;
+                case UNSUPPORTED_TYPE -> HttpStatus.UNSUPPORTED_MEDIA_TYPE;
+                case INVALID -> HttpStatus.BAD_REQUEST;
+              };
         };
     if (ex instanceof InvalidRequestException invalid) {
       ProblemDetail problem =
@@ -64,7 +74,24 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
           "errors", List.of(new FieldViolation(invalid.field(), invalid.violation(), invalid.getMessage())));
       return ResponseEntity.status(status).contentType(APPLICATION_PROBLEM_JSON).body(problem);
     }
+    if (ex instanceof RateLimitedException limited) {
+      return ResponseEntity.status(status)
+          .header(HttpHeaders.RETRY_AFTER, Long.toString(limited.retryAfterSeconds()))
+          .contentType(APPLICATION_PROBLEM_JSON)
+          .body(Problems.of(status, ex.code(), ex.getMessage(), request.getRequestURI()));
+    }
     return problem(status, ex.code(), ex.getMessage(), request);
+  }
+
+  /** A malformed multipart body (the size limit has its own handler and answers 413). */
+  @ExceptionHandler(MultipartException.class)
+  ResponseEntity<ProblemDetail> handleMultipart(MultipartException ex, HttpServletRequest request) {
+    LOG.info("Malformed multipart request: {}", ex.getClass().getSimpleName());
+    ProblemDetail problem =
+        Problems.of(HttpStatus.BAD_REQUEST, ErrorCodes.VALIDATION_FAILED, "The request failed validation.", request.getRequestURI());
+    problem.setTitle("Validation failed");
+    problem.setProperty("errors", List.of(new FieldViolation("body", "NotReadable", "is not a valid multipart/form-data body")));
+    return ResponseEntity.badRequest().contentType(APPLICATION_PROBLEM_JSON).body(problem);
   }
 
   @ExceptionHandler({OptimisticLockingFailureException.class, PessimisticLockingFailureException.class})
@@ -126,6 +153,23 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
       MissingServletRequestParameterException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
     return validationProblem(
         List.of(new FieldViolation(ex.getParameterName(), "NotNull", "is required")), headers, request);
+  }
+
+  @Override
+  protected ResponseEntity<Object> handleMissingServletRequestPart(
+      MissingServletRequestPartException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+    return validationProblem(
+        List.of(new FieldViolation(ex.getRequestPartName(), "NotNull", "is required")), headers, request);
+  }
+
+  /** Spring answers 413 when a multipart file exceeds {@code spring.servlet.multipart.max-file-size}. */
+  @Override
+  protected ResponseEntity<Object> handleMaxUploadSizeExceededException(
+      MaxUploadSizeExceededException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+    ProblemDetail problem =
+        ProblemDetail.forStatusAndDetail(HttpStatus.CONTENT_TOO_LARGE, "The uploaded file is too large.");
+    problem.setProperty("code", ErrorCodes.FILE_TOO_LARGE);
+    return handleExceptionInternal(ex, problem, headers, HttpStatus.CONTENT_TOO_LARGE, request);
   }
 
   @Override
@@ -208,6 +252,7 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
       case 404 -> ErrorCodes.NOT_FOUND;
       case 405 -> ErrorCodes.METHOD_NOT_ALLOWED;
       case 409 -> ErrorCodes.CONFLICT;
+      case 413 -> ErrorCodes.FILE_TOO_LARGE;
       case 415 -> ErrorCodes.UNSUPPORTED_MEDIA_TYPE;
       default -> status.is5xxServerError() ? ErrorCodes.INTERNAL_ERROR : "HTTP_" + status.value();
     };

@@ -40,7 +40,8 @@ The password is a development-only value. For the container use `--spring.profil
 Flyway: `V1__schema.sql` (schema, `pg_trgm`), `V2__reference_data.sql` (locales de/en/ar, UI texts, 9 market
 types, 10 cuisines, 12 categories, Hamburg gazetteer: 22 districts, their postal codes and 28 streets),
 `V3__seed_hamburg.sql` (12 invented markets across Hamburg districts, 158 shared catalog products with de/en/ar
-names, 529 listings, 34 banners, 23 promotions). Timestamps in V3 are relative to `now()` (promotions valid for a
+names, 529 listings, 34 banners, 23 promotions), `V4__product_icon_keys.sql` (placeholder icon per product),
+`V5__listing_image.sql` (`market_product.image_url`, a market's own photo of a listing). Timestamps in V3 are relative to `now()` (promotions valid for a
 year, three "new" listings per market). Market names, street names (spice-themed, e.g. *Kardamomweg*), brands
 and people are invented. The search columns of seeded products are built at startup by `SearchTextIndexer`.
 
@@ -57,6 +58,9 @@ and people are invented. The search columns of seeded products are built at star
 | `dukkan.fulfilment.*` | | 7 days ahead, `PT1H` slots, capacity 6 (delivery) / 10 (pickup), cutoff `PT2H` (delivery) / `PT1H` (pickup) |
 | `dukkan.catalog.*` | | "new" = 14 days, default max order quantity 24 |
 | `dukkan.markets.*` | | default radius 10 km, max 50 km |
+| `dukkan.media.directory` | `DUKKAN_MEDIA_DIRECTORY` | `${java.io.tmpdir}/dukkan-media`; docker profile `/var/lib/dukkan/media` (volume) |
+| `dukkan.media.public-base-url` | `DUKKAN_MEDIA_PUBLIC_BASE_URL` | empty = derived from the upload request (`<origin>/api/v1/media`) |
+| `dukkan.media.max-file-size`, `max-pixels`, `uploads-per-hour` | | 5 MB, 40,000,000, 60 per user and instance. `spring.servlet.multipart.max-file-size` is 5 MB too (request 6 MB), `server.tomcat.max-swallow-size` 16 MB so oversized uploads still get their 413 |
 
 **Feature flags**
 
@@ -107,6 +111,7 @@ are deterministic while seed timestamps relative to `now()` stay consistent. Tes
 | `RequireLoginToBrowseIntegrationTest` | flag on → 401 on catalog GETs; auto-approve off → PENDING_REVIEW |
 | `ResponseSchemaIntegrationTest` | real responses contain every required property of ~35 contract schemas |
 | `SecurityIntegrationTest`, `GeoIntegrationTest`, `MetaAndLocalizationIntegrationTest` | 401/403, tokens, roles, ownership, request id; gazetteer search/reverse/geocoding; locales, code lists, PATCH /me |
+| `MediaIntegrationTest`, `ImageInspectorTest`, `UploadRateLimiterTest` | JPEG/PNG/WebP fixtures generated in the test; spoofed content types (HTML/SVG/GIF declared as images) → 415, truncated/garbage → `INVALID_IMAGE`, > 5 MB → 413, > 40 MP (header only) → `IMAGE_TOO_LARGE`; other merchant → 404, customer → 403; GET bytes + Cache-Control/ETag/nosniff, 304; dedupe; logo/cover/listing/private-product photos; 429 in `RateLimitIntegrationTest` |
 | `ContractMappingTest`, `ArchitectureTest` | every contract operation has a handler and vice versa; module boundaries, no cycles, layers |
 
 Dependencies are locked (`gradle.lockfile`, `buildscript-gradle.lockfile`, `settings-gradle.lockfile`). After
@@ -130,7 +135,8 @@ Package-by-module under `de.dukkan`; each module has `api` (controllers, request
 | `cart` | one cart per user and market (optimistic `@Version`), pricing, reservation | catalog, market, fulfilment, address |
 | `order` | checkout per market with snapshots, idempotency, status machine, merchant order views | cart, fulfilment, address, market, catalog, identity |
 | `favorite` | favourite markets/listings, favourites page grouped by category | catalog, market |
-| `merchant` | `/merchant/**` facade with ownership checks; demo accounts runner | market, catalog, promotion, order, identity, address |
+| `merchant` | `/merchant/**` facade with ownership checks (also for uploads); demo accounts runner | market, catalog, promotion, order, identity, address, media |
+| `media` | image validation (magic bytes, `javax.imageio`, WebP header), content-addressed `MediaStorage` (filesystem), per-user upload limit, public `GET /media/{key}` | — |
 | `shared` | money, problems, error codes, security, properties, clock, request id | — |
 
 Ports keep the graph acyclic: `catalog.application.ListingFavorites` (favourite flags) is implemented by
@@ -158,6 +164,21 @@ other modules' response DTOs from `api`); `domain` and `infrastructure` are modu
 - **Orders**: `DK-yyyyMMdd-NNNNNN`; same `Idempotency-Key` for the same user returns the first order (201).
   Item names are re-localised from the catalog when shown (snapshot as fallback).
 
+- **Media**: `POST /merchant/markets/{id}/media` → `merchant` checks ownership → `media.MediaService`:
+  rate limit (fixed 1 h window per user), size, format by magic bytes (JPEG `FF D8 FF`, PNG signature,
+  `RIFF….WEBP`), header dimensions and the 40 MP limit *before* decoding, then a full decode of JPEG/PNG with
+  ImageIO subsampled to ~1 MP (bounded memory; decoder warnings such as a truncated JPEG reject the file).
+  WebP is header-checked only (VP8/VP8L/VP8X), since the JDK has no WebP decoder. Files are stored unchanged
+  under `sha256(bytes).ext`, sharded `ab/abcd….ext`, written atomically (temp file + rename); the same bytes
+  dedupe to one file and one URL. The URL goes into the existing `logoUrl`, `coverImageUrl`, `newProduct.imageUrl`
+  or the new `UpdateListingRequest.imageUrl`, so profile and listing APIs are unchanged. A listing photo of a
+  shared catalog product is stored on `market_product.image_url` (overrides `catalog_product.image_url` for that
+  market only); for a private product it is the product image.
+- **Swapping storage**: `media.application.MediaStorage` has three methods (`exists`, `put`, `open`). An S3/MinIO
+  implementation (AWS SDK v2 or MinIO client, `PutObject` with `If-None-Match: *`) replaces
+  `infrastructure.FileSystemMediaStorage`; point `dukkan.media.public-base-url` at the bucket's CDN so that
+  `GET /media/{key}` is no longer on the request path. No SDK is a dependency yet (backlog B-32a).
+
 ## Known limitations / backlog
 
 - No admin API (approving `PENDING_REVIEW` markets, suspending); status changes need SQL.
@@ -167,5 +188,9 @@ other modules' response DTOs from `api`); `domain` and `infrastructure` are modu
 - Opening intervals cannot span midnight. Slots are not cleaned up; changing opening hours does not delete
   already generated slots.
 - Nearby search ranks at most 1000 matches in memory and sorts `price_asc` by the regular price.
-- No rate limiting on `/auth/*`, no refresh tokens; no image upload (URLs only); payment simulated.
+- No refresh tokens; payment simulated. Rate limits (auth per IP, uploads per user) are per instance.
+- Uploaded media: filesystem storage only (an `emptyDir` in Kubernetes, not shared between replicas); no
+  thumbnails or resizing (the app downsizes to 2048 px before upload); EXIF metadata is kept as uploaded; files are
+  never deleted (no reference counting); WebP pixel data is not decoded; CMYK JPEGs are accepted via the raster
+  path, other exotic JPEG/PNG variants ImageIO cannot read are rejected as `INVALID_IMAGE`.
 - The gazetteer covers Hamburg only (22 districts); reverse geocoding answers 404 beyond 25 km of a known place.

@@ -15,3 +15,6 @@ dukkan:
       secret: integration-test-secret-0123456789abcdef
       # Tests move the clock by days (cutoffs, "new" window); tokens must outlive that.
       ttl: P30D
+  media:
+    # Fresh per Gradle build directory; content-addressed, so reruns simply reuse files.
+    directory: build/test-media

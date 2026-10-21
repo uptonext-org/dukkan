@@ -10,17 +10,25 @@ import de.dukkan.market.application.MarketInfo;
 import de.dukkan.market.application.MarketProfile;
 import de.dukkan.market.application.MarketService;
 import de.dukkan.market.application.MerchantMarket;
+import de.dukkan.media.application.MediaPurpose;
+import de.dukkan.media.application.MediaService;
+import de.dukkan.media.application.StoredMedia;
 import de.dukkan.order.application.OrderService;
 import de.dukkan.order.application.OrderView;
 import de.dukkan.promotion.application.PromotionDraft;
 import de.dukkan.promotion.application.PromotionService;
 import de.dukkan.promotion.application.PromotionView;
 import de.dukkan.shared.api.PageResponse;
+import de.dukkan.shared.error.ContentRejectedException;
 import de.dukkan.shared.error.NotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
+import org.springframework.core.io.InputStreamSource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,12 +45,15 @@ public class MerchantService {
   private final CatalogService catalog;
   private final PromotionService promotions;
   private final OrderService orders;
+  private final MediaService media;
 
-  public MerchantService(MarketService markets, CatalogService catalog, PromotionService promotions, OrderService orders) {
+  public MerchantService(
+      MarketService markets, CatalogService catalog, PromotionService promotions, OrderService orders, MediaService media) {
     this.markets = markets;
     this.catalog = catalog;
     this.promotions = promotions;
     this.orders = orders;
+    this.media = media;
   }
 
   @Transactional(readOnly = true)
@@ -137,6 +148,27 @@ public class MerchantService {
       throw new NotFoundException("Order not found.");
     }
     return orders.advanceStatus(orderId, status, locale);
+  }
+
+  /**
+   * Stores a photo for one of the caller's markets. Every attempt counts against the upload rate
+   * limit; at most {@code maxBytes + 1} bytes are read, so an oversized stream is never buffered.
+   */
+  @Transactional(readOnly = true)
+  public StoredMedia uploadMedia(UUID userId, UUID marketId, MediaPurpose purpose, long declaredSize, InputStreamSource content) {
+    media.checkRateLimit(userId);
+    requireOwner(userId, marketId);
+    long max = media.maxBytes();
+    if (declaredSize > max) {
+      throw ContentRejectedException.tooLarge("The file is larger than " + max + " bytes.");
+    }
+    byte[] bytes;
+    try (InputStream in = content.getInputStream()) {
+      bytes = in.readNBytes((int) Math.min(Integer.MAX_VALUE - 8, max + 1));
+    } catch (IOException e) {
+      throw new UncheckedIOException("Cannot read upload", e);
+    }
+    return media.store(userId, purpose, bytes);
   }
 
   private MarketInfo requireOwner(UUID userId, UUID marketId) {
