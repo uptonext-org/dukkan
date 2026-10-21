@@ -64,11 +64,12 @@ npm run android           # or: npm run ios  (first: cd ios && bundle install &&
 
 | Check | Command | Result on this branch (2026-10-21) |
 |---|---|---|
-| Backend compile + Error Prone + all tests | `cd services/backend && ./gradlew clean build` | Pass: 181 tests in 32 classes, 0 failures |
+| Backend compile + Error Prone + all tests | `cd services/backend && ./gradlew clean build` | Pass: 192 tests, 0 failures (incl. security-review regressions, admin, rate limit, slot clean-up) |
 | Contract conformance | part of the backend build: `ContractMappingTest`, `ResponseSchemaIntegrationTest` | Pass: every operation is mapped in both directions; responses have the required fields and no undocumented ones |
 | Mobile type check (strict) | `cd apps/mobile && npm run typecheck` | Pass, 0 errors |
 | Mobile lint | `npm run lint` | Pass, 0 problems |
-| Mobile tests | `npm test` | Pass: 17 suites, 64 tests. Jest prints a worker-exit warning (open handle not yet found) |
+| Mobile tests | `npm test` | Pass: 19 suites, 80 tests. Jest prints a worker-exit warning (open handle not yet found) |
+| Visual QA (web preview) | `cd tools/web-preview && npm ci && npm run build && npm run screenshots` (backend running) | 59 screenshots in de/ar, light/dark; reviewed after each design change. Known preview artefacts: Latin text alignment and start/end paddings in Arabic, map placeholder |
 | **Live API test (app client ↔ real backend)** | backend running, then `DUKKAN_LIVE_API_URL=http://localhost:8080/api/v1 npx jest live.api` | Pass: 2 tests covering discovery in 3 languages, cart, slot, order, merchant accept, cancel, a new 3-language product found via Arabic search |
 | Metro release bundles | `npx react-native bundle --platform android\|ios --dev false …` | Built |
 | Contract lint | `npx -y @redocly/cli@2.64.1 lint packages/shared-contracts/openapi.yaml` | Valid, 0 errors (warnings only) |

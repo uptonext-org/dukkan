@@ -21,7 +21,8 @@ Product phases: [`docs/product/marketplace.md`](product/marketplace.md).
 | M-12 | App: market sub-app (home, favourites, search, cart, fulfilment, order) | Done |
 | M-13 | App: merchant mode (profile, listings from catalog or new, promotions, orders) | Done |
 | M-14 | Live API test (app client against the backend) plus CI job `e2e-api` | Done |
-| M-15 | Visual QA through a react-native-web preview with screenshots (de/ar, light/dark), and fixing what it finds | In progress |
+| M-15 | Visual QA through a react-native-web preview with screenshots (de/ar, light/dark), and fixing what it finds (14 defects fixed) | Done |
+| M-16 | Security and correctness review of the backend, findings fixed with regression tests; admin API; rate limiting; slot clean-up; product icon placeholders | Done |
 
 ## P1: Next
 
@@ -39,7 +40,7 @@ Product phases: [`docs/product/marketplace.md`](product/marketplace.md).
 | B-40 | Opening hours across midnight, several intervals per day in the app editor | M-04 | S | Nightly slot clean-up job is done (`SlotCleanupJob`, 03:15 Berlin) |
 | B-41 | Paging the `openNow` and name filters in SQL instead of Java; promotional price in `price_asc` sorting | M-04, M-05 | S | |
 | B-42 | Find and fix the Jest worker-exit warning in the full-app suites | M-12 | S | |
-| B-28 | Android and iOS native builds in CI (SDK runners), Detox end-to-end tests, check fonts, RTL and permissions on devices | M-10 | M | |
+| B-28 | Android and iOS native builds in CI (SDK runners), Detox end-to-end tests, check fonts, RTL and permissions on devices | M-10 | M | Includes checking on device: Arabic sheet title padding and tab badge position (only verifiable natively) |
 | B-29 | Dependency scanning for Gradle (OWASP dependency-check or Dependabot) | — | S | |
 | B-16 | (Reverse engineering) Get a Picnic APK lawfully and run the REA plan | user-supplied APK | M | `docs/reverse-engineering/technical-analysis.md` |
 
