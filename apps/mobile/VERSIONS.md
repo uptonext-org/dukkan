@@ -2,7 +2,7 @@
 
 Checked on 2026-10-18 against the public npm registry (`npm view <pkg>@<ver> peerDependencies engines`).
 Direct dependencies are pinned exactly in `package.json`, and `package-lock.json` is committed.
-"Verified" below means checked in this sandbox (Linux, no Android SDK or Xcode). Native builds were **not** run here; they run in CI (`.github/workflows/native.yml`, B-28). Release JS bundles and their Hermes bytecode were built here (`npm run bundle:check`).
+"Verified" below means checked in this sandbox (Linux, no Android SDK or Xcode). Native builds were **not** run here; they run in CI (`.github/workflows/native.yml`, B-28; first run green on 2026-10-21: Android release APK and iOS simulator build). Release JS bundles and their Hermes bytecode were built here (`npm run bundle:check`).
 
 ## Mandated versions
 
