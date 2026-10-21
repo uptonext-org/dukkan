@@ -32,6 +32,13 @@ npm run build                       # → dist/
 npm run screenshots                 # starts `vite preview` on :5199 if needed, writes screenshots/
 ONLY=de-light npm run screenshots   # one variant (de-light, ar-light, de-dark)
 npm run serve                       # browse the preview at http://localhost:5199 yourself
+npm run dev                         # build + serve in one step
+```
+
+There is no Vite dev server: its dependency pre-bundling (esbuild) cannot read the Flow types in
+`react-native/Libraries/*`, so `dev` builds first and then serves `dist/`.
+
+```sh
 ```
 
 Chromium comes from `PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers` (Playwright 1.56.1 matches
