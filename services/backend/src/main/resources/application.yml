@@ -28,6 +28,13 @@ spring:
   mvc:
     problemdetails:
       enabled: false
+  autoconfigure:
+    # RabbitMQ beans are created by shared.events.RabbitEventsConfiguration only when
+    # dukkan.events.transport=rabbitmq, so nothing connects to a broker by default.
+    exclude:
+      - org.springframework.boot.amqp.autoconfigure.RabbitAutoConfiguration
+      - org.springframework.boot.amqp.autoconfigure.health.RabbitHealthContributorAutoConfiguration
+      - org.springframework.boot.amqp.autoconfigure.metrics.RabbitMetricsAutoConfiguration
 
 server:
   port: 8080
@@ -105,6 +112,17 @@ dukkan:
       path-style: ${DUKKAN_MEDIA_S3_PATH_STYLE:false}
       # Local development only.
       create-bucket: ${DUKKAN_MEDIA_S3_CREATE_BUCKET:false}
+  events:
+    # in-process (default: handlers run in this instance, no broker) or rabbitmq (ADR 0012).
+    transport: ${DUKKAN_EVENTS_TRANSPORT:in-process}
+    rabbitmq-uri: ${DUKKAN_RABBITMQ_URI:amqp://dukkan:dukkan@localhost:5672}
+    publish-interval: PT1S
+  push:
+    fcm:
+      # Firebase Cloud Messaging HTTP v1 (Android and iOS). Empty = no push, notifications stay in the inbox.
+      project-id: ${DUKKAN_FCM_PROJECT_ID:}
+      # Path to the service account JSON (never commit it).
+      credentials-file: ${DUKKAN_FCM_CREDENTIALS_FILE:}
   capture:
     # AI product capture: drafts per merchant and hour (each one may call the language model).
     drafts-per-hour: 30

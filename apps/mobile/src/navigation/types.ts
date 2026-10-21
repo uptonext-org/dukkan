@@ -56,6 +56,7 @@ export type RootStackParamList = {
   /** Deep link from the reset mail: dukkan://reset-password?token=… */
   ResetPassword: { token: string };
   ChangePassword: undefined;
+  Notifications: undefined;
 };
 
 export type RootStackScreenProps<T extends keyof RootStackParamList> = NativeStackScreenProps<RootStackParamList, T>;

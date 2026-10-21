@@ -24,6 +24,7 @@ import de.dukkan.shared.api.GeoPoint;
 import de.dukkan.shared.error.BusinessRuleException;
 import de.dukkan.shared.error.ConflictException;
 import de.dukkan.shared.error.ErrorCodes;
+import de.dukkan.shared.events.EventOutbox;
 import de.dukkan.shared.error.NotFoundException;
 import java.time.Clock;
 import java.time.Instant;
@@ -47,6 +48,7 @@ public class OrderService {
   private final MarketService markets;
   private final CatalogService catalog;
   private final IdentityService identity;
+  private final EventOutbox outbox;
   private final Clock clock;
 
   public OrderService(
@@ -57,6 +59,7 @@ public class OrderService {
       MarketService markets,
       CatalogService catalog,
       IdentityService identity,
+      EventOutbox outbox,
       Clock clock) {
     this.orders = orders;
     this.carts = carts;
@@ -65,6 +68,7 @@ public class OrderService {
     this.markets = markets;
     this.catalog = catalog;
     this.identity = identity;
+    this.outbox = outbox;
     this.clock = clock;
   }
 
@@ -141,6 +145,7 @@ public class OrderService {
     orders.save(order);
     // The reservation's capacity unit now belongs to the order; only this market's cart is emptied.
     carts.completeCheckout(userId, marketId);
+    outbox.append(OrderEvent.PLACED, order.getId(), event(order, null, "CUSTOMER", now));
     return view(order, locale, false);
   }
 
@@ -163,8 +168,10 @@ public class OrderService {
           ErrorCodes.ORDER_NOT_CANCELLABLE,
           "Only placed or accepted orders can be cancelled, and only before the slot cutoff.");
     }
+    OrderStatus previous = order.getStatus();
     order.cancel(now);
     fulfilment.releaseCapacity(order.getSlot().slotId());
+    outbox.append(OrderEvent.STATUS_CHANGED, order.getId(), event(order, previous, "CUSTOMER", now));
     return view(order, locale, false);
   }
 
@@ -199,6 +206,7 @@ public class OrderService {
     if (next.releasesCapacity() && !previous.releasesCapacity()) {
       fulfilment.releaseCapacity(order.getSlot().slotId());
     }
+    outbox.append(OrderEvent.STATUS_CHANGED, order.getId(), event(order, previous, "MERCHANT", clock.instant()));
     return view(order, locale, true);
   }
 
@@ -206,6 +214,21 @@ public class OrderService {
 
   private CustomerOrder owned(UUID userId, UUID orderId) {
     return orders.findByIdAndUserId(orderId, userId).orElseThrow(OrderService::orderNotFound);
+  }
+
+  private static OrderEvent event(CustomerOrder order, @Nullable OrderStatus previous, String actor, Instant now) {
+    return new OrderEvent(
+        order.getId(),
+        order.getOrderNumber(),
+        order.getMarketId(),
+        order.getMarketName(),
+        order.getUserId(),
+        order.getStatus().name(),
+        previous == null ? null : previous.name(),
+        order.getFulfilmentType().name(),
+        order.getTotals().totalCents(),
+        actor,
+        now);
   }
 
   private static NotFoundException orderNotFound() {

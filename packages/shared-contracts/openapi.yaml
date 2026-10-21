@@ -38,6 +38,7 @@ tags:
   - name: orders
   - name: merchant
   - name: media
+  - name: notifications
     description: Image upload (merchants) and public image delivery.
   - name: admin
 security:
@@ -291,6 +292,62 @@ paths:
           content:
             application/problem+json:
               schema: { $ref: '#/components/schemas/Problem' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /me/devices:
+    put:
+      tags: [notifications]
+      operationId: registerDevice
+      summary: Register this device for push notifications
+      description: The FCM registration token of the app on this device. A token belongs to the account that registered it last.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DeviceRequest' }
+      responses:
+        '204': { description: Registered. }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    delete:
+      tags: [notifications]
+      operationId: unregisterDevice
+      summary: Stop push notifications to this device (e.g. on logout)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DeviceTokenRequest' }
+      responses:
+        '204': { description: Removed (or not registered for this account). }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /me/notifications:
+    get:
+      tags: [notifications]
+      operationId: listNotifications
+      summary: My notification inbox, newest first
+      description: |
+        Order notifications (B-37), written in the recipient's language when the event happened:
+        merchants get `NEW_ORDER` and `ORDER_CANCELLED` (by the customer); customers get
+        `ORDER_ACCEPTED`, `ORDER_REJECTED`, `ORDER_READY_FOR_PICKUP`, `ORDER_OUT_FOR_DELIVERY` and
+        `ORDER_COMPLETED`. The same texts are pushed to registered devices when push is configured.
+      parameters:
+        - { $ref: '#/components/parameters/Page' }
+        - { name: size, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 30 } }
+      responses:
+        '200':
+          description: A page of notifications.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/NotificationPage' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /me/notifications/read:
+    post:
+      tags: [notifications]
+      operationId: markNotificationsRead
+      summary: Mark all my notifications as read
+      responses:
+        '204': { description: Done. }
         '401': { $ref: '#/components/responses/Unauthorized' }
   /me:
     get:
@@ -1529,6 +1586,39 @@ components:
         firstName: { type: string, minLength: 1, maxLength: 100 }
         lastName: { type: string, minLength: 1, maxLength: 100 }
         preferredLocale: { type: string }
+    DeviceRequest:
+      type: object
+      required: [token, platform]
+      properties:
+        token: { type: string, minLength: 1, maxLength: 4096, description: FCM registration token. }
+        platform: { type: string, enum: [IOS, ANDROID] }
+    DeviceTokenRequest:
+      type: object
+      required: [token]
+      properties:
+        token: { type: string, minLength: 1, maxLength: 4096 }
+    Notification:
+      type: object
+      required: [id, kind, title, body, createdAt, read]
+      properties:
+        id: { type: string, format: uuid }
+        kind: { type: string, enum: [NEW_ORDER, ORDER_CANCELLED, ORDER_ACCEPTED, ORDER_REJECTED, ORDER_READY_FOR_PICKUP, ORDER_OUT_FOR_DELIVERY, ORDER_COMPLETED] }
+        title: { type: string }
+        body: { type: string }
+        orderId: { type: [string, 'null'], format: uuid }
+        marketId: { type: [string, 'null'], format: uuid, description: 'For merchant notifications: the market whose order list to open.' }
+        createdAt: { type: string, format: date-time }
+        read: { type: boolean }
+    NotificationPage:
+      type: object
+      required: [items, page, size, totalItems, totalPages, unreadCount]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/Notification' } }
+        page: { type: integer }
+        size: { type: integer }
+        totalItems: { type: integer, format: int64 }
+        totalPages: { type: integer }
+        unreadCount: { type: integer, format: int64 }
     AuthResponse:
       type: object
       required: [accessToken, tokenType, expiresIn, refreshToken, refreshExpiresIn, user]

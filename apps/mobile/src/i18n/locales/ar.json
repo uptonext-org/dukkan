@@ -689,5 +689,17 @@
     "sulphites": "الكبريتيت",
     "lupin": "الترمس",
     "molluscs": "الرخويات"
+  },
+  "notifications": {
+    "title": "الإشعارات",
+    "emptyTitle": "لا توجد إشعارات بعد",
+    "emptyMessage": "تظهر هنا مستجدات الطلبات.",
+    "unread": "غير مقروء",
+    "newCount_zero": "{{count}} جديد",
+    "newCount_one": "{{count}} جديد",
+    "newCount_two": "{{count}} جديدان",
+    "newCount_few": "{{count}} جديدة",
+    "newCount_many": "{{count}} جديداً",
+    "newCount_other": "{{count}} جديد"
   }
 }

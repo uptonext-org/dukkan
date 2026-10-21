@@ -285,6 +285,10 @@ public class MarketRepository {
     return List.copyOf(rows.values());
   }
 
+  public List<UUID> ownerIds(UUID marketId) {
+    return jdbc.sql("SELECT user_id FROM market_owner WHERE market_id = :market ORDER BY created_at").param("market", marketId).query(UUID.class).list();
+  }
+
   public boolean isOwner(UUID marketId, UUID userId) {
     return jdbc.sql("SELECT count(*) FROM market_owner WHERE market_id = :marketId AND user_id = :userId")
             .param("marketId", marketId)

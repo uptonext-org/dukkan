@@ -24,7 +24,34 @@ public record DukkanProperties(
     @DefaultValue Markets markets,
     @DefaultValue Security security,
     @DefaultValue Media media,
-    @DefaultValue Capture capture) {
+    @DefaultValue Capture capture,
+    @DefaultValue Push push) {
+
+  /** Push notifications (B-37). */
+  public record Push(@DefaultValue Fcm fcm) {}
+
+  /**
+   * Firebase Cloud Messaging HTTP v1. Enabled when {@code projectId} and {@code credentialsFile} (a
+   * service account JSON with the "Firebase Cloud Messaging API" role) are set. {@code apiBaseUrl}
+   * and {@code tokenUri} only change in tests.
+   */
+  public record Fcm(
+      @Nullable String projectId,
+      @Nullable Path credentialsFile,
+      @DefaultValue("https://fcm.googleapis.com") String apiBaseUrl,
+      @Nullable String tokenUri) {
+    public Fcm {
+      projectId = blankToNull(projectId);
+      tokenUri = blankToNull(tokenUri);
+      if (credentialsFile != null && credentialsFile.toString().isBlank()) {
+        credentialsFile = null;
+      }
+    }
+
+    public boolean enabled() {
+      return projectId != null && credentialsFile != null;
+    }
+  }
 
   /** Feature flags. */
   public record Features(

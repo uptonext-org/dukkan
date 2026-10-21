@@ -115,6 +115,33 @@ rotate on every use; the app renews tokens by itself.
   ```
   The backend accepts the token's `nonce` raw or as SHA-256 hex, so either library's nonce handling works.
 
+**Order events and notifications** (B-37, ADR 0012): order changes become inbox entries for merchants and
+customers. By default the events are handled in-process (no broker). For several instances use RabbitMQ:
+`docker compose -f infrastructure/docker/compose.yaml --profile events up -d rabbitmq` (management UI on
+http://localhost:15672, user `dukkan` / `dukkan`) and start the backend with `DUKKAN_EVENTS_TRANSPORT=rabbitmq`
+(`DUKKAN_RABBITMQ_URI`, default `amqp://dukkan:dukkan@localhost:5672`).
+
+**Push notifications** use Firebase Cloud Messaging (Android, and iOS through the APNs key in Firebase):
+create a Firebase project, a service account with the "Firebase Cloud Messaging API Admin" role, and set
+`DUKKAN_FCM_PROJECT_ID` and `DUKKAN_FCM_CREDENTIALS_FILE` (path to the service account JSON, never committed).
+In the app, plug an adapter into the `PushRegistration` port (`src/shared/push`) in `createDependencies()`, e.g.
+with `@react-native-firebase/messaging`:
+
+```ts
+import messaging from '@react-native-firebase/messaging';
+
+export const firebasePushRegistration: PushRegistration = {
+  async deviceToken() {
+    const status = await messaging().requestPermission();
+    if (status !== messaging.AuthorizationStatus.AUTHORIZED && status !== messaging.AuthorizationStatus.PROVISIONAL) {
+      return null;
+    }
+    return { token: await messaging().getToken(), platform: Platform.OS === 'ios' ? 'IOS' : 'ANDROID' };
+  },
+};
+```
+Without it, notifications still appear under Profil → Mitteilungen.
+
 To run the full stack in containers:
 ```bash
 docker compose -f infrastructure/docker/compose.yaml --profile app up --build

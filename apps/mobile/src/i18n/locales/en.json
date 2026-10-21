@@ -629,5 +629,13 @@
     "sulphites": "Sulphites",
     "lupin": "Lupin",
     "molluscs": "Molluscs"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "emptyTitle": "No notifications yet",
+    "emptyMessage": "Updates about your orders appear here.",
+    "unread": "Unread",
+    "newCount_one": "{{count}} new",
+    "newCount_other": "{{count}} new"
   }
 }

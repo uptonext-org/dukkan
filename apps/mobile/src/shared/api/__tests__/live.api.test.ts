@@ -253,4 +253,19 @@ describeLive('live API (app client against the real backend)', () => {
     await expect(api('de').refreshSession(second.refreshToken)).rejects.toMatchObject({ status: 401 });
     await api('de').requestPasswordReset(`nobody-${Date.now()}@example.org`);
   });
+
+  it('notifies the demo merchant about orders through the outbox (B-37)', async () => {
+    const merchant = await signIn('haendler@dukkan.local');
+    // The end-to-end flow above placed and cancelled orders in the demo markets; the in-process
+    // transport turns them into inbox entries within about a second.
+    let inbox = await merchant.listNotifications();
+    for (let i = 0; i < 30 && inbox.items.length === 0; i++) {
+      await new Promise<void>((resolve) => setTimeout(() => resolve(), 200));
+      inbox = await merchant.listNotifications();
+    }
+    expect(inbox.items.length).toBeGreaterThan(0);
+    expect(inbox.items.map((n) => n.kind)).toContain('NEW_ORDER');
+    await merchant.markNotificationsRead();
+    expect((await merchant.listNotifications()).unreadCount).toBe(0);
+  });
 });

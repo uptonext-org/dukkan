@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import com.nimbusds.jose.proc.SecurityContext;
 import de.dukkan.shared.config.DukkanProperties;
+import de.dukkan.support.DukkanPropertiesFixture;
 import de.dukkan.shared.security.SecurityConfiguration;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
@@ -29,26 +30,7 @@ class JwtTokenServiceTest {
   private final UserView user = new UserView(UUID.randomUUID(), "anna@example.org", "Anna", "Muster", java.util.List.of("CUSTOMER", "MERCHANT"), "de");
 
   private static DukkanProperties properties(String secret, Duration ttl) {
-    return new DukkanProperties(
-        new DukkanProperties.Features(false, true),
-        new DukkanProperties.Fulfilment(7, Duration.ofHours(1), 6, 10, Duration.ofHours(2), Duration.ofHours(1)),
-        new DukkanProperties.Catalog(14, 24),
-        new DukkanProperties.Markets(10, 50),
-        new DukkanProperties.Security(
-            new DukkanProperties.Jwt(secret, ttl, "dukkan"),
-            new DukkanProperties.RateLimit(true, 20, 10, 60, 5),
-            new DukkanProperties.Auth(
-                Duration.ofDays(30),
-                Duration.ofMinutes(30),
-                "dukkan://reset-password",
-                "Dukkan <no-reply@dukkan.app>",
-                false,
-                new DukkanProperties.Provider(java.util.List.of(), java.util.List.of(), null),
-                new DukkanProperties.Provider(java.util.List.of(), java.util.List.of(), null))),
-        new DukkanProperties.Media(null, null, org.springframework.util.unit.DataSize.ofMegabytes(5), 40_000_000, 60, "filesystem",
-            new DukkanProperties.S3(null, "eu-central-1", null, null, null, false, false)),
-        new DukkanProperties.Capture(
-            30, new DukkanProperties.Anthropic(null, "claude-opus-5-5", "low", Duration.ofSeconds(60), 8000, true, null)));
+    return DukkanPropertiesFixture.withJwt(secret, ttl);
   }
 
   private static NimbusJwtDecoder decoder(String secret) {

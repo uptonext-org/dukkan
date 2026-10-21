@@ -38,3 +38,11 @@ DUKKAN_MEDIA_S3_ACCESS_KEY=... DUKKAN_MEDIA_S3_SECRET_KEY=...
 Objects are written once under `ab/<sha256>.<ext>` with `Cache-Control: public, max-age=31536000,
 immutable`. Make the bucket (or the CDN origin) publicly readable for that prefix; the backend never
 needs delete rights. The `emptyDir` can then be removed from the deployment.
+
+## Events and push (B-37)
+
+With two replicas, set `DUKKAN_EVENTS_TRANSPORT=rabbitmq` and `DUKKAN_RABBITMQ_URI` (a managed RabbitMQ 4.x or
+the RabbitMQ Cluster Operator; quorum queues need at least three nodes for fault tolerance). The default
+`in-process` transport also works with several replicas (the outbox uses `SKIP LOCKED`), but each event is
+then handled by whichever pod publishes it. For push, mount the Firebase service account JSON as a secret
+file and set `DUKKAN_FCM_PROJECT_ID` and `DUKKAN_FCM_CREDENTIALS_FILE`.

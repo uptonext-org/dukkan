@@ -21,6 +21,7 @@
 | Slots | `GET /markets/{id}/slots?type=DELIVERY\|PICKUP[&addressId=]` | public* (JWT with addressId) |
 | Addresses | `GET/POST /addresses`, `PUT/DELETE /addresses/{id}` | JWT |
 | Orders | `POST /markets/{id}/orders`, `GET /orders`, `GET /orders/{id}`, `POST /orders/{id}/cancel` | JWT |
+| Notifications | `PUT/DELETE /me/devices` (FCM token), `GET /me/notifications` (inbox with `unreadCount`), `POST /me/notifications/read` | JWT |
 | Admin | `GET /admin/markets?status=`, `POST /admin/markets/{id}/status` (ACTIVE / SUSPENDED / PENDING_REVIEW) | JWT + ADMIN |
 | Merchant | `GET/POST /merchant/markets`, `PUT /merchant/markets/{id}`, `GET /merchant/catalog?marketId=`, listings (CRUD, `imageUrl` on update), promotions, `GET /merchant/markets/{id}/orders`, `POST /merchant/orders/{id}/status`, `POST /merchant/markets/{id}/media` (photo upload), `POST /merchant/markets/{id}/product-drafts` (AI capture) | JWT + MERCHANT |
 | Media | `GET /media/{sha256}.{jpg\|png\|webp}` (uploaded images, long-lived cache) | public (always) |

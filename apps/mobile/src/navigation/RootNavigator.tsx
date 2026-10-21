@@ -6,6 +6,7 @@ import { useAuth } from '../features/auth/AuthProvider';
 import { ChangePasswordScreen } from '../features/auth/screens/ChangePasswordScreen';
 import { ResetPasswordScreen } from '../features/auth/screens/ResetPasswordScreen';
 import { MarketNavigator } from '../features/market/MarketNavigator';
+import { NotificationsScreen } from '../features/notifications/screens/NotificationsScreen';
 import { AddProductScreen } from '../features/merchant/screens/AddProductScreen';
 import { ListingsScreen } from '../features/merchant/screens/ListingsScreen';
 import { MarketHubScreen } from '../features/merchant/screens/MarketHubScreen';
@@ -70,6 +71,7 @@ export function RootNavigator() {
           <Stack.Screen name="MerchantOrders" component={MerchantOrdersScreen} />
           <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} options={{ presentation: 'modal' }} />
           <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
+          <Stack.Screen name="Notifications" component={NotificationsScreen} />
         </Stack.Group>
       )}
     </Stack.Navigator>

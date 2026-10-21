@@ -103,6 +103,33 @@ export interface AuthResponse {
 
 export type SocialProvider = 'APPLE' | 'GOOGLE';
 
+export type DevicePlatform = 'IOS' | 'ANDROID';
+
+export type NotificationKind =
+  | 'NEW_ORDER'
+  | 'ORDER_CANCELLED'
+  | 'ORDER_ACCEPTED'
+  | 'ORDER_REJECTED'
+  | 'ORDER_READY_FOR_PICKUP'
+  | 'ORDER_OUT_FOR_DELIVERY'
+  | 'ORDER_COMPLETED';
+
+/** Inbox entry, written in the recipient's language by the server. */
+export interface AppNotification {
+  id: string;
+  kind: NotificationKind;
+  title: string;
+  body: string;
+  orderId?: string | null;
+  marketId?: string | null;
+  createdAt: string;
+  read: boolean;
+}
+
+export interface NotificationPage extends Page<AppNotification> {
+  unreadCount: number;
+}
+
 export interface SocialSignInRequest {
   provider: SocialProvider;
   idToken: string;

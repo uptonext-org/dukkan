@@ -10,6 +10,7 @@ import Banana from 'lucide-react-native/icons/banana';
 import Bean from 'lucide-react-native/icons/bean';
 import Beef from 'lucide-react-native/icons/beef';
 import Beer from 'lucide-react-native/icons/beer';
+import Bell from 'lucide-react-native/icons/bell';
 import CakeSlice from 'lucide-react-native/icons/cake-slice';
 import Camera from 'lucide-react-native/icons/camera';
 import Candy from 'lucide-react-native/icons/candy';
@@ -122,6 +123,7 @@ const ICONS = {
   bean: Bean,
   beef: Beef,
   beer: Beer,
+  bell: Bell,
   cake: CakeSlice,
   candy: Candy,
   carrot: Carrot,

@@ -1,6 +1,7 @@
 # Local development stack. Start the database only:   docker compose -f infrastructure/docker/compose.yaml up -d postgres
 # Start the database and the backend image:            docker compose -f infrastructure/docker/compose.yaml --profile app up --build
 # Optional S3-compatible media store (B-32a):          docker compose -f infrastructure/docker/compose.yaml --profile s3 up -d s3
+# Optional RabbitMQ for domain events (B-37):           docker compose -f infrastructure/docker/compose.yaml --profile events up -d rabbitmq
 name: dukkan
 
 services:
@@ -20,6 +21,24 @@ services:
       interval: 5s
       timeout: 3s
       retries: 20
+
+  # Domain events (ADR 0012). Backend: DUKKAN_EVENTS_TRANSPORT=rabbitmq (URI default amqp://dukkan:dukkan@localhost:5672).
+  # Management UI: http://localhost:15672
+  rabbitmq:
+    profiles: ["events"]
+    image: rabbitmq:4.3.6-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: dukkan
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-dukkan}
+    ports:
+      - "127.0.0.1:5672:5672"
+      - "127.0.0.1:15672:15672"
+    # No volume: local broker state is disposable; the outbox in PostgreSQL is the source of truth.
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
 
   # Local stand-in for S3/R2 (Adobe S3Mock, Apache-2.0): only for development and tests, not production.
   # Backend: DUKKAN_MEDIA_STORAGE=s3 DUKKAN_MEDIA_S3_ENDPOINT=http://localhost:9090 DUKKAN_MEDIA_S3_BUCKET=dukkan-media
@@ -57,6 +76,9 @@ services:
       DUKKAN_MEDIA_S3_ACCESS_KEY: ${DUKKAN_MEDIA_S3_ACCESS_KEY:-}
       DUKKAN_MEDIA_S3_SECRET_KEY: ${DUKKAN_MEDIA_S3_SECRET_KEY:-}
       DUKKAN_MEDIA_S3_PATH_STYLE: ${DUKKAN_MEDIA_S3_PATH_STYLE:-false}
+      # in-process or rabbitmq (start the rabbitmq service with --profile events).
+      DUKKAN_EVENTS_TRANSPORT: ${DUKKAN_EVENTS_TRANSPORT:-in-process}
+      DUKKAN_RABBITMQ_URI: ${DUKKAN_RABBITMQ_URI:-amqp://dukkan:dukkan@rabbitmq:5672}
     ports:
       - "127.0.0.1:8080:8080"
     volumes:

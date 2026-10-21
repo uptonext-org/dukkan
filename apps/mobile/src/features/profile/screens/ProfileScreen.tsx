@@ -10,6 +10,7 @@ import { AppText, Button, ListRow, LoadingState } from '../../../shared/ui';
 import { useIsMerchant, useMe } from '../../auth/api/useMe';
 import { useAuth } from '../../auth/AuthProvider';
 import { AuthForm } from '../../auth/components/AuthForm';
+import { useNotifications } from '../../notifications/api/hooks';
 import { ShellHeader } from '../../marketplace/components/ShellHeader';
 import { LanguageSheet } from '../components/LanguageSheet';
 
@@ -18,6 +19,7 @@ export function ProfileScreen({ navigation }: ShellTabScreenProps<'Profile'>) {
   const styles = useStyles();
   const { t } = useTranslation();
   const { status, logout } = useAuth();
+  const unread = useNotifications().data?.unreadCount ?? 0;
   const { language } = useLanguage();
   const { place } = useChosenPlace();
   const me = useMe();
@@ -68,6 +70,13 @@ export function ProfileScreen({ navigation }: ShellTabScreenProps<'Profile'>) {
               {common}
               <ListRow title={t('profile.addresses')} icon="home" onPress={() => navigation.navigate('Addresses')} />
               <ListRow title={t('profile.orders')} icon="receipt" onPress={() => navigation.navigate('Orders')} testID="profile-orders" />
+              <ListRow
+                title={t('notifications.title')}
+                {...(unread > 0 ? { subtitle: t('notifications.newCount', { count: unread }) } : {})}
+                icon="bell"
+                onPress={() => navigation.navigate('Notifications')}
+                testID="profile-notifications"
+              />
               <ListRow title={t('auth.changePassword')} icon="lock" onPress={() => navigation.navigate('ChangePassword')} testID="profile-change-password" />
               {merchant && <ListRow title={t('profile.myMarket')} icon="store" onPress={() => navigation.navigate('MerchantMarkets')} testID="profile-my-market" />}
             </View>

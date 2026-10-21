@@ -15,6 +15,7 @@ flowchart TB
     admin[admin<br/>market review]
     media[media<br/>image upload, MediaStorage]
     capture[capture<br/>AI product capture, rule-based parser]
+    notification[notification<br/>inbox, device tokens, FCM push]
     shared[shared<br/>money, errors, security, rate limits, clock]
   end
   address --> geo
@@ -50,3 +51,6 @@ flowchart TB
   capture --> market
   capture --> media
   admin --> market
+  notification --> order
+  notification --> market
+  notification --> identity

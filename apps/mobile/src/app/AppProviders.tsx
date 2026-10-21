@@ -14,6 +14,7 @@ import type { KeyValueStorage } from '../shared/storage';
 import { ThemeProvider } from '../shared/theme';
 
 import type { SocialSignIn } from '../shared/auth';
+import type { PushRegistration } from '../shared/push';
 
 export interface AppDependencies {
   apiClient: ApiClient;
@@ -25,6 +26,7 @@ export interface AppDependencies {
   locationService: LocationService;
   photoPicker: PhotoPicker;
   socialSignIn: SocialSignIn;
+  pushRegistration: PushRegistration;
 }
 
 /** All app-wide providers. Tests pass in-memory dependencies (fake ApiClient, memory storage). */
@@ -43,7 +45,7 @@ export function AppProviders({
         <ThemeProvider {...(scheme !== undefined ? { scheme } : {})}>
           <ApiProvider client={dependencies.apiClient}>
             <QueryClientProvider client={dependencies.queryClient}>
-              <AuthProvider session={dependencies.session} socialSignIn={dependencies.socialSignIn}>
+              <AuthProvider session={dependencies.session} socialSignIn={dependencies.socialSignIn} pushRegistration={dependencies.pushRegistration}>
                 <LocationProvider storage={dependencies.storage} service={dependencies.locationService}>
                   <PhotoPickerProvider picker={dependencies.photoPicker}>
                     <AuthGate>{children}</AuthGate>

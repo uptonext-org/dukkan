@@ -42,6 +42,7 @@ dependencies {
     implementation(libs.spring.boot.starter.validation)
     implementation(libs.spring.boot.starter.actuator)
     implementation(libs.spring.boot.starter.mail)
+    implementation(libs.spring.boot.starter.amqp)
     implementation(libs.springdoc.webmvc.ui)
     implementation(libs.anthropic.java)
     implementation(platform(libs.awssdk.bom))

@@ -237,6 +237,11 @@ public class MarketService {
 
   // ------------------------------------------------------------------ merchant
 
+  /** Accounts that own the market (merchants to notify). */
+  public List<UUID> ownerIds(UUID marketId) {
+    return markets.ownerIds(marketId);
+  }
+
   public boolean isOwner(UUID marketId, UUID userId) {
     return markets.isOwner(marketId, userId);
   }

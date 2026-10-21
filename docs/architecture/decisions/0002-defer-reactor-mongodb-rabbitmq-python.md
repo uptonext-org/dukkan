@@ -22,3 +22,7 @@ for adoption:
 The MVP has fewer moving parts and simpler tests. Versions stay pinned through
 the Spring Boot 4.1.1 BOM (reactor-bom 2025.0.7, spring-amqp 4.1.1, mongodb 5.8.1),
 so adding a technology later does not need any version overrides.
+
+## Update 2026-10-21
+RabbitMQ is adopted for order events and notifications: see ADR 0012 (optional transport; the default
+runs the same handlers in-process).

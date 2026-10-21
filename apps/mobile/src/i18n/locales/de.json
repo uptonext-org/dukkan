@@ -629,5 +629,13 @@
     "sulphites": "Sulfite",
     "lupin": "Lupinen",
     "molluscs": "Weichtiere"
+  },
+  "notifications": {
+    "title": "Mitteilungen",
+    "emptyTitle": "Noch keine Mitteilungen",
+    "emptyMessage": "Hier erscheinen Neuigkeiten zu deinen Bestellungen.",
+    "unread": "Ungelesen",
+    "newCount_one": "{{count}} neu",
+    "newCount_other": "{{count}} neu"
   }
 }

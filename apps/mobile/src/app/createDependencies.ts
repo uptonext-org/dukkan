@@ -2,6 +2,7 @@ import { getLocales } from 'react-native-localize';
 
 import { createAuthSession } from '../features/auth/session';
 import { createUnavailableSocialSignIn, type SocialSignIn } from '../shared/auth';
+import { createUnavailablePushRegistration, type PushRegistration } from '../shared/push';
 import { createDukkanApi, createFetchApiClient, createQueryClient } from '../shared/api';
 import { env } from '../shared/config/env';
 import { createI18n, createLanguageStore } from '../shared/i18n';
@@ -15,6 +16,7 @@ export function createDependencies(
   tokenStorage: TokenStorage = createKeychainTokenStorage(),
   photoPicker: PhotoPicker = createImagePickerPhotoPicker(),
   socialSignIn: SocialSignIn = createUnavailableSocialSignIn(),
+  pushRegistration: PushRegistration = createUnavailablePushRegistration(),
 ): AppDependencies {
   const storage = createAsyncKeyValueStorage();
   const languageStore = createLanguageStore(storage, () => getLocales().map((l) => l.languageTag));
@@ -38,5 +40,6 @@ export function createDependencies(
     locationService: createGeolocationService(),
     photoPicker,
     socialSignIn,
+    pushRegistration,
   };
 }

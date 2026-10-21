@@ -9,6 +9,7 @@ import type {
   Category,
   CodeName,
   CreateListingRequest,
+  DevicePlatform,
   FavoriteGroup,
   FulfilmentType,
   ListMarketProductsParams,
@@ -22,6 +23,7 @@ import type {
   MarketProfileRequest,
   MarketSummary,
   MerchantMarket,
+  NotificationPage,
   Order,
   OrderStatus,
   Page,
@@ -70,6 +72,11 @@ export interface DukkanApi {
   confirmPasswordReset(token: string, newPassword: string): Promise<void>;
   changePassword(currentPassword: string, newPassword: string): Promise<void>;
   socialSignIn(request: SocialSignInRequest): Promise<AuthResponse>;
+  // notifications (B-37)
+  listNotifications(signal?: Signal): Promise<NotificationPage>;
+  markNotificationsRead(): Promise<void>;
+  registerDevice(token: string, platform: DevicePlatform): Promise<void>;
+  unregisterDevice(token: string): Promise<void>;
   getCurrentUser(signal?: Signal): Promise<User>;
   updateCurrentUser(request: UpdateUserRequest): Promise<User>;
   // geo
@@ -181,6 +188,10 @@ export function createDukkanApi(client: ApiClient): DukkanApi {
       client.request({ method: 'POST', path: '/auth/password-reset/confirm', body: { token, newPassword }, anonymous: true }),
     changePassword: (currentPassword, newPassword) => client.request({ method: 'PUT', path: '/me/password', body: { currentPassword, newPassword } }),
     socialSignIn: (body) => client.request({ method: 'POST', path: '/auth/social', body, anonymous: true }),
+    listNotifications: (signal) => get('/me/notifications', { size: 50 }, signal),
+    markNotificationsRead: () => client.request({ method: 'POST', path: '/me/notifications/read' }),
+    registerDevice: (token, platform) => client.request({ method: 'PUT', path: '/me/devices', body: { token, platform } }),
+    unregisterDevice: (token) => client.request({ method: 'DELETE', path: '/me/devices', body: { token } }),
     getCurrentUser: (signal) => get('/me', undefined, signal),
     updateCurrentUser: (body) => client.request({ method: 'PATCH', path: '/me', body }),
 

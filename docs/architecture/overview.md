@@ -65,6 +65,7 @@ flowchart TB
     admin[admin<br/>market review]
     media[media<br/>image upload, MediaStorage]
     capture[capture<br/>AI product capture, rule-based parser]
+    notification[notification<br/>inbox, device tokens, FCM push]
     shared[shared<br/>money, errors, security, rate limits, clock]
   end
   address --> geo
@@ -100,10 +101,16 @@ flowchart TB
   capture --> market
   capture --> media
   admin --> market
+  notification --> order
+  notification --> market
+  notification --> identity
 ```
 
 `capture` calls the Claude API (optional, `ProductDraftExtractor` port, ADR 0011); without a key it
 runs only its rule-based parser. Both paths run outside a database transaction.
+
+`order` writes `order.placed` / `order.status_changed` into a transactional outbox
+(`shared.events`); `notification` consumes them in-process or through RabbitMQ (ADR 0012).
 
 Edges show module dependencies derived from the imports. Every module also uses `i18n` and `shared`.
 Modules call each other only through `application` interfaces. Where a
