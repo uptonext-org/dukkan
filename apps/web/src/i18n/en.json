@@ -1,0 +1,127 @@
+{
+  "app": {
+    "title": "Dukkan Portal",
+    "subtitle": "For markets in Hamburg",
+    "language": "Language",
+    "logout": "Sign out",
+    "loading": "Loading …",
+    "retry": "Try again"
+  },
+  "login": {
+    "title": "Sign in",
+    "email": "Email",
+    "password": "Password",
+    "submit": "Sign in",
+    "noAccess": "This account has no access to the portal. Sign in with a merchant or admin account.",
+    "hint": "No merchant account yet? Register in the Dukkan app under “My market”."
+  },
+  "nav": {
+    "orders": "Orders",
+    "listings": "Assortment",
+    "import": "CSV import",
+    "admin": "Market review",
+    "market": "Market"
+  },
+  "status": {
+    "PENDING_REVIEW": "In review",
+    "ACTIVE": "Active",
+    "SUSPENDED": "Suspended"
+  },
+  "orders": {
+    "title": "Orders",
+    "empty": "No orders in this column.",
+    "refresh": "Refresh",
+    "items": "{{count}} items",
+    "pickup": "Pickup",
+    "delivery": "Delivery",
+    "column": {
+      "new": "New",
+      "accepted": "Accepted",
+      "ready": "Ready / on the way",
+      "done": "Done"
+    },
+    "action": {
+      "ACCEPTED": "Accept",
+      "REJECTED": "Reject",
+      "READY_FOR_PICKUP": "Ready for pickup",
+      "OUT_FOR_DELIVERY": "On the way",
+      "COMPLETED": "Complete"
+    },
+    "state": {
+      "PLACED": "New",
+      "ACCEPTED": "Accepted",
+      "REJECTED": "Rejected",
+      "READY_FOR_PICKUP": "Ready for pickup",
+      "OUT_FOR_DELIVERY": "On the way",
+      "COMPLETED": "Completed",
+      "CANCELLED": "Cancelled"
+    },
+    "autoRefresh": "Refreshes every 30 seconds."
+  },
+  "listings": {
+    "title": "Assortment",
+    "search": "Search",
+    "name": "Product",
+    "size": "Size",
+    "price": "Price (€)",
+    "available": "Available",
+    "own": "own product",
+    "save": "Save",
+    "saved": "Saved",
+    "invalidPrice": "Enter a price like 4.49.",
+    "empty": "No products yet. Add them in the app or import a CSV file.",
+    "count": "{{count}} products",
+    "more": "Load more"
+  },
+  "import": {
+    "title": "Import products from CSV",
+    "intro": "Upload a sheet from Excel, LibreOffice or Google Sheets (as “CSV UTF-8”). We check every row first; nothing is saved until you confirm, and only if every row is fine.",
+    "template": "Download template",
+    "file": "CSV file",
+    "check": "Check file",
+    "apply": "Import {{count}} rows",
+    "checking": "Checking …",
+    "applying": "Importing …",
+    "summary": "{{created}} new · {{listed}} from the catalog · {{updated}} updated · {{failed}} with errors",
+    "fixErrors": "Please fix the marked rows and upload the file again. Nothing was saved.",
+    "done": "Done: {{count}} rows imported. Missing languages are translated automatically.",
+    "line": "Row",
+    "action": "Action",
+    "product": "Product",
+    "problems": "Notes",
+    "actions": {
+      "CREATE": "New product",
+      "LIST": "From the catalog",
+      "UPDATE": "Update",
+      "ERROR": "Error"
+    },
+    "columns": "Columns: barcode, name_de, name_en, name_ar, description_de, brand, unit_size, category, price, available, max_order_quantity, keywords, cuisines, allergens, organic. Separate lists with |."
+  },
+  "admin": {
+    "title": "Market review",
+    "filter": "Status",
+    "all": "All",
+    "approve": "Approve",
+    "suspend": "Suspend",
+    "review": "Back to review",
+    "empty": "No markets with this status.",
+    "legal": "Imprint"
+  },
+  "errors": {
+    "NETWORK_ERROR": "Cannot reach the server.",
+    "INVALID_CREDENTIALS": "Email or password is wrong.",
+    "RATE_LIMITED": "Too many attempts. Please wait a moment.",
+    "FORBIDDEN": "You are not allowed to do this.",
+    "NOT_FOUND": "Not found.",
+    "VALIDATION_FAILED": "Please check your input.",
+    "INVALID_STATUS_TRANSITION": "This status change is no longer possible. The list is refreshed.",
+    "UNKNOWN": "Something went wrong. Please try again.",
+    "file": {
+      "Size": "The file is larger than 1 MB.",
+      "Encoding": "The file is not UTF-8. In Excel, save it as “CSV UTF-8”.",
+      "Header": "The header needs a “price” column and “name_de” or “barcode”.",
+      "Empty": "The file has no product rows.",
+      "TooManyRows": "At most 1000 products per file."
+    }
+  }
+}

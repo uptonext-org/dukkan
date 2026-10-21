@@ -1,0 +1,127 @@
+{
+  "app": {
+    "title": "بوابة دكّان",
+    "subtitle": "لأسواق هامبورغ",
+    "language": "اللغة",
+    "logout": "تسجيل الخروج",
+    "loading": "جارٍ التحميل …",
+    "retry": "إعادة المحاولة"
+  },
+  "login": {
+    "title": "تسجيل الدخول",
+    "email": "البريد الإلكتروني",
+    "password": "كلمة المرور",
+    "submit": "تسجيل الدخول",
+    "noAccess": "لا يملك هذا الحساب صلاحية الوصول إلى البوابة. يلزم تسجيل الدخول بحساب تاجر أو مشرف.",
+    "hint": "لا يوجد حساب تاجر بعد؟ التسجيل متاح في تطبيق دكّان تحت „سوقي“."
+  },
+  "nav": {
+    "orders": "الطلبات",
+    "listings": "التشكيلة",
+    "import": "استيراد CSV",
+    "admin": "مراجعة الأسواق",
+    "market": "السوق"
+  },
+  "status": {
+    "PENDING_REVIEW": "قيد المراجعة",
+    "ACTIVE": "نشط",
+    "SUSPENDED": "موقوف"
+  },
+  "orders": {
+    "title": "الطلبات",
+    "empty": "لا توجد طلبات في هذا العمود.",
+    "refresh": "تحديث",
+    "items": "{{count}} منتجات",
+    "pickup": "استلام",
+    "delivery": "توصيل",
+    "column": {
+      "new": "جديد",
+      "accepted": "مقبول",
+      "ready": "جاهز / في الطريق",
+      "done": "مكتمل"
+    },
+    "action": {
+      "ACCEPTED": "قبول",
+      "REJECTED": "رفض",
+      "READY_FOR_PICKUP": "جاهز للاستلام",
+      "OUT_FOR_DELIVERY": "في الطريق",
+      "COMPLETED": "إتمام"
+    },
+    "state": {
+      "PLACED": "جديد",
+      "ACCEPTED": "مقبول",
+      "REJECTED": "مرفوض",
+      "READY_FOR_PICKUP": "جاهز للاستلام",
+      "OUT_FOR_DELIVERY": "في الطريق",
+      "COMPLETED": "مكتمل",
+      "CANCELLED": "ملغى"
+    },
+    "autoRefresh": "يتم التحديث كل 30 ثانية."
+  },
+  "listings": {
+    "title": "التشكيلة",
+    "search": "بحث",
+    "name": "المنتج",
+    "size": "الحجم",
+    "price": "السعر (€)",
+    "available": "متوفر",
+    "own": "منتج خاص",
+    "save": "حفظ",
+    "saved": "تم الحفظ",
+    "invalidPrice": "يُكتب السعر مثل 4,49.",
+    "empty": "لا توجد منتجات بعد. يمكن إضافتها في التطبيق أو استيراد ملف CSV.",
+    "count": "{{count}} منتجات",
+    "more": "عرض المزيد"
+  },
+  "import": {
+    "title": "استيراد المنتجات من ملف CSV",
+    "intro": "يُرفع جدول من Excel أو LibreOffice أو Google Sheets (بصيغة „CSV UTF-8“). يُفحص كل سطر أولاً، ولا يُحفظ شيء قبل التأكيد، وفقط إذا كانت جميع الأسطر سليمة.",
+    "template": "تنزيل القالب",
+    "file": "ملف CSV",
+    "check": "فحص الملف",
+    "apply": "استيراد {{count}} أسطر",
+    "checking": "جارٍ الفحص …",
+    "applying": "جارٍ الاستيراد …",
+    "summary": "{{created}} جديد · {{listed}} من الكتالوج · {{updated}} محدَّث · {{failed}} بأخطاء",
+    "fixErrors": "تجب معالجة الأسطر المعلَّمة ثم رفع الملف من جديد. لم يُحفظ شيء.",
+    "done": "تم: استيراد {{count}} أسطر. تُترجم اللغات الناقصة تلقائياً.",
+    "line": "السطر",
+    "action": "الإجراء",
+    "product": "المنتج",
+    "problems": "ملاحظات",
+    "actions": {
+      "CREATE": "منتج جديد",
+      "LIST": "من الكتالوج",
+      "UPDATE": "تحديث",
+      "ERROR": "خطأ"
+    },
+    "columns": "الأعمدة: barcode, name_de, name_en, name_ar, description_de, brand, unit_size, category, price, available, max_order_quantity, keywords, cuisines, allergens, organic. تُفصل القوائم بالرمز |."
+  },
+  "admin": {
+    "title": "مراجعة الأسواق",
+    "filter": "الحالة",
+    "all": "الكل",
+    "approve": "اعتماد",
+    "suspend": "إيقاف",
+    "review": "إعادة إلى المراجعة",
+    "empty": "لا توجد أسواق بهذه الحالة.",
+    "legal": "بيانات الناشر"
+  },
+  "errors": {
+    "NETWORK_ERROR": "تعذّر الاتصال بالخادم.",
+    "INVALID_CREDENTIALS": "البريد الإلكتروني أو كلمة المرور غير صحيحة.",
+    "RATE_LIMITED": "محاولات كثيرة. يُرجى الانتظار قليلاً.",
+    "FORBIDDEN": "لا توجد صلاحية لهذا الإجراء.",
+    "NOT_FOUND": "غير موجود.",
+    "VALIDATION_FAILED": "يُرجى التحقق من المدخلات.",
+    "INVALID_STATUS_TRANSITION": "لم يعد تغيير الحالة هذا ممكناً. يتم تحديث القائمة.",
+    "UNKNOWN": "حدث خطأ ما. يُرجى المحاولة مرة أخرى.",
+    "file": {
+      "Size": "حجم الملف أكبر من 1 ميغابايت.",
+      "Encoding": "الملف ليس بترميز UTF-8. يُحفظ في Excel بصيغة „CSV UTF-8“.",
+      "Header": "يحتاج سطر العناوين إلى عمود „price“ وعمود „name_de“ أو „barcode“.",
+      "Empty": "لا يحتوي الملف على أسطر منتجات.",
+      "TooManyRows": "الحد الأقصى 1000 منتج لكل ملف."
+    }
+  }
+}

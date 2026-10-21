@@ -1,0 +1,127 @@
+{
+  "app": {
+    "title": "Dukkan Portal",
+    "subtitle": "Für Märkte in Hamburg",
+    "language": "Sprache",
+    "logout": "Abmelden",
+    "loading": "Lädt …",
+    "retry": "Erneut versuchen"
+  },
+  "login": {
+    "title": "Anmelden",
+    "email": "E-Mail",
+    "password": "Passwort",
+    "submit": "Anmelden",
+    "noAccess": "Dieses Konto hat keinen Zugang zum Portal. Melde dich mit einem Händler- oder Admin-Konto an.",
+    "hint": "Händlerkonto noch nicht angelegt? Registriere dich in der Dukkan-App unter „Mein Markt“."
+  },
+  "nav": {
+    "orders": "Bestellungen",
+    "listings": "Sortiment",
+    "import": "CSV-Import",
+    "admin": "Marktprüfung",
+    "market": "Markt"
+  },
+  "status": {
+    "PENDING_REVIEW": "In Prüfung",
+    "ACTIVE": "Aktiv",
+    "SUSPENDED": "Gesperrt"
+  },
+  "orders": {
+    "title": "Bestellungen",
+    "empty": "Keine Bestellungen in dieser Spalte.",
+    "refresh": "Aktualisieren",
+    "items": "{{count}} Artikel",
+    "pickup": "Abholung",
+    "delivery": "Lieferung",
+    "column": {
+      "new": "Neu",
+      "accepted": "Angenommen",
+      "ready": "Bereit / unterwegs",
+      "done": "Abgeschlossen"
+    },
+    "action": {
+      "ACCEPTED": "Annehmen",
+      "REJECTED": "Ablehnen",
+      "READY_FOR_PICKUP": "Bereit zur Abholung",
+      "OUT_FOR_DELIVERY": "Unterwegs",
+      "COMPLETED": "Abschließen"
+    },
+    "state": {
+      "PLACED": "Neu",
+      "ACCEPTED": "Angenommen",
+      "REJECTED": "Abgelehnt",
+      "READY_FOR_PICKUP": "Bereit zur Abholung",
+      "OUT_FOR_DELIVERY": "Unterwegs",
+      "COMPLETED": "Abgeschlossen",
+      "CANCELLED": "Storniert"
+    },
+    "autoRefresh": "Aktualisiert sich alle 30 Sekunden."
+  },
+  "listings": {
+    "title": "Sortiment",
+    "search": "Suchen",
+    "name": "Produkt",
+    "size": "Größe",
+    "price": "Preis (€)",
+    "available": "Verfügbar",
+    "own": "eigenes Produkt",
+    "save": "Speichern",
+    "saved": "Gespeichert",
+    "invalidPrice": "Preis wie 4,49 eingeben.",
+    "empty": "Noch keine Produkte. Lege sie in der App an oder importiere eine CSV-Datei.",
+    "count": "{{count}} Produkte",
+    "more": "Mehr laden"
+  },
+  "import": {
+    "title": "Produkte per CSV importieren",
+    "intro": "Lade eine Tabelle aus Excel, LibreOffice oder Google Sheets hoch (als „CSV UTF-8“). Zuerst prüfen wir jede Zeile, gespeichert wird erst nach deiner Bestätigung – und nur, wenn alle Zeilen in Ordnung sind.",
+    "template": "Vorlage herunterladen",
+    "file": "CSV-Datei",
+    "check": "Datei prüfen",
+    "apply": "{{count}} Zeilen übernehmen",
+    "checking": "Prüfe …",
+    "applying": "Übernehme …",
+    "summary": "{{created}} neu · {{listed}} aus dem Katalog · {{updated}} aktualisiert · {{failed}} mit Fehlern",
+    "fixErrors": "Bitte korrigiere die markierten Zeilen und lade die Datei erneut hoch. Es wurde nichts gespeichert.",
+    "done": "Fertig: {{count}} Zeilen übernommen. Fehlende Sprachen werden automatisch übersetzt.",
+    "line": "Zeile",
+    "action": "Aktion",
+    "product": "Produkt",
+    "problems": "Hinweise",
+    "actions": {
+      "CREATE": "Neues Produkt",
+      "LIST": "Aus dem Katalog",
+      "UPDATE": "Aktualisieren",
+      "ERROR": "Fehler"
+    },
+    "columns": "Spalten: barcode, name_de, name_en, name_ar, description_de, brand, unit_size, category, price, available, max_order_quantity, keywords, cuisines, allergens, organic (auch deutsch: EAN, Preis, Größe, Kategorie, Marke, Verfügbar …). Listen mit | trennen."
+  },
+  "admin": {
+    "title": "Marktprüfung",
+    "filter": "Status",
+    "all": "Alle",
+    "approve": "Freigeben",
+    "suspend": "Sperren",
+    "review": "Zurück in Prüfung",
+    "empty": "Keine Märkte mit diesem Status.",
+    "legal": "Impressum"
+  },
+  "errors": {
+    "NETWORK_ERROR": "Keine Verbindung zum Server.",
+    "INVALID_CREDENTIALS": "E-Mail oder Passwort ist falsch.",
+    "RATE_LIMITED": "Zu viele Versuche. Bitte warte kurz.",
+    "FORBIDDEN": "Dafür fehlt die Berechtigung.",
+    "NOT_FOUND": "Nicht gefunden.",
+    "VALIDATION_FAILED": "Bitte prüfe die Eingaben.",
+    "INVALID_STATUS_TRANSITION": "Dieser Statuswechsel ist nicht mehr möglich. Die Liste wird aktualisiert.",
+    "UNKNOWN": "Etwas ist schiefgelaufen. Bitte versuche es erneut.",
+    "file": {
+      "Size": "Die Datei ist größer als 1 MB.",
+      "Encoding": "Die Datei ist nicht UTF-8. Speichere sie in Excel als „CSV UTF-8“.",
+      "Header": "Die Kopfzeile braucht eine Spalte „price“ (oder „Preis“) und „name_de“ oder „barcode“.",
+      "Empty": "Die Datei enthält keine Produktzeilen.",
+      "TooManyRows": "Höchstens 1000 Produkte pro Datei."
+    }
+  }
+}

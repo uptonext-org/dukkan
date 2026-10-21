@@ -1,0 +1,98 @@
+/** Hand-written subset of packages/shared-contracts/openapi.yaml used by the portal. */
+
+export interface Problem {
+  status: number;
+  code: string;
+  detail?: string;
+  errors?: { field: string; code: string; message: string }[];
+}
+
+export type Role = 'CUSTOMER' | 'MERCHANT' | 'ADMIN';
+
+export interface User {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  roles: Role[];
+}
+
+export interface AuthResponse {
+  accessToken: string;
+  expiresIn: number;
+  refreshToken: string;
+  refreshExpiresIn: number;
+  user: User;
+}
+
+export interface Money {
+  amountCents: number;
+  currency: string;
+}
+
+export type MarketStatus = 'PENDING_REVIEW' | 'ACTIVE' | 'SUSPENDED';
+
+export interface MerchantMarket {
+  id: string;
+  slug: string;
+  name: string;
+  status: MarketStatus;
+  primaryLocale: string;
+  addressLine: string;
+  type: { code: string; name: string };
+  imprint: { legalName: string; addressLine: string; registerInfo?: string | null };
+}
+
+export interface Listing {
+  id: string;
+  name: string;
+  brand?: string | null;
+  unitSize: string;
+  price: Money;
+  available: boolean;
+  maxOrderQuantity: number;
+  privateProduct: boolean;
+}
+
+export interface PageResponse<T> {
+  items: T[];
+  page: number;
+  size: number;
+  totalItems: number;
+  totalPages: number;
+}
+
+export type OrderStatus = 'PLACED' | 'ACCEPTED' | 'REJECTED' | 'READY_FOR_PICKUP' | 'OUT_FOR_DELIVERY' | 'COMPLETED' | 'CANCELLED';
+export type FulfilmentType = 'DELIVERY' | 'PICKUP';
+
+export interface Order {
+  id: string;
+  orderNumber: string;
+  status: OrderStatus;
+  placedAt: string;
+  fulfilmentType: FulfilmentType;
+  items: { productId: string; name: string; quantity: number; lineTotal: Money }[];
+  total: Money;
+  slot: { startsAt: string; endsAt: string };
+  customerName?: string | null;
+}
+
+export type ImportAction = 'CREATE' | 'LIST' | 'UPDATE' | 'ERROR';
+
+export interface ImportRow {
+  line: number;
+  action: ImportAction;
+  name?: string | null;
+  listingId?: string | null;
+  errors: { field: string; code: string; message: string }[];
+}
+
+export interface ImportResult {
+  dryRun: boolean;
+  applied: boolean;
+  created: number;
+  listed: number;
+  updated: number;
+  failed: number;
+  rows: ImportRow[];
+}

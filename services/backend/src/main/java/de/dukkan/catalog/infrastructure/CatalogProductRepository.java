@@ -295,4 +295,39 @@ public class CatalogProductRepository {
             .update()
         == 1;
   }
+
+  /** Import matching (B-31): a shared product or one of the market's own with this barcode. */
+  public Optional<UUID> findByBarcode(String barcode, UUID marketId) {
+    return jdbc.sql(
+            """
+            SELECT cp.id FROM catalog_product cp
+            WHERE cp.barcode = :barcode AND (cp.owner_market_id IS NULL OR cp.owner_market_id = :marketId)
+            ORDER BY EXISTS (SELECT 1 FROM market_product mp WHERE mp.catalog_product_id = cp.id AND mp.market_id = :marketId
+                             AND mp.deleted_at IS NULL) DESC,
+                     cp.owner_market_id IS NULL DESC, cp.id
+            LIMIT 1
+            """)
+        .param("barcode", barcode)
+        .param("marketId", marketId)
+        .query(UUID.class)
+        .optional();
+  }
+
+  /** Import matching (B-31): the market's own product with this normalised name and pack size. */
+  public Optional<UUID> findPrivateByName(UUID marketId, String locale, String searchName, String unitSize) {
+    return jdbc.sql(
+            """
+            SELECT cp.id FROM catalog_product cp
+            JOIN catalog_product_translation t ON t.catalog_product_id = cp.id AND t.locale = :locale
+            WHERE cp.owner_market_id = :marketId AND t.search_name = :searchName AND lower(cp.unit_size) = lower(:unitSize)
+            ORDER BY cp.created_at, cp.id
+            LIMIT 1
+            """)
+        .param("marketId", marketId)
+        .param("locale", locale)
+        .param("searchName", searchName)
+        .param("unitSize", unitSize)
+        .query(UUID.class)
+        .optional();
+  }
 }

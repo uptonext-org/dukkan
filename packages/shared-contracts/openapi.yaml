@@ -1077,6 +1077,65 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
         '409': { $ref: '#/components/responses/Conflict' }
+  /merchant/markets/{marketId}/listings/import:
+    parameters:
+      - { $ref: '#/components/parameters/MarketId' }
+    post:
+      tags: [merchant]
+      operationId: importListings
+      summary: Create or update many listings from a CSV file
+      description: |
+        For the merchant web portal (B-31). Upload with `dryRun=true` first to see what would
+        happen, then again without it. **All or nothing:** rows are written only when no row has an
+        error; otherwise `applied` is false and every problem is listed per row.
+
+        File: UTF-8 CSV (Excel "CSV UTF-8", a BOM is fine), at most 1 MB and 1000 products. The
+        delimiter (`;`, `,` or tab) is detected from the header; fields may be quoted. Columns
+        (English or German name, any order, unknown columns are ignored):
+
+        | Column | German | Content |
+        |---|---|---|
+        | `barcode` | `ean`, `gtin` | 8–14 digits; matches the shared catalog |
+        | `name_<locale>` | | e.g. `name_de`, `name_ar`; the market's primary language is required for new products |
+        | `description_<locale>` | `beschreibung_<locale>` | |
+        | `brand` | `marke` | |
+        | `unit_size` | `größe`, `menge` | e.g. `500 g`; required for new products |
+        | `category` | `kategorie` | category slug, e.g. `dairy`; required for new products |
+        | `price` | `preis` | euros, `4,49` or `4.49` (a `€` is fine); required unless the row updates a listing |
+        | `available` | `verfügbar` | `ja`/`nein`, `true`/`false`, `1`/`0` |
+        | `max_order_quantity` | `max_menge` | 1–99 |
+        | `keywords`, `cuisines`, `allergens` | `stichwörter`, `küche`, `allergene` | separated by a vertical bar |
+        | `organic` | `bio` | like `available` |
+
+        Matching per row: the barcode (shared catalog or the market's own products), else the
+        market's own product with the same name (primary language) and size. A match the market
+        already lists is updated (`UPDATE`: price, availability, max quantity), a match it does not
+        list yet becomes a listing (`LIST`), anything else a new private product (`CREATE`; machine
+        translation fills the other languages, see translateTexts). Importing the same file twice
+        therefore only updates. `line` is the row number in the spreadsheet (header = 1).
+        File-level problems → 400 with field `file` and code `Size`, `Encoding`, `Header`, `Empty`
+        or `TooManyRows`.
+      parameters:
+        - { name: dryRun, in: query, required: false, schema: { type: boolean, default: false } }
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: { type: string, format: binary }
+      responses:
+        '200':
+          description: The report (also when rows have errors).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ListingImportResult' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
   /merchant/markets/{marketId}/listings/{productId}:
     parameters:
       - { $ref: '#/components/parameters/MarketId' }
@@ -2173,6 +2232,34 @@ components:
         allergens: { type: array, items: { type: string } }
         imageUrl: { type: [string, 'null'], format: uri }
         barcode: { type: [string, 'null'], maxLength: 20 }
+    ListingImportResult:
+      type: object
+      required: [dryRun, applied, created, listed, updated, failed, rows]
+      properties:
+        dryRun: { type: boolean }
+        applied: { type: boolean, description: True when the rows were written. }
+        created: { type: integer, description: New private products. }
+        listed: { type: integer, description: Existing products now listed by the market. }
+        updated: { type: integer, description: Listings updated. }
+        failed: { type: integer, description: Rows with errors. }
+        rows: { type: array, items: { $ref: '#/components/schemas/ListingImportRow' } }
+    ListingImportRow:
+      type: object
+      required: [line, action, errors]
+      properties:
+        line: { type: integer, description: Row number in the spreadsheet (header = 1). }
+        action: { type: string, enum: [CREATE, LIST, UPDATE, ERROR] }
+        name: { type: [string, 'null'] }
+        listingId: { type: [string, 'null'], format: uuid, description: Set when applied (and for UPDATE). }
+        errors:
+          type: array
+          items:
+            type: object
+            required: [field, code, message]
+            properties:
+              field: { type: string, description: 'CSV column, e.g. price or name_de.' }
+              code: { type: string, description: 'e.g. Required, Pattern, UnknownCode, Duplicate, PrimaryLocaleRequired.' }
+              message: { type: string }
     TranslationRequest:
       type: object
       required: [kind, fields]

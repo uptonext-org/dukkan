@@ -1,0 +1,42 @@
+{
+  "name": "dukkan-web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Dukkan web portal: merchant orders board, assortment, CSV import, and market review for admins.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --port 5174 --strictPort",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "audit:prod": "npm audit --omit=dev"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "5.104.4",
+    "i18next": "26.5.3",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "react-i18next": "17.1.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@testing-library/jest-dom": "7.0.1",
+    "@testing-library/react": "16.3.3",
+    "@testing-library/user-event": "14.6.7",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "5.2.0",
+    "eslint": "10.13.0",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "jsdom": "30.1.1",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.71.2",
+    "vite": "7.3.6",
+    "vitest": "5.0.3"
+  },
+  "engines": {
+    "node": ">=24.22.0"
+  }
+}

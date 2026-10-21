@@ -38,6 +38,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -395,6 +396,131 @@ public class CatalogService {
     UUID listingId = UUID.randomUUID();
     listings.insert(listingId, marketId, catalogProductId, draft.priceCents(), draft.available(), draft.maxOrderQuantity(), now);
     return listing(listingId, locale);
+  }
+
+  /**
+   * Bulk import (B-31). Each row is matched to a product (barcode first, then the market's own
+   * product with the same name and pack size) and becomes a new private product, a listing of an
+   * existing product or an update of the market's listing. All or nothing: rows are written only
+   * when no row has an error and {@code dryRun} is false.
+   */
+  @Transactional
+  public ListingImport.Result importListings(UUID marketId, List<ListingImport.Row> rows, boolean dryRun) {
+    MarketInfo market = markets.info(marketId);
+    String primary = market.primaryLocale();
+    Map<String, UUID> categoryIds = new HashMap<>();
+    categoryRows().forEach(c -> categoryIds.put(c.slug(), c.id()));
+    record Planned(ListingImport.Row row, ListingImport.Action action, @Nullable UUID productId, @Nullable UUID listingId, @Nullable NewProduct product) {}
+    List<Planned> plans = new ArrayList<>();
+    List<ListingImport.RowResult> results = new ArrayList<>();
+    Map<String, Integer> seen = new HashMap<>();
+    for (ListingImport.Row row : rows) {
+      List<ListingImport.RowError> errors = new ArrayList<>(row.errors());
+      String name = row.names().get(primary);
+      UUID productId = null;
+      if (row.barcode() != null) {
+        productId = products.findByBarcode(row.barcode(), marketId).orElse(null);
+      }
+      if (productId == null && name != null && row.unitSize() != null) {
+        productId = products.findPrivateByName(marketId, primary, TextNormalizer.normalize(name), row.unitSize()).orElse(null);
+      }
+      UUID listingId = productId == null ? null : listings.findActiveListingId(marketId, productId).orElse(null);
+      ListingImport.Action action = productId == null ? ListingImport.Action.CREATE : listingId == null ? ListingImport.Action.LIST : ListingImport.Action.UPDATE;
+      NewProduct product = null;
+      if (action != ListingImport.Action.UPDATE && row.priceCents() == null && errors.stream().noneMatch(e -> e.field().equals("price"))) {
+        errors.add(new ListingImport.RowError("price", "Required", "a price is required for a new listing"));
+      }
+      if (action == ListingImport.Action.CREATE) {
+        if (name == null) {
+          errors.add(new ListingImport.RowError("name_" + primary, "PrimaryLocaleRequired", "the name in the market's primary language " + primary + " is required"));
+        }
+        if (row.unitSize() == null) {
+          errors.add(new ListingImport.RowError("unit_size", "Required", "the pack size is required for a new product, e.g. 500 g"));
+        }
+        UUID categoryId = row.categorySlug() == null ? null : categoryIds.get(row.categorySlug());
+        if (categoryId == null) {
+          errors.add(new ListingImport.RowError("category", row.categorySlug() == null ? "Required" : "UnknownCode", "a known category is required, e.g. " + String.join(", ", categoryIds.keySet().stream().sorted().limit(5).toList())));
+        }
+        if (errors.isEmpty()) {
+          product =
+              new NewProduct(
+                  row.names(), row.descriptions(), Map.of(), row.keywords(), row.brand(), Objects.requireNonNull(row.unitSize()), null, null, categoryId,
+                  row.cuisineCodes(), row.organic(), row.allergens(), null, row.barcode());
+          try {
+            validate(product, market);
+          } catch (InvalidRequestException e) {
+            errors.add(new ListingImport.RowError(importField(e.field()), e.violation(), e.getMessage()));
+          }
+        }
+      }
+      String key = productId != null ? productId.toString() : name == null ? null : TextNormalizer.normalize(name) + "|" + (row.unitSize() == null ? "" : row.unitSize().toLowerCase(Locale.ROOT));
+      if (key != null) {
+        Integer first = seen.putIfAbsent(key, row.line());
+        if (first != null) {
+          errors.add(new ListingImport.RowError(row.barcode() != null ? "barcode" : "name_" + primary, "Duplicate", "the same product as line " + first));
+        }
+      }
+      String label = name != null ? name : row.names().values().stream().findFirst().orElseGet(row::barcode);
+      if (errors.isEmpty()) {
+        plans.add(new Planned(row, action, productId, listingId, product));
+        results.add(new ListingImport.RowResult(row.line(), action, label, listingId, List.of()));
+      } else {
+        results.add(new ListingImport.RowResult(row.line(), ListingImport.Action.ERROR, label, null, List.copyOf(errors)));
+      }
+    }
+    int failed = (int) results.stream().filter(r -> r.action() == ListingImport.Action.ERROR).count();
+    boolean apply = !dryRun && failed == 0 && !plans.isEmpty();
+    if (apply) {
+      int defaultMax = properties.catalog().defaultMaxOrderQuantity();
+      results.clear();
+      for (Planned plan : plans) {
+        ListingImport.Row row = plan.row();
+        UUID listingId =
+            switch (plan.action()) {
+              case UPDATE -> {
+                updateListing(marketId, Objects.requireNonNull(plan.listingId()), new ListingUpdate(row.priceCents(), row.available(), row.maxOrderQuantity(), false, null), ContentLocale.of(market.primaryLocale()));
+                yield plan.listingId();
+              }
+              case LIST, CREATE ->
+                  createListing(
+                          marketId,
+                          new ListingDraft(
+                              plan.productId(),
+                              plan.product(),
+                              Objects.requireNonNull(row.priceCents()),
+                              row.available() == null || row.available(),
+                              row.maxOrderQuantity() == null ? defaultMax : row.maxOrderQuantity()),
+                          ContentLocale.of(market.primaryLocale()))
+                      .summary()
+                      .id();
+              case ERROR -> throw new IllegalStateException("planned rows have no errors");
+            };
+        String label = row.names().getOrDefault(market.primaryLocale(), row.names().values().stream().findFirst().orElseGet(row::barcode));
+        results.add(new ListingImport.RowResult(row.line(), plan.action(), label, listingId, List.of()));
+      }
+    }
+    return new ListingImport.Result(
+        dryRun,
+        apply,
+        count(results, ListingImport.Action.CREATE),
+        count(results, ListingImport.Action.LIST),
+        count(results, ListingImport.Action.UPDATE),
+        failed,
+        List.copyOf(results));
+  }
+
+  private static int count(List<ListingImport.RowResult> results, ListingImport.Action action) {
+    return (int) results.stream().filter(r -> r.action() == action).count();
+  }
+
+  /** Maps a validation field of {@code NewCatalogProduct} to the CSV column. */
+  private static String importField(String field) {
+    return switch (field) {
+      case "newProduct.categoryId" -> "category";
+      case "newProduct.cuisineCodes" -> "cuisines";
+      case "newProduct.name" -> "name";
+      default -> field.startsWith("newProduct.") ? field.substring("newProduct.".length()) : field;
+    };
   }
 
   @Transactional

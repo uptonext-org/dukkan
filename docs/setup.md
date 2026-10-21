@@ -165,6 +165,18 @@ npm run android           # or: npm run ios  (first: cd ios && bundle install &&
 - **First start:** asks for a location. Allow it, or search for e.g. "St. Georg", "20099" or "Ottensen".
 - **Android maps:** Google Maps on Android needs `DUKKAN_MAPS_API_KEY` as a Gradle property or env var; it is never committed. iOS uses Apple Maps.
 
+## 3a. Web portal (merchants and admins)
+
+```bash
+cd apps/web
+npm ci
+npm run dev   # http://localhost:5174; /api is proxied to http://localhost:8080 (override: DUKKAN_BACKEND_URL)
+```
+
+Sign in with `haendler@dukkan.local` (orders board, assortment, CSV import) or `admin@dukkan.local`
+(market review). For the CSV import, "Vorlage herunterladen" gives a template that Excel opens with
+the right columns; save as "CSV UTF-8". Checks: `npm run lint`, `npm test`, `npm run build`.
+
 ## 4. Quality checks
 
 | Check | Command | Result on this branch (2026-10-21) |

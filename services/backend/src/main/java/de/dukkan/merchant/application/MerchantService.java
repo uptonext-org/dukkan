@@ -7,8 +7,11 @@ import de.dukkan.catalog.application.CatalogProduct;
 import de.dukkan.catalog.application.CatalogService;
 import de.dukkan.catalog.application.Listing;
 import de.dukkan.catalog.application.ListingDraft;
+import de.dukkan.catalog.application.ListingImport;
 import de.dukkan.catalog.application.ListingUpdate;
 import de.dukkan.i18n.application.ContentLocale;
+import de.dukkan.i18n.application.LocaleService;
+import de.dukkan.i18n.application.SupportedLocale;
 import de.dukkan.market.application.MarketInfo;
 import de.dukkan.market.application.MarketProfile;
 import de.dukkan.market.application.MarketService;
@@ -51,6 +54,7 @@ public class MerchantService {
   private final OrderService orders;
   private final MediaService media;
   private final ProductCaptureService capture;
+  private final LocaleService locales;
 
   public MerchantService(
       MarketService markets,
@@ -58,13 +62,15 @@ public class MerchantService {
       PromotionService promotions,
       OrderService orders,
       MediaService media,
-      ProductCaptureService capture) {
+      ProductCaptureService capture,
+      LocaleService locales) {
     this.markets = markets;
     this.catalog = catalog;
     this.promotions = promotions;
     this.orders = orders;
     this.media = media;
     this.capture = capture;
+    this.locales = locales;
   }
 
   @Transactional(readOnly = true)
@@ -115,6 +121,12 @@ public class MerchantService {
   public Listing createListing(UUID userId, UUID marketId, ListingDraft draft, ContentLocale locale) {
     requireOwner(userId, marketId);
     return catalog.createListing(marketId, draft, locale);
+  }
+
+  /** Bulk import from a CSV file (B-31); see {@link ListingCsv} and {@link CatalogService#importListings}. */
+  public ListingImport.Result importListings(UUID userId, UUID marketId, byte[] csv, boolean dryRun) {
+    requireOwner(userId, marketId);
+    return catalog.importListings(marketId, ListingCsv.parse(csv, locales.enabled().stream().map(SupportedLocale::code).toList()), dryRun);
   }
 
   public Listing updateListing(UUID userId, UUID marketId, UUID listingId, ListingUpdate update, ContentLocale locale) {

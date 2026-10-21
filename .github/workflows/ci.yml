@@ -66,6 +66,25 @@ jobs:
       # Blocks on critical advisories. Known high: braces <=3.0.3 via metro/CLI tooling, no fix published (docs/setup.md).
       - run: npm audit --omit=dev --audit-level=critical
 
+  web:
+    name: Web portal typecheck, lint, tests, build and audit
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+      - run: npm audit --omit=dev --audit-level=high
+
   e2e-api:
     name: End-to-end API (app client against the real backend)
     runs-on: ubuntu-24.04

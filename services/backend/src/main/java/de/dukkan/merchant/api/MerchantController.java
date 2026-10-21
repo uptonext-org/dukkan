@@ -3,6 +3,7 @@ package de.dukkan.merchant.api;
 import de.dukkan.capture.application.ProductDraftResult;
 import de.dukkan.catalog.application.CatalogProduct;
 import de.dukkan.catalog.application.Listing;
+import de.dukkan.catalog.application.ListingImport;
 import de.dukkan.i18n.application.ContentLocale;
 import de.dukkan.market.application.MerchantMarket;
 import de.dukkan.media.api.MediaUploadResponse;
@@ -15,14 +16,17 @@ import de.dukkan.merchant.api.MerchantRequests.OrderStatusRequest;
 import de.dukkan.merchant.api.MerchantRequests.ProductDraftRequest;
 import de.dukkan.merchant.api.MerchantRequests.PromotionRequest;
 import de.dukkan.merchant.api.MerchantRequests.UpdateListingRequest;
+import de.dukkan.merchant.application.ListingCsv;
 import de.dukkan.merchant.application.MerchantService;
 import de.dukkan.order.api.OrderResponse;
 import de.dukkan.order.api.OrderResponses;
 import de.dukkan.promotion.application.PromotionView;
 import de.dukkan.shared.api.PageResponse;
 import de.dukkan.shared.config.DukkanProperties;
+import de.dukkan.shared.error.InvalidRequestException;
 import de.dukkan.shared.security.CurrentUser;
 import jakarta.validation.Valid;
+import java.io.IOException;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
@@ -98,6 +102,20 @@ final class MerchantController {
     StoredMedia stored = merchant.uploadMedia(CurrentUser.id(security), marketId, purpose, file.getSize(), file);
     String url = mediaUrls.urlFor(stored.key());
     return ResponseEntity.created(URI.create(url)).body(MediaUploadResponse.of(stored, url));
+  }
+
+  /** Bulk import from a CSV file (B-31); all or nothing, {@code dryRun} only checks. */
+  @PostMapping(path = "/markets/{marketId}/listings/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+  ListingImport.Result importListings(
+      @CurrentSecurityContext SecurityContext security,
+      @PathVariable UUID marketId,
+      @RequestPart("file") MultipartFile file,
+      @RequestParam(defaultValue = "false") boolean dryRun)
+      throws IOException {
+    if (file.getSize() > ListingCsv.MAX_BYTES) {
+      throw new InvalidRequestException("file", "Size", "the file may have at most 1 MB");
+    }
+    return merchant.importListings(CurrentUser.id(security), marketId, file.getBytes(), dryRun);
   }
 
   /** AI product capture: a draft to review, nothing is saved. */

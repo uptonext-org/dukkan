@@ -1,0 +1,176 @@
+import type { AuthResponse, ImportResult, Listing, MarketStatus, MerchantMarket, Order, OrderStatus, PageResponse, Problem, User } from './types';
+
+export class ApiError extends Error {
+  readonly status: number;
+  readonly code: string;
+  readonly problem: Problem | undefined;
+
+  constructor(status: number, code: string, problem?: Problem) {
+    super(problem?.detail ?? code);
+    this.status = status;
+    this.code = code;
+    this.problem = problem;
+  }
+}
+
+export interface Session {
+  accessToken: string;
+  refreshToken: string;
+  user: User;
+}
+
+/** Where the session lives between page loads (sessionStorage in the browser). */
+export interface SessionStore {
+  load(): Session | null;
+  save(session: Session | null): void;
+}
+
+export const browserSessionStore: SessionStore = {
+  load() {
+    try {
+      const raw = sessionStorage.getItem('dukkan.session');
+      return raw === null ? null : (JSON.parse(raw) as Session);
+    } catch {
+      return null;
+    }
+  },
+  save(session) {
+    try {
+      if (session === null) {
+        sessionStorage.removeItem('dukkan.session');
+      } else {
+        sessionStorage.setItem('dukkan.session', JSON.stringify(session));
+      }
+    } catch {
+      // Storage blocked: the session lasts until the tab is reloaded.
+    }
+  },
+};
+
+type Fetch = typeof fetch;
+
+interface RequestOptions {
+  method?: string;
+  body?: unknown;
+  form?: FormData;
+  anonymous?: boolean;
+}
+
+/**
+ * Small API client: JSON in and out, Problem Details as {@link ApiError}, bearer token, and one
+ * silent refresh (rotating refresh token, B-39) when an access token has expired.
+ */
+export function createApi(options: { baseUrl?: string; fetch?: Fetch; store?: SessionStore; language: () => string; onSessionChange?: (s: Session | null) => void }) {
+  const baseUrl = options.baseUrl ?? '/api/v1';
+  const doFetch: Fetch = options.fetch ?? ((input, init) => fetch(input, init));
+  const store = options.store ?? browserSessionStore;
+  let session = store.load();
+  let refreshing: Promise<boolean> | null = null;
+
+  const setSession = (next: Session | null) => {
+    session = next;
+    store.save(next);
+    options.onSessionChange?.(next);
+  };
+
+  async function send<T>(path: string, request: RequestOptions = {}, retried = false): Promise<T> {
+    const headers: Record<string, string> = { Accept: 'application/json', 'Accept-Language': options.language() };
+    if (request.body !== undefined) {
+      headers['Content-Type'] = 'application/json';
+    }
+    if (request.anonymous !== true && session !== null) {
+      headers.Authorization = `Bearer ${session.accessToken}`;
+    }
+    let response: Response;
+    try {
+      response = await doFetch(baseUrl + path, {
+        method: request.method ?? 'GET',
+        headers,
+        body: request.form ?? (request.body !== undefined ? JSON.stringify(request.body) : null),
+      });
+    } catch {
+      throw new ApiError(0, 'NETWORK_ERROR');
+    }
+    if (response.status === 401 && request.anonymous !== true && !retried && session !== null && (await refresh())) {
+      return send<T>(path, request, true);
+    }
+    if (!response.ok) {
+      let problem: Problem | undefined;
+      try {
+        problem = (await response.json()) as Problem;
+      } catch {
+        problem = undefined;
+      }
+      if (response.status === 401 && request.anonymous !== true) {
+        setSession(null);
+      }
+      throw new ApiError(response.status, problem?.code ?? 'UNKNOWN', problem);
+    }
+    if (response.status === 204) {
+      return undefined as T;
+    }
+    return (await response.json()) as T;
+  }
+
+  function refresh(): Promise<boolean> {
+    const current = session;
+    if (current === null) {
+      return Promise.resolve(false);
+    }
+    refreshing ??= send<AuthResponse>('/auth/refresh', { method: 'POST', body: { refreshToken: current.refreshToken }, anonymous: true })
+      .then((auth) => {
+        setSession({ accessToken: auth.accessToken, refreshToken: auth.refreshToken, user: auth.user });
+        return true;
+      })
+      .catch(() => false)
+      .finally(() => {
+        refreshing = null;
+      });
+    return refreshing;
+  }
+
+  return {
+    session: () => session,
+    /** Signs in; an account that `allowed` rejects is signed out again and never becomes the session. */
+    async login(email: string, password: string, allowed: (user: User) => boolean = () => true): Promise<User> {
+      const auth = await send<AuthResponse>('/auth/login', { method: 'POST', body: { email, password }, anonymous: true });
+      if (!allowed(auth.user)) {
+        await send('/auth/logout', { method: 'POST', body: { refreshToken: auth.refreshToken }, anonymous: true }).catch(() => undefined);
+        throw new ApiError(403, 'NO_PORTAL_ACCESS');
+      }
+      setSession({ accessToken: auth.accessToken, refreshToken: auth.refreshToken, user: auth.user });
+      return auth.user;
+    },
+    async logout(): Promise<void> {
+      const current = session;
+      setSession(null);
+      if (current !== null) {
+        await send('/auth/logout', { method: 'POST', body: { refreshToken: current.refreshToken }, anonymous: true }).catch(() => undefined);
+      }
+    },
+    myMarkets: () => send<MerchantMarket[]>('/merchant/markets'),
+    orders: (marketId: string) => send<Order[]>(`/merchant/markets/${encodeURIComponent(marketId)}/orders`),
+    advanceOrder: (orderId: string, status: OrderStatus) =>
+      send<Order>(`/merchant/orders/${encodeURIComponent(orderId)}/status`, { method: 'POST', body: { status } }),
+    listings: (marketId: string, q: string, page: number) => {
+      const query = new URLSearchParams({ page: String(page), size: '50' });
+      if (q.trim() !== '') {
+        query.set('q', q.trim());
+      }
+      return send<PageResponse<Listing>>(`/merchant/markets/${encodeURIComponent(marketId)}/listings?${query.toString()}`);
+    },
+    updateListing: (marketId: string, listingId: string, update: { price?: { amountCents: number; currency: 'EUR' }; available?: boolean }) =>
+      send<Listing>(`/merchant/markets/${encodeURIComponent(marketId)}/listings/${encodeURIComponent(listingId)}`, { method: 'PUT', body: update }),
+    importListings: (marketId: string, file: File, dryRun: boolean) => {
+      const form = new FormData();
+      form.append('file', file);
+      return send<ImportResult>(`/merchant/markets/${encodeURIComponent(marketId)}/listings/import?dryRun=${String(dryRun)}`, { method: 'POST', form });
+    },
+    adminMarkets: (status: MarketStatus | null) =>
+      send<MerchantMarket[]>(`/admin/markets${status === null ? '' : `?status=${status}`}`),
+    adminSetMarketStatus: (marketId: string, status: MarketStatus) =>
+      send<MerchantMarket>(`/admin/markets/${encodeURIComponent(marketId)}/status`, { method: 'POST', body: { status } }),
+  };
+}
+
+export type Api = ReturnType<typeof createApi>;

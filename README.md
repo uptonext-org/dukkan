@@ -10,6 +10,7 @@ light and dark themes. The launch city is Hamburg.
 | Path | What |
 |---|---|
 | `apps/mobile` | React Native 0.88 · React 19.3 · TypeScript 6.0 (strict) · i18next |
+| `apps/web` | Web portal for merchants (orders board, assortment, CSV import) and admins (market review): Vite 7 · React 19.3 · TypeScript 6.0 |
 | `services/backend` | Java 25 · Spring Boot 4.1 · Gradle 9.8 · Error Prone · Flyway · PostgreSQL 18.6 |
 | `packages/shared-contracts` | OpenAPI 0.2 contract and business rules (source of truth) |
 | `infrastructure/docker`, `infrastructure/kubernetes` | Local Compose stack, minimal K8s 1.36 manifests |
@@ -26,6 +27,7 @@ Quick start (details and demo accounts in [docs/setup.md](docs/setup.md)):
 docker compose -f infrastructure/docker/compose.yaml up -d postgres
 (cd services/backend && ./gradlew bootRun --args='--spring.profiles.active=local')
 (cd apps/mobile && npm ci && npm start)
+(cd apps/web && npm ci && npm run dev)   # portal on http://localhost:5174
 ```
 
 All markets, products, people and addresses in the seed data are invented.
