@@ -146,7 +146,7 @@ public class OrderService {
 
   @Transactional(readOnly = true)
   public List<OrderView> list(UUID userId, ContentLocale locale) {
-    return orders.findByUserIdOrderByPlacedAtDescOrderNumberDesc(userId).stream().map(o -> view(o, locale, false)).toList();
+    return views(orders.findByUserIdOrderByPlacedAtDescOrderNumberDesc(userId), locale, false);
   }
 
   @Transactional(readOnly = true)
@@ -183,7 +183,7 @@ public class OrderService {
         status == null
             ? orders.findByMarketIdOrderByPlacedAtDescOrderNumberDesc(marketId)
             : orders.findByMarketIdAndStatusOrderByPlacedAtDescOrderNumberDesc(marketId, OrderStatus.valueOf(status));
-    return found.stream().map(o -> view(o, locale, true)).toList();
+    return views(found, locale, true);
   }
 
   /** Merchant status change; REJECTED releases the slot capacity. */
@@ -229,9 +229,25 @@ public class OrderService {
   }
 
   private OrderView view(CustomerOrder order, ContentLocale locale, boolean merchantView) {
+    return views(List.of(order), locale, merchantView).getFirst();
+  }
+
+  /** Maps orders with one batched slot lookup and one batched listing lookup (no per-order queries). */
+  private List<OrderView> views(List<CustomerOrder> found, ContentLocale locale, boolean merchantView) {
+    if (found.isEmpty()) {
+      return List.of();
+    }
+    Map<UUID, SlotView> liveSlots = fulfilment.getSlots(found.stream().map(o -> o.getSlot().slotId()).toList());
+    Map<UUID, ListingInfo> listings =
+        catalog.listingInfos(
+            found.stream().flatMap(o -> o.getItems().stream()).map(OrderItem::getListingId).distinct().toList(), locale);
+    return found.stream().map(o -> view(o, merchantView, liveSlots.get(o.getSlot().slotId()), listings)).toList();
+  }
+
+  private static OrderView view(
+      CustomerOrder order, boolean merchantView, @Nullable SlotView live, Map<UUID, ListingInfo> listings) {
     CustomerOrder.Totals totals = order.getTotals();
     SlotSnapshot s = order.getSlot();
-    SlotView live = fulfilment.getSlot(s.slotId());
     SlotView slot =
         new SlotView(
             s.slotId(),
@@ -241,8 +257,8 @@ public class OrderService {
             s.endsAt(),
             s.orderCutoffAt(),
             totals.deliveryFeeCents(),
-            live.remainingCapacity(),
-            live.available());
+            live == null ? 0 : live.remainingCapacity(),
+            live != null && live.available());
     AddressSnapshot a = order.getAddress();
     AddressView address =
         a == null
@@ -259,8 +275,6 @@ public class OrderService {
                 a.deliveryInstructions(),
                 a.lat() == null || a.lng() == null ? null : GeoPoint.of(a.lat(), a.lng()),
                 false);
-    Map<UUID, ListingInfo> listings =
-        catalog.listingInfos(order.getItems().stream().map(OrderItem::getListingId).toList(), locale);
     List<OrderView.Item> items =
         order.getItems().stream()
             .map(

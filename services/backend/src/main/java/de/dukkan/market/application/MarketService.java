@@ -25,6 +25,8 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -149,6 +151,16 @@ public class MarketService {
   /** Facts of a market of any status; {@code NOT_FOUND} if it does not exist. */
   public MarketInfo info(UUID marketId) {
     return info(row(marketId));
+  }
+
+  /** Facts of several markets of any status in one query; unknown ids are absent. */
+  public Map<UUID, MarketInfo> infos(Collection<UUID> marketIds) {
+    if (marketIds.isEmpty()) {
+      return Map.of();
+    }
+    Map<UUID, MarketInfo> result = new HashMap<>();
+    markets.findByIds(List.copyOf(new HashSet<>(marketIds))).forEach((id, row) -> result.put(id, info(row)));
+    return result;
   }
 
   public Optional<MarketInfo> findInfo(UUID marketId) {

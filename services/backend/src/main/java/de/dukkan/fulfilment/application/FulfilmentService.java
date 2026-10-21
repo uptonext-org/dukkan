@@ -22,7 +22,11 @@ import java.time.Clock;
 import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
@@ -77,6 +81,25 @@ public class FulfilmentService {
         .stream()
         .map(slot -> view(slot, market, now))
         .toList();
+  }
+
+  /** Several slots in one query (plus one per distinct market); unknown ids are absent. */
+  @Transactional(readOnly = true)
+  public Map<UUID, SlotView> getSlots(Collection<UUID> slotIds) {
+    if (slotIds.isEmpty()) {
+      return Map.of();
+    }
+    List<FulfilmentSlot> found = slots.findAllById(new HashSet<>(slotIds));
+    Map<UUID, MarketInfo> marketInfos = markets.infos(found.stream().map(FulfilmentSlot::getMarketId).toList());
+    Instant now = clock.instant();
+    Map<UUID, SlotView> result = new HashMap<>();
+    for (FulfilmentSlot slot : found) {
+      MarketInfo market = marketInfos.get(slot.getMarketId());
+      if (market != null) {
+        result.put(slot.getId(), view(slot, market, now));
+      }
+    }
+    return result;
   }
 
   @Transactional(readOnly = true)
