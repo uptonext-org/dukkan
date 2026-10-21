@@ -30,6 +30,22 @@ class GeoIntegrationTest extends IntegrationTest {
   }
 
   @Test
+  void searchIgnoresPunctuationAndWordOrderAndRanksDistrictsBeforeTheirStreets() throws Exception {
+    for (String q : new String[] {"st georg", "St. Georg", "ST-GEORG", "georg st", "st ge"}) {
+      mvc.perform(get("/api/v1/geo/search").param("q", q).param("limit", "5"))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$[0].label").value("St. Georg, Hamburg"))
+          .andExpect(jsonPath("$[1].label").value("20099 Hamburg (St. Georg)"))
+          .andExpect(jsonPath("$[*].district").value(org.hamcrest.Matchers.everyItem(org.hamcrest.Matchers.is("St. Georg"))));
+    }
+    // A street's own name beats streets that only lie in a matching district; "str" finds "...straße".
+    mvc.perform(get("/api/v1/geo/search").param("q", "ottenser hauptstr"))
+        .andExpect(jsonPath("$[0].street").value("Ottenser Hauptstraße"));
+    mvc.perform(get("/api/v1/geo/search").param("q", "steind"))
+        .andExpect(jsonPath("$[0].street").value("Steindamm"));
+  }
+
+  @Test
   void reverseGeocodingReturnsTheNearestPlaceOr404OutsideHamburg() throws Exception {
     mvc.perform(get("/api/v1/geo/reverse").param("lat", "53.5551").param("lng", "10.0128"))
         .andExpect(status().isOk())

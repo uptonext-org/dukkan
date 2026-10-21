@@ -31,6 +31,8 @@ public class GazetteerGeocodingService implements GeocodingService {
 
   private static final Pattern POSTAL_CODE = Pattern.compile("\\b(\\d{5})\\b");
 
+  private static final Pattern PUNCTUATION = Pattern.compile("[.,;:/\\\\'’()\\-]+");
+
   record Entry(
       String kind,
       @Nullable String street,
@@ -81,8 +83,13 @@ public class GazetteerGeocodingService implements GeocodingService {
         .toList();
   }
 
-  /** Lower is better; negative means no match. Streets rank before districts and postal codes. */
-  private static int score(Entry entry, String text, boolean postalCodeGiven) {
+  /**
+   * Lower is better; negative means no match. Matching is word based: every query word must be the
+   * start of a word in the street or district name, so punctuation ("St. Georg" vs "st georg") and
+   * word order do not matter and "str" finds "...strasse". Streets whose own name matches rank first;
+   * otherwise districts, then their postal codes, then streets inside a matching district.
+   */
+  static int score(Entry entry, String text, boolean postalCodeGiven) {
     String kind = entry.kind();
     if (text.isEmpty()) {
       if (!postalCodeGiven) {
@@ -94,24 +101,41 @@ public class GazetteerGeocodingService implements GeocodingService {
         default -> 2;
       };
     }
-    return switch (kind) {
-      case "STREET" -> {
-        if (entry.normalizedStreet().startsWith(text)) {
-          yield 0;
-        }
-        if (entry.normalizedStreet().contains(text)) {
-          yield 10;
-        }
-        yield entry.normalizedDistrict().startsWith(text) ? 40 : -1;
-      }
-      case "DISTRICT" -> {
-        if (entry.normalizedDistrict().startsWith(text)) {
-          yield 2;
-        }
-        yield entry.normalizedDistrict().contains(text) ? 12 : -1;
-      }
-      default -> entry.normalizedDistrict().startsWith(text) ? 31 : -1;
-    };
+    List<String> query = words(text);
+    if ("STREET".equals(kind) && matchesAll(query, words(entry.normalizedStreet()))) {
+      return compact(entry.normalizedStreet()).startsWith(compact(text)) ? 0 : 5;
+    }
+    if (!matchesAll(query, words(entry.normalizedDistrict()))) {
+      return -1;
+    }
+    boolean exactStart = compact(entry.normalizedDistrict()).startsWith(compact(text));
+    int base =
+        switch (kind) {
+          case "DISTRICT" -> 10;
+          case "POSTAL_CODE" -> 20;
+          default -> 40;
+        };
+    return exactStart ? base : base + 5;
+  }
+
+  private static boolean matchesAll(List<String> query, List<String> words) {
+    return query.stream().allMatch(q -> words.stream().anyMatch(w -> w.startsWith(q) || infixMatch(w, q)));
+  }
+
+  /** "hauptstr" (or "str") matches the "strasse" suffix of "hauptstrasse"; other infixes need 4 letters. */
+  private static boolean infixMatch(String word, String query) {
+    if (query.endsWith("str") && word.endsWith("strasse")) {
+      return word.startsWith(query.substring(0, query.length() - 3));
+    }
+    return query.length() >= 4 && word.contains(query);
+  }
+
+  private static List<String> words(String normalized) {
+    return List.of(PUNCTUATION.matcher(normalized).replaceAll(" ").strip().split("\\s+"));
+  }
+
+  private static String compact(String normalized) {
+    return PUNCTUATION.matcher(normalized).replaceAll(" ").replaceAll("\\s+", " ").strip();
   }
 
   @Override
