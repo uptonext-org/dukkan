@@ -1,0 +1,21 @@
+flowchart TB
+  start[App-Start] --> loc{Standort bekannt?}
+  loc -- nein --> onboarding[Wo wohnst du?<br/>Standort verwenden · Adresse suchen · Pin auf Karte]
+  onboarding --> shell
+  loc -- ja --> shell
+  subgraph shell[Marktplatz]
+    discover[Entdecken: Märkte in der Nähe<br/>Liste ⇄ Karte · Typ-Filter · Sortierung]
+    gsearch[Suchen: Produkte in allen Märkten]
+    carts[Warenkörbe: einer pro Markt]
+    profile[Profil · Sprache · Adressen · Bestellungen · Mein Markt]
+  end
+  discover --> market
+  gsearch --> market
+  carts --> market
+  subgraph market[Markt-Sub-App · eigene Tab-Leiste]
+    mhome[Entdecken: Banner, Angebote, Neu]
+    mfav[Favoriten]
+    msearch[Suchen: Schnellzugriffe + Kategorien]
+    mcart[Warenkorb → Liefer- oder Abholzeit → Bestellung]
+  end
+  profile --> merchant[Mein Markt – Anbieter-Modus<br/>Profil · Produkte aus Katalog · Angebote · Bestellungen]

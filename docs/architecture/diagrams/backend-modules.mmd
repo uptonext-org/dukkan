@@ -1,20 +1,43 @@
 flowchart TB
-  subgraph backend[Backend modular monolith]
-    identity[identity<br/>users, JWT]
-    catalog[catalog<br/>categories, products, prices, search]
+  subgraph backend[Backend modular monolith · de.dukkan]
+    i18n[i18n<br/>locales, fallback, normaliser]
+    geo[geo<br/>GeocodingService, gazetteer]
+    identity[identity<br/>users, roles, JWT]
+    market[market<br/>markets, types, cuisines, hours, banners]
     promotion[promotion<br/>promotions, pricing engine]
-    cart[cart]
-    address[address<br/>addresses, delivery areas]
-    delivery[delivery<br/>hubs, slots, reservations]
-    order[order<br/>simulated checkout]
+    catalog[catalog<br/>categories, shared catalog, listings, search, market home]
+    address[address]
+    fulfilment[fulfilment<br/>delivery and pickup slots, capacity]
+    cart[cart<br/>one per user and market]
+    order[order<br/>simulated checkout, status machine]
+    favorite[favorite]
+    merchant[merchant<br/>owner-checked facade]
     shared[shared<br/>money, errors, security, logging, clock]
   end
+  address --> geo
+  market --> geo
+  market --> promotion
+  catalog --> market
   catalog --> promotion
+  fulfilment --> market
+  fulfilment --> address
+  fulfilment --> geo
   cart --> catalog
+  cart --> fulfilment
   cart --> address
+  cart --> market
   cart --> promotion
-  cart --> delivery
-  delivery --> address
   order --> cart
-  order --> delivery
+  order --> catalog
+  order --> fulfilment
   order --> address
+  order --> market
+  order --> identity
+  favorite --> catalog
+  favorite --> market
+  merchant --> market
+  merchant --> catalog
+  merchant --> promotion
+  merchant --> order
+  merchant --> address
+  merchant --> identity

@@ -1,0 +1,13 @@
+flowchart TB
+  start[App start] --> onboarding{Location stored?}
+  onboarding -- no --> where[Onboarding: Wo wohnst du?]
+  onboarding -- yes --> shell
+  where --> shell
+  subgraph shell[Marketplace shell tabs]
+    discover[Entdecken] --- gsearch[Suchen] --- carts[Warenkörbe] --- profile[Profil]
+  end
+  shell --> sub
+  subgraph sub[Market sub-app tabs · scoped to marketId]
+    mhome[Entdecken] --- mfav[Favoriten] --- msearch[Suchen] --- mcart[Warenkorb]
+  end
+  profile --> merchantMode[Mein Markt]

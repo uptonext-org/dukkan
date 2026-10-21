@@ -1,7 +1,13 @@
 stateDiagram-v2
-  [*] --> PLACED: POST /orders
-  PLACED --> CANCELLED: cancel before cutoff
-  PLACED --> OUT_FOR_DELIVERY: (future simulator)
-  OUT_FOR_DELIVERY --> DELIVERED: (future simulator)
+  [*] --> PLACED: customer orders
+  PLACED --> ACCEPTED: merchant
+  PLACED --> REJECTED: merchant
+  PLACED --> CANCELLED: customer, before cutoff
+  ACCEPTED --> CANCELLED: customer, before cutoff
+  ACCEPTED --> READY_FOR_PICKUP: merchant (pickup)
+  ACCEPTED --> OUT_FOR_DELIVERY: merchant (delivery)
+  READY_FOR_PICKUP --> COMPLETED: merchant
+  OUT_FOR_DELIVERY --> COMPLETED: merchant
+  REJECTED --> [*]
   CANCELLED --> [*]
-  DELIVERED --> [*]
+  COMPLETED --> [*]

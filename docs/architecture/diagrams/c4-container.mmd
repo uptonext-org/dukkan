@@ -1,9 +1,11 @@
 flowchart LR
-  app[Mobile app<br/>React Native 0.88 · TypeScript 6.0<br/>apps/mobile]
+  app[Mobile app<br/>React Native 0.88 · TypeScript 6.0<br/>i18n de/en/ar + RTL<br/>apps/mobile]
   api[Backend API<br/>Java 25 · Spring Boot 4.1 · Spring MVC<br/>services/backend]
-  db[(PostgreSQL 18.6<br/>transactional data + Flyway)]
-  contract[[OpenAPI contract<br/>packages/shared-contracts]]
-  app -- HTTPS JSON, Bearer JWT --> api
+  db[(PostgreSQL 18.6<br/>Flyway · pg_trgm)]
+  contract[[OpenAPI 0.2 contract<br/>packages/shared-contracts]]
+  preview[Web preview<br/>react-native-web, visual QA only<br/>tools/web-preview]
+  app -- HTTPS JSON, Bearer JWT, Accept-Language --> api
   api -- JDBC / JPA --> db
-  contract -. contract test .- api
-  contract -. typed client .- app
+  contract -. contract + schema tests .- api
+  contract -. typed client + live API test .- app
+  preview -. renders app screens .- app

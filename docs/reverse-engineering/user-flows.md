@@ -1,8 +1,8 @@
 # User flows
 
 The first diagram is our reading of the **reported** high-level Picnic flow
-(V-06, S-01, S-04). The rest describe the **Dukkan** design. They are kept
-separate on purpose.
+(V-06, S-01, S-04). The rest describe the **Dukkan** marketplace design. They
+are kept separate on purpose.
 
 ## Reported flow (Picnic, high level, not verified on an artifact)
 
@@ -19,62 +19,51 @@ flowchart LR
   F --> G[Live tracking<br/>S-03]
 ```
 
-## Dukkan: navigation map
+## Dukkan: navigation (marketplace)
 
-```mermaid
-flowchart TB
-  subgraph Auth stack
-    L[Login] <--> RG[Register]
-  end
-  L -->|token| T
-  subgraph T[Main tabs]
-    H[Home: categories + deals]
-    S[Search]
-    C[Cart]
-    P[Profile]
-  end
-  H --> CP[Category products] --> PD[Product detail]
-  H --> PR[Promotions] --> PD
-  S --> PD
-  C --> DS[Delivery slot picker]
-  DS -->|no address| AF[Address form]
-  C --> OC[Order confirmation]
-  P --> AL[Addresses] --> AF
-  P --> OL[Orders] --> OD[Order detail / cancel]
-```
+The navigation is described in [architecture/overview.md › Mobile app structure](../architecture/overview.md#mobile-app-structure).
+An earlier single-store version of this page was replaced when Dukkan became a marketplace (ADR 0010).
 
-## Dukkan: checkout sequence
+## Dukkan: checkout sequence (one market)
 
 ```mermaid
 sequenceDiagram
-  actor U as Shopper
+  actor U as Customer
   participant M as Mobile app
   participant B as Backend
   participant DB as PostgreSQL
-  U->>M: Add product (qty 3)
-  M->>B: PUT /cart/items/{id} {quantity:3}
-  B->>DB: upsert cart_item, load active promotions
-  B-->>M: Cart (server-priced totals)
-  U->>M: Choose slot
-  M->>B: GET /delivery-slots?addressId=
+  actor H as Merchant
+  U->>M: Add product in market A (qty 3)
+  M->>B: PUT /markets/{A}/cart/items/{id} {quantity:3}
+  B->>DB: upsert cart(user, A) item, price with A's promotions
+  B-->>M: Cart of market A (server-priced totals)
+  U->>M: Choose pickup or delivery time
+  M->>B: GET /markets/{A}/slots?type=PICKUP
   B-->>M: slots (capacity, fee, cutoff)
-  M->>B: PUT /cart/delivery {slotId,addressId}
-  B->>DB: SELECT slot FOR UPDATE, check capacity, reserve
-  B-->>M: Cart incl. reservation + fee
-  U->>M: Place order
-  M->>B: POST /orders (Idempotency-Key)
-  B->>DB: validate, snapshot items/prices/address, convert reservation, clear cart
+  M->>B: PUT /markets/{A}/cart/fulfilment {type, slotId, addressId?}
+  B->>DB: SELECT slot FOR UPDATE, check capacity / delivery radius, reserve
+  B-->>M: Cart incl. reservation and fee
+  U->>M: Bestellen
+  M->>B: POST /markets/{A}/orders (Idempotency-Key)
+  B->>DB: validate, snapshot items/prices/address/slot, clear only A's cart
   B-->>M: 201 Order (PLACED)
+  H->>B: POST /merchant/orders/{id}/status ACCEPTED → READY_FOR_PICKUP → COMPLETED
 ```
 
 ## Dukkan: order state machine
 
 ```mermaid
 stateDiagram-v2
-  [*] --> PLACED: POST /orders
-  PLACED --> CANCELLED: cancel before cutoff
-  PLACED --> OUT_FOR_DELIVERY: (future simulator)
-  OUT_FOR_DELIVERY --> DELIVERED: (future simulator)
+  [*] --> PLACED: customer orders
+  PLACED --> ACCEPTED: merchant
+  PLACED --> REJECTED: merchant
+  PLACED --> CANCELLED: customer, before cutoff
+  ACCEPTED --> CANCELLED: customer, before cutoff
+  ACCEPTED --> READY_FOR_PICKUP: merchant (pickup)
+  ACCEPTED --> OUT_FOR_DELIVERY: merchant (delivery)
+  READY_FOR_PICKUP --> COMPLETED: merchant
+  OUT_FOR_DELIVERY --> COMPLETED: merchant
+  REJECTED --> [*]
   CANCELLED --> [*]
-  DELIVERED --> [*]
+  COMPLETED --> [*]
 ```

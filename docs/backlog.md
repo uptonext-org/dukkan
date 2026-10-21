@@ -1,50 +1,57 @@
 # Development backlog
 
-Estimates: **S** ≤ 2 days, **M** 3–5 days, **L** > 5 days. Priority: **P0** is the MVP, **P1** comes next, **P2** later.
-"Done" items reflect what this branch implements; see `docs/setup.md` for how they were verified.
+Estimates: **S** ≤ 2 days, **M** 3–5 days, **L** > 5 days. Priority: **P0** is the current phase 1, **P1** comes next, **P2** later.
+Product phases: [`docs/product/marketplace.md`](product/marketplace.md).
 
-## P0: MVP (this branch)
+## P0: Phase 1, the marketplace MVP (this branch)
 
-| ID | Task | Depends on | Est. | Status |
-|---|---|---|---|---|
-| B-01 | Monorepo layout, version pinning, lockfiles | none | S | Done |
-| B-02 | OpenAPI contract and business rules | none | S | Done |
-| B-03 | Backend skeleton: modules, error handling, logging, config | B-01 | M | Done |
-| B-04 | Flyway schema and invented seed data | B-03 | M | Done |
-| B-05 | Auth: register, login, JWT, `/me` | B-03 | M | Done |
-| B-06 | Catalog, search and suggestions | B-04 | M | Done |
-| B-07 | Promotions and pricing engine | B-04 | M | Done |
-| B-08 | Cart | B-06, B-07 | M | Done |
-| B-09 | Addresses and delivery-area check | B-05 | S | Done |
-| B-10 | Mock slot generation, reservation and capacity lock | B-09 | M | Done |
-| B-11 | Simulated checkout and orders, with cancellation | B-08, B-10 | M | Done |
-| B-12 | Mobile app: navigation, API client, auth with secure storage | B-02 | M | Done |
-| B-13 | Mobile app: catalog, search, product, promotions screens | B-12 | M | Done |
-| B-14 | Mobile app: cart, address, slot picker, checkout, orders | B-13 | L | Done |
-| B-15 | CI: backend build and tests, mobile typecheck, lint and tests, audit | B-03, B-12 | S | Done |
+| ID | Task | Status |
+|---|---|---|
+| M-01 | Product decisions, design system, contract v0.2, ADRs 0008–0010 | Done |
+| M-02 | Backend: i18n (locales, translation tables, fallback, Content-Language) | Done |
+| M-03 | Backend: geo (radius search, gazetteer geocoding, punctuation-tolerant address search) | Done |
+| M-04 | Backend: markets (types, cuisines, hours, banners, home page) | Done |
+| M-05 | Backend: shared catalog and listings, multilingual search with relevance tiers | Done |
+| M-06 | Backend: cart per market, delivery and pickup slots, orders, merchant status machine | Done |
+| M-07 | Backend: favourites (manual and frequently ordered) | Done |
+| M-08 | Backend: merchant API with ownership checks, roles, feature flags | Done |
+| M-09 | Seed data for Hamburg (12 markets, 158 products in de/en/ar) and demo accounts | Done |
+| M-10 | App: i18n de/en/ar, RTL, fonts, light and dark theme | Done |
+| M-11 | App: onboarding, marketplace shell (list, map, filters, cross-market search, carts, profile) | Done |
+| M-12 | App: market sub-app (home, favourites, search, cart, fulfilment, order) | Done |
+| M-13 | App: merchant mode (profile, listings from catalog or new, promotions, orders) | Done |
+| M-14 | Live API test (app client against the backend) plus CI job `e2e-api` | Done |
+| M-15 | Visual QA through a react-native-web preview with screenshots (de/ar, light/dark), and fixing what it finds | In progress |
 
-## P1: hardening and the next features
+## P1: Next
 
 | ID | Task | Depends on | Est. | Notes |
 |---|---|---|---|---|
-| B-16 | Get a Picnic APK lawfully and run the REA plan; add P-xx evidence | Network allow-list, device, JADX JAR | M | See `docs/reverse-engineering/technical-analysis.md` |
-| B-17 | Refresh tokens, login rate limiting, password reset | B-05 | M | ADR 0006 |
-| B-18 | Recipes: browse, then add all ingredients to the cart | B-08 | M | Tables already in V1 schema. Reported feature A-08 |
-| B-19 | Waitlist for postal codes we don't serve yet | B-09 | S | Reported feature A-09 |
-| B-20 | Order events on RabbitMQ (`order.placed`, `order.cancelled`) via a transactional outbox | B-11 | M | Triggers RabbitMQ adoption (ADR 0002) |
-| B-21 | Push notifications (FCM/APNs) for order status | B-20 | M | |
-| B-22 | Delivery simulator and live tracking over SSE; 20-minute window on delivery day | B-20 | L | Possible Reactor use case |
-| B-23 | Payment provider integration (sandbox) | B-11 | L | Separate security review |
-| B-24 | Server-driven home and deals layout, or OTA updates | B-13 | L | ADR 0004 |
-| B-25 | Demand and slot-capacity forecasting (Python, scikit-learn, Snowflake) | B-11 order history | L | ADR 0002 |
-| B-26 | Product images: asset pipeline and CDN | B-06 | M | The MVP uses placeholder tiles |
-| B-27 | Full-text search (PostgreSQL `tsvector`, German dictionary) and typo tolerance | B-06 | M | |
-| B-28 | Android and iOS native builds in CI (needs SDK runners), plus Detox end-to-end tests | B-14 | M | Native builds were not possible in the sandbox |
-| B-29 | OWASP dependency-check or Dependabot for the Gradle dependencies | B-15 | S | |
-| B-30 | Production infrastructure: managed Postgres, ingress, TLS, External Secrets | B-15 | L | |
+| B-31 | Merchant web portal (Phase 2): profile, bulk product import (CSV), orders board | M-08 | L | Mobile merchant mode stays for quick actions |
+| B-32 | Image upload (S3-compatible object storage + CDN, MinIO locally), product, logo, cover and banner photos | M-08 | M | Replaces the URL fields |
+| B-33 | AI product capture: voice, photo or video becomes a `catalog_product` draft that the merchant confirms | B-32 | L | Through the shared-catalog model (ADR 0009). Provider TBD |
+| B-34 | Grow the shared catalog per cuisine (Turkish, Arabic, Indian, Polish, …) with barcode, allergens and images | M-05 | L | Data work. Consider open data such as Open Food Facts (licence check) |
+| B-35 | Real geocoding and maps provider (Google, Mapbox or OSM-based) behind `GeocodingService`; Android Maps key | M-03 | M | Decision pending (product decision 15) |
+| B-36 | Admin API and UI: approve or suspend markets, moderate shared catalog products | M-08 | M | `merchant-auto-approve` off in production |
+| B-37 | Order events through a transactional outbox to RabbitMQ; push notifications to customer and merchant | M-06 | M | RabbitMQ adoption trigger (ADR 0002) |
+| B-38 | Machine translation of merchant content (DeepL or similar) into missing locales, editable | M-02 | M | Through the existing translation tables |
+| B-39 | Refresh tokens, login rate limiting, password reset, Sign in with Apple and Google | — | M | Apple requires Sign in with Apple when other social logins exist |
+| B-40 | Opening hours across midnight, several intervals per day in the app editor, slot clean-up job | M-04 | S | |
+| B-41 | Paging the `openNow` and name filters in SQL instead of Java; promotional price in `price_asc` sorting | M-04, M-05 | S | |
+| B-42 | Find and fix the Jest worker-exit warning in the full-app suites | M-12 | S | |
+| B-28 | Android and iOS native builds in CI (SDK runners), Detox end-to-end tests, check fonts, RTL and permissions on devices | M-10 | M | |
+| B-29 | Dependency scanning for Gradle (OWASP dependency-check or Dependabot) | — | S | |
+| B-16 | (Reverse engineering) Get a Picnic APK lawfully and run the REA plan | user-supplied APK | M | `docs/reverse-engineering/technical-analysis.md` |
 
-## P2
+## P2: Later
 
-Order editing after placement, substitutions, deposit returns, the shopping
-list as a separate concept from the cart, i18n (de/en), web shop, and an
-admin back office.
+| ID | Task | Notes |
+|---|---|---|
+| B-43 | Real payments with split payouts (Stripe Connect, Adyen for Platforms or Mangopay), refunds, invoices | Regulatory review |
+| B-44 | Delivery logistics: driver app or partner integration, live tracking (Reactor/SSE) | Product decision 6 is open |
+| B-45 | Ratings and reviews of markets and products | DSA and P2B compliance |
+| B-46 | Business model: commission or fees, merchant billing | Product decision 12 is open |
+| B-47 | Login required to open the app (flip `require-login-to-browse`) | Product decision 14 |
+| B-48 | Generated storefront image of a market from a photo of its shop front | Product decision 21 |
+| B-49 | More languages (Turkish, Polish, …): a `supported_locale` row plus one app JSON file | ADR 0008 |
+| B-50 | Demand and capacity forecasting (Python, scikit-learn, Snowflake) | ADR 0002 |

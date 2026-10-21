@@ -1,148 +1,311 @@
 erDiagram
+  supported_locale ||--o{ ui_text : translates
+  app_user ||--o{ app_user_role : has
   app_user ||--o{ address : owns
-  app_user ||--o| cart : has
-  app_user ||--o{ customer_order : places
-  hub ||--o{ delivery_area : serves
-  hub ||--o{ delivery_slot : offers
+  app_user ||--o{ market_owner : owns
+  market ||--o{ market_owner : owned_by
+  market_type ||--o{ market : classifies
+  market_type ||--o{ market_type_translation : named
+  cuisine ||--o{ cuisine_translation : named
+  cuisine ||--o{ market_cuisine : tags
+  market ||--o{ market_cuisine : has
+  market ||--o{ market_translation : described
+  market ||--o{ market_opening_hours : opens
+  market ||--o{ banner : shows
+  banner ||--o{ banner_translation : texts
   category ||--o{ category : parent_of
-  category ||--o{ product : contains
-  product ||--o{ product_price : priced_by
+  category ||--o{ category_translation : named
+  category ||--o{ catalog_product : contains
+  market |o--o{ catalog_product : owns_private
+  catalog_product ||--o{ catalog_product_translation : named
+  catalog_product ||--o{ catalog_product_cuisine : origin
+  cuisine ||--o{ catalog_product_cuisine : tags
+  market ||--o{ market_product : lists
+  catalog_product ||--o{ market_product : listed_as
+  market_product ||--o{ market_product_price : priced
+  market ||--o{ promotion : runs
+  promotion ||--o{ promotion_translation : titled
   promotion ||--o{ promotion_product : targets
-  product ||--o{ promotion_product : promoted_in
-  cart ||--o{ cart_item : contains
-  product ||--o{ cart_item : in
-  delivery_slot |o--o{ cart : reserved_by
+  market_product ||--o{ promotion_product : promoted
+  app_user ||--o{ favorite_market : likes
+  market ||--o{ favorite_market : liked
+  app_user ||--o{ favorite_product : likes
+  market_product ||--o{ favorite_product : liked
+  market ||--o{ fulfilment_slot : offers
+  app_user ||--o{ cart : has
+  market ||--o{ cart : for
+  fulfilment_slot |o--o{ cart : reserved_by
   address |o--o{ cart : reserved_for
+  cart ||--o{ cart_item : contains
+  market_product ||--o{ cart_item : in
+  app_user ||--o{ customer_order : places
+  market ||--o{ customer_order : receives
+  fulfilment_slot ||--o{ customer_order : booked_in
   customer_order ||--|{ order_item : contains
-  product ||--o{ order_item : snapshot_of
-  delivery_slot ||--o{ customer_order : booked_in
-  recipe ||--o{ recipe_ingredient : lists
-  product |o--o{ recipe_ingredient : fulfils
 
+  supported_locale {
+    varchar code PK
+    varchar native_name
+    varchar direction
+    boolean enabled
+    int sort_order
+  }
+  ui_text {
+    varchar key PK
+    varchar locale PK
+    varchar text
+  }
   app_user {
     uuid id PK
-    varchar email UK "lower-case"
-    varchar password_hash "BCrypt"
+    varchar email UK
+    varchar password_hash
     varchar first_name
     varchar last_name
+    varchar preferred_locale FK
+  }
+  app_user_role {
+    uuid user_id PK
+    varchar role PK
+  }
+  gazetteer_place {
+    uuid id PK
+    varchar kind
+    varchar street
+    varchar postal_code
+    varchar district
+    varchar city
+    double lat
+    double lng
+  }
+  market_type {
+    varchar code PK
+    varchar icon_key
+    int sort_order
+  }
+  market_type_translation {
+    varchar market_type_code PK
+    varchar locale PK
+    varchar name
+  }
+  cuisine {
+    varchar code PK
+    varchar icon_key
+    int sort_order
+  }
+  cuisine_translation {
+    varchar cuisine_code PK
+    varchar locale PK
+    varchar name
+  }
+  market {
+    uuid id PK
+    varchar slug UK
+    varchar name
+    varchar type_code FK
+    varchar status
+    varchar primary_locale FK
+    varchar address_line
+    double lat
+    double lng
+    text_array tags
+    boolean delivery
+    boolean pickup
+    double delivery_radius_km
+    bigint delivery_fee_cents
+    bigint free_delivery_from_cents
+    bigint minimum_order_cents
+    varchar legal_name
+    varchar register_info
+  }
+  market_translation {
+    uuid market_id PK
+    varchar locale PK
+    varchar description
+  }
+  market_cuisine {
+    uuid market_id PK
+    varchar cuisine_code PK
+  }
+  market_opening_hours {
+    uuid market_id PK
+    smallint day_of_week PK
+    time opens_at PK
+    time closes_at
+  }
+  market_owner {
+    uuid market_id PK
+    uuid user_id PK
+  }
+  banner {
+    uuid id PK
+    uuid market_id FK
+    varchar tint
+    varchar image_url
+    varchar target_type
+    uuid target_id
+    int sort_order
+    boolean active
+  }
+  banner_translation {
+    uuid banner_id PK
+    varchar locale PK
+    varchar overline
+    varchar title
+  }
+  category {
+    uuid id PK
+    uuid parent_id FK
+    varchar slug UK
+    varchar icon_key
+    int sort_order
+  }
+  category_translation {
+    uuid category_id PK
+    varchar locale PK
+    varchar name
+  }
+  catalog_product {
+    uuid id PK
+    uuid owner_market_id FK
+    uuid category_id FK
+    varchar brand
+    varchar unit_size
+    numeric net_quantity
+    varchar net_unit
+    boolean organic
+    text_array allergens
+    text_array keywords
+    varchar barcode
+    varchar image_url
+    varchar origin
+    text search_text
+  }
+  catalog_product_translation {
+    uuid catalog_product_id PK
+    varchar locale PK
+    varchar name
+    varchar description
+    varchar tagline
+    varchar ingredients
+    varchar search_name
+  }
+  catalog_product_cuisine {
+    uuid catalog_product_id PK
+    varchar cuisine_code PK
+  }
+  market_product {
+    uuid id PK
+    uuid market_id FK
+    uuid catalog_product_id FK
+    bigint price_cents
+    boolean available
+    int max_order_quantity
+    timestamptz created_at
+    timestamptz deleted_at
+  }
+  market_product_price {
+    uuid id PK
+    uuid market_product_id FK
+    bigint amount_cents
+    timestamptz valid_from
+    timestamptz valid_to
+  }
+  promotion {
+    uuid id PK
+    uuid market_id FK
+    varchar type
+    int percent_off
+    int bundle_quantity
+    bigint bundle_price_cents
+    timestamptz valid_from
+    timestamptz valid_until
+    timestamptz created_at
+  }
+  promotion_translation {
+    uuid promotion_id PK
+    varchar locale PK
+    varchar title
+    varchar description
+  }
+  promotion_product {
+    uuid promotion_id PK
+    uuid market_product_id PK
+  }
+  favorite_market {
+    uuid user_id PK
+    uuid market_id PK
+  }
+  favorite_product {
+    uuid user_id PK
+    uuid market_product_id PK
   }
   address {
     uuid id PK
     uuid user_id FK
     varchar street
     varchar house_number
-    varchar postal_code "5 digits"
+    varchar postal_code
     varchar city
-    varchar country_code "DE"
-    boolean is_default "max one per user"
+    varchar country_code
+    double lat
+    double lng
+    boolean is_default
   }
-  hub {
+  fulfilment_slot {
     uuid id PK
-    varchar code UK
-    varchar name
-  }
-  delivery_area {
-    varchar postal_code PK
-    uuid hub_id FK
-  }
-  category {
-    uuid id PK
-    uuid parent_id FK
-    varchar slug UK
-    varchar name
-    int sort_order
-  }
-  product {
-    uuid id PK
-    uuid category_id FK
-    varchar sku UK
-    varchar name
-    varchar brand
-    varchar unit_size
-    numeric net_quantity
-    varchar net_unit "kg, l, piece"
-    text_array allergens
-    text_array tags
-    int max_order_quantity "1-99"
-    boolean available
-  }
-  product_price {
-    uuid id PK
-    uuid product_id FK
-    bigint amount_cents
-    timestamptz valid_from
-    timestamptz valid_to "NULL = current, one per product"
-  }
-  promotion {
-    uuid id PK
-    varchar type "PERCENT_OFF, MULTI_BUY"
-    int percent_off
-    int bundle_quantity
-    bigint bundle_price_cents
-    timestamptz valid_from
-    timestamptz valid_until
-  }
-  promotion_product {
-    uuid promotion_id PK
-    uuid product_id PK
-  }
-  delivery_slot {
-    uuid id PK
-    uuid hub_id FK
-    timestamptz starts_at "UK with hub_id"
+    uuid market_id FK
+    varchar type
+    timestamptz starts_at
     timestamptz ends_at
     timestamptz order_cutoff_at
-    bigint fee_cents
     int capacity
-    int used_capacity "0..capacity"
+    int used_capacity
     bigint version
   }
   cart {
     uuid id PK
-    uuid user_id FK "UK"
+    uuid user_id FK
+    uuid market_id FK
+    varchar fulfilment_type
     uuid reserved_slot_id FK
-    uuid reserved_address_id FK "ON DELETE SET NULL"
+    uuid reserved_address_id FK
     timestamptz reservation_expires_at
     bigint version
   }
   cart_item {
     uuid id PK
     uuid cart_id FK
-    uuid product_id FK "UK with cart_id"
-    int quantity "1-99"
+    uuid market_product_id FK
+    int quantity
   }
   customer_order {
     uuid id PK
     uuid user_id FK
-    varchar order_number UK "DK-yyyyMMdd-NNNNNN"
+    uuid market_id FK
+    varchar order_number UK
     varchar status
+    varchar fulfilment_type
     timestamptz placed_at
-    varchar idempotency_key "UK with user_id"
-    bigint total_cents "= subtotal - discount + fee"
+    varchar idempotency_key
+    varchar market_name
+    varchar customer_name
+    bigint subtotal_cents
+    bigint discount_total_cents
+    bigint delivery_fee_cents
+    bigint total_cents
     uuid slot_id FK
-    varchar address_snapshot "address_* columns"
+    timestamptz slot_order_cutoff_at
+    varchar address_street
     bigint version
   }
   order_item {
     uuid id PK
     uuid order_id FK
     int line_no
-    uuid product_id FK
-    varchar name "snapshot"
-    bigint unit_price_cents "snapshot"
+    uuid market_product_id
+    uuid catalog_product_id
+    varchar name
+    bigint unit_price_cents
     int quantity
     bigint line_total_cents
-  }
-  recipe {
-    uuid id PK
-    varchar slug UK
-    varchar title
-    int servings
-  }
-  recipe_ingredient {
-    uuid id PK
-    uuid recipe_id FK
-    uuid product_id FK
-    varchar description
-    int sort_order
   }

@@ -1,12 +1,18 @@
 flowchart TB
-  shopper([Shopper<br/>Android / iOS])
-  ops([Operations staff<br/>future])
+  shopper([Customer<br/>Android / iOS])
+  merchant([Merchant<br/>in-app 'Mein Markt'; web portal later])
+  ops([Platform admin<br/>future])
   subgraph dukkan[Dukkan system]
-    sys[Dukkan grocery platform]
+    sys[Dukkan marketplace]
   end
-  psp[(Payment provider<br/>future, not integrated)]
+  geo[(Geocoding / maps provider<br/>future; built-in Hamburg gazetteer now)]
+  psp[(Split-payment provider<br/>future, not integrated)]
   push[(FCM / APNs<br/>future)]
-  shopper -- browses, orders --> sys
-  ops -. manages catalog .-> sys
+  ai[(AI product capture<br/>voice, photo, video – future)]
+  shopper -- finds markets, orders --> sys
+  merchant -- manages market, products, orders --> sys
+  ops -. approves markets .-> sys
+  sys -. geocodes .-> geo
   sys -. charges .-> psp
   sys -. notifies .-> push
+  sys -. drafts products .-> ai
