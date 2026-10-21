@@ -264,6 +264,7 @@ public class CartService {
               listing.name(),
               listing.unitSize(),
               listing.imageUrl(),
+              listing.iconKey(),
               line.unitPriceCents(),
               line.quantity(),
               line.subtotalCents(),

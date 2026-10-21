@@ -33,7 +33,8 @@ public class CatalogProductRepository {
       @Nullable String barcode,
       Map<String, String> names,
       List<String> cuisines,
-      @Nullable Boolean alreadyListed) {}
+      @Nullable Boolean alreadyListed,
+      @Nullable String iconKey) {}
 
   /** Data needed to (re)build the search columns of a product. */
   public record SearchSource(UUID id, @Nullable String brand, List<String> keywords, Map<String, String> names) {}
@@ -99,7 +100,7 @@ public class CatalogProductRepository {
     String sql =
         "SELECT cp.id, cp.owner_market_id, cp.category_id, cp.brand, cp.unit_size, cp.image_url, cp.organic, cp.barcode, "
             + listed
-            + " AS listed"
+            + " AS listed, COALESCE(cp.icon_key, (SELECT c.icon_key FROM category c WHERE c.id = cp.category_id)) AS icon_key"
             + where
             + " ORDER BY lower(loc.name), cp.id LIMIT :limit OFFSET :offset";
     JdbcClient.StatementSpec select =
@@ -123,7 +124,8 @@ public class CatalogProductRepository {
               rs.getString(8),
               new HashMap<>(),
               new ArrayList<>(),
-              rs.getObject(9, Boolean.class)));
+              rs.getObject(9, Boolean.class),
+              rs.getString(10)));
     });
     if (!rows.isEmpty()) {
       List<UUID> ids = List.copyOf(rows.keySet());

@@ -15,6 +15,7 @@ public record ProductSummary(
     @Nullable String tagline,
     String unitSize,
     @Nullable String imageUrl,
+    @Nullable String iconKey,
     Money price,
     @Nullable Money promotionalPrice,
     @Nullable UnitPrice comparisonPrice,

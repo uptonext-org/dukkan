@@ -48,6 +48,7 @@ public class ListingRepository {
       @Nullable String barcode,
       @Nullable String imageUrl,
       @Nullable String origin,
+      @Nullable String iconKey,
       ProductTexts texts,
       List<String> cuisines) {}
 
@@ -85,7 +86,8 @@ public class ListingRepository {
       """
       SELECT mp.id, mp.market_id, mp.catalog_product_id, mp.price_cents, mp.available, mp.max_order_quantity,
              mp.created_at, mp.deleted_at IS NOT NULL AS deleted, cp.owner_market_id, cp.category_id, cp.brand,
-             cp.unit_size, cp.net_quantity, cp.net_unit, cp.organic, cp.allergens, cp.barcode, cp.image_url, cp.origin
+             cp.unit_size, cp.net_quantity, cp.net_unit, cp.organic, cp.allergens, cp.barcode, cp.image_url, cp.origin,
+             COALESCE(cp.icon_key, (SELECT c.icon_key FROM category c WHERE c.id = cp.category_id)) AS icon_key
         FROM market_product mp JOIN catalog_product cp ON cp.id = mp.catalog_product_id
       """;
 
@@ -450,6 +452,7 @@ public class ListingRepository {
         rs.getString("barcode"),
         rs.getString("image_url"),
         rs.getString("origin"),
+        rs.getString("icon_key"),
         ProductTexts.empty(),
         new ArrayList<>());
   }

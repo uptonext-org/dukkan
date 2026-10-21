@@ -12,6 +12,7 @@ public record CatalogProduct(
     @Nullable String brand,
     String unitSize,
     @Nullable String imageUrl,
+    @Nullable String iconKey,
     UUID categoryId,
     List<CodeName> cuisines,
     boolean organic,

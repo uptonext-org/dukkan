@@ -197,6 +197,7 @@ erDiagram
     text_array keywords
     varchar barcode
     varchar image_url
+    varchar icon_key "placeholder hint (V4)"
     varchar origin
     text search_text
   }
@@ -349,7 +350,7 @@ The diagram shows the key columns; `created_at`/`updated_at` and some snapshot c
 | market | `market_owner` | Merchant ownership; everything under `/merchant/**` is checked against it |
 | market | `banner`, `banner_translation` | Start-page banners with a tint instead of an image; target CATEGORY / PROMOTIONS / NEW / PRODUCT |
 | catalog | `category`, `category_translation` | Category tree via `parent_id` |
-| catalog | `catalog_product` (+ `_translation`, `_cuisine`) | Shared master catalog ("model B"). `owner_market_id` is NULL for shared products and set for market-private ones. `search_text` holds the normalised names of all translations + brand + keywords and has a `gin_trgm_ops` index; `search_name` is the normalised name per locale (ranking) |
+| catalog | `catalog_product` (+ `_translation`, `_cuisine`) | Shared master catalog ("model B"). `owner_market_id` is NULL for shared products and set for market-private ones. `search_text` holds the normalised names of all translations + brand + keywords and has a `gin_trgm_ops` index; `search_name` is the normalised name per locale (ranking). `icon_key` (V4) is a placeholder hint for clients while there is no photo; NULL falls back to the category's `icon_key` |
 | catalog | `market_product` | A market's listing; its id is the API's product id. Unique `(market_id, catalog_product_id)` among non-deleted rows (partial index); soft delete via `deleted_at`; `created_at` drives "new" |
 | catalog | `market_product_price` | Price history; one open row (`valid_to IS NULL`) per listing equals `market_product.price_cents` |
 | promotion | `promotion`, `promotion_translation`, `promotion_product` | Per market; CHECK enforces the type-specific columns; the newest active promotion per listing wins |

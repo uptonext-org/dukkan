@@ -11,6 +11,7 @@ public record CartLineView(
     String name,
     String unitSize,
     @Nullable String imageUrl,
+    @Nullable String iconKey,
     long unitPriceCents,
     int quantity,
     long subtotalCents,

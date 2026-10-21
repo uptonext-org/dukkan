@@ -1356,6 +1356,7 @@ components:
         tagline: { type: [string, 'null'], example: süß-säuerlich }
         unitSize: { type: string, example: 550 g }
         imageUrl: { type: [string, 'null'], format: uri }
+        iconKey: { type: [string, 'null'], description: 'Placeholder icon hint while imageUrl is null. Product keys: apple, banana, carrot, cherry, citrus, leafy-green, pepper, egg, milk, cheese, beef, sausage, poultry, fish, bread, pastry, grain, legume, pasta, coffee, tea, soda, beer, sweets, spice, oil, sauce, nut; otherwise the category iconKey. Clients map unknown keys to a generic icon.' }
         price: { $ref: '#/components/schemas/Money' }
         promotionalPrice:
           description: Effective unit price under a PERCENT_OFF promotion (show the regular price struck through).
@@ -1487,6 +1488,7 @@ components:
         name: { type: string }
         unitSize: { type: string }
         imageUrl: { type: [string, 'null'], format: uri }
+        iconKey: { type: [string, 'null'], description: Same as ProductSummary.iconKey. }
         unitPrice: { $ref: '#/components/schemas/Money' }
         quantity: { type: integer, minimum: 1 }
         lineSubtotal: { $ref: '#/components/schemas/Money' }
@@ -1630,6 +1632,7 @@ components:
         brand: { type: [string, 'null'] }
         unitSize: { type: string }
         imageUrl: { type: [string, 'null'], format: uri }
+        iconKey: { type: [string, 'null'], description: Same as ProductSummary.iconKey. }
         categoryId: { type: string, format: uuid }
         cuisines: { type: array, items: { $ref: '#/components/schemas/CodeName' } }
         organic: { type: boolean }

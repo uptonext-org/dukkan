@@ -16,6 +16,7 @@ public record ListingInfo(
     String name,
     String unitSize,
     @Nullable String imageUrl,
+    @Nullable String iconKey,
     long priceCents,
     @Nullable PromotionRule promotion,
     @Nullable PromotionBadge promotionBadge,
