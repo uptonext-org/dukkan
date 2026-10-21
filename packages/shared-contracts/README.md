@@ -30,6 +30,7 @@ availability it receives.
 | Cart | One per user per market. Placing an order empties only that market's cart |
 | Idempotency-Key | Scoped to the user. Reusing it in the same market replays the order; in another market → 409 `IDEMPOTENCY_KEY_REUSED` |
 | Passwords | 10–128 characters and at most 72 UTF-8 bytes (bcrypt) |
+| Rate limits | Per client IP and instance: 20 logins per minute, 10 registrations per hour → 429 `RATE_LIMITED` with `Retry-After` |
 | Amounts in requests | 0–10,000,000 cents |
 | Promotions | `validUntil` after `validFrom` and in the future |
 | Cancellation (customer) | `PLACED` or `ACCEPTED`, before the cutoff |

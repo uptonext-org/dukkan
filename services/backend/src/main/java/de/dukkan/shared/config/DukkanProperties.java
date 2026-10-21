@@ -68,7 +68,23 @@ public record DukkanProperties(
   }
 
   /** Security settings. */
-  public record Security(@DefaultValue Jwt jwt) {}
+  public record Security(@DefaultValue Jwt jwt, @DefaultValue RateLimit rateLimit) {}
+
+  /**
+   * Per client IP, per instance limits for the unauthenticated auth endpoints (brute force and
+   * throwaway accounts). Behind a proxy, enable {@code server.forward-headers-strategy} so that the
+   * client IP is the real one.
+   */
+  public record RateLimit(
+      @DefaultValue("true") boolean enabled,
+      @DefaultValue("20") int loginsPerMinute,
+      @DefaultValue("10") int registrationsPerHour) {
+    public RateLimit {
+      if (loginsPerMinute < 1 || registrationsPerHour < 1) {
+        throw new IllegalArgumentException("dukkan.security.rate-limit values must be >= 1");
+      }
+    }
+  }
 
   /** Self-issued HS256 JWT settings. The secret must be at least 32 bytes (256 bits). */
   public record Jwt(String secret, @DefaultValue("PT1H") Duration ttl, @DefaultValue("dukkan") String issuer) {

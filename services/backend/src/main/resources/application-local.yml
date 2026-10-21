@@ -8,6 +8,10 @@ logging:
 
 dukkan:
   security:
+    # Generous limits for local development, live API tests and screenshot runs.
+    rate-limit:
+      logins-per-minute: 300
+      registrations-per-hour: 300
     jwt:
       # Development-only secret. Never use outside the local profile.
       secret: ${DUKKAN_JWT_SECRET:local-dev-secret-change-me-0123456789abcdef}

@@ -34,7 +34,8 @@ class JwtTokenServiceTest {
         new DukkanProperties.Fulfilment(7, Duration.ofHours(1), 6, 10, Duration.ofHours(2), Duration.ofHours(1)),
         new DukkanProperties.Catalog(14, 24),
         new DukkanProperties.Markets(10, 50),
-        new DukkanProperties.Security(new DukkanProperties.Jwt(secret, ttl, "dukkan")));
+        new DukkanProperties.Security(
+            new DukkanProperties.Jwt(secret, ttl, "dukkan"), new DukkanProperties.RateLimit(true, 20, 10)));
   }
 
   private static NimbusJwtDecoder decoder(String secret) {

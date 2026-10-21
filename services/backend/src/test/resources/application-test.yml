@@ -8,6 +8,9 @@ logging:
 
 dukkan:
   security:
+    # Integration tests register many users from one IP; RateLimitIntegrationTest re-enables it.
+    rate-limit:
+      enabled: false
     jwt:
       secret: integration-test-secret-0123456789abcdef
       # Tests move the clock by days (cutoffs, "new" window); tokens must outlive that.
