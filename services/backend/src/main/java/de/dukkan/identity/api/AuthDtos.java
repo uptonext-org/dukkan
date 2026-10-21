@@ -45,9 +45,55 @@ final class AuthDtos {
       @Nullable @Size(min = 1, max = 100) String lastName,
       @Nullable String preferredLocale) {}
 
-  record AuthResponse(String accessToken, String tokenType, long expiresIn, UserView user) {
+  record AuthResponse(String accessToken, String tokenType, long expiresIn, String refreshToken, long refreshExpiresIn, UserView user) {
     static AuthResponse from(AuthResult result) {
-      return new AuthResponse(result.accessToken(), "Bearer", result.expiresIn().toSeconds(), result.user());
+      return new AuthResponse(
+          result.accessToken(), "Bearer", result.expiresIn().toSeconds(), result.refreshToken(), result.refreshExpiresIn().toSeconds(), result.user());
+    }
+
+    @Override
+    public String toString() {
+      return "AuthResponse[user=" + user.id() + ", tokens=***]";
+    }
+  }
+
+  record RefreshRequest(@NotBlank @Size(max = 200) String refreshToken) {
+    @Override
+    public String toString() {
+      return "RefreshRequest[***]";
+    }
+  }
+
+  record PasswordResetRequest(@Email @NotBlank @Size(max = 254) String email) {}
+
+  record PasswordResetConfirmRequest(
+      @NotBlank @Size(max = 200) String token, @NotNull @Size(min = 10, max = 128) @MaxUtf8Bytes(72) String newPassword) {
+    @Override
+    public String toString() {
+      return "PasswordResetConfirmRequest[***]";
+    }
+  }
+
+  record ChangePasswordRequest(
+      @NotNull @Size(min = 1, max = 128) String currentPassword,
+      @NotNull @Size(min = 10, max = 128) @MaxUtf8Bytes(72) String newPassword) {
+    @Override
+    public String toString() {
+      return "ChangePasswordRequest[***]";
+    }
+  }
+
+  record SocialSignInRequest(
+      @NotNull @Pattern(regexp = "APPLE|GOOGLE", message = "must be APPLE or GOOGLE") String provider,
+      @NotBlank @Size(max = 8192) String idToken,
+      @Nullable @Size(max = 256) String nonce,
+      @Nullable @Size(min = 1, max = 100) String firstName,
+      @Nullable @Size(min = 1, max = 100) String lastName,
+      @Nullable @Pattern(regexp = "CUSTOMER|MERCHANT", message = "must be CUSTOMER or MERCHANT") String accountType,
+      @Nullable String preferredLocale) {
+    @Override
+    public String toString() {
+      return "SocialSignInRequest[provider=" + provider + ", idToken=***]";
     }
   }
 }

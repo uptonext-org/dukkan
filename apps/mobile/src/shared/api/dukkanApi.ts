@@ -36,6 +36,7 @@ import type {
   ReserveFulfilmentRequest,
   SearchCatalogParams,
   SearchProductsParams,
+  SocialSignInRequest,
   Slot,
   UpdateListingRequest,
   UploadFile,
@@ -61,6 +62,14 @@ export interface DukkanApi {
   // auth
   register(request: RegisterRequest): Promise<AuthResponse>;
   login(request: LoginRequest): Promise<AuthResponse>;
+  /** Rotates the refresh token; the old one is spent. */
+  refreshSession(refreshToken: string): Promise<AuthResponse>;
+  logout(refreshToken: string): Promise<void>;
+  /** Always resolves (202), whether or not the account exists. */
+  requestPasswordReset(email: string): Promise<void>;
+  confirmPasswordReset(token: string, newPassword: string): Promise<void>;
+  changePassword(currentPassword: string, newPassword: string): Promise<void>;
+  socialSignIn(request: SocialSignInRequest): Promise<AuthResponse>;
   getCurrentUser(signal?: Signal): Promise<User>;
   updateCurrentUser(request: UpdateUserRequest): Promise<User>;
   // geo
@@ -163,8 +172,15 @@ export function createDukkanApi(client: ApiClient): DukkanApi {
     listMarketTypes: (signal) => get('/market-types', undefined, signal),
     listCuisines: (signal) => get('/cuisines', undefined, signal),
 
-    register: (body) => client.request({ method: 'POST', path: '/auth/register', body }),
-    login: (body) => client.request({ method: 'POST', path: '/auth/login', body }),
+    register: (body) => client.request({ method: 'POST', path: '/auth/register', body, anonymous: true }),
+    login: (body) => client.request({ method: 'POST', path: '/auth/login', body, anonymous: true }),
+    refreshSession: (refreshToken) => client.request({ method: 'POST', path: '/auth/refresh', body: { refreshToken }, anonymous: true }),
+    logout: (refreshToken) => client.request({ method: 'POST', path: '/auth/logout', body: { refreshToken }, anonymous: true }),
+    requestPasswordReset: (email) => client.request({ method: 'POST', path: '/auth/password-reset', body: { email }, anonymous: true }),
+    confirmPasswordReset: (token, newPassword) =>
+      client.request({ method: 'POST', path: '/auth/password-reset/confirm', body: { token, newPassword }, anonymous: true }),
+    changePassword: (currentPassword, newPassword) => client.request({ method: 'PUT', path: '/me/password', body: { currentPassword, newPassword } }),
+    socialSignIn: (body) => client.request({ method: 'POST', path: '/auth/social', body, anonymous: true }),
     getCurrentUser: (signal) => get('/me', undefined, signal),
     updateCurrentUser: (body) => client.request({ method: 'PATCH', path: '/me', body }),
 

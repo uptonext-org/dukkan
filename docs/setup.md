@@ -78,6 +78,43 @@ works without any key: the rule-based parser reads price, pack size and category
 The key is read only from this setting (not from `ANTHROPIC_API_KEY`). With a key, merchant notes and
 photos are sent to Anthropic; see ADR 0011 before enabling it in production.
 
+**Sessions and accounts** (B-39): access tokens live 15 minutes (`DUKKAN_JWT_TTL`), refresh tokens 30 days and
+rotate on every use; the app renews tokens by itself.
+
+- **Password reset mails** need SMTP: `spring.mail.host`, `spring.mail.port`, `spring.mail.username`,
+  `spring.mail.password` (env `SPRING_MAIL_HOST` …), sender `DUKKAN_MAIL_FROM`. The link is
+  `DUKKAN_PASSWORD_RESET_URL?token=…` (default `dukkan://reset-password`, opened by the app). Without SMTP no mail
+  is sent; the `local` profile writes the link to the log instead (`[dev] Password reset link for …`).
+- **Sign in with Google / Apple**: create the OAuth clients (Google Cloud console: iOS, Android and web client;
+  Apple Developer: the app's bundle id `app.dukkan.mobile` with the Sign in with Apple capability), then set
+  `DUKKAN_GOOGLE_CLIENT_IDS` and `DUKKAN_APPLE_CLIENT_IDS` (comma separated) on the backend. In the app, plug a
+  native adapter into the `SocialSignIn` port (`src/shared/auth/SocialSignIn.ts`) in `createDependencies()`; until
+  then no provider buttons are shown. A sketch with `@invertase/react-native-apple-authentication` and
+  `@react-native-google-signin/google-signin` (install them, run `pod install`, then build on a device):
+
+  ```ts
+  import { appleAuth } from '@invertase/react-native-apple-authentication';
+  import { GoogleSignin, isSuccessResponse } from '@react-native-google-signin/google-signin';
+
+  GoogleSignin.configure({ webClientId: '<web client id>', iosClientId: '<ios client id>' });
+  export const nativeSocialSignIn: SocialSignIn = {
+    providers: () => (Platform.OS === 'ios' && appleAuth.isSupported ? ['APPLE', 'GOOGLE'] : ['GOOGLE']),
+    async signIn(provider) {
+      try {
+        if (provider === 'APPLE') {
+          const r = await appleAuth.performRequest({ requestedOperation: appleAuth.Operation.LOGIN, requestedScopes: [appleAuth.Scope.EMAIL, appleAuth.Scope.FULL_NAME] });
+          return r.identityToken ? { status: 'signedIn', idToken: r.identityToken, nonce: r.nonce, firstName: r.fullName?.givenName ?? undefined, lastName: r.fullName?.familyName ?? undefined } : { status: 'failed' };
+        }
+        const r = await GoogleSignin.signIn();
+        return isSuccessResponse(r) && r.data.idToken ? { status: 'signedIn', idToken: r.data.idToken } : { status: 'cancelled' };
+      } catch (e) {
+        return (e as { code?: string }).code === appleAuth.Error.CANCELED ? { status: 'cancelled' } : { status: 'failed' };
+      }
+    },
+  };
+  ```
+  The backend accepts the token's `nonce` raw or as SHA-256 hex, so either library's nonce handling works.
+
 To run the full stack in containers:
 ```bash
 docker compose -f infrastructure/docker/compose.yaml --profile app up --build

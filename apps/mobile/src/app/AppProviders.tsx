@@ -13,6 +13,8 @@ import { PhotoPickerProvider, type PhotoPicker } from '../shared/media';
 import type { KeyValueStorage } from '../shared/storage';
 import { ThemeProvider } from '../shared/theme';
 
+import type { SocialSignIn } from '../shared/auth';
+
 export interface AppDependencies {
   apiClient: ApiClient;
   queryClient: QueryClient;
@@ -22,6 +24,7 @@ export interface AppDependencies {
   storage: KeyValueStorage;
   locationService: LocationService;
   photoPicker: PhotoPicker;
+  socialSignIn: SocialSignIn;
 }
 
 /** All app-wide providers. Tests pass in-memory dependencies (fake ApiClient, memory storage). */
@@ -40,7 +43,7 @@ export function AppProviders({
         <ThemeProvider {...(scheme !== undefined ? { scheme } : {})}>
           <ApiProvider client={dependencies.apiClient}>
             <QueryClientProvider client={dependencies.queryClient}>
-              <AuthProvider session={dependencies.session}>
+              <AuthProvider session={dependencies.session} socialSignIn={dependencies.socialSignIn}>
                 <LocationProvider storage={dependencies.storage} service={dependencies.locationService}>
                   <PhotoPickerProvider picker={dependencies.photoPicker}>
                     <AuthGate>{children}</AuthGate>

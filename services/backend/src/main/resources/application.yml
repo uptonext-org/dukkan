@@ -123,5 +123,19 @@ dukkan:
     jwt:
       # No default: must be provided via DUKKAN_JWT_SECRET (>= 32 bytes). Startup fails otherwise.
       secret: ${DUKKAN_JWT_SECRET:}
-      ttl: ${DUKKAN_JWT_TTL:PT1H}
+      # Access tokens are short-lived; the app renews them with a refresh token (POST /auth/refresh).
+      ttl: ${DUKKAN_JWT_TTL:PT15M}
       issuer: dukkan
+    auth:
+      refresh-token-ttl: P30D
+      password-reset-ttl: PT30M
+      # The reset mail links here with ?token=…; the app opens dukkan://reset-password.
+      password-reset-url: ${DUKKAN_PASSWORD_RESET_URL:dukkan://reset-password}
+      mail-from: ${DUKKAN_MAIL_FROM:Dukkan <no-reply@dukkan.app>}
+      # Sign in with Google / Apple: the OAuth client IDs whose ID tokens are accepted (comma separated).
+      # Empty = provider disabled (422 SOCIAL_PROVIDER_DISABLED).
+      google:
+        client-ids: ${DUKKAN_GOOGLE_CLIENT_IDS:}
+      apple:
+        # The iOS bundle id (native) and/or the Services ID (web).
+        client-ids: ${DUKKAN_APPLE_CLIENT_IDS:}

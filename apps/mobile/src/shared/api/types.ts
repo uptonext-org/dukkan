@@ -95,7 +95,22 @@ export interface AuthResponse {
   accessToken: string;
   tokenType: 'Bearer';
   expiresIn: number;
+  /** Single use; exchange it at /auth/refresh. Stored in the Keychain only. */
+  refreshToken: string;
+  refreshExpiresIn: number;
   user: User;
+}
+
+export type SocialProvider = 'APPLE' | 'GOOGLE';
+
+export interface SocialSignInRequest {
+  provider: SocialProvider;
+  idToken: string;
+  nonce?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+  accountType?: AccountType | null;
+  preferredLocale?: string | null;
 }
 
 // ---------------------------------------------------------------- markets

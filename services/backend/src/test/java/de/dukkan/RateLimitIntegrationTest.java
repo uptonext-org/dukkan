@@ -25,7 +25,8 @@ import org.springframework.test.context.TestPropertySource;
       "dukkan.security.rate-limit.enabled=true",
       "dukkan.security.rate-limit.logins-per-minute=3",
       "dukkan.security.rate-limit.registrations-per-hour=2",
-      "dukkan.media.uploads-per-hour=2"
+      "dukkan.media.uploads-per-hour=2",
+      "dukkan.security.rate-limit.password-resets-per-hour=2"
     })
 class RateLimitIntegrationTest extends IntegrationTest {
 
@@ -99,5 +100,18 @@ class RateLimitIntegrationTest extends IntegrationTest {
   private static MockHttpServletRequest ip(MockHttpServletRequest request, String address) {
     request.setRemoteAddr(address);
     return request;
+  }
+
+  @Test
+  void passwordResetRequestsAreLimitedPerHourAndIp() throws Exception {
+    String body = toJson(Map.of("email", "nobody@example.com"));
+    for (int i = 0; i < 2; i++) {
+      mvc.perform(json(post("/api/v1/auth/password-reset"), body).with(r -> ip(r, "203.0.113.20"))).andExpect(status().isAccepted());
+    }
+    mvc.perform(json(post("/api/v1/auth/password-reset"), body).with(r -> ip(r, "203.0.113.20")))
+        .andExpect(status().isTooManyRequests())
+        .andExpect(jsonPath("$.code").value("RATE_LIMITED"));
+    clock.advance(Duration.ofHours(1));
+    mvc.perform(json(post("/api/v1/auth/password-reset"), body).with(r -> ip(r, "203.0.113.20"))).andExpect(status().isAccepted());
   }
 }

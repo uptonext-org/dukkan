@@ -7,6 +7,11 @@ export const KNOWN_ERROR_CODES = [
   'VALIDATION_FAILED',
   'UNAUTHORIZED',
   'INVALID_CREDENTIALS',
+  'INVALID_REFRESH_TOKEN',
+  'INVALID_SOCIAL_TOKEN',
+  'SOCIAL_PROVIDER_DISABLED',
+  'SOCIAL_EMAIL_MISSING',
+  'SOCIAL_SIGN_IN_FAILED',
   'FORBIDDEN',
   'NOT_FOUND',
   'METHOD_NOT_ALLOWED',
@@ -43,8 +48,9 @@ export type KnownErrorCode = (typeof KNOWN_ERROR_CODES)[number];
  * Validation codes of VALIDATION_FAILED field errors that get their own message under
  * `errors.field.<code>` (other field codes fall back to the generic VALIDATION_FAILED text).
  * MaxUtf8Bytes: password longer than 72 UTF-8 bytes. Future: promotion end date not in the future.
+ * INVALID_RESET_TOKEN: reset link used or expired. Incorrect: wrong current password.
  */
-export const KNOWN_FIELD_CODES = ['MaxUtf8Bytes', 'Future'] as const;
+export const KNOWN_FIELD_CODES = ['MaxUtf8Bytes', 'Future', 'INVALID_RESET_TOKEN', 'Incorrect'] as const;
 
 export type KnownFieldCode = (typeof KNOWN_FIELD_CODES)[number];
 

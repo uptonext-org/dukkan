@@ -53,6 +53,9 @@ export type RootStackParamList = {
   MerchantPromotions: { marketId: string };
   MerchantPromotionForm: { marketId: string };
   MerchantOrders: { marketId: string };
+  /** Deep link from the reset mail: dukkan://reset-password?token=… */
+  ResetPassword: { token: string };
+  ChangePassword: undefined;
 };
 
 export type RootStackScreenProps<T extends keyof RootStackParamList> = NativeStackScreenProps<RootStackParamList, T>;

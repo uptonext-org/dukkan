@@ -150,6 +150,148 @@ paths:
         '400': { $ref: '#/components/responses/ValidationError' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '429': { $ref: '#/components/responses/TooManyRequests' }
+  /auth/refresh:
+    post:
+      tags: [auth]
+      operationId: refreshSession
+      summary: Exchange a refresh token for new tokens (rotation)
+      description: |
+        Every refresh token works once. The answer carries a new access token and a new refresh
+        token; the old one is spent. Presenting a spent token again ends the whole sign-in (all
+        tokens issued from that login), because it means the token was copied. Refresh tokens live
+        30 days. 60 refreshes per IP and minute → 429.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RefreshRequest' }
+      responses:
+        '200':
+          description: New tokens.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthResponse' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401':
+          description: '`INVALID_REFRESH_TOKEN`: unknown, spent, revoked or expired. Sign in again.'
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+  /auth/logout:
+    post:
+      tags: [auth]
+      operationId: logout
+      summary: End the sign-in a refresh token belongs to
+      description: Revokes every refresh token of that sign-in. Unknown tokens are ignored. Access tokens stay valid until they expire (15 minutes).
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RefreshRequest' }
+      responses:
+        '204': { description: Signed out. }
+        '400': { $ref: '#/components/responses/ValidationError' }
+  /auth/password-reset:
+    post:
+      tags: [auth]
+      operationId: requestPasswordReset
+      summary: Send a password reset link
+      description: |
+        Always 202, whether or not an account exists for the email (no enumeration). If it does, a
+        link valid for 30 minutes is mailed in the user's language: `dukkan://reset-password?token=…`
+        (configurable). 5 requests per IP and hour → 429.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PasswordResetRequest' }
+      responses:
+        '202': { description: Accepted. }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+  /auth/password-reset/confirm:
+    post:
+      tags: [auth]
+      operationId: confirmPasswordReset
+      summary: Set a new password with the token from the reset link
+      description: The token works once. Afterwards every sign-in of the account is ended (refresh tokens revoked).
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PasswordResetConfirmRequest' }
+      responses:
+        '204': { description: Password changed. }
+        '400':
+          description: '`VALIDATION_FAILED`; an invalid, used or expired token has `errors[0]` = field `token`, code `INVALID_RESET_TOKEN`.'
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+  /auth/social:
+    post:
+      tags: [auth]
+      operationId: socialSignIn
+      summary: Sign in with Apple or Google (ID token)
+      description: |
+        The app obtains an OpenID Connect ID token from Sign in with Apple or Google and sends it
+        here. The server checks the signature against the provider's keys, the issuer, the audience
+        (Dukkan's client IDs) and the expiry, and the nonce when one is sent (equal to the token's
+        `nonce` claim or its SHA-256 hex).
+
+        - A known provider account signs in. Otherwise an account with the same **verified** email is
+          linked, or a new account is created (names from the request, else from the token;
+          `accountType` MERCHANT adds the merchant role).
+        - Accounts created this way have no password until "forgot password" sets one.
+        - 20 per IP and minute (shared with login) → 429.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SocialSignInRequest' }
+      responses:
+        '200':
+          description: Signed in.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthResponse' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401':
+          description: '`INVALID_SOCIAL_TOKEN`: signature, issuer, audience, expiry or nonce wrong.'
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '422':
+          description: '`SOCIAL_PROVIDER_DISABLED` (no client ID configured) or `SOCIAL_EMAIL_MISSING` (new account without a verified email).'
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+  /me/password:
+    put:
+      tags: [auth]
+      operationId: changePassword
+      summary: Change my password
+      description: Needs the current password. Other sign-ins of the account are ended.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ChangePasswordRequest' }
+      responses:
+        '204': { description: Password changed. }
+        '400':
+          description: '`VALIDATION_FAILED`; a wrong current password has field `currentPassword`, code `Incorrect`.'
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
   /me:
     get:
       tags: [auth]
@@ -1249,7 +1391,7 @@ components:
         application/problem+json:
           schema: { $ref: '#/components/schemas/Problem' }
     TooManyRequests:
-      description: Rate limit exceeded (per client IP for login/registration, per user for uploads and product drafts; `code` = RATE_LIMITED); see the `Retry-After` header (seconds).
+      description: Rate limit exceeded (per client IP for login, social sign-in, registration, refresh and password reset, per user for uploads and product drafts; `code` = RATE_LIMITED); see the `Retry-After` header (seconds).
       headers:
         Retry-After:
           schema: { type: integer, minimum: 1 }
@@ -1389,12 +1531,47 @@ components:
         preferredLocale: { type: string }
     AuthResponse:
       type: object
-      required: [accessToken, tokenType, expiresIn, user]
+      required: [accessToken, tokenType, expiresIn, refreshToken, refreshExpiresIn, user]
       properties:
-        accessToken: { type: string }
+        accessToken: { type: string, description: 'JWT for `Authorization: Bearer`; short-lived (15 minutes by default).' }
         tokenType: { type: string, enum: [Bearer] }
-        expiresIn: { type: integer, description: Seconds until expiry. }
+        expiresIn: { type: integer, description: Seconds until the access token expires. }
+        refreshToken: { type: string, description: 'Opaque, single use: send it to /auth/refresh before or after the access token expires. Store it like a password (Keychain).' }
+        refreshExpiresIn: { type: integer, description: Seconds until the refresh token expires (30 days by default). }
         user: { $ref: '#/components/schemas/User' }
+    RefreshRequest:
+      type: object
+      required: [refreshToken]
+      properties:
+        refreshToken: { type: string, minLength: 1, maxLength: 200 }
+    PasswordResetRequest:
+      type: object
+      required: [email]
+      properties:
+        email: { type: string, format: email, maxLength: 254 }
+    PasswordResetConfirmRequest:
+      type: object
+      required: [token, newPassword]
+      properties:
+        token: { type: string, minLength: 1, maxLength: 200 }
+        newPassword: { type: string, minLength: 10, maxLength: 128, description: At most 72 bytes in UTF-8. }
+    ChangePasswordRequest:
+      type: object
+      required: [currentPassword, newPassword]
+      properties:
+        currentPassword: { type: string, minLength: 1, maxLength: 128 }
+        newPassword: { type: string, minLength: 10, maxLength: 128, description: At most 72 bytes in UTF-8. }
+    SocialSignInRequest:
+      type: object
+      required: [provider, idToken]
+      properties:
+        provider: { type: string, enum: [APPLE, GOOGLE] }
+        idToken: { type: string, maxLength: 8192 }
+        nonce: { type: [string, 'null'], maxLength: 256, description: The raw nonce the app passed to the provider. }
+        firstName: { type: [string, 'null'], minLength: 1, maxLength: 100, description: Apple sends the name to the app only on the first sign-in. }
+        lastName: { type: [string, 'null'], minLength: 1, maxLength: 100 }
+        accountType: { type: [string, 'null'], enum: [CUSTOMER, MERCHANT, null] }
+        preferredLocale: { type: [string, 'null'] }
     User:
       type: object
       required: [id, email, firstName, lastName, roles]

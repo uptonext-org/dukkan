@@ -5,6 +5,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import java.net.URI;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.List;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -75,7 +76,45 @@ public record DukkanProperties(
   }
 
   /** Security settings. */
-  public record Security(@DefaultValue Jwt jwt, @DefaultValue RateLimit rateLimit) {}
+  public record Security(@DefaultValue Jwt jwt, @DefaultValue RateLimit rateLimit, @DefaultValue Auth auth) {}
+
+  /**
+   * Sessions and account recovery (B-39). Refresh tokens rotate on every use and live {@code
+   * refreshTokenTtl}; password reset links live {@code passwordResetTtl} and point to {@code
+   * passwordResetUrl} with {@code ?token=…} appended (the app's deep link by default). {@code
+   * logResetLinks} writes reset links to the log instead of needing SMTP: development only.
+   */
+  public record Auth(
+      @DefaultValue("P30D") Duration refreshTokenTtl,
+      @DefaultValue("PT30M") Duration passwordResetTtl,
+      @DefaultValue("dukkan://reset-password") String passwordResetUrl,
+      @DefaultValue("Dukkan <no-reply@dukkan.app>") String mailFrom,
+      @DefaultValue("false") boolean logResetLinks,
+      @DefaultValue Provider google,
+      @DefaultValue Provider apple) {
+    public Auth {
+      if (refreshTokenTtl.isNegative() || refreshTokenTtl.isZero() || passwordResetTtl.isNegative() || passwordResetTtl.isZero()) {
+        throw new IllegalArgumentException("dukkan.security.auth TTLs must be positive");
+      }
+    }
+  }
+
+  /**
+   * An OpenID Connect provider whose ID tokens the app sends ({@code POST /auth/social}). Disabled
+   * while {@code clientIds} is empty. Issuers and the JWKS URL default to Google's or Apple's when
+   * left empty (see {@code identity.infrastructure.OidcIdTokenVerifier}); tests point them at a stub.
+   */
+  public record Provider(@DefaultValue List<String> clientIds, @DefaultValue List<String> issuers, @Nullable String jwkSetUri) {
+    public Provider {
+      clientIds = clientIds.stream().filter(id -> !id.isBlank()).toList();
+      issuers = issuers.stream().filter(id -> !id.isBlank()).toList();
+      jwkSetUri = blankToNull(jwkSetUri);
+    }
+
+    public boolean enabled() {
+      return !clientIds.isEmpty();
+    }
+  }
 
   /**
    * Per client IP, per instance limits for the unauthenticated auth endpoints (brute force and
@@ -85,9 +124,11 @@ public record DukkanProperties(
   public record RateLimit(
       @DefaultValue("true") boolean enabled,
       @DefaultValue("20") int loginsPerMinute,
-      @DefaultValue("10") int registrationsPerHour) {
+      @DefaultValue("10") int registrationsPerHour,
+      @DefaultValue("60") int refreshesPerMinute,
+      @DefaultValue("5") int passwordResetsPerHour) {
     public RateLimit {
-      if (loginsPerMinute < 1 || registrationsPerHour < 1) {
+      if (loginsPerMinute < 1 || registrationsPerHour < 1 || refreshesPerMinute < 1 || passwordResetsPerHour < 1) {
         throw new IllegalArgumentException("dukkan.security.rate-limit values must be >= 1");
       }
     }

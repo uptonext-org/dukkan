@@ -1,7 +1,8 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { createContext, use, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 
-import { queryKeys, useApi, type AuthResponse, type LoginRequest, type RegisterRequest } from '../../shared/api';
+import { ApiError, queryKeys, useApi, type AccountType, type AuthResponse, type LoginRequest, type RegisterRequest, type SocialProvider } from '../../shared/api';
+import type { SocialSignIn } from '../../shared/auth';
 import type { AuthSession } from './session';
 
 export type AuthStatus = 'restoring' | 'signedOut' | 'signedIn';
@@ -10,12 +11,16 @@ interface AuthContextValue {
   status: AuthStatus;
   login: (credentials: LoginRequest) => Promise<void>;
   register: (request: RegisterRequest) => Promise<void>;
+  /** Providers the device offers (empty until Apple/Google sign-in is configured). */
+  socialProviders: SocialProvider[];
+  /** `false` when the user cancelled the native sheet. Throws ApiError on server errors. */
+  socialSignIn: (provider: SocialProvider, accountType: AccountType, preferredLocale: string) => Promise<boolean>;
   logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-export function AuthProvider({ session, children }: { session: AuthSession; children: ReactNode }) {
+export function AuthProvider({ session, socialSignIn: social, children }: { session: AuthSession; socialSignIn: SocialSignIn; children: ReactNode }) {
   const api = useApi();
   const queryClient = useQueryClient();
   const [status, setStatus] = useState<AuthStatus>('restoring');
@@ -57,7 +62,7 @@ export function AuthProvider({ session, children }: { session: AuthSession; chil
   const startSession = useCallback(
     async (response: AuthResponse) => {
       queryClient.setQueryData(queryKeys.me, response.user);
-      await session.start(response.accessToken);
+      await session.start(response);
     },
     [session, queryClient],
   );
@@ -76,9 +81,45 @@ export function AuthProvider({ session, children }: { session: AuthSession; chil
     [api, startSession],
   );
 
-  const logout = useCallback(() => session.end(), [session]);
+  const socialProviders = useMemo(() => social.providers(), [social]);
+  const socialSignIn = useCallback(
+    async (provider: SocialProvider, accountType: AccountType, preferredLocale: string) => {
+      const result = await social.signIn(provider);
+      if (result.status === 'cancelled') {
+        return false;
+      }
+      if (result.status === 'failed') {
+        throw new ApiError({ kind: 'network', status: 0, code: 'SOCIAL_SIGN_IN_FAILED', detail: 'The provider sign-in failed.' });
+      }
+      await startSession(
+        await api.socialSignIn({
+          provider,
+          idToken: result.idToken,
+          nonce: result.nonce ?? null,
+          firstName: result.firstName ?? null,
+          lastName: result.lastName ?? null,
+          accountType,
+          preferredLocale,
+        }),
+      );
+      return true;
+    },
+    [api, social, startSession],
+  );
 
-  const value = useMemo(() => ({ status, login, register, logout }), [status, login, register, logout]);
+  const logout = useCallback(async () => {
+    const refreshToken = session.getRefreshToken();
+    if (refreshToken !== null) {
+      // Best effort: the server ends the sign-in; offline, the local session ends anyway.
+      await api.logout(refreshToken).catch(() => undefined);
+    }
+    await session.end();
+  }, [api, session]);
+
+  const value = useMemo(
+    () => ({ status, login, register, socialProviders, socialSignIn, logout }),
+    [status, login, register, socialProviders, socialSignIn, logout],
+  );
   return <AuthContext value={value}>{children}</AuthContext>;
 }
 

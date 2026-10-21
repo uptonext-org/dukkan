@@ -2,11 +2,12 @@ import { useState } from 'react';
 import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
-import { errorMessageKey, isApiError, knownFieldError, type AccountType } from '../../../shared/api';
+import { errorMessageKey, isApiError, knownFieldError, type AccountType, type SocialProvider } from '../../../shared/api';
 import { useLanguage } from '../../../shared/i18n';
 import { makeStyles } from '../../../shared/theme';
 import { AppText, Button, SegmentedControl, TextField } from '../../../shared/ui';
 import { useAuth } from '../AuthProvider';
+import { ForgotPasswordPanel } from './ForgotPasswordPanel';
 import { hasErrors, validateLogin, validateRegister, type FieldErrors, type RegisterValues } from '../validation';
 
 type Mode = 'login' | 'register';
@@ -16,8 +17,9 @@ export function AuthForm({ initialMode = 'login', onDone }: { initialMode?: Mode
   const styles = useStyles();
   const { t } = useTranslation();
   const { language } = useLanguage();
-  const { login, register } = useAuth();
+  const { login, register, socialProviders, socialSignIn } = useAuth();
   const [mode, setMode] = useState<Mode>(initialMode);
+  const [forgot, setForgot] = useState(false);
   const [accountType, setAccountType] = useState<AccountType>('CUSTOMER');
   const [values, setValues] = useState<RegisterValues>({ email: '', password: '', firstName: '', lastName: '' });
   const [errors, setErrors] = useState<FieldErrors<keyof RegisterValues>>({});
@@ -67,6 +69,24 @@ export function AuthForm({ initialMode = 'login', onDone }: { initialMode?: Mode
       setSubmitting(false);
     }
   };
+
+  const signInWith = async (provider: SocialProvider) => {
+    setServerError(null);
+    setSubmitting(true);
+    try {
+      if (await socialSignIn(provider, accountType, language)) {
+        onDone?.();
+      }
+    } catch (error) {
+      setServerError(t(errorMessageKey(error)));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (forgot) {
+    return <ForgotPasswordPanel initialEmail={values.email} onBack={() => setForgot(false)} />;
+  }
 
   return (
     <View>
@@ -134,6 +154,27 @@ export function AuthForm({ initialMode = 'login', onDone }: { initialMode?: Mode
           loading={submitting}
           testID="auth-submit"
         />
+        {mode === 'login' && (
+          <Button title={t('auth.forgotPassword')} variant="ghost" onPress={() => setForgot(true)} style={styles.forgot} testID="auth-forgot" />
+        )}
+        {socialProviders.length > 0 && (
+          <View style={styles.social}>
+            <AppText variant="subhead" color="textSecondary" style={styles.or}>
+              {t('auth.orDivider')}
+            </AppText>
+            {socialProviders.map((provider) => (
+              <Button
+                key={provider}
+                title={t(provider === 'APPLE' ? 'auth.continueWithApple' : 'auth.continueWithGoogle')}
+                variant="secondary"
+                {...(provider === 'APPLE' ? { icon: 'apple' as const } : {})}
+                disabled={submitting}
+                onPress={() => void signInWith(provider)}
+                testID={`auth-social-${provider}`}
+              />
+            ))}
+          </View>
+        )}
       </View>
     </View>
   );
@@ -144,4 +185,7 @@ const useStyles = makeStyles((t) => ({
   label: { marginBottom: t.spacing.xs },
   gap: { height: t.spacing.lg },
   serverError: { marginBottom: t.spacing.md },
+  forgot: { marginTop: t.spacing.sm, alignSelf: 'center' },
+  social: { marginTop: t.spacing.lg, gap: t.spacing.sm },
+  or: { textAlign: 'center' },
 }));

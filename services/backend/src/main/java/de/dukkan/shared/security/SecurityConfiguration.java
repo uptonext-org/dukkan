@@ -77,7 +77,16 @@ public class SecurityConfiguration {
         .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .authorizeHttpRequests(
             auth -> {
-              auth.requestMatchers(POST, API + "/auth/register", API + "/auth/login").permitAll();
+              auth.requestMatchers(
+                      POST,
+                      API + "/auth/register",
+                      API + "/auth/login",
+                      API + "/auth/refresh",
+                      API + "/auth/logout",
+                      API + "/auth/password-reset",
+                      API + "/auth/password-reset/confirm",
+                      API + "/auth/social")
+                  .permitAll();
               auth.requestMatchers(GET, META).permitAll();
               // Uploaded images: always public (image views load them without a token).
               auth.requestMatchers(GET, API + "/media/*").permitAll();

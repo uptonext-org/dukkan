@@ -41,6 +41,7 @@ import Leaf from 'lucide-react-native/icons/leaf';
 import LeafyGreen from 'lucide-react-native/icons/leafy-green';
 import List from 'lucide-react-native/icons/list';
 import LocateFixed from 'lucide-react-native/icons/locate-fixed';
+import Lock from 'lucide-react-native/icons/lock';
 import LogOut from 'lucide-react-native/icons/log-out';
 import MapIcon from 'lucide-react-native/icons/map';
 import MapPin from 'lucide-react-native/icons/map-pin';
@@ -94,6 +95,7 @@ const ICONS = {
   leaf: Leaf,
   list: List,
   locate: LocateFixed,
+  lock: Lock,
   logout: LogOut,
   map: MapIcon,
   pin: MapPin,

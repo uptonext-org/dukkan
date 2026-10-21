@@ -91,6 +91,25 @@ export function validateRegister(values: RegisterValues): FieldErrors<keyof Regi
   return errors;
 }
 
+/** Rules of a new password (registration, reset, change): 10–128 characters, at most 72 UTF-8 bytes. */
+export function validateNewPassword(password: string): ValidationKey | undefined {
+  if (password.length < MIN_PASSWORD_LENGTH) {
+    return 'passwordTooShort';
+  }
+  if (password.length > MAX_PASSWORD_LENGTH || utf8ByteLength(password) > MAX_PASSWORD_UTF8_BYTES) {
+    return 'passwordTooLong';
+  }
+  return undefined;
+}
+
+export function validateEmail(input: string): ValidationKey | undefined {
+  const email = input.trim();
+  if (email === '') {
+    return 'emailRequired';
+  }
+  return EMAIL_PATTERN.test(email) && email.length <= 254 ? undefined : 'emailInvalid';
+}
+
 export function hasErrors(errors: Record<string, string | undefined>): boolean {
   return Object.values(errors).some((message) => message !== undefined);
 }

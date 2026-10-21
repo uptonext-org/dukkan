@@ -52,12 +52,19 @@
     "RATE_LIMITED": "Too many attempts. Please wait a moment and try again.",
     "field": {
       "MaxUtf8Bytes": "The password is too long. Arabic characters count double.",
-      "Future": "The end date must be in the future."
+      "Future": "The end date must be in the future.",
+      "INVALID_RESET_TOKEN": "The link has expired or was already used. Please request a new one.",
+      "Incorrect": "The current password is wrong."
     },
     "UNSUPPORTED_MEDIA_TYPE": "This file format is not supported. Please choose a JPEG, PNG or WebP photo.",
     "FILE_TOO_LARGE": "The photo is too large (5 MB at most).",
     "INVALID_IMAGE": "The file is not a readable image. Please choose another photo.",
-    "IMAGE_TOO_LARGE": "The photo has too many pixels (40 megapixels at most)."
+    "IMAGE_TOO_LARGE": "The photo has too many pixels (40 megapixels at most).",
+    "INVALID_REFRESH_TOKEN": "Your session has expired. Please sign in again.",
+    "INVALID_SOCIAL_TOKEN": "The provider sign-in expired. Please try again.",
+    "SOCIAL_PROVIDER_DISABLED": "This sign-in option is not available right now.",
+    "SOCIAL_EMAIL_MISSING": "The provider did not share a confirmed email address.",
+    "SOCIAL_SIGN_IN_FAILED": "Signing in with the provider did not work."
   },
   "validation": {
     "required": "Please fill this in.",
@@ -403,7 +410,23 @@
       "checkout": "Sign in to reserve a time slot and order.",
       "browse": "An account is needed to browse right now.",
       "account": "Please sign in."
-    }
+    },
+    "forgotPassword": "Forgot password?",
+    "forgotTitle": "Reset password",
+    "forgotIntro": "Enter your email address. We will send you a link to choose a new password.",
+    "sendLink": "Send link",
+    "linkSent": "If there is an account with this address, the link is on its way. It is valid for 30 minutes.",
+    "backToSignIn": "Back to sign in",
+    "resetTitle": "New password",
+    "newPassword": "New password",
+    "setPassword": "Save password",
+    "passwordChanged": "Your password was changed. You can sign in now.",
+    "changePassword": "Change password",
+    "currentPassword": "Current password",
+    "passwordUpdated": "Password changed. Other devices will need to sign in again.",
+    "orDivider": "or",
+    "continueWithApple": "Continue with Apple",
+    "continueWithGoogle": "Continue with Google"
   },
   "profile": {
     "title": "Profile",

@@ -1,7 +1,8 @@
 import { getLocales } from 'react-native-localize';
 
 import { createAuthSession } from '../features/auth/session';
-import { createFetchApiClient, createQueryClient } from '../shared/api';
+import { createUnavailableSocialSignIn, type SocialSignIn } from '../shared/auth';
+import { createDukkanApi, createFetchApiClient, createQueryClient } from '../shared/api';
 import { env } from '../shared/config/env';
 import { createI18n, createLanguageStore } from '../shared/i18n';
 import { createGeolocationService } from '../shared/location';
@@ -13,6 +14,7 @@ import type { AppDependencies } from './AppProviders';
 export function createDependencies(
   tokenStorage: TokenStorage = createKeychainTokenStorage(),
   photoPicker: PhotoPicker = createImagePickerPhotoPicker(),
+  socialSignIn: SocialSignIn = createUnavailableSocialSignIn(),
 ): AppDependencies {
   const storage = createAsyncKeyValueStorage();
   const languageStore = createLanguageStore(storage, () => getLocales().map((l) => l.languageTag));
@@ -22,8 +24,10 @@ export function createDependencies(
     timeoutMs: env.requestTimeoutMs,
     getToken: () => session.getToken(),
     getLanguage: () => languageStore.get(),
+    refreshSession: () => session.refresh(),
     onUnauthorized: () => session.expire(),
   });
+  session.setRefresher((refreshToken) => createDukkanApi(apiClient).refreshSession(refreshToken));
   return {
     apiClient,
     queryClient: createQueryClient(),
@@ -33,5 +37,6 @@ export function createDependencies(
     storage,
     locationService: createGeolocationService(),
     photoPicker,
+    socialSignIn,
   };
 }

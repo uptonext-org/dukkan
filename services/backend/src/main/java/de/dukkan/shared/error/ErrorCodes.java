@@ -6,6 +6,10 @@ public final class ErrorCodes {
   public static final String VALIDATION_FAILED = "VALIDATION_FAILED";
   public static final String UNAUTHORIZED = "UNAUTHORIZED";
   public static final String INVALID_CREDENTIALS = "INVALID_CREDENTIALS";
+  public static final String INVALID_REFRESH_TOKEN = "INVALID_REFRESH_TOKEN";
+  public static final String INVALID_SOCIAL_TOKEN = "INVALID_SOCIAL_TOKEN";
+  // 400
+  public static final String INVALID_RESET_TOKEN = "INVALID_RESET_TOKEN";
   public static final String FORBIDDEN = "FORBIDDEN";
   public static final String NOT_FOUND = "NOT_FOUND";
   public static final String METHOD_NOT_ALLOWED = "METHOD_NOT_ALLOWED";
@@ -41,6 +45,8 @@ public final class ErrorCodes {
   public static final String MINIMUM_ORDER_NOT_MET = "MINIMUM_ORDER_NOT_MET";
   public static final String ORDER_NOT_CANCELLABLE = "ORDER_NOT_CANCELLABLE";
   public static final String INVALID_STATUS_TRANSITION = "INVALID_STATUS_TRANSITION";
+  public static final String SOCIAL_PROVIDER_DISABLED = "SOCIAL_PROVIDER_DISABLED";
+  public static final String SOCIAL_EMAIL_MISSING = "SOCIAL_EMAIL_MISSING";
 
   private ErrorCodes() {}
 }

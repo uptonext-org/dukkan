@@ -13,6 +13,8 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -58,6 +60,15 @@ public abstract class IntegrationTest {
   @BeforeEach
   void resetClock() {
     clock.reset();
+  }
+
+  /** Sign in with Google/Apple against the local JWKS stub (OidcStub). */
+  @DynamicPropertySource
+  static void oidcProviders(DynamicPropertyRegistry registry) {
+    registry.add("dukkan.security.auth.google.client-ids", () -> OidcStub.GOOGLE_CLIENT);
+    registry.add("dukkan.security.auth.google.jwk-set-uri", OidcStub::jwkSetUri);
+    registry.add("dukkan.security.auth.apple.client-ids", () -> OidcStub.APPLE_CLIENT);
+    registry.add("dukkan.security.auth.apple.jwk-set-uri", OidcStub::jwkSetUri);
   }
 
   protected String toJson(Object value) {

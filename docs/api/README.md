@@ -11,7 +11,7 @@
 | Area | Operations | Auth |
 |---|---|---|
 | Meta | `GET /locales`, `/market-types`, `/cuisines`, `/categories` | public |
-| Auth | `POST /auth/register` (customer or merchant), `POST /auth/login`, `GET/PATCH /me` | public / JWT |
+| Auth | `POST /auth/register` (customer or merchant), `POST /auth/login`, `POST /auth/refresh` (rotating refresh token), `POST /auth/logout`, `POST /auth/password-reset` and `/auth/password-reset/confirm`, `POST /auth/social` (Apple/Google ID token), `GET/PATCH /me`, `PUT /me/password` | public / JWT |
 | Geo | `GET /geo/search?q=`, `GET /geo/reverse?lat=&lng=` | public |
 | Markets | `GET /markets?lat=&lng=&radiusKm=&types=&cuisines=&fulfilment=&openNow=&hasOffers=&sort=`, `GET /markets/{id}`, `GET /markets/{id}/home` | public* |
 | Market catalog | `GET /markets/{id}/categories`, `/products`, `/search/suggestions`, `/promotions`; `GET /products/{id}` | public* |

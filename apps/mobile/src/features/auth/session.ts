@@ -1,35 +1,49 @@
-import type { TokenStorage } from '../../shared/storage';
+import { isApiError, type AuthResponse } from '../../shared/api';
+import type { StoredCredentials, TokenStorage } from '../../shared/storage';
 
 export type SessionListener = (token: string | null) => void;
 
+/** What `refresh()` achieved: new tokens, the session is over, or the server was unreachable. */
+export type RefreshOutcome = 'refreshed' | 'expired' | 'unavailable';
+
+/** Exchanges a refresh token for new tokens (`POST /auth/refresh`, without a bearer token). */
+export type SessionRefresher = (refreshToken: string) => Promise<AuthResponse>;
+
 /**
- * Holds the access token in memory (for synchronous header injection) and persists it
- * through a TokenStorage. The API client calls `expire()` on 401 responses.
+ * Holds the tokens in memory (for synchronous header injection) and persists them through a
+ * TokenStorage. On a 401 the API client asks `refresh()` for new tokens and retries once; only
+ * when that fails does the session end (`expire()`).
  */
 export interface AuthSession {
   getToken(): string | null;
+  getRefreshToken(): string | null;
   restore(): Promise<string | null>;
-  start(token: string): Promise<void>;
+  start(response: Pick<AuthResponse, 'accessToken' | 'refreshToken'>): Promise<void>;
   end(): Promise<void>;
   /** Fire-and-forget variant of `end()` for the 401 handler. */
   expire(): void;
+  /** One refresh at a time; concurrent callers share it. */
+  refresh(): Promise<RefreshOutcome>;
+  setRefresher(refresher: SessionRefresher): void;
   subscribe(listener: SessionListener): () => void;
 }
 
 export function createAuthSession(storage: TokenStorage): AuthSession {
-  let token: string | null = null;
+  let credentials: StoredCredentials | null = null;
+  let refresher: SessionRefresher | null = null;
+  let inflight: Promise<RefreshOutcome> | null = null;
   const listeners = new Set<SessionListener>();
   const notify = () => {
     for (const listener of listeners) {
-      listener(token);
+      listener(credentials?.accessToken ?? null);
     }
   };
 
   const end = async () => {
-    const hadToken = token !== null;
-    token = null;
+    const hadToken = credentials !== null;
+    credentials = null;
     try {
-      await storage.clearToken();
+      await storage.clear();
     } finally {
       if (hadToken) {
         notify();
@@ -37,20 +51,46 @@ export function createAuthSession(storage: TokenStorage): AuthSession {
     }
   };
 
+  const doRefresh = async (): Promise<RefreshOutcome> => {
+    const refreshToken = credentials?.refreshToken ?? null;
+    if (refreshToken === null || refresher === null) {
+      return 'expired';
+    }
+    try {
+      const response = await refresher(refreshToken);
+      credentials = { accessToken: response.accessToken, refreshToken: response.refreshToken };
+      await storage.set(credentials);
+      return 'refreshed';
+    } catch (error) {
+      // 401/400 from the server: the sign-in is over. Anything else (offline, timeout, 5xx): try later.
+      return isApiError(error) && (error.status === 401 || error.status === 400) ? 'expired' : 'unavailable';
+    }
+  };
+
   return {
-    getToken: () => token,
+    getToken: () => credentials?.accessToken ?? null,
+    getRefreshToken: () => credentials?.refreshToken ?? null,
     async restore() {
-      token = await storage.getToken();
-      return token;
+      credentials = await storage.get();
+      return credentials?.accessToken ?? null;
     },
-    async start(next) {
-      token = next;
-      await storage.setToken(next);
+    async start(response) {
+      credentials = { accessToken: response.accessToken, refreshToken: response.refreshToken };
+      await storage.set(credentials);
       notify();
     },
     end,
     expire() {
       end().catch(() => undefined);
+    },
+    refresh() {
+      inflight ??= doRefresh().finally(() => {
+        inflight = null;
+      });
+      return inflight;
+    },
+    setRefresher(next) {
+      refresher = next;
     },
     subscribe(listener) {
       listeners.add(listener);

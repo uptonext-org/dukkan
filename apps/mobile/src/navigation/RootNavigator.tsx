@@ -3,6 +3,8 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { AddressFormScreen } from '../features/addresses/screens/AddressFormScreen';
 import { AddressListScreen } from '../features/addresses/screens/AddressListScreen';
 import { useAuth } from '../features/auth/AuthProvider';
+import { ChangePasswordScreen } from '../features/auth/screens/ChangePasswordScreen';
+import { ResetPasswordScreen } from '../features/auth/screens/ResetPasswordScreen';
 import { MarketNavigator } from '../features/market/MarketNavigator';
 import { AddProductScreen } from '../features/merchant/screens/AddProductScreen';
 import { ListingsScreen } from '../features/merchant/screens/ListingsScreen';
@@ -45,6 +47,8 @@ export function RootNavigator() {
         <Stack.Group>
           <Stack.Screen name="Welcome" component={OnboardingScreen} />
           <Stack.Screen name="WelcomeMap" component={MapPickerScreen} />
+          {/* The reset link may be the first thing a new install opens. */}
+          <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} options={{ presentation: 'modal' }} />
         </Stack.Group>
       ) : (
         <Stack.Group>
@@ -64,6 +68,8 @@ export function RootNavigator() {
           <Stack.Screen name="MerchantPromotions" component={PromotionsScreen} />
           <Stack.Screen name="MerchantPromotionForm" component={PromotionFormScreen} />
           <Stack.Screen name="MerchantOrders" component={MerchantOrdersScreen} />
+          <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} options={{ presentation: 'modal' }} />
+          <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
         </Stack.Group>
       )}
     </Stack.Navigator>

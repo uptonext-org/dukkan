@@ -35,7 +35,16 @@ class JwtTokenServiceTest {
         new DukkanProperties.Catalog(14, 24),
         new DukkanProperties.Markets(10, 50),
         new DukkanProperties.Security(
-            new DukkanProperties.Jwt(secret, ttl, "dukkan"), new DukkanProperties.RateLimit(true, 20, 10)),
+            new DukkanProperties.Jwt(secret, ttl, "dukkan"),
+            new DukkanProperties.RateLimit(true, 20, 10, 60, 5),
+            new DukkanProperties.Auth(
+                Duration.ofDays(30),
+                Duration.ofMinutes(30),
+                "dukkan://reset-password",
+                "Dukkan <no-reply@dukkan.app>",
+                false,
+                new DukkanProperties.Provider(java.util.List.of(), java.util.List.of(), null),
+                new DukkanProperties.Provider(java.util.List.of(), java.util.List.of(), null))),
         new DukkanProperties.Media(null, null, org.springframework.util.unit.DataSize.ofMegabytes(5), 40_000_000, 60, "filesystem",
             new DukkanProperties.S3(null, "eu-central-1", null, null, null, false, false)),
         new DukkanProperties.Capture(

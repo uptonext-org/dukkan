@@ -52,12 +52,19 @@
     "RATE_LIMITED": "Zu viele Versuche. Bitte warte kurz und versuch es dann noch einmal.",
     "field": {
       "MaxUtf8Bytes": "Das Passwort ist zu lang. Arabische Zeichen zählen doppelt.",
-      "Future": "Das Enddatum muss in der Zukunft liegen."
+      "Future": "Das Enddatum muss in der Zukunft liegen.",
+      "INVALID_RESET_TOKEN": "Der Link ist abgelaufen oder wurde schon benutzt. Bitte fordere einen neuen an.",
+      "Incorrect": "Das aktuelle Passwort stimmt nicht."
     },
     "UNSUPPORTED_MEDIA_TYPE": "Dieses Dateiformat wird nicht unterstützt. Bitte ein JPEG-, PNG- oder WebP-Foto wählen.",
     "FILE_TOO_LARGE": "Das Foto ist zu groß (höchstens 5 MB).",
     "INVALID_IMAGE": "Die Datei ist kein lesbares Bild. Bitte ein anderes Foto wählen.",
-    "IMAGE_TOO_LARGE": "Das Foto hat zu viele Pixel (höchstens 40 Megapixel)."
+    "IMAGE_TOO_LARGE": "Das Foto hat zu viele Pixel (höchstens 40 Megapixel).",
+    "INVALID_REFRESH_TOKEN": "Deine Anmeldung ist abgelaufen. Bitte melde dich erneut an.",
+    "INVALID_SOCIAL_TOKEN": "Die Anmeldung beim Anbieter ist abgelaufen. Bitte versuche es noch einmal.",
+    "SOCIAL_PROVIDER_DISABLED": "Diese Anmeldung ist gerade nicht verfügbar.",
+    "SOCIAL_EMAIL_MISSING": "Der Anbieter hat keine bestätigte E-Mail-Adresse übermittelt.",
+    "SOCIAL_SIGN_IN_FAILED": "Die Anmeldung beim Anbieter hat nicht geklappt."
   },
   "validation": {
     "required": "Bitte ausfüllen.",
@@ -403,7 +410,23 @@
       "checkout": "Melde dich an, um ein Zeitfenster zu reservieren und zu bestellen.",
       "browse": "Zum Stöbern ist gerade ein Konto nötig.",
       "account": "Melde dich an."
-    }
+    },
+    "forgotPassword": "Passwort vergessen?",
+    "forgotTitle": "Passwort zurücksetzen",
+    "forgotIntro": "Gib deine E-Mail-Adresse ein. Wir schicken dir einen Link, mit dem du ein neues Passwort wählst.",
+    "sendLink": "Link senden",
+    "linkSent": "Wenn es ein Konto mit dieser Adresse gibt, ist der Link unterwegs. Er ist 30 Minuten gültig.",
+    "backToSignIn": "Zurück zur Anmeldung",
+    "resetTitle": "Neues Passwort",
+    "newPassword": "Neues Passwort",
+    "setPassword": "Passwort speichern",
+    "passwordChanged": "Dein Passwort wurde geändert. Du kannst dich jetzt anmelden.",
+    "changePassword": "Passwort ändern",
+    "currentPassword": "Aktuelles Passwort",
+    "passwordUpdated": "Passwort geändert. Auf anderen Geräten musst du dich neu anmelden.",
+    "orDivider": "oder",
+    "continueWithApple": "Weiter mit Apple",
+    "continueWithGoogle": "Weiter mit Google"
   },
   "profile": {
     "title": "Profil",

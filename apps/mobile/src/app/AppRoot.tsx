@@ -1,12 +1,19 @@
-import { DarkTheme, DefaultTheme, NavigationContainer, type Theme as NavTheme } from '@react-navigation/native';
+import { DarkTheme, DefaultTheme, NavigationContainer, type LinkingOptions, type Theme as NavTheme } from '@react-navigation/native';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { StatusBar, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { RootNavigator } from '../navigation/RootNavigator';
+import type { RootStackParamList } from '../navigation/types';
 import { useLanguage, type LanguageStore } from '../shared/i18n';
 import { useTheme } from '../shared/theme';
 import { OfflineBanner } from '../shared/ui';
+
+/** Deep links: the password reset mail opens dukkan://reset-password?token=… (scheme in AndroidManifest and Info.plist). */
+const LINKING: LinkingOptions<RootStackParamList> = {
+  prefixes: ['dukkan://'],
+  config: { screens: { ResetPassword: 'reset-password' } },
+};
 
 /**
  * Root view. `direction` mirrors the whole JS UI instantly when Arabic is chosen: Fabric resolves
@@ -34,7 +41,9 @@ export function AppRoot({ children }: { children?: ReactNode }) {
   return (
     <View style={{ flex: 1, direction, backgroundColor: theme.colors.bg }}>
       <StatusBar barStyle={theme.dark ? 'light-content' : 'dark-content'} />
-      <NavigationContainer theme={navigationTheme}>{children ?? <RootNavigator />}</NavigationContainer>
+      <NavigationContainer theme={navigationTheme} linking={LINKING}>
+        {children ?? <RootNavigator />}
+      </NavigationContainer>
       {/* Floats over the header area so screens keep their own safe-area layout. */}
       <View style={{ position: 'absolute', top: insets.top, start: 0, end: 0 }} pointerEvents="box-none">
         <OfflineBanner />

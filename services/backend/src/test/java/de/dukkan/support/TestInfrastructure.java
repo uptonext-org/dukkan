@@ -6,7 +6,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
-/** PostgreSQL 18.6 via Testcontainers and a controllable clock. */
+/** PostgreSQL 18.6 via Testcontainers, a controllable clock and a mailer that captures reset links. */
 @TestConfiguration(proxyBeanMethods = false)
 public class TestInfrastructure {
 
@@ -20,5 +20,11 @@ public class TestInfrastructure {
   @Primary
   MutableClock testClock() {
     return new MutableClock();
+  }
+
+  @Bean
+  @Primary
+  CapturingAccountMailer capturingAccountMailer() {
+    return new CapturingAccountMailer();
   }
 }

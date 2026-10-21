@@ -241,4 +241,16 @@ describeLive('live API (app client against the real backend)', () => {
     }
     await expect(merchant.createProductDraft(shop.id, {})).rejects.toMatchObject({ status: 400, code: 'VALIDATION_FAILED' });
   });
+
+  it('rotates refresh tokens, detects reuse and accepts password reset requests (B-39)', async () => {
+    const first = await api('de').login({ email: 'kunde@dukkan.local', password: DEMO_PASSWORD });
+    expect(first.refreshToken.length).toBeGreaterThan(20);
+    const second = await api('de').refreshSession(first.refreshToken);
+    expect(second.refreshToken).not.toBe(first.refreshToken);
+    expect((await api('de', () => second.accessToken).getCurrentUser()).email).toBe('kunde@dukkan.local');
+    // Reusing the spent token ends that sign-in, including the newer token.
+    await expect(api('de').refreshSession(first.refreshToken)).rejects.toMatchObject({ status: 401, code: 'INVALID_REFRESH_TOKEN' });
+    await expect(api('de').refreshSession(second.refreshToken)).rejects.toMatchObject({ status: 401 });
+    await api('de').requestPasswordReset(`nobody-${Date.now()}@example.org`);
+  });
 });

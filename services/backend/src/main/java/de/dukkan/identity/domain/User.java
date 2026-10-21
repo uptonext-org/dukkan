@@ -81,6 +81,10 @@ public class User extends AuditedEntity {
     }
   }
 
+  public void changePasswordHash(String passwordHash) {
+    this.passwordHash = passwordHash;
+  }
+
   public void grantRole(Role role) {
     roles.add(role);
   }

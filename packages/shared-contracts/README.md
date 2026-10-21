@@ -30,7 +30,10 @@ availability it receives.
 | Cart | One per user per market. Placing an order empties only that market's cart |
 | Idempotency-Key | Scoped to the user. Reusing it in the same market replays the order; in another market → 409 `IDEMPOTENCY_KEY_REUSED` |
 | Passwords | 10–128 characters and at most 72 UTF-8 bytes (bcrypt) |
-| Rate limits | Per client IP and instance: 20 logins per minute, 10 registrations per hour → 429 `RATE_LIMITED` with `Retry-After` |
+| Rate limits | Per client IP and instance: 20 logins or social sign-ins per minute, 10 registrations per hour, 60 token refreshes per minute, 5 password reset requests per hour → 429 `RATE_LIMITED` with `Retry-After` |
+| Sessions | Access token (JWT) 15 minutes; refresh token 30 days, opaque, single use: `/auth/refresh` returns a new pair and spends the old token. A spent token presented again revokes every token of that sign-in (`INVALID_REFRESH_TOKEN`). Logout, password reset and password change revoke refresh tokens; access tokens expire on their own |
+| Password reset | `/auth/password-reset` always answers 202. The mailed link (`dukkan://reset-password?token=…`) is valid 30 minutes and once; the new password follows the registration rules (10–128 characters, ≤ 72 UTF-8 bytes) |
+| Sign in with Apple/Google | ID token verified against the provider's JWKS: RS256, issuer, audience = configured client IDs, expiry (60 s skew), optional nonce (raw or SHA-256 hex). Known provider account → sign in; else link an account with the same verified email; else create one (`SOCIAL_EMAIL_MISSING` without a verified email). Provider without client IDs → 422 `SOCIAL_PROVIDER_DISABLED` |
 | Amounts in requests | 0–10,000,000 cents |
 | Promotions | `validUntil` after `validFrom` and in the future |
 | Cancellation (customer) | `PLACED` or `ACCEPTED`, before the cutoff |

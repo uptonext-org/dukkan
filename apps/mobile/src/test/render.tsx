@@ -1,4 +1,6 @@
 import { NavigationContainer } from '@react-navigation/native';
+
+import { createUnavailableSocialSignIn, type SocialSignIn } from '../shared/auth';
 import { QueryClient } from '@tanstack/react-query';
 import { render } from '@testing-library/react-native';
 import type { ReactElement } from 'react';
@@ -21,6 +23,7 @@ export interface TestOptions {
   place?: ChosenPlace | null;
   location?: LocationService;
   photoPicker?: PhotoPicker;
+  socialSignIn?: SocialSignIn;
 }
 
 const clients = new Set<QueryClient>();
@@ -53,6 +56,7 @@ export function createTestDependencies(apiClient: ApiClient, options: TestOption
     storage,
     locationService: options.location ?? { getCurrentPosition: () => Promise.resolve<GeoPoint>(ST_GEORG.location) },
     photoPicker: options.photoPicker ?? createFakePhotoPicker({ status: 'cancelled' }),
+    socialSignIn: options.socialSignIn ?? createUnavailableSocialSignIn(),
   };
 }
 

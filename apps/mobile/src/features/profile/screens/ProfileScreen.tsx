@@ -68,6 +68,7 @@ export function ProfileScreen({ navigation }: ShellTabScreenProps<'Profile'>) {
               {common}
               <ListRow title={t('profile.addresses')} icon="home" onPress={() => navigation.navigate('Addresses')} />
               <ListRow title={t('profile.orders')} icon="receipt" onPress={() => navigation.navigate('Orders')} testID="profile-orders" />
+              <ListRow title={t('auth.changePassword')} icon="lock" onPress={() => navigation.navigate('ChangePassword')} testID="profile-change-password" />
               {merchant && <ListRow title={t('profile.myMarket')} icon="store" onPress={() => navigation.navigate('MerchantMarkets')} testID="profile-my-market" />}
             </View>
             <Button title={t('profile.logout')} variant="danger" icon="logout" onPress={() => void logout()} style={styles.logout} />
