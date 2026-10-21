@@ -41,7 +41,7 @@ export function createTestDependencies(apiClient: ApiClient, options: TestOption
   const storage = createMemoryKeyValueStorage(place !== null ? { [STORAGE_KEYS.place]: JSON.stringify(place) } : {});
   const languageStore = createLanguageStore(storage, () => [`${language}-DE`], language);
   const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false, gcTime: Infinity, staleTime: Infinity }, mutations: { retry: false } },
+    defaultOptions: { queries: { retry: false, gcTime: Infinity, staleTime: Infinity }, mutations: { retry: false, gcTime: Infinity } },
   });
   clients.add(queryClient);
   return {
