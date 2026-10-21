@@ -65,6 +65,7 @@ flowchart TB
     admin[admin<br/>market review]
     media[media<br/>image upload, MediaStorage]
     capture[capture<br/>AI product capture, rule-based parser]
+    translation[translation<br/>machine translation of merchant texts]
     notification[notification<br/>inbox, device tokens, FCM push]
     shared[shared<br/>money, errors, security, rate limits, clock]
   end
@@ -100,6 +101,8 @@ flowchart TB
   capture --> catalog
   capture --> market
   capture --> media
+  translation --> catalog
+  translation --> i18n
   admin --> market
   notification --> order
   notification --> market

@@ -56,7 +56,7 @@ export function PromotionFormScreen({ route, navigation }: RootStackScreenProps<
         </View>
       }>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <LocalizedFields label={t('merchant.promotionTitle')} values={values.title} primary={primaryLocale} error={err('title')} onChange={(lang, text) => set('title', { ...values.title, [lang]: text })} />
+        <LocalizedFields label={t('merchant.promotionTitle')} values={values.title} primary={primaryLocale} error={err('title')} onChange={(lang, text) => set('title', { ...values.title, [lang]: text })} testIDPrefix="promotion-title" translateKind="PROMOTION" />
         <SegmentedControl
           accessibilityLabel={t('merchant.promotionType')}
           segments={[

@@ -23,6 +23,16 @@ import org.springframework.test.web.servlet.MvcResult;
 class MerchantIntegrationTest extends IntegrationTest {
 
   @Test
+  void machineTranslationWithoutLanguageModelIsUnavailable() throws Exception {
+    mvc.perform(
+            json(
+                auth(post("/api/v1/merchant/translations"), registerMerchant()),
+                "{\"kind\":\"PRODUCT_NAME\",\"fields\":[{\"key\":\"name\",\"values\":{\"de\":\"Ayran\"}}]}"))
+        .andExpect(status().isUnprocessableContent())
+        .andExpect(jsonPath("$.code").value("TRANSLATION_UNAVAILABLE"));
+  }
+
+  @Test
   void merchantCreatesAndUpdatesAMarket() throws Exception {
     String merchant = registerMerchant();
     MvcResult created =

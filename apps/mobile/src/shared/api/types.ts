@@ -565,6 +565,26 @@ export interface MediaUpload {
 export type UploadFile = { uri: string; type: string; name: string } | { blob: Blob; name: string };
 
 /** `POST /merchant/markets/{marketId}/product-drafts`: at least one of both. */
+// ---------------------------------------------------------------- machine translation (B-38)
+export type TranslationKind = 'PRODUCT_NAME' | 'PRODUCT_DESCRIPTION' | 'PROMOTION' | 'MARKET_DESCRIPTION';
+
+export interface TranslationField {
+  /** Caller-chosen id, echoed in the result. */
+  key: string;
+  /** Locale code → text; empty values are translated. */
+  values: LocalizedText;
+}
+
+export interface TranslationRequest {
+  kind: TranslationKind;
+  fields: TranslationField[];
+}
+
+export interface TranslationResult {
+  /** Only fields with new suggestions, and only the newly translated locales. */
+  fields: TranslationField[];
+}
+
 export interface ProductDraftRequest {
   text?: string | null;
   /** `key` of an uploadMedia result. */

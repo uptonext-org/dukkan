@@ -150,6 +150,8 @@ function MarketProfileForm({ route, navigation, initial }: RootStackScreenProps<
             values={values.description}
             primary={values.primaryLocale}
             multiline
+            testIDPrefix="market-description"
+            translateKind="MARKET_DESCRIPTION"
             onChange={(lang: Language, value) => set('description', { ...values.description, [lang]: value })}
           />
         </Section>

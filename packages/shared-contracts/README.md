@@ -34,6 +34,7 @@ availability it receives.
 | Sessions | Access token (JWT) 15 minutes; refresh token 30 days, opaque, single use: `/auth/refresh` returns a new pair and spends the old token. A spent token presented again revokes every token of that sign-in (`INVALID_REFRESH_TOKEN`). Logout, password reset and password change revoke refresh tokens; access tokens expire on their own |
 | Password reset | `/auth/password-reset` always answers 202. The mailed link (`dukkan://reset-password?token=…`) is valid 30 minutes and once; the new password follows the registration rules (10–128 characters, ≤ 72 UTF-8 bytes) |
 | Sign in with Apple/Google | ID token verified against the provider's JWKS: RS256, issuer, audience = configured client IDs, expiry (60 s skew), optional nonce (raw or SHA-256 hex). Known provider account → sign in; else link an account with the same verified email; else create one (`SOCIAL_EMAIL_MISSING` without a verified email). Provider without client IDs → 422 `SOCIAL_PROVIDER_DISABLED` |
+| Machine translation (`POST /merchant/translations`) | Suggestions for the empty enabled locales of each field, nothing saved; new private products are translated in the background (outbox event `catalog.private_product_created`), stored as machine translations, never overwriting merchant text. No language model → 422 `TRANSLATION_UNAVAILABLE` |
 | Amounts in requests | 0–10,000,000 cents |
 | Promotions | `validUntil` after `validFrom` and in the future |
 | Cancellation (customer) | `PLACED` or `ACCEPTED`, before the cutoff |

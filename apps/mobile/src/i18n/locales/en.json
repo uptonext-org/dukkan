@@ -64,7 +64,8 @@
     "INVALID_SOCIAL_TOKEN": "The provider sign-in expired. Please try again.",
     "SOCIAL_PROVIDER_DISABLED": "This sign-in option is not available right now.",
     "SOCIAL_EMAIL_MISSING": "The provider did not share a confirmed email address.",
-    "SOCIAL_SIGN_IN_FAILED": "Signing in with the provider did not work."
+    "SOCIAL_SIGN_IN_FAILED": "Signing in with the provider did not work.",
+    "TRANSLATION_UNAVAILABLE": "Machine translation is not available right now."
   },
   "validation": {
     "required": "Please fill this in.",
@@ -612,7 +613,14 @@
     "addInterval": "{{day}}: add time range",
     "removeInterval": "{{day}}: remove time range",
     "nextDay": "until the next day",
-    "hoursHint": "Lunch break? Add a second range with +. Past midnight? Just enter e.g. 18:00–02:00."
+    "hoursHint": "Lunch break? Add a second range with +. Past midnight? Just enter e.g. 18:00–02:00.",
+    "translate": {
+      "button": "Translate missing languages",
+      "working": "Translating …",
+      "hint": "Fills empty languages with a machine translation to review before saving.",
+      "review": "Translated – please review before saving.",
+      "nothing": "Nothing to translate."
+    }
   },
   "allergen": {
     "gluten": "Gluten",

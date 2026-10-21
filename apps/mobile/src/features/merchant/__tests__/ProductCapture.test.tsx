@@ -2,7 +2,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { screen, userEvent, waitFor, within } from '@testing-library/react-native';
 
 import type { RootStackParamList } from '../../../navigation/types';
-import type { ApiRequest, MediaUpload, ProductDraft } from '../../../shared/api';
+import { ApiError, type ApiRequest, type MediaUpload, type ProductDraft, type TranslationRequest } from '../../../shared/api';
 import { createFakePhotoPicker } from '../../../shared/media';
 import { createFakeApiClient } from '../../../test/fakeApiClient';
 import { catalogProduct, eur, marketDetail, MARKET_ID, page } from '../../../test/fixtures';
@@ -38,7 +38,7 @@ const aiDraft: ProductDraft = {
   warnings: [],
 };
 
-function setup(draft: ProductDraft | ((request: ApiRequest) => ProductDraft)) {
+function setup(draft: ProductDraft | ((request: ApiRequest) => ProductDraft), translate?: (request: ApiRequest) => unknown) {
   const fake = createFakeApiClient({
     'GET /me': { id: 'm1', email: 'merchant@example.de', firstName: 'Mert', lastName: 'K', roles: ['MERCHANT'] },
     'GET /merchant/markets': [{ ...marketDetail(), status: 'ACTIVE' as const }],
@@ -49,6 +49,7 @@ function setup(draft: ProductDraft | ((request: ApiRequest) => ProductDraft)) {
       { id: 'cat-dairy', parentId: null, slug: 'dairy', name: 'Milch, Käse & Eier', sortOrder: 2, productCount: null },
     ],
     [`POST ${DRAFT_PATH}`]: draft,
+    ...(translate !== undefined ? { 'POST /merchant/translations': translate } : {}),
     [`POST /merchant/markets/${MARKET_ID}/media`]: { key: KEY, url: PHOTO_URL, width: 800, height: 600, contentType: 'image/jpeg', sizeBytes: 90_000 } satisfies MediaUpload,
     [`POST /merchant/markets/${MARKET_ID}/listings`]: { ...sucuk, marketId: MARKET_ID, price: eur(449), available: true, organic: false, isNew: true, maxOrderQuantity: 24, privateProduct: true },
   });
@@ -175,5 +176,36 @@ describe('Mein Markt: Schnell erfassen', () => {
     expect(mediaKeyOf(PHOTO_URL)).toBe(KEY);
     expect(mediaKeyOf('https://cdn.example/x.png')).toBeNull();
     expect(mediaKeyOf(null)).toBeNull();
+  });
+
+  it('fills only the empty languages with machine translations to review', async () => {
+    const { fake, dependencies } = setup(aiDraft, (request) => {
+      const body = request.body as TranslationRequest;
+      expect(body).toEqual({ kind: 'PRODUCT_NAME', fields: [{ key: 'text', values: { de: 'Ayran', ar: 'عيران' } }] });
+      return { fields: [{ key: 'text', values: { en: 'Ayran yoghurt drink' } }] };
+    });
+    const user = await openNewProduct(dependencies);
+    expect(screen.queryByTestId('new-name-translate')).toBeNull();
+
+    await user.type(await screen.findByTestId('new-name-de'), 'Ayran');
+    await user.type(screen.getByTestId('new-name-ar'), 'عيران');
+    await user.press(screen.getByTestId('new-name-translate'));
+
+    await waitFor(() => expect(screen.getByTestId('new-name-en')).toHaveDisplayValue('Ayran yoghurt drink'));
+    expect(screen.getByTestId('new-name-de')).toHaveDisplayValue('Ayran');
+    expect(screen.getByTestId('new-name-translated')).toHaveTextContent('Übersetzt – bitte vor dem Speichern prüfen.');
+    // All languages filled: nothing left to translate, so no button.
+    expect(screen.queryByTestId('new-name-translate')).toBeNull();
+    expect(fake.calls.filter((c) => c.path === '/merchant/translations')).toHaveLength(1);
+  });
+
+  it('explains when machine translation is unavailable', async () => {
+    const { dependencies } = setup(aiDraft, () => {
+      throw new ApiError({ kind: 'http', status: 422, code: 'TRANSLATION_UNAVAILABLE', detail: 'not configured' });
+    });
+    const user = await openNewProduct(dependencies);
+    await user.type(await screen.findByTestId('new-description-de'), 'Joghurtgetränk');
+    await user.press(screen.getByTestId('new-description-translate'));
+    expect(await screen.findByTestId('new-description-translate-error')).toHaveTextContent('Die automatische Übersetzung ist gerade nicht verfügbar.');
   });
 });

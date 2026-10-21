@@ -68,15 +68,18 @@ works without any key: the rule-based parser reads price, pack size and category
 
 | Setting | Env var | Default |
 |---|---|---|
-| `dukkan.capture.anthropic.api-key` | `DUKKAN_ANTHROPIC_API_KEY` | empty: rules only |
-| `dukkan.capture.anthropic.model` | `DUKKAN_ANTHROPIC_MODEL` | `claude-opus-5-5` |
-| `dukkan.capture.anthropic.effort` | | `low` |
-| `dukkan.capture.anthropic.timeout` | | `PT30S` per attempt, one retry |
-| `dukkan.capture.anthropic.server-side-fallbacks` | | `true` (`fallbacks: "default"`: a declined request is retried by the API on its recommended model) |
+| `dukkan.ai.anthropic.api-key` | `DUKKAN_ANTHROPIC_API_KEY` | empty: rules only |
+| `dukkan.ai.anthropic.model` | `DUKKAN_ANTHROPIC_MODEL` | `claude-opus-5-5` |
+| `dukkan.ai.anthropic.effort` | | `low` |
+| `dukkan.ai.anthropic.timeout` | | `PT30S` per attempt, one retry |
+| `dukkan.ai.anthropic.server-side-fallbacks` | | `true` (`fallbacks: "default"`: a declined request is retried by the API on its recommended model) |
 | `dukkan.capture.drafts-per-hour` | | 30 per merchant and instance (429 `RATE_LIMITED`) |
+| `dukkan.translation.requests-per-hour` | | 60 translation requests per merchant and instance (B-38) |
 
-The key is read only from this setting (not from `ANTHROPIC_API_KEY`). With a key, merchant notes and
-photos are sent to Anthropic; see ADR 0011 before enabling it in production.
+The key is read only from this setting (not from `ANTHROPIC_API_KEY`). The same key enables machine
+translation (ADR 0013): the "Fehlende Sprachen übersetzen" button and the background translation of new
+private products. With a key, merchant notes, photos and texts are sent to Anthropic; see ADR 0011 and
+0013 before enabling it in production.
 
 **Sessions and accounts** (B-39): access tokens live 15 minutes (`DUKKAN_JWT_TTL`), refresh tokens 30 days and
 rotate on every use; the app renews tokens by itself.

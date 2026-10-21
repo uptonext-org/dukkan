@@ -1,7 +1,6 @@
 package de.dukkan.capture.infrastructure;
 
 import com.anthropic.client.AnthropicClient;
-import com.anthropic.client.okhttp.AnthropicOkHttpClient;
 import com.anthropic.core.JsonValue;
 import com.anthropic.models.messages.Base64ImageSource;
 import com.anthropic.models.messages.ContentBlockParam;
@@ -13,6 +12,7 @@ import com.anthropic.models.messages.StopReason;
 import com.anthropic.models.messages.TextBlock;
 import de.dukkan.capture.application.ProductDraftExtractor;
 import de.dukkan.capture.domain.ExtractedProduct;
+import de.dukkan.shared.ai.AnthropicClients;
 import de.dukkan.shared.config.DukkanProperties;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -26,7 +26,6 @@ import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import tools.jackson.core.JacksonException;
@@ -36,7 +35,7 @@ import tools.jackson.databind.json.JsonMapper;
  * {@link ProductDraftExtractor} on the Claude API (Messages API, official Java SDK). One request per
  * draft: the photo (if any) and the merchant's text, answered as JSON that follows a schema
  * ({@code output_config.format}), so the answer always parses. Enabled when {@code
- * dukkan.capture.anthropic.api-key} is set.
+ * dukkan.ai.anthropic.api-key} is set.
  *
  * <ul>
  *   <li>Effort {@code low} by default: reading a label is not a hard problem, and it keeps latency
@@ -48,7 +47,7 @@ import tools.jackson.databind.json.JsonMapper;
  * </ul>
  */
 @Component
-final class ClaudeProductDraftExtractor implements ProductDraftExtractor, DisposableBean {
+final class ClaudeProductDraftExtractor implements ProductDraftExtractor {
 
   static final String FALLBACK_BETA = "server-side-fallback-2026-07-01";
 
@@ -59,27 +58,14 @@ final class ClaudeProductDraftExtractor implements ProductDraftExtractor, Dispos
   private final @Nullable AnthropicClient client;
 
   @Autowired
-  ClaudeProductDraftExtractor(DukkanProperties properties, JsonMapper json) {
-    this(properties.capture().anthropic(), json, createClient(properties.capture().anthropic()));
+  ClaudeProductDraftExtractor(AnthropicClients clients, JsonMapper json) {
+    this(clients.settings(), json, clients.client().orElse(null));
   }
 
   ClaudeProductDraftExtractor(DukkanProperties.Anthropic settings, JsonMapper json, @Nullable AnthropicClient client) {
     this.settings = settings;
     this.json = json;
     this.client = client;
-  }
-
-  private static @Nullable AnthropicClient createClient(DukkanProperties.Anthropic settings) {
-    if (!settings.enabled()) {
-      return null;
-    }
-    // Configured explicitly instead of fromEnv(): only dukkan.capture.anthropic.* applies.
-    AnthropicOkHttpClient.Builder builder =
-        AnthropicOkHttpClient.builder().apiKey(settings.apiKey()).timeout(settings.timeout()).maxRetries(1);
-    if (settings.baseUrl() != null) {
-      builder.baseUrl(settings.baseUrl());
-    }
-    return builder.build();
   }
 
   @Override
@@ -179,13 +165,6 @@ final class ClaudeProductDraftExtractor implements ProductDraftExtractor, Dispos
     Map<String, JsonValue> out = new LinkedHashMap<>();
     schema.forEach((key, value) -> out.put(key, JsonValue.from(value)));
     return out;
-  }
-
-  @Override
-  public void destroy() {
-    if (client != null) {
-      client.close();
-    }
   }
 
   /** The model's answer, shaped by {@link DraftPrompt#schema}. */

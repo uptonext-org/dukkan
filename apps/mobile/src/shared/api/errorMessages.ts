@@ -40,6 +40,7 @@ export const KNOWN_ERROR_CODES = [
   'FILE_TOO_LARGE',
   'INVALID_IMAGE',
   'IMAGE_TOO_LARGE',
+  'TRANSLATION_UNAVAILABLE',
 ] as const;
 
 export type KnownErrorCode = (typeof KNOWN_ERROR_CODES)[number];

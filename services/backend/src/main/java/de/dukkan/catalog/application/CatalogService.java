@@ -26,6 +26,7 @@ import de.dukkan.shared.api.PageResponse;
 import de.dukkan.shared.config.DukkanProperties;
 import de.dukkan.shared.error.ConflictException;
 import de.dukkan.shared.error.ErrorCodes;
+import de.dukkan.shared.events.EventOutbox;
 import de.dukkan.shared.error.InvalidRequestException;
 import de.dukkan.shared.error.NotFoundException;
 import java.time.Clock;
@@ -67,6 +68,7 @@ public class CatalogService {
   private final LocaleService locales;
   private final Clock clock;
   private final DukkanProperties properties;
+  private final EventOutbox outbox;
   private final AtomicReference<@Nullable List<CategoryRow>> categoryCache = new AtomicReference<>();
 
   public CatalogService(
@@ -78,7 +80,8 @@ public class CatalogService {
       ListingFavorites favorites,
       LocaleService locales,
       Clock clock,
-      DukkanProperties properties) {
+      DukkanProperties properties,
+      EventOutbox outbox) {
     this.listings = listings;
     this.products = products;
     this.categories = categories;
@@ -88,6 +91,7 @@ public class CatalogService {
     this.locales = locales;
     this.clock = clock;
     this.properties = properties;
+    this.outbox = outbox;
   }
 
   // ------------------------------------------------------------------ customer reads
@@ -305,6 +309,40 @@ public class CatalogService {
     return PageResponse.of(items, page, size, result.total());
   }
 
+  /** Texts of a market-private product, or empty for shared catalog products and unknown ids. */
+  public Optional<PrivateProductTexts> privateProductTexts(UUID catalogProductId) {
+    return products
+        .texts(catalogProductId)
+        .filter(t -> t.ownerMarketId() != null)
+        .map(t -> new PrivateProductTexts(t.id(), t.ownerMarketId(), markets.info(t.ownerMarketId()).primaryLocale(), Map.copyOf(t.names()), Map.copyOf(t.descriptions())));
+  }
+
+  /**
+   * Adds machine translations for locales the product does not have yet (never overwrites a
+   * merchant's text) and rebuilds the search text, so the product is found in those languages.
+   */
+  @Transactional
+  public int addMachineTranslations(UUID catalogProductId, Map<String, String> names, Map<String, String> descriptions) {
+    var texts = products.texts(catalogProductId).orElseThrow(() -> new NotFoundException("Catalog product not found."));
+    int added = 0;
+    for (Map.Entry<String, String> name : names.entrySet()) {
+      String value = name.getValue().strip();
+      if (value.isEmpty() || value.length() > 200 || texts.names().containsKey(name.getKey())) {
+        continue;
+      }
+      String description = descriptions.get(name.getKey());
+      if (products.insertMachineTranslation(
+          catalogProductId, name.getKey(), value, description == null || description.isBlank() ? null : description.strip(), TextNormalizer.normalize(value))) {
+        texts.names().put(name.getKey(), value);
+        added++;
+      }
+    }
+    if (added > 0) {
+      products.updateSearchText(catalogProductId, SearchText.build(texts.names().values(), texts.brand(), texts.keywords()));
+    }
+    return added;
+  }
+
   /** All non-deleted listings of a market (any status, available or not). */
   public PageResponse<Listing> merchantListings(UUID marketId, @Nullable String q, int page, int size, ContentLocale locale) {
     MarketInfo market = markets.info(marketId);
@@ -351,6 +389,8 @@ public class CatalogService {
           SearchText.build(product.name().values(), product.brand(), product.keywords()),
           now);
       product.name().forEach((code, name) -> products.updateSearchName(catalogProductId, code, TextNormalizer.normalize(name)));
+      // Machine translation fills the missing languages afterwards (B-38).
+      outbox.append(PrivateProductCreated.TYPE, catalogProductId, new PrivateProductCreated(catalogProductId, marketId));
     }
     UUID listingId = UUID.randomUUID();
     listings.insert(listingId, marketId, catalogProductId, draft.priceCents(), draft.available(), draft.maxOrderQuantity(), now);

@@ -55,8 +55,8 @@ class ProductDraftAiIntegrationTest extends ProductDraftIntegrationTest {
 
   @DynamicPropertySource
   static void anthropic(DynamicPropertyRegistry registry) {
-    registry.add("dukkan.capture.anthropic.api-key", () -> "stub-key");
-    registry.add("dukkan.capture.anthropic.base-url", () -> "http://127.0.0.1:" + STUB.getAddress().getPort());
+    registry.add("dukkan.ai.anthropic.api-key", () -> "stub-key");
+    registry.add("dukkan.ai.anthropic.base-url", () -> "http://127.0.0.1:" + STUB.getAddress().getPort());
     registry.add("dukkan.capture.drafts-per-hour", () -> "8");
   }
 

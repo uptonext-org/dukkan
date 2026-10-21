@@ -25,7 +25,21 @@ public record DukkanProperties(
     @DefaultValue Security security,
     @DefaultValue Media media,
     @DefaultValue Capture capture,
-    @DefaultValue Push push) {
+    @DefaultValue Push push,
+    @DefaultValue Ai ai,
+    @DefaultValue Translation translation) {
+
+  /** Machine translation of merchant texts (B-38): suggestions per merchant and hour. */
+  public record Translation(@DefaultValue("60") int requestsPerHour) {
+    public Translation {
+      if (requestsPerHour < 1) {
+        throw new IllegalArgumentException("dukkan.translation.requests-per-hour must be >= 1");
+      }
+    }
+  }
+
+  /** Language model settings shared by AI capture (ADR 0011) and machine translation (ADR 0013). */
+  public record Ai(@DefaultValue Anthropic anthropic) {}
 
   /** Push notifications (B-37). */
   public record Push(@DefaultValue Fcm fcm) {}
@@ -261,10 +275,11 @@ public record DukkanProperties(
   }
 
   /**
-   * AI product capture (module {@code capture}): {@code draftsPerHour} per user and instance, and the
-   * optional language model. Without {@code anthropic.apiKey} the rule-based parser answers alone.
+   * AI product capture (module {@code capture}): {@code draftsPerHour} per user and instance. The
+   * model is configured under {@code dukkan.ai.anthropic}; without an API key the rule-based parser
+   * answers alone.
    */
-  public record Capture(@DefaultValue("30") int draftsPerHour, @DefaultValue Anthropic anthropic) {
+  public record Capture(@DefaultValue("30") int draftsPerHour) {
     public Capture {
       if (draftsPerHour < 1) {
         throw new IllegalArgumentException("dukkan.capture.drafts-per-hour must be >= 1");
@@ -273,7 +288,7 @@ public record DukkanProperties(
   }
 
   /**
-   * Claude API settings for product capture. {@code effort} is {@code low}, {@code medium} or
+   * Claude API settings ({@code dukkan.ai.anthropic}) for product capture and translation. {@code effort} is {@code low}, {@code medium} or
    * {@code high}. {@code serverSideFallbacks} lets the API retry a declined request on the model it
    * recommends for that case ({@code fallbacks: "default"}); {@code baseUrl} is only for tests or a
    * gateway.
@@ -294,10 +309,10 @@ public record DukkanProperties(
         baseUrl = null;
       }
       if (!Set.of("low", "medium", "high").contains(effort)) {
-        throw new IllegalArgumentException("dukkan.capture.anthropic.effort must be low, medium or high");
+        throw new IllegalArgumentException("dukkan.ai.anthropic.effort must be low, medium or high");
       }
       if (timeout.isNegative() || timeout.isZero() || maxTokens < 1024) {
-        throw new IllegalArgumentException("dukkan.capture.anthropic timeout must be positive and max-tokens >= 1024");
+        throw new IllegalArgumentException("dukkan.ai.anthropic timeout must be positive and max-tokens >= 1024");
       }
     }
 

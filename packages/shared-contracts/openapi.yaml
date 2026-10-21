@@ -1305,6 +1305,40 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
         '429': { $ref: '#/components/responses/TooManyRequests' }
+  /merchant/translations:
+    post:
+      tags: [merchant]
+      operationId: translateTexts
+      summary: Suggest machine translations for the languages a merchant left empty
+      description: |
+        Nothing is saved; the merchant reviews the suggestions in the form and saves as usual.
+
+        - Per field, the non-empty values of enabled locales are the source; every other enabled
+          locale is translated. Fields that are already complete are left out of the answer, and
+          the answer only carries the newly translated locales.
+        - `kind` tells the model what the texts are (names stay short, brands and units unchanged).
+        - At most 20 fields and 8000 characters per request; field keys must be unique.
+        - Private products are also translated automatically after createListing with
+          `newProduct`, so shoppers find them in every language (marked as machine translations;
+          a merchant's own text is never overwritten).
+        - Without a configured language model, or when it fails or declines → 422
+          `TRANSLATION_UNAVAILABLE`. 60 requests per user per hour (per instance) → 429.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TranslationRequest' }
+      responses:
+        '200':
+          description: Suggestions for the empty locales.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TranslationResult' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/BusinessRuleViolation' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
   /media/{key}:
     get:
       tags: [media]
@@ -2139,6 +2173,23 @@ components:
         allergens: { type: array, items: { type: string } }
         imageUrl: { type: [string, 'null'], format: uri }
         barcode: { type: [string, 'null'], maxLength: 20 }
+    TranslationRequest:
+      type: object
+      required: [kind, fields]
+      properties:
+        kind: { type: string, enum: [PRODUCT_NAME, PRODUCT_DESCRIPTION, PROMOTION, MARKET_DESCRIPTION] }
+        fields: { type: array, items: { $ref: '#/components/schemas/TranslationField' }, minItems: 1, maxItems: 20 }
+    TranslationField:
+      type: object
+      required: [key, values]
+      properties:
+        key: { type: string, pattern: '^[A-Za-z0-9_.-]+$', maxLength: 40, description: 'Caller-chosen id, echoed in the result.' }
+        values: { type: object, additionalProperties: { type: string, maxLength: 2000 }, description: Locale code → text; empty values are translated. }
+    TranslationResult:
+      type: object
+      required: [fields]
+      properties:
+        fields: { type: array, items: { $ref: '#/components/schemas/TranslationField' } }
     ProductDraftRequest:
       type: object
       description: At least one of `text` and `imageKey` (otherwise 400 VALIDATION_FAILED).

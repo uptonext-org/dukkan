@@ -43,8 +43,9 @@ public final class DukkanPropertiesFixture {
                 new DukkanProperties.Provider(List.of(), List.of(), null))),
         new DukkanProperties.Media(
             null, null, DataSize.ofMegabytes(5), 40_000_000, 60, "filesystem", new DukkanProperties.S3(null, "eu-central-1", null, null, null, false, false)),
-        new DukkanProperties.Capture(
-            30, new DukkanProperties.Anthropic(null, "claude-opus-5-5", "low", Duration.ofSeconds(60), 8000, true, null)),
-        new DukkanProperties.Push(fcm));
+        new DukkanProperties.Capture(30),
+        new DukkanProperties.Push(fcm),
+        new DukkanProperties.Ai(new DukkanProperties.Anthropic(null, "claude-opus-5-5", "low", Duration.ofSeconds(60), 8000, true, null)),
+        new DukkanProperties.Translation(60));
   }
 }

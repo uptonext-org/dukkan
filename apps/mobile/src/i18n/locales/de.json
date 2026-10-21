@@ -64,7 +64,8 @@
     "INVALID_SOCIAL_TOKEN": "Die Anmeldung beim Anbieter ist abgelaufen. Bitte versuche es noch einmal.",
     "SOCIAL_PROVIDER_DISABLED": "Diese Anmeldung ist gerade nicht verfügbar.",
     "SOCIAL_EMAIL_MISSING": "Der Anbieter hat keine bestätigte E-Mail-Adresse übermittelt.",
-    "SOCIAL_SIGN_IN_FAILED": "Die Anmeldung beim Anbieter hat nicht geklappt."
+    "SOCIAL_SIGN_IN_FAILED": "Die Anmeldung beim Anbieter hat nicht geklappt.",
+    "TRANSLATION_UNAVAILABLE": "Die automatische Übersetzung ist gerade nicht verfügbar."
   },
   "validation": {
     "required": "Bitte ausfüllen.",
@@ -612,7 +613,14 @@
     "addInterval": "{{day}}: Zeitraum hinzufügen",
     "removeInterval": "{{day}}: Zeitraum entfernen",
     "nextDay": "bis zum nächsten Tag",
-    "hoursHint": "Mittagspause? Zweiten Zeitraum mit + hinzufügen. Nach Mitternacht? Einfach z. B. 18:00–02:00 eingeben."
+    "hoursHint": "Mittagspause? Zweiten Zeitraum mit + hinzufügen. Nach Mitternacht? Einfach z. B. 18:00–02:00 eingeben.",
+    "translate": {
+      "button": "Fehlende Sprachen übersetzen",
+      "working": "Übersetze …",
+      "hint": "Füllt leere Sprachen mit einer maschinellen Übersetzung, die du vor dem Speichern prüfen kannst.",
+      "review": "Übersetzt – bitte vor dem Speichern prüfen.",
+      "nothing": "Keine Übersetzung nötig."
+    }
   },
   "allergen": {
     "gluten": "Gluten",

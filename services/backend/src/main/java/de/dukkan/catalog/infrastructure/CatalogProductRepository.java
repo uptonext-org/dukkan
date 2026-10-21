@@ -253,4 +253,46 @@ public class CatalogProductRepository {
         .param("searchName", searchName)
         .update();
   }
+
+  /** Texts of one product: locale → name and description, plus brand and keywords for the search text. */
+  public record ProductTexts(UUID id, @Nullable UUID ownerMarketId, @Nullable String brand, List<String> keywords, Map<String, String> names, Map<String, String> descriptions) {}
+
+  public Optional<ProductTexts> texts(UUID id) {
+    List<ProductTexts> found =
+        jdbc.sql("SELECT id, owner_market_id, brand, keywords FROM catalog_product WHERE id = :id")
+            .param("id", id)
+            .query((rs, i) -> new ProductTexts(rs.getObject(1, UUID.class), rs.getObject(2, UUID.class), rs.getString(3), SqlTextArray.read(rs.getArray(4)), new HashMap<>(), new HashMap<>()))
+            .list();
+    if (found.isEmpty()) {
+      return Optional.empty();
+    }
+    ProductTexts texts = found.getFirst();
+    jdbc.sql("SELECT locale, name, description FROM catalog_product_translation WHERE catalog_product_id = :id")
+        .param("id", id)
+        .query(rs -> {
+          texts.names().put(rs.getString(1), rs.getString(2));
+          String description = rs.getString(3);
+          if (description != null) {
+            texts.descriptions().put(rs.getString(1), description);
+          }
+        });
+    return Optional.of(texts);
+  }
+
+  /** Adds a machine translation for a locale the product does not have yet; never overwrites. */
+  public boolean insertMachineTranslation(UUID id, String locale, String name, @Nullable String description, String searchName) {
+    return jdbc.sql(
+                """
+                INSERT INTO catalog_product_translation (catalog_product_id, locale, name, description, search_name, machine_translated)
+                VALUES (:id, :locale, :name, :description, :searchName, true)
+                ON CONFLICT (catalog_product_id, locale) DO NOTHING
+                """)
+            .param("id", id)
+            .param("locale", locale)
+            .param("name", name)
+            .param("description", description, Types.VARCHAR)
+            .param("searchName", searchName)
+            .update()
+        == 1;
+  }
 }

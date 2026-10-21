@@ -9,6 +9,7 @@ import {
   type MarketProfileRequest,
   type OrderStatus,
   type ProductDraftRequest,
+  type TranslationRequest,
   type PromotionRequest,
   type SearchCatalogParams,
   type MediaPurpose,
@@ -152,4 +153,9 @@ export function useUploadMedia(marketId: string) {
 export function useProductDraft(marketId: string) {
   const api = useApi();
   return useMutation({ mutationFn: (request: ProductDraftRequest) => api.createProductDraft(marketId, request) });
+}
+
+export function useTranslateTexts() {
+  const api = useApi();
+  return useMutation({ mutationFn: (request: TranslationRequest) => api.translateTexts(request) });
 }

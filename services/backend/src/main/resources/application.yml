@@ -126,8 +126,13 @@ dukkan:
   capture:
     # AI product capture: drafts per merchant and hour (each one may call the language model).
     drafts-per-hour: 30
+  translation:
+    # Machine translation suggestions per merchant and hour (B-38, ADR 0013).
+    requests-per-hour: 60
+  ai:
+    # Language model for AI capture and machine translation (ADR 0011, 0013).
     anthropic:
-      # Empty: no language model, the rule-based parser answers alone (engine RULES).
+      # Empty: no language model (capture uses its rule-based parser, translation is unavailable).
       api-key: ${DUKKAN_ANTHROPIC_API_KEY:}
       model: ${DUKKAN_ANTHROPIC_MODEL:claude-opus-5-5}
       effort: low

@@ -31,6 +31,8 @@ import type {
   ProductDetail,
   ProductDraft,
   ProductDraftRequest,
+  TranslationRequest,
+  TranslationResult,
   ProductSummary,
   Promotion,
   PromotionRequest,
@@ -144,6 +146,7 @@ export interface DukkanApi {
   uploadMedia(marketId: string, file: UploadFile, purpose: MediaPurpose): Promise<MediaUpload>;
   /** AI product capture: a draft from text and/or an uploaded photo (nothing is saved). */
   createProductDraft(marketId: string, request: ProductDraftRequest): Promise<ProductDraft>;
+  translateTexts(request: TranslationRequest): Promise<TranslationResult>;
 }
 
 /** Uploads may take longer than ordinary requests on mobile networks. */
@@ -304,5 +307,6 @@ export function createDukkanApi(client: ApiClient): DukkanApi {
         body,
         timeoutMs: DRAFT_TIMEOUT_MS,
       }),
+    translateTexts: (body) => client.request({ method: 'POST', path: '/merchant/translations', body, timeoutMs: DRAFT_TIMEOUT_MS }),
   };
 }

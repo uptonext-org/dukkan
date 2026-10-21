@@ -47,6 +47,7 @@ public final class ErrorCodes {
   public static final String INVALID_STATUS_TRANSITION = "INVALID_STATUS_TRANSITION";
   public static final String SOCIAL_PROVIDER_DISABLED = "SOCIAL_PROVIDER_DISABLED";
   public static final String SOCIAL_EMAIL_MISSING = "SOCIAL_EMAIL_MISSING";
+  public static final String TRANSLATION_UNAVAILABLE = "TRANSLATION_UNAVAILABLE";
 
   private ErrorCodes() {}
 }
