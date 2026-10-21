@@ -21,6 +21,7 @@
 | Slots | `GET /markets/{id}/slots?type=DELIVERY\|PICKUP[&addressId=]` | public* (JWT with addressId) |
 | Addresses | `GET/POST /addresses`, `PUT/DELETE /addresses/{id}` | JWT |
 | Orders | `POST /markets/{id}/orders`, `GET /orders`, `GET /orders/{id}`, `POST /orders/{id}/cancel` | JWT |
+| Admin | `GET /admin/markets?status=`, `POST /admin/markets/{id}/status` (ACTIVE / SUSPENDED / PENDING_REVIEW) | JWT + ADMIN |
 | Merchant | `GET/POST /merchant/markets`, `PUT /merchant/markets/{id}`, `GET /merchant/catalog?marketId=`, listings (CRUD), promotions, `GET /merchant/markets/{id}/orders`, `POST /merchant/orders/{id}/status` | JWT + MERCHANT |
 
 \* Public while `dukkan.features.require-login-to-browse=false` (phase 1 default).

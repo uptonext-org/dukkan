@@ -81,6 +81,10 @@ public class User extends AuditedEntity {
     }
   }
 
+  public void grantRole(Role role) {
+    roles.add(role);
+  }
+
   @Override
   public UUID getId() {
     return id;

@@ -31,6 +31,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -255,6 +256,22 @@ public class MarketService {
   public MerchantMarket merchantView(UUID marketId, ContentLocale locale) {
     MarketRow row = row(marketId);
     return new MerchantMarket(detail(row, null, locale), row.status());
+  }
+
+  /** Admin view: markets of a status (all when null), newest first. */
+  public List<MerchantMarket> listForAdmin(@Nullable String status, ContentLocale locale) {
+    List<UUID> ids = markets.findIdsByStatus(status);
+    Map<UUID, MarketRow> rows = markets.findByIds(ids);
+    return ids.stream().map(rows::get).filter(Objects::nonNull).map(row -> new MerchantMarket(detail(row, null, locale), row.status())).toList();
+  }
+
+  /** Admin: approve (ACTIVE), suspend (SUSPENDED) or send back to review; {@code NOT_FOUND} if missing. */
+  @Transactional
+  public MerchantMarket setStatus(UUID marketId, String status, ContentLocale locale) {
+    if (!markets.updateStatus(marketId, status, clock.instant())) {
+      throw new NotFoundException("Market not found.");
+    }
+    return merchantView(marketId, locale);
   }
 
   @Transactional

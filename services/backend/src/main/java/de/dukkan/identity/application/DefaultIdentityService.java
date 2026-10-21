@@ -85,6 +85,13 @@ class DefaultIdentityService implements IdentityService {
   }
 
   @Override
+  public UserView grantRole(UUID userId, String role) {
+    User user = user(userId);
+    user.grantRole(Role.valueOf(role));
+    return view(user);
+  }
+
+  @Override
   public UserView updateProfile(
       UUID userId, @Nullable String firstName, @Nullable String lastName, @Nullable String preferredLocale) {
     User user = user(userId);

@@ -194,6 +194,26 @@ public class MarketRepository {
     return rows;
   }
 
+  /** Ids of markets in a status (all when null), newest first. */
+  public List<UUID> findIdsByStatus(@Nullable String status) {
+    String sql = "SELECT id FROM market" + (status == null ? "" : " WHERE status = :status") + " ORDER BY created_at DESC, id";
+    JdbcClient.StatementSpec spec = jdbc.sql(sql);
+    if (status != null) {
+      spec = spec.param("status", status);
+    }
+    return spec.query(UUID.class).list();
+  }
+
+  /** Changes the status; false when the market does not exist. */
+  public boolean updateStatus(UUID id, String status, Instant now) {
+    return jdbc.sql("UPDATE market SET status = :status, updated_at = :now WHERE id = :id")
+            .param("status", status)
+            .param("now", Timestamp.from(now))
+            .param("id", id)
+            .update()
+        > 0;
+  }
+
   public Optional<UUID> findIdBySlug(String slug) {
     return jdbc.sql("SELECT id FROM market WHERE slug = :slug").param("slug", slug).query(UUID.class).optional();
   }

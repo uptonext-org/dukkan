@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * Creates the demo accounts in the {@code local} and {@code demo} profiles only (never via Flyway):
- * a customer with a St. Georg address and a merchant who owns two seed markets. Idempotent.
+ * a customer with a St. Georg address, a merchant who owns two seed markets and a platform admin. Idempotent.
  */
 @Component
 @Order(10)
@@ -26,6 +26,7 @@ public class DemoAccountsInitializer implements ApplicationRunner {
 
   public static final String CUSTOMER_EMAIL = "kunde@dukkan.local";
   public static final String MERCHANT_EMAIL = "haendler@dukkan.local";
+  public static final String ADMIN_EMAIL = "admin@dukkan.local";
   /** Development-only password, documented in README.md. */
   public static final String DEMO_PASSWORD = "dukkan-demo-2026";
 
@@ -57,7 +58,10 @@ public class DemoAccountsInitializer implements ApplicationRunner {
     for (String slug : MERCHANT_MARKETS) {
       markets.findIdBySlug(slug).ifPresent(id -> markets.assignOwner(id, merchant.id()));
     }
-    LOG.info("Demo accounts ready: {} and {} (password documented in README)", CUSTOMER_EMAIL, MERCHANT_EMAIL);
+    UserView admin = ensureUser(ADMIN_EMAIL, "Dukkan", "Admin", false, "de");
+    identity.grantRole(admin.id(), "ADMIN");
+    LOG.info(
+        "Demo accounts ready: {}, {} and {} (password documented in README)", CUSTOMER_EMAIL, MERCHANT_EMAIL, ADMIN_EMAIL);
   }
 
   private UserView ensureUser(String email, String firstName, String lastName, boolean merchant, String locale) {

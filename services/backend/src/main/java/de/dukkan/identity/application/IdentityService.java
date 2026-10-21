@@ -17,6 +17,9 @@ public interface IdentityService {
 
   Optional<UserView> findByEmail(String email);
 
+  /** Adds a role (idempotent), e.g. ADMIN for operators. Takes effect with the next token. */
+  UserView grantRole(UUID userId, String role);
+
   /** Updates the given (non-null) fields; the locale must be an enabled content locale. */
   UserView updateProfile(UUID userId, @Nullable String firstName, @Nullable String lastName, @Nullable String preferredLocale);
 }

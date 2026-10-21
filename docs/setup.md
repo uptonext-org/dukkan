@@ -34,6 +34,7 @@ cd services/backend
 |---|---|---|
 | `kunde@dukkan.local` | `dukkan-demo-2026` | Customer, with a default address in St. Georg |
 | `haendler@dukkan.local` | `dukkan-demo-2026` | Merchant who owns *Anatolia Frischmarkt* and *Backstube Sonnenkorn* |
+| `admin@dukkan.local` | `dukkan-demo-2026` | Platform admin (`/api/v1/admin/**`: review, approve, suspend markets) |
 
 Feature flags (`application.yml`, under `dukkan.features`):
 - `require-login-to-browse`: default `false`. When `true`, browsing needs an account.

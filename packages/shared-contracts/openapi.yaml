@@ -37,6 +37,7 @@ tags:
   - name: addresses
   - name: orders
   - name: merchant
+  - name: admin
 security:
   - bearerAuth: []
 
@@ -1002,6 +1003,55 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
         '422': { $ref: '#/components/responses/BusinessRuleViolation' }
+
+  # ---------------------------------------------------------------- admin
+  /admin/markets:
+    get:
+      tags: [admin]
+      operationId: adminListMarkets
+      summary: Markets for review (role ADMIN), newest first
+      parameters:
+        - { name: status, in: query, schema: { $ref: '#/components/schemas/MarketStatus' } }
+        - { $ref: '#/components/parameters/AcceptLanguage' }
+      responses:
+        '200':
+          description: Markets of any (or the given) status.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/MerchantMarket' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /admin/markets/{marketId}/status:
+    post:
+      tags: [admin]
+      operationId: adminSetMarketStatus
+      summary: Approve (ACTIVE), suspend (SUSPENDED) or return a market to review
+      description: Only ACTIVE markets are visible to customers and accept carts and orders.
+      parameters:
+        - { $ref: '#/components/parameters/MarketId' }
+        - { $ref: '#/components/parameters/AcceptLanguage' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status: { $ref: '#/components/schemas/MarketStatus' }
+      responses:
+        '200':
+          description: Updated market.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MerchantMarket' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
 
 components:
   securitySchemes:

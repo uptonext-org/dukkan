@@ -32,7 +32,7 @@ Product phases: [`docs/product/marketplace.md`](product/marketplace.md).
 | B-33 | AI product capture: voice, photo or video becomes a `catalog_product` draft that the merchant confirms | B-32 | L | Through the shared-catalog model (ADR 0009). Provider TBD |
 | B-34 | Grow the shared catalog per cuisine (Turkish, Arabic, Indian, Polish, …) with barcode, allergens and images | M-05 | L | Data work. Consider open data such as Open Food Facts (licence check) |
 | B-35 | Real geocoding and maps provider (Google, Mapbox or OSM-based) behind `GeocodingService`; Android Maps key | M-03 | M | Decision pending (product decision 15) |
-| B-36 | Admin API and UI: approve or suspend markets, moderate shared catalog products | M-08 | M | `merchant-auto-approve` off in production |
+| B-36 | Admin UI (web) for market review, plus moderation of shared catalog products | M-08 | M | **Admin API for reviewing, approving and suspending markets is done.** Turn `merchant-auto-approve` off in production |
 | B-37 | Order events through a transactional outbox to RabbitMQ; push notifications to customer and merchant | M-06 | M | RabbitMQ adoption trigger (ADR 0002) |
 | B-38 | Machine translation of merchant content (DeepL or similar) into missing locales, editable | M-02 | M | Through the existing translation tables |
 | B-39 | Refresh tokens, login rate limiting, password reset, Sign in with Apple and Google | — | M | Apple requires Sign in with Apple when other social logins exist |

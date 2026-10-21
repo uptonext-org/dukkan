@@ -85,6 +85,7 @@ public class SecurityConfiguration {
                 auth.requestMatchers(GET, BROWSE).permitAll();
               }
               auth.requestMatchers(API + "/merchant/**").hasRole("MERCHANT");
+              auth.requestMatchers(API + "/admin/**").hasRole("ADMIN");
               auth.requestMatchers(
                       "/v3/api-docs",
                       "/v3/api-docs/**",
