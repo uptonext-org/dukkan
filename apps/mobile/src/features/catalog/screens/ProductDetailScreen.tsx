@@ -2,7 +2,7 @@ import { ScrollView, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import type { MarketStackScreenProps } from '../../../navigation/types';
-import { formatMoney, formatMoneyForAccessibility } from '../../../shared/format';
+import { formatMoney, formatMoneyForAccessibility, forSpeech, isolate, needsOrganicPrefix } from '../../../shared/format';
 import { makeStyles, useTheme } from '../../../shared/theme';
 import { AppText, Button, IconButton, ImageTile, Price, PromoPill, QuantityStepper, Screen, ScreenHeader, queryState } from '../../../shared/ui';
 import { useCartQuantities } from '../../cart/api/hooks';
@@ -95,7 +95,7 @@ export function ProductDetailScreen({ route, navigation }: MarketStackScreenProp
             </AppText>
           )}
           <AppText variant="title" accessibilityRole="header">
-            {product.organic && <AppText variant="title" color="primary">{`${t('product.organic')} `}</AppText>}
+            {product.organic && needsOrganicPrefix(product.name, t('product.organic')) && <AppText variant="title" color="primary">{`${t('product.organic')} `}</AppText>}
             {product.name}
           </AppText>
           {product.brand != null && (
@@ -107,9 +107,9 @@ export function ProductDetailScreen({ route, navigation }: MarketStackScreenProp
             <Price money={product.promotionalPrice ?? product.price} variant="title" color={discounted ? 'accent' : 'text'} />
             {discounted && <Price money={product.price} variant="body" color="textSecondary" strike accessibilityPrefix={t('cart.regularPrice')} />}
           </View>
-          <AppText variant="subhead" color="textSecondary" accessibilityLabel={product.comparisonPrice != null ? `${product.unitSize}, ${formatMoneyForAccessibility(product.comparisonPrice.price)} ${t('product.per')} ${t(`units.${product.comparisonPrice.unit}`)}` : product.unitSize}>
+          <AppText variant="subhead" color="textSecondary" accessibilityLabel={forSpeech(product.comparisonPrice != null ? `${product.unitSize}, ${formatMoneyForAccessibility(product.comparisonPrice.price)} ${t('product.per')} ${t(`units.${product.comparisonPrice.unit}`)}` : product.unitSize)}>
             {product.unitSize}
-            {product.comparisonPrice != null && ` · ${formatMoney(product.comparisonPrice.price)}/${t(`units.${product.comparisonPrice.unit}`)}`}
+            {product.comparisonPrice != null && ` · ${isolate(formatMoney(product.comparisonPrice.price))}/${t(`units.${product.comparisonPrice.unit}`)}`}
           </AppText>
         </View>
         {product.description != null && product.description !== '' && <Section title={t('product.description')}>{product.description}</Section>}

@@ -8,6 +8,37 @@ export type FieldErrors<K extends string> = { [P in K]?: ValidationKey | undefin
 // Pragmatic email check; the server performs the authoritative validation.
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export const MIN_PASSWORD_LENGTH = 10;
+export const MAX_PASSWORD_LENGTH = 128;
+/** bcrypt only uses the first 72 bytes; the server rejects longer passwords (MaxUtf8Bytes). */
+export const MAX_PASSWORD_UTF8_BYTES = 72;
+
+/** UTF-8 byte length counted by hand (code points: 1–4 bytes; lone surrogates as U+FFFD = 3). */
+export function countUtf8Bytes(text: string): number {
+  let bytes = 0;
+  for (let i = 0; i < text.length; i++) {
+    const code = text.charCodeAt(i);
+    if (code < 0x80) {
+      bytes += 1;
+    } else if (code < 0x800) {
+      bytes += 2;
+    } else if (code >= 0xd800 && code <= 0xdbff && i + 1 < text.length && (text.charCodeAt(i + 1) & 0xfc00) === 0xdc00) {
+      bytes += 4;
+      i++;
+    } else {
+      bytes += 3;
+    }
+  }
+  return bytes;
+}
+
+/** UTF-8 byte length: TextEncoder where the runtime has it (Hermes does), else the manual count. */
+export function utf8ByteLength(text: string): number {
+  const Encoder = (globalThis as { TextEncoder?: new () => { encode: (input: string) => Uint8Array } }).TextEncoder;
+  if (Encoder !== undefined) {
+    return new Encoder().encode(text).length;
+  }
+  return countUtf8Bytes(text);
+}
 
 export interface LoginValues {
   email: string;
@@ -53,8 +84,9 @@ export function validateRegister(values: RegisterValues): FieldErrors<keyof Regi
   }
   if (values.password.length < MIN_PASSWORD_LENGTH) {
     errors.password = 'passwordTooShort';
-  } else if (values.password.length > 128) {
-    errors.password = 'tooLong';
+  } else if (values.password.length > MAX_PASSWORD_LENGTH || utf8ByteLength(values.password) > MAX_PASSWORD_UTF8_BYTES) {
+    // Arabic letters take 2 bytes each, so about 36 of them already reach the limit.
+    errors.password = 'passwordTooLong';
   }
   return errors;
 }

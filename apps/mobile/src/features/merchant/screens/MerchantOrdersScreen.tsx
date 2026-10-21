@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { FlatList, RefreshControl, ScrollView, View } from 'react-native';
+import { FlatList, RefreshControl, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import type { RootStackScreenProps } from '../../../navigation/types';
 import { errorMessageKey, type Order, type OrderStatus } from '../../../shared/api';
 import { formatMoney } from '../../../shared/format';
 import { makeStyles, useTheme } from '../../../shared/theme';
-import { AppText, Button, Chip, EmptyState, Screen, ScreenHeader, queryState } from '../../../shared/ui';
+import { AppText, Button, Chip, ChipScroller, EmptyState, Screen, ScreenHeader, queryState } from '../../../shared/ui';
 import { formatAddressLine } from '../../addresses/validation';
 import { orderSlotLabel } from '../../orders/format';
 import { nextMerchantStatuses } from '../../orders/model';
@@ -70,11 +70,11 @@ export function MerchantOrdersScreen({ route, navigation }: RootStackScreenProps
   const query = useMarketOrders(route.params.marketId, status);
   return (
     <Screen padded={false} header={<ScreenHeader title={t('merchant.orders')} onBack={() => navigation.goBack()} />}>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsWrap} contentContainerStyle={styles.chips}>
+      <ChipScroller style={styles.chipsWrap}>
         {FILTERS.map((s) => (
           <Chip key={s ?? 'all'} label={s === undefined ? t('discover.all') : t(`orderStatus.${s}`)} selected={status === s} onPress={() => setStatus(s)} />
         ))}
-      </ScrollView>
+      </ChipScroller>
       {queryState(query) ?? (
         <FlatList
           data={query.data ?? []}
@@ -90,8 +90,7 @@ export function MerchantOrdersScreen({ route, navigation }: RootStackScreenProps
 }
 
 const useStyles = makeStyles((t) => ({
-  chipsWrap: { flexGrow: 0, marginBottom: t.spacing.sm },
-  chips: { gap: t.spacing.sm, paddingHorizontal: t.layout.gutter },
+  chipsWrap: { marginBottom: t.spacing.sm },
   list: { paddingHorizontal: t.layout.gutter, paddingBottom: t.spacing.xxxl, gap: t.spacing.md, flexGrow: 1 },
   card: { backgroundColor: t.colors.surfaceMuted, borderRadius: t.radii.tile, padding: t.spacing.lg, gap: 4 },
   header: { flexDirection: 'row', alignItems: 'baseline', gap: t.spacing.md },

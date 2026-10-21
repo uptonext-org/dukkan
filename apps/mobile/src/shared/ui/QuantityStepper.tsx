@@ -2,6 +2,7 @@ import { memo } from 'react';
 import { ActivityIndicator, Pressable, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
+import { forSpeech } from '../format/bidi';
 import { makeStyles, useTheme } from '../theme';
 import { AppText } from './AppText';
 import { Icon } from './Icon';
@@ -47,7 +48,7 @@ export const QuantityStepper = memo(function QuantityStepper({
           <AppText
             variant="bodyStrong"
             dense
-            accessibilityLabel={t('product.quantityValue', { count: value })}
+            accessibilityLabel={forSpeech(t('product.quantityValue', { count: value }))}
             accessibilityLiveRegion="polite">
             {String(value)}
           </AppText>
@@ -83,8 +84,8 @@ function StepButton({
       onPress={onPress}
       disabled={!enabled}
       accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityHint={hint}
+      accessibilityLabel={forSpeech(label)}
+      accessibilityHint={forSpeech(hint)}
       accessibilityState={{ disabled: !enabled }}
       style={({ pressed }) => [
         { minWidth: touchTarget, minHeight: touchTarget, alignItems: 'center', justifyContent: 'center' },

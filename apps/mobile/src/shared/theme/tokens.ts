@@ -28,6 +28,13 @@ export interface ColorTokens {
   scrim: string;
   /** Shadow colour for the floating "+" button (y 1, blur 4, 12 %). */
   shadow: string;
+  /**
+   * Off-state track of switches and the outline of the selected segment: ≥ 3:1 non-text
+   * contrast against `surface`, `bg` and `surfaceMuted` in both themes (§1).
+   */
+  controlTrackOff: string;
+  /** Fill of the selected segment of a segmented control (lighter than the track in dark mode). */
+  segmentSelected: string;
 }
 
 export const lightColors: ColorTokens = {
@@ -54,6 +61,8 @@ export const lightColors: ColorTokens = {
   overlayText: '#FFFFFF',
   scrim: 'rgba(0,0,0,0.35)',
   shadow: '#000000',
+  controlTrackOff: '#857F78',
+  segmentSelected: '#FFFFFF',
 };
 
 export const darkColors: ColorTokens = {
@@ -80,6 +89,8 @@ export const darkColors: ColorTokens = {
   overlayText: '#FFFFFF',
   scrim: 'rgba(0,0,0,0.35)',
   shadow: '#000000',
+  controlTrackOff: '#7A746E',
+  segmentSelected: '#4A4844',
 };
 
 export const radii = { label: 6, pill: 12, tile: 16, sheet: 24, full: 999 } as const;

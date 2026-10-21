@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import type { MarketTabScreenProps, RootStackParamList } from '../../../navigation/types';
 import type { Banner, HomeSection } from '../../../shared/api';
+import { forSpeech } from '../../../shared/format';
 import { makeStyles, useTheme } from '../../../shared/theme';
 import { AppText, CardSkeletons, ErrorState, Icon, IconButton, SectionTitle } from '../../../shared/ui';
 import { ProductCarousel } from '../../catalog/components/ProductCarousel';
@@ -92,7 +93,7 @@ export function MarketHomeScreen({ navigation }: MarketTabScreenProps<'MarketHom
                   <Pressable
                     onPress={() => openSection(section)}
                     accessibilityRole="button"
-                    accessibilityLabel={t('marketHome.showAll', { title: section.title })}
+                    accessibilityLabel={forSpeech(t('marketHome.showAll', { title: section.title }))}
                     style={styles.all}>
                     <AppText variant="callout" color="primary" dense>
                       {t('marketHome.all')}

@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { Switch, View } from 'react-native';
+import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import type { MarketSort } from '../../../shared/api';
 import { makeStyles, useTheme } from '../../../shared/theme';
-import { AppText, Button, Icon, ListRow, Sheet } from '../../../shared/ui';
+import { AppText, Button, Icon, ListRow, Sheet, ToggleSwitch } from '../../../shared/ui';
 import { DEFAULT_FILTERS, type MarketFilters } from '../model';
 
 const SORTS = ['distance', 'minimum_order', 'delivery_fee'] as const satisfies readonly MarketSort[];
@@ -70,11 +70,10 @@ export function FilterSheet({
           <AppText variant="body" dense style={styles.flex}>
             {t(`discover.filter.${key}`)}
           </AppText>
-          <Switch
+          <ToggleSwitch
             value={draft[key]}
             onValueChange={(value) => setDraft((d) => ({ ...d, [key]: value }))}
             accessibilityLabel={t(`discover.filter.${key}`)}
-            trackColor={{ true: colors.primary, false: colors.surfaceMuted }}
             testID={`filter-${key}`}
           />
         </View>

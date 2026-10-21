@@ -1,6 +1,7 @@
 export * from './AppText';
 export * from './Button';
 export * from './Chip';
+export * from './ChipScroller';
 export * from './Icon';
 export * from './ImageTile';
 export * from './ListRow';
@@ -16,3 +17,4 @@ export * from './SegmentedControl';
 export * from './Sheet';
 export * from './States';
 export * from './TextField';
+export * from './ToggleSwitch';

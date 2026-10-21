@@ -3,7 +3,9 @@ import { Pressable, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import type { ProductSummary } from '../api/types';
+import { forSpeech, isolate } from '../format/bidi';
 import { formatMoney, formatMoneyForAccessibility } from '../format/money';
+import { needsOrganicPrefix } from '../format/text';
 import { makeStyles, useTheme } from '../theme';
 import { AppText } from './AppText';
 import { IconButton } from './Button';
@@ -22,6 +24,11 @@ export interface ProductTileProps {
   busy?: boolean;
   /** Fixed width for carousel items; grid tiles stretch. */
   width?: number;
+  /**
+   * Keep the tagline line even when this product has none, so names line up across a carousel
+   * row (design-system.md §4.3). Defaults to true for carousel tiles (`width` set).
+   */
+  reserveTagline?: boolean;
 }
 
 /**
@@ -29,22 +36,26 @@ export interface ProductTileProps {
  * white "+" bottom-end that turns into − n +, gold tagline, "Bio " prefix, name ›, price
  * (accent + struck-through regular price when discounted), "550 g · 5,07 €/kg".
  */
-function ProductTileComponent({ product, quantity, onPress, onChangeQuantity, onToggleFavorite, busy = false, width }: ProductTileProps) {
+function ProductTileComponent({ product, quantity, onPress, onChangeQuantity, onToggleFavorite, busy = false, width, reserveTagline = width !== undefined }: ProductTileProps) {
   const styles = useStyles();
   const { colors } = useTheme();
   const { t } = useTranslation();
   const { name, unitSize, price, promotionalPrice, comparisonPrice, promotion, available, organic, tagline } = product;
   const discounted = promotionalPrice != null;
   const effective = promotionalPrice ?? price;
+  const organicWord = t('product.organic');
+  const showOrganicPrefix = organic && needsOrganicPrefix(name, organicWord);
+  const hasTagline = tagline != null && tagline !== '';
+  // The money part is isolated so "6,98 €/كغ" keeps "6,98 €" in one LTR run inside Arabic.
   const unitLine = [
     unitSize,
-    comparisonPrice != null ? `${formatMoney(comparisonPrice.price)}/${t(`units.${comparisonPrice.unit}`)}` : undefined,
+    comparisonPrice != null ? `${isolate(formatMoney(comparisonPrice.price))}/${t(`units.${comparisonPrice.unit}`)}` : undefined,
   ]
     .filter(Boolean)
     .join(' · ');
 
   const spoken = [
-    organic ? `${t('product.organic')} ${name}` : name,
+    showOrganicPrefix ? `${organicWord} ${name}` : name,
     tagline ?? undefined,
     discounted
       ? t('product.spokenDiscounted', { price: formatMoneyForAccessibility(effective), was: formatMoneyForAccessibility(price) })
@@ -60,11 +71,13 @@ function ProductTileComponent({ product, quantity, onPress, onChangeQuantity, on
   return (
     <View style={[styles.card, width !== undefined ? { width } : styles.grid]} testID={`product-tile-${product.id}`}>
       <View>
-        <Pressable onPress={() => onPress(product)} accessibilityRole="button" accessibilityLabel={spoken} accessibilityHint={t('product.openHint')}>
+        <Pressable onPress={() => onPress(product)} accessibilityRole="button" accessibilityLabel={forSpeech(spoken)} accessibilityHint={t('product.openHint')}>
           <ImageTile uri={product.imageUrl} tint="sage" />
         </Pressable>
         {promotion != null && (
-          <View style={styles.promo} pointerEvents="none">
+          // Bottom start next to the "+"; once the − n + stepper takes the bottom row, the pill moves
+          // to the top start so it stays fully readable (the heart sits top end).
+          <View style={[styles.promo, quantity > 0 && available ? styles.promoTop : styles.promoBottom]} pointerEvents="none">
             <PromoPill label={promotion.label} />
           </View>
         )}
@@ -96,7 +109,7 @@ function ProductTileComponent({ product, quantity, onPress, onChangeQuantity, on
               onPress={() => onChangeQuantity(product, 1)}
               disabled={busy}
               accessibilityRole="button"
-              accessibilityLabel={t('product.add', { name })}
+              accessibilityLabel={forSpeech(t('product.add', { name }))}
               accessibilityState={{ disabled: busy, busy }}
               style={({ pressed }) => [styles.plus, pressed && styles.pressed]}>
               <Icon name="plus" size={22} color={colors.text} />
@@ -109,14 +122,16 @@ function ProductTileComponent({ product, quantity, onPress, onChangeQuantity, on
         accessible={false}
         importantForAccessibility="no-hide-descendants"
         style={styles.texts}>
-        {tagline != null && tagline !== '' && (
+        {hasTagline ? (
           <AppText variant="caption" color="taste" dense numberOfLines={1}>
             {tagline}
           </AppText>
+        ) : (
+          reserveTagline && <View style={styles.taglineSpace} testID="tagline-space" />
         )}
         <View style={styles.nameRow}>
           <AppText variant="headline" dense numberOfLines={2} style={styles.name}>
-            {organic && <AppText variant="headline" color="primary" dense>{`${t('product.organic')} `}</AppText>}
+            {showOrganicPrefix && <AppText variant="headline" color="primary" dense>{`${organicWord} `}</AppText>}
             {name}
           </AppText>
           <Icon name="chevron" size={18} color={colors.text} style={styles.chevron} />
@@ -143,7 +158,10 @@ export const ProductTile = memo(ProductTileComponent);
 const useStyles = makeStyles((t) => ({
   card: { gap: t.spacing.sm },
   grid: { flex: 1 },
-  promo: { position: 'absolute', bottom: t.spacing.sm, start: t.spacing.sm },
+  promo: { position: 'absolute', start: t.spacing.sm, end: 52 },
+  promoBottom: { bottom: t.spacing.sm + 12 },
+  promoTop: { top: t.spacing.sm + 4 },
+  taglineSpace: { height: t.type.caption.lineHeight },
   heart: { position: 'absolute', top: 2, end: 2 },
   action: { position: 'absolute', bottom: t.spacing.sm, end: t.spacing.sm },
   plus: {

@@ -2,7 +2,7 @@ import { screen, userEvent, waitFor, within } from '@testing-library/react-nativ
 
 import { createFakeApiClient } from '../../../test/fakeApiClient';
 import { market, MARKET_ID, marketHome, page, product } from '../../../test/fixtures';
-import { createTestDependencies, renderApp } from '../../../test/render';
+import { createTestDependencies, normalize, renderApp } from '../../../test/render';
 
 describe('Market sub-app: Suchen', () => {
   it('shows quick links and categories, suggests while typing and shows a 2-column result grid with sort', async () => {
@@ -36,7 +36,7 @@ describe('Market sub-app: Suchen', () => {
     await user.type(screen.getByTestId('market-search-field'), 'apf');
     await user.press(await screen.findByRole('button', { name: 'Apfelsaft' }));
     const results = await screen.findByTestId('market-search-results');
-    expect(within(results).getByText('2 Ergebnisse')).toBeOnTheScreen();
+    expect(within(results).getByText('2 Ergebnisse', { normalizer: normalize })).toBeOnTheScreen();
     expect(fake.calls.filter((c) => c.path.endsWith('/products')).at(-1)?.query).toMatchObject({ q: 'Apfelsaft', sort: 'relevance' });
 
     await user.press(screen.getByRole('button', { name: 'Preis aufsteigend' }));

@@ -2,6 +2,7 @@ import { memo } from 'react';
 import { Pressable, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
+import { forSpeech } from '../../../shared/format';
 import type { MarketSummary } from '../../../shared/api';
 import { makeStyles, tintForKey, useTheme } from '../../../shared/theme';
 import { AccentBadge, AppText, Chip, ImageTile } from '../../../shared/ui';
@@ -45,7 +46,7 @@ function MarketCardComponent({ market, onPress, compact = false }: MarketCardPro
     <Pressable
       onPress={() => onPress(market)}
       accessibilityRole="button"
-      accessibilityLabel={spoken}
+      accessibilityLabel={forSpeech(spoken)}
       accessibilityHint={t('market.openHint')}
       style={({ pressed }) => [styles.card, pressed && styles.pressed]}
       testID={`market-card-${market.id}`}>

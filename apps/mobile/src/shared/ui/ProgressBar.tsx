@@ -1,5 +1,6 @@
 import { View } from 'react-native';
 
+import { forSpeech } from '../format/bidi';
 import { makeStyles } from '../theme';
 
 /**
@@ -14,7 +15,7 @@ export function ProgressBar({ ratio, accessibilityLabel }: { ratio: number; acce
       style={styles.track}
       accessible
       accessibilityRole="progressbar"
-      accessibilityLabel={accessibilityLabel}
+      accessibilityLabel={forSpeech(accessibilityLabel)}
       accessibilityValue={{ min: 0, max: 100, now: Math.round(clamped * 100) }}>
       <View style={[styles.fill, { width: `${clamped * 100}%` }]} />
     </View>

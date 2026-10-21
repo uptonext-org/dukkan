@@ -38,3 +38,33 @@ export function cartCta(cart: Cart): CartCta {
   }
   return { kind: 'order', total: cart.total, enabled: cart.meetsMinimumOrderValue && cart.items.length > 0 };
 }
+
+export type FeeLine =
+  /** No slot reserved yet: the market's delivery fee (null = none) and its free-delivery threshold. */
+  | { kind: 'deliveryEstimate'; fee: Money | null; freeFrom: Money | null }
+  /** No slot reserved yet and the market offers pickup: pickup is always free (contract). */
+  | { kind: 'pickupEstimate' }
+  /** Reserved: the server's `deliveryFee` for this cart. */
+  | { kind: 'delivery'; fee: Money }
+  | { kind: 'pickup'; fee: Money };
+
+/**
+ * The fee rows of the cart summary. Before a reservation the server's `deliveryFee` is not
+ * meaningful yet, so the rows describe what the market charges; afterwards they show the
+ * server's amount for the reserved type.
+ */
+export function feeLines(cart: Cart): FeeLine[] {
+  const reservation = cart.fulfilment ?? null;
+  if (reservation !== null) {
+    return [reservation.type === 'PICKUP' ? { kind: 'pickup', fee: cart.deliveryFee } : { kind: 'delivery', fee: cart.deliveryFee }];
+  }
+  const options = cart.market.fulfilment;
+  const lines: FeeLine[] = [];
+  if (options.delivery) {
+    lines.push({ kind: 'deliveryEstimate', fee: options.deliveryFee ?? null, freeFrom: options.freeDeliveryFrom ?? null });
+  }
+  if (options.pickup) {
+    lines.push({ kind: 'pickupEstimate' });
+  }
+  return lines;
+}

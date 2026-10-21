@@ -2,6 +2,7 @@ import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 
+import { forSpeech } from '../../../shared/format';
 import { makeStyles, useTheme } from '../../../shared/theme';
 import { AppText, IconButton, ImageTile } from '../../../shared/ui';
 import { useAuth } from '../../auth/AuthProvider';
@@ -25,7 +26,7 @@ export function MarketHeader() {
   return (
     <View style={[styles.header, { paddingTop: insets.top + 2 }]}>
       <IconButton icon="back" label={t('market.backToMarketplace')} onPress={exit} testID="market-exit" />
-      <View style={styles.identity} accessible accessibilityRole="header" accessibilityLabel={name}>
+      <View style={styles.identity} accessible accessibilityRole="header" accessibilityLabel={forSpeech(name)}>
         <ImageTile uri={market?.logoUrl} size={32} radius={16} tint="sand" placeholderIcon="store" />
         <AppText variant="headline" dense numberOfLines={1} style={styles.name}>
           {name}

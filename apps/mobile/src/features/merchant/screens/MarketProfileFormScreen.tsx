@@ -1,13 +1,14 @@
 import { useState, type ReactNode } from 'react';
-import { ScrollView, Switch, TextInput, View } from 'react-native';
+import { ScrollView, TextInput, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
+import { forSpeech } from '../../../shared/format';
 import type { RootStackScreenProps } from '../../../navigation/types';
 import { errorMessageKey, type MarketTag, type Place } from '../../../shared/api';
 import { LANGUAGES, useLanguage, type Language } from '../../../shared/i18n';
 import { PlaceSearch } from '../../../shared/location';
-import { makeStyles, useTheme } from '../../../shared/theme';
-import { AppText, Button, Chip, Screen, ScreenHeader, TextField, queryState } from '../../../shared/ui';
+import { makeStyles } from '../../../shared/theme';
+import { AppText, Button, Chip, queryState, Screen, ScreenHeader, TextField, ToggleSwitch } from '../../../shared/ui';
 import { hasErrors } from '../../auth/validation';
 import { useCuisines, useMarketTypes } from '../../marketplace/api/hooks';
 import { toggle } from '../../marketplace/model';
@@ -58,7 +59,6 @@ export function MarketProfileFormScreen(props: RootStackScreenProps<'MerchantMar
 
 function MarketProfileForm({ route, navigation, initial }: RootStackScreenProps<'MerchantMarketForm'> & { initial: MarketProfileValues }) {
   const styles = useStyles();
-  const { colors } = useTheme();
   const { t } = useTranslation();
   const marketId = route.params?.marketId;
   const types = useMarketTypes();
@@ -164,7 +164,7 @@ function MarketProfileForm({ route, navigation, initial }: RootStackScreenProps<
               <AppText variant="body" style={styles.flex}>
                 {t(`market.${key}`)}
               </AppText>
-              <Switch value={values[key]} onValueChange={(v) => set(key, v)} accessibilityLabel={t(`market.${key}`)} trackColor={{ true: colors.primary, false: colors.surfaceMuted }} />
+              <ToggleSwitch value={values[key]} onValueChange={(v) => set(key, v)} accessibilityLabel={t(`market.${key}`)} />
             </View>
           ))}
           {err('fulfilment') !== undefined && <AppText variant="caption" color="accent">{err('fulfilment')}</AppText>}
@@ -188,15 +188,15 @@ function MarketProfileForm({ route, navigation, initial }: RootStackScreenProps<
               );
             return (
               <View key={index} style={styles.dayRow}>
-                <Switch value={day.open} onValueChange={(open) => update({ open })} accessibilityLabel={t('merchant.openOn', { day: weekday })} trackColor={{ true: colors.primary, false: colors.surfaceMuted }} />
+                <ToggleSwitch value={day.open} onValueChange={(open) => update({ open })} accessibilityLabel={t('merchant.openOn', { day: weekday })} />
                 <AppText variant="body" style={styles.day}>
                   {weekday}
                 </AppText>
                 {day.open ? (
                   <View style={styles.times}>
-                    <TextInput value={day.opensAt} onChangeText={(opensAt) => update({ opensAt })} style={styles.time} accessibilityLabel={t('merchant.opensAt', { day: weekday })} keyboardType="numbers-and-punctuation" maxLength={5} />
+                    <TextInput value={day.opensAt} onChangeText={(opensAt) => update({ opensAt })} style={styles.time} accessibilityLabel={forSpeech(t('merchant.opensAt', { day: weekday }))} keyboardType="numbers-and-punctuation" maxLength={5} />
                     <AppText variant="body">–</AppText>
-                    <TextInput value={day.closesAt} onChangeText={(closesAt) => update({ closesAt })} style={styles.time} accessibilityLabel={t('merchant.closesAt', { day: weekday })} keyboardType="numbers-and-punctuation" maxLength={5} />
+                    <TextInput value={day.closesAt} onChangeText={(closesAt) => update({ closesAt })} style={styles.time} accessibilityLabel={forSpeech(t('merchant.closesAt', { day: weekday }))} keyboardType="numbers-and-punctuation" maxLength={5} />
                   </View>
                 ) : (
                   <AppText variant="subhead" color="textSecondary">

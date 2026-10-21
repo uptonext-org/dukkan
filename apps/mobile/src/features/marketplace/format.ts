@@ -1,7 +1,7 @@
 import type { TFunction } from 'i18next';
 
 import type { MarketSummary } from '../../shared/api';
-import { formatDistance, formatMoneyShort, formatTime } from '../../shared/format';
+import { formatDistance, formatMoneyShort, formatTime, isolate } from '../../shared/format';
 
 /** "Geöffnet bis 20:00" / "Geschlossen · öffnet 08:00" / "Geschlossen". */
 export function openingLabel(t: TFunction, market: Pick<MarketSummary, 'openNow' | 'todayHours' | 'nextOpeningAt'>): string {
@@ -21,8 +21,9 @@ export function typeAndCuisine(market: Pick<MarketSummary, 'type' | 'cuisines'>)
   return cuisines !== '' ? `${market.type.name} · ${cuisines}` : market.type.name;
 }
 
+/** "1,2 km", isolated so it keeps its order when it leads an Arabic line ("190 m · مفتوح حتى 20:00"). */
 export function distanceLabel(market: Pick<MarketSummary, 'distanceMeters'>): string | undefined {
-  return market.distanceMeters != null ? formatDistance(market.distanceMeters) : undefined;
+  return market.distanceMeters != null ? isolate(formatDistance(market.distanceMeters)) : undefined;
 }
 
 /** "Lieferung 2,99 €" / "Lieferung gratis"; undefined without delivery. */

@@ -1,9 +1,11 @@
 import { createI18n } from '../../i18n';
+import { forSpeech, isolate, isolateValue, LRI, FSI, PDI } from '../bidi';
+import { needsOrganicPrefix, withOrganicPrefix } from '../text';
 import { formatDateTime, formatShortDate, formatTimeRange, isoWeekday } from '../dates';
 import { centsToInput, formatAmount, formatMoney, formatMoneyForAccessibility, formatMoneyShort, parseMoneyInput, splitMoney } from '../money';
 import { formatDistance, formatPercent } from '../numbers';
 
-const plain = (s: string) => s.split(String.fromCharCode(160)).join(' ');
+const plain = (s: string) => forSpeech(s).split(String.fromCharCode(160)).join(' ');
 
 describe('de-DE formatting in every language (decision 3)', () => {
   it('formats money, distance and times with Latin digits and German separators', () => {
@@ -40,5 +42,49 @@ describe('de-DE formatting in every language (decision 3)', () => {
     expect(parseMoneyInput('2,499')).toBeNull();
     expect(parseMoneyInput('abc')).toBeNull();
     expect(centsToInput(123456)).toBe('1234,56');
+  });
+});
+
+describe('bidi isolation of values in sentences (right-to-left.md › Numbers)', () => {
+  const money = (cents: number) => formatMoney({ amountCents: cents, currency: 'EUR' });
+
+  it('wraps interpolated money, dates and counts in a left-to-right isolate in every language', () => {
+    const ar = createI18n('ar');
+    const text = ar.t('market.deliveryFee', { amount: money(290) });
+    // "2,90 €" stays one LTR run, so Arabic does not show it as "€ 2,90".
+    expect(text).toContain(`${LRI}${money(290)}${PDI}`);
+    const de = createI18n('de');
+    expect(de.t('cart.orderCta', { total: money(2340) })).toBe(`Bestellen · ${LRI}${money(2340)}${PDI}`);
+    expect(de.t('market.offers', { count: 3 })).toBe(`${LRI}3${PDI} Angebote`);
+  });
+
+  it('leaves words alone and uses a first-strong isolate for values with Arabic letters', () => {
+    expect(isolateValue('Anatolia Markt')).toBe('Anatolia Markt');
+    expect(isolateValue('21.10.')).toBe(`${LRI}21.10.${PDI}`);
+    const unitPrice = `${isolate(money(698))}/كغ`;
+    expect(isolateValue(unitPrice)).toBe(`${FSI}${unitPrice}${PDI}`);
+  });
+
+  it('keeps standalone prices free of marks and strips them for screen readers', () => {
+    expect(money(249)).not.toMatch(/[\u2066-\u2069]/);
+    const label = createI18n('de').t('market.tabs.cartWithTotal', { amount: '10,79 Euro' });
+    expect(label).not.toBe('Warenkorb, 10,79 Euro');
+    expect(forSpeech(label)).toBe('Warenkorb, 10,79 Euro');
+  });
+});
+
+describe('organic prefix', () => {
+  it('is shown only when the localised name does not contain the localised word', () => {
+    expect(needsOrganicPrefix('Vollmilch', 'Bio')).toBe(true);
+    expect(needsOrganicPrefix('Bio-Vollmilch', 'Bio')).toBe(false);
+    expect(needsOrganicPrefix('BIO Eier', 'Bio')).toBe(false);
+    expect(needsOrganicPrefix('Organic whole milk', 'Organic')).toBe(false);
+    expect(needsOrganicPrefix('Whole milk', 'Organic')).toBe(true);
+    // Arabic, diacritic-insensitive: "عُضْوِيّ" with harakat still matches "عضوي".
+    expect(needsOrganicPrefix('حليب عُضْوِيّ كامل الدسم', 'عضوي')).toBe(false);
+    expect(needsOrganicPrefix('حليب كامل الدسم', 'عضوي')).toBe(true);
+    expect(withOrganicPrefix('Bio-Vollmilch', true, 'Bio')).toBe('Bio-Vollmilch');
+    expect(withOrganicPrefix('Vollmilch', true, 'Bio')).toBe('Bio Vollmilch');
+    expect(withOrganicPrefix('Vollmilch', false, 'Bio')).toBe('Vollmilch');
   });
 });

@@ -1,0 +1,23 @@
+{
+  "name": "dukkan-web-preview",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Dev-only react-native-web preview of apps/mobile for visual QA screenshots. Not a product web app.",
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "serve": "vite preview --port 5199 --strictPort",
+    "dev": "vite --port 5199 --strictPort",
+    "screenshots": "node screenshot.mjs"
+  },
+  "devDependencies": {
+    "playwright": "1.56.1",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "react-native-web": "0.21.3",
+    "vite": "7.3.6"
+  },
+  "engines": {
+    "node": ">=24.22.0"
+  }
+}

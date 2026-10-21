@@ -1,18 +1,17 @@
 import { memo, useState } from 'react';
-import { FlatList, Switch, TextInput, View } from 'react-native';
+import { FlatList, TextInput, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import type { RootStackScreenProps } from '../../../navigation/types';
 import { errorMessageKey, type Listing } from '../../../shared/api';
-import { centsToInput, formatMoney, parseMoneyInput } from '../../../shared/format';
+import { centsToInput, formatMoney, forSpeech, parseMoneyInput } from '../../../shared/format';
 import { useDebouncedValue } from '../../../shared/hooks/useDebouncedValue';
-import { makeStyles, useTheme } from '../../../shared/theme';
-import { AppText, Button, EmptyState, IconButton, ImageTile, Screen, ScreenHeader, SearchField, queryState } from '../../../shared/ui';
+import { makeStyles } from '../../../shared/theme';
+import { AppText, Button, EmptyState, IconButton, ImageTile, queryState, Screen, ScreenHeader, SearchField, ToggleSwitch } from '../../../shared/ui';
 import { useListings, useUpdateListing } from '../api/hooks';
 
 const ListingRow = memo(function ListingRow({ listing, marketId }: { listing: Listing; marketId: string }) {
   const styles = useStyles();
-  const { colors } = useTheme();
   const { t } = useTranslation();
   const update = useUpdateListing(marketId);
   const [editing, setEditing] = useState(false);
@@ -31,12 +30,11 @@ const ListingRow = memo(function ListingRow({ listing, marketId }: { listing: Li
           </AppText>
         </View>
         <IconButton icon="edit" label={t('merchant.editPrice', { name: listing.name })} onPress={() => setEditing((e) => !e)} />
-        <Switch
+        <ToggleSwitch
           value={listing.available}
           disabled={update.isPending}
           onValueChange={(available) => update.mutate({ productId: listing.id, request: { available } })}
-          accessibilityLabel={t('merchant.availability', { name: listing.name })}
-          trackColor={{ true: colors.primary, false: colors.surfaceMuted }}
+          accessibilityLabel={forSpeech(t('merchant.availability', { name: listing.name }))}
           testID={`availability-${listing.id}`}
         />
       </View>
@@ -47,7 +45,7 @@ const ListingRow = memo(function ListingRow({ listing, marketId }: { listing: Li
             onChangeText={setPrice}
             keyboardType="decimal-pad"
             style={styles.priceInput}
-            accessibilityLabel={t('merchant.priceFor', { name: listing.name })}
+            accessibilityLabel={forSpeech(t('merchant.priceFor', { name: listing.name }))}
           />
           <AppText variant="body">€</AppText>
           <Button

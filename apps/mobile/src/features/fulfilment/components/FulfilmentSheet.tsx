@@ -1,15 +1,16 @@
 import { useNavigation, type NavigationProp } from '@react-navigation/native';
 import { useEffect, useMemo, useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import type { RootStackParamList } from '../../../navigation/types';
-import { errorMessageKey, type FulfilmentType, type MarketSummary, type Slot } from '../../../shared/api';
-import { formatMoney, formatTimeRange } from '../../../shared/format';
+import { errorMessageKey, isApiError, type FulfilmentType, type MarketSummary, type Slot } from '../../../shared/api';
+import { formatMoney, formatTimeRange, forSpeech, isolate } from '../../../shared/format';
 import { makeStyles, useTheme } from '../../../shared/theme';
-import { AppText, Button, Chip, Icon, ListRow, SegmentedControl, Sheet } from '../../../shared/ui';
+import { AppText, Button, Chip, ChipScroller, Icon, ListRow, SegmentedControl, Sheet } from '../../../shared/ui';
 import { useAddresses } from '../../addresses/api/hooks';
 import { formatAddressLine } from '../../addresses/validation';
+import { useCart } from '../../cart/api/hooks';
 import { useReserveFulfilment, useSlots } from '../api/hooks';
 import { groupSlotsByDay, offeredTypes } from '../model';
 
@@ -23,6 +24,9 @@ interface FulfilmentSheetProps {
 /**
  * Lieferung | Abholung (only what the market offers), an address picker for delivery, day chips
  * and slot rows with fee and remaining capacity. Unavailable windows are disabled and announced.
+ *
+ * A reservation needs a non-empty cart (the server answers 422 CART_EMPTY otherwise). With an
+ * empty cart the slots stay visible read-only, with the hint to add products first.
  */
 export function FulfilmentSheet({ visible, onClose, market, current }: FulfilmentSheetProps) {
   const styles = useStyles();
@@ -40,6 +44,10 @@ export function FulfilmentSheet({ visible, onClose, market, current }: Fulfilmen
   const [dayKey, setDayKey] = useState<string | null>(null);
   const day = days.find((d) => d.key === dayKey) ?? days.find((d) => d.hasAvailability) ?? days[0];
   const reserve = useReserveFulfilment(market.id);
+  const cart = useCart(market.id);
+  const cartEmpty = cart.data !== undefined && cart.data.items.length === 0;
+  const serverSaysEmpty = reserve.isError && isApiError(reserve.error) && reserve.error.code === 'CART_EMPTY';
+  const readOnly = cartEmpty || serverSaysEmpty;
 
   useEffect(() => {
     if (!visible) {
@@ -49,14 +57,33 @@ export function FulfilmentSheet({ visible, onClose, market, current }: Fulfilmen
   }, [visible]);
 
   const choose = (slot: Slot) => {
+    if (readOnly) {
+      return;
+    }
     reserve.mutate(
       { type, slotId: slot.id, addressId: type === 'DELIVERY' ? (effectiveAddressId ?? null) : null },
-      { onSuccess: onClose },
+      {
+        onSuccess: onClose,
+        onError: (error) => {
+          // The cart was emptied elsewhere: reload it so the UI shows `fulfilment: null` too.
+          if (isApiError(error) && error.code === 'CART_EMPTY') {
+            void cart.refetch();
+          }
+        },
+      },
     );
   };
 
   return (
     <Sheet visible={visible} onClose={onClose} title={t('fulfilment.title')} testID="fulfilment-sheet">
+      {readOnly && (
+        <View style={styles.hint} accessibilityRole="alert" testID="fulfilment-empty-hint">
+          <Icon name="basket" size={20} color={colors.text} />
+          <AppText variant="subhead" style={styles.flex}>
+            {t('fulfilment.emptyCartHint')}
+          </AppText>
+        </View>
+      )}
       {types.length > 1 ? (
         <SegmentedControl
           accessibilityLabel={t('fulfilment.typeLabel')}
@@ -138,20 +165,20 @@ export function FulfilmentSheet({ visible, onClose, market, current }: Fulfilmen
 
       {days.length > 0 && day !== undefined && (
         <>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.days} style={styles.section}>
+          <ChipScroller style={styles.days} accessibilityLabel={t('fulfilment.days')} testID="fulfilment-days">
             {days.map((d) => (
               <Chip
                 key={d.key}
-                label={`${t(`weekday.${d.weekday}`)} ${d.date}`}
+                label={`${t(`weekday.${d.weekday}`)} ${isolate(d.date)}`}
                 selected={d.key === day.key}
                 disabled={!d.hasAvailability}
                 onPress={() => setDayKey(d.key)}
               />
             ))}
-          </ScrollView>
+          </ChipScroller>
           {day.slots.map((slot) => {
             const time = formatTimeRange(slot.startsAt, slot.endsAt);
-            const fee = slot.fee.amountCents === 0 ? t('fulfilment.free') : formatMoney(slot.fee);
+            const fee = slot.fee.amountCents === 0 ? t('fulfilment.free') : isolate(formatMoney(slot.fee));
             const capacity = slot.available ? t('fulfilment.remaining', { count: slot.remainingCapacity }) : t('fulfilment.unavailable');
             const selected = current?.slotId === slot.id;
             return (
@@ -160,10 +187,11 @@ export function FulfilmentSheet({ visible, onClose, market, current }: Fulfilmen
                 title={time}
                 subtitle={`${fee} · ${capacity}`}
                 chevron={false}
-                disabled={!slot.available || reserve.isPending}
+                disabled={!slot.available || reserve.isPending || readOnly}
                 selected={selected}
                 onPress={() => choose(slot)}
-                accessibilityLabel={`${time}, ${fee}, ${capacity}`}
+                accessibilityLabel={forSpeech(`${time}, ${fee}, ${capacity}`)}
+                {...(readOnly && slot.available ? { accessibilityHint: t('fulfilment.emptyCartHint') } : {})}
                 trailing={selected ? <Icon name="check" color={colors.primary} /> : undefined}
                 testID={`slot-${slot.id}`}
               />
@@ -171,7 +199,7 @@ export function FulfilmentSheet({ visible, onClose, market, current }: Fulfilmen
           })}
         </>
       )}
-      {reserve.isError && (
+      {reserve.isError && !serverSaysEmpty && (
         <AppText variant="subhead" color="accent" accessibilityRole="alert" accessibilityLiveRegion="polite" style={styles.section}>
           {t(errorMessageKey(reserve.error))}
         </AppText>
@@ -183,5 +211,16 @@ export function FulfilmentSheet({ visible, onClose, market, current }: Fulfilmen
 const useStyles = makeStyles((t) => ({
   section: { marginTop: t.spacing.lg },
   single: { flexDirection: 'row', alignItems: 'center', gap: t.spacing.sm, minHeight: 44 },
-  days: { gap: t.spacing.sm },
+  // Day chips scroll edge to edge: the row bleeds past the sheet's gutter, the chips keep it as inset.
+  days: { marginTop: t.spacing.lg, marginHorizontal: -t.layout.gutter },
+  hint: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: t.spacing.sm,
+    backgroundColor: t.colors.surfaceMuted,
+    borderRadius: t.radii.pill,
+    padding: t.spacing.md,
+    marginBottom: t.spacing.md,
+  },
+  flex: { flex: 1 },
 }));

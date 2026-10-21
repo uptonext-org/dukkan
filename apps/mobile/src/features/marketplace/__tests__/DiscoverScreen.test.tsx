@@ -57,10 +57,10 @@ describe('<DiscoverScreen />', () => {
     const card = await screen.findByTestId(`market-card-${MARKET_ID}`);
     expect(within(card).getByText('Anatolia Markt')).toBeOnTheScreen();
     expect(within(card).getByText('Lebensmittelladen · Türkisch')).toBeOnTheScreen();
-    expect(within(card).getByText('1,2 km · Geöffnet bis 20:00')).toBeOnTheScreen();
+    expect(within(card).getByText('1,2 km · Geöffnet bis 20:00', { normalizer: normalize })).toBeOnTheScreen();
     expect(within(card).getByText('Mindestbestellwert 15 € · Lieferung 2,99 €', { normalizer: normalize })).toBeOnTheScreen();
-    expect(within(card).getByText('3 Angebote')).toBeOnTheScreen();
-    expect(screen.getByText('Geschlossen · öffnet 07:00', { exact: false })).toBeOnTheScreen();
+    expect(within(card).getByText('3 Angebote', { normalizer: normalize })).toBeOnTheScreen();
+    expect(screen.getByText('Geschlossen · öffnet 07:00', { exact: false, normalizer: normalize })).toBeOnTheScreen();
     expect(screen.getByTestId('location-button')).toHaveTextContent('St. Georg');
     expect(marketCalls(fake.calls)[0]?.query).toEqual({ lat: ST_GEORG.location.lat, lng: ST_GEORG.location.lng, sort: 'distance', size: 20, page: 0 });
 

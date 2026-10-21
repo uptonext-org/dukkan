@@ -47,7 +47,12 @@
     "CART_EMPTY": "Dein Warenkorb ist leer.",
     "MINIMUM_ORDER_NOT_MET": "Der Mindestbestellwert ist noch nicht erreicht.",
     "ORDER_NOT_CANCELLABLE": "Diese Bestellung kann nicht mehr storniert werden.",
-    "INVALID_STATUS_TRANSITION": "Dieser Statuswechsel ist nicht erlaubt."
+    "INVALID_STATUS_TRANSITION": "Dieser Statuswechsel ist nicht erlaubt.",
+    "IDEMPOTENCY_KEY_REUSED": "Diese Bestellung wurde schon in einem anderen Markt abgeschickt. Bitte lade den Warenkorb neu und bestell noch einmal.",
+    "field": {
+      "MaxUtf8Bytes": "Das Passwort ist zu lang. Arabische Zeichen zählen doppelt.",
+      "Future": "Das Enddatum muss in der Zukunft liegen."
+    }
   },
   "validation": {
     "required": "Bitte ausfüllen.",
@@ -74,7 +79,9 @@
     "percent": "Ein Rabatt von 1 bis 90 %.",
     "bundleQuantity": "Eine Menge von 2 bis 20.",
     "productsRequired": "Bitte mindestens ein Produkt wählen.",
-    "checkFields": "Bitte prüf die markierten Felder."
+    "checkFields": "Bitte prüf die markierten Felder.",
+    "passwordTooLong": "Passwort ist zu lang (höchstens 72 Bytes; arabische Zeichen zählen doppelt).",
+    "endDateFuture": "Das Angebot muss in der Zukunft enden."
   },
   "language": {
     "button": "Sprache ändern",
@@ -193,7 +200,9 @@
       "search": "Suchen",
       "cart": "Warenkorb",
       "cartWithTotal": "Warenkorb, {{amount}}"
-    }
+    },
+    "deliveryWithFee": "Lieferung ({{amount}})",
+    "deliveryFreeShort": "Lieferung (gratis)"
   },
   "marketHome": {
     "banners": "Aktuelles",
@@ -261,7 +270,7 @@
     "noProductsMessage": "Schau bald wieder vorbei."
   },
   "globalSearch": {
-    "placeholder": "Produkt in Märkten in der Nähe suchen",
+    "placeholder": "Produkte in der Nähe suchen",
     "introTitle": "Preise vergleichen",
     "introMessage": "Such ein Produkt und sieh, welche Märkte in deiner Nähe es haben – mit Preis und Entfernung.",
     "sortLabel": "Sortierung",
@@ -300,7 +309,11 @@
     "minimumMissing": "Noch {{missing}} bis zum Mindestbestellwert von {{minimum}}.",
     "minimumHint": "Der Mindestbestellwert ist noch nicht erreicht",
     "orderCta": "Bestellen · {{total}}",
-    "updateFailed": "Warenkorb nicht aktualisiert"
+    "updateFailed": "Warenkorb nicht aktualisiert",
+    "feeFrom": "ab {{amount}}",
+    "freeDeliveryFrom": "Gratis ab {{amount}}",
+    "pickupFree": "kostenlos",
+    "inclVatPlusDelivery": "(inkl. MwSt., zzgl. Lieferung)"
   },
   "carts": {
     "title": "Warenkörbe",
@@ -332,7 +345,9 @@
     "free": "Gratis",
     "remaining_one": "noch {{count}} frei",
     "remaining_other": "noch {{count}} frei",
-    "unavailable": "nicht verfügbar"
+    "unavailable": "nicht verfügbar",
+    "emptyCartHint": "Leg zuerst Produkte in den Warenkorb. Dann kannst du ein Zeitfenster reservieren.",
+    "days": "Tage"
   },
   "order": {
     "title": "Bestellung",
@@ -375,7 +390,7 @@
     "lastName": "Nachname",
     "email": "E-Mail",
     "password": "Passwort",
-    "passwordHint": "Mindestens 10 Zeichen.",
+    "passwordHint": "10 bis 128 Zeichen. Arabische Zeichen zählen doppelt (höchstens 72 Bytes).",
     "reason": {
       "cart": "Melde dich an, um Produkte in den Warenkorb zu legen. Danach geht es direkt weiter.",
       "favorites": "Melde dich an, um Favoriten zu speichern.",

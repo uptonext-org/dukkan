@@ -3,11 +3,12 @@ import { useMemo, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
+import { forSpeech } from '../../../shared/format';
 import type { MarketStackParamList } from '../../../navigation/types';
 import type { ProductSort } from '../../../shared/api';
 import { useDebouncedValue } from '../../../shared/hooks/useDebouncedValue';
 import { makeStyles, tintColor, useTheme, type TileTint } from '../../../shared/theme';
-import { AppText, CardSkeletons, Chip, EmptyState, ErrorState, Icon, ImageTile, ListRow, SearchField, type IconName } from '../../../shared/ui';
+import { AppText, CardSkeletons, Chip, ChipScroller, EmptyState, ErrorState, Icon, ImageTile, ListRow, SearchField, type IconName } from '../../../shared/ui';
 import { useCategories, useMarketProducts, useSuggestions } from '../../catalog/api/hooks';
 import { ProductGrid } from '../../catalog/components/ProductGrid';
 import { PRODUCT_SORTS } from '../../catalog/screens/CategoryProductsScreen';
@@ -16,11 +17,18 @@ import { useMarketContext } from '../../market/MarketContext';
 interface QuickLink {
   key: 'offers' | 'new' | 'organic';
   icon: IconName;
-  tint: TileTint;
+  tint: TileTint | 'promo';
 }
 
+/**
+ * Quick links with 72 pt tinted tiles (design-system.md §4.3): "Alle Angebote" on the yellow
+ * `promo` tile with a %, "Neu im Markt" pink with sparkles, then "Bio".
+ * The design also shows "Regional", but `/markets/{id}/products` has `organicOnly` and no regional
+ * filter (REGIONAL exists only as a market tag), so there is no "Regional" link: we do not invent
+ * a client-side filter the API cannot answer. Add it once the contract has a product filter.
+ */
 const QUICK_LINKS: QuickLink[] = [
-  { key: 'offers', icon: 'percent', tint: 'sand' },
+  { key: 'offers', icon: 'percent', tint: 'promo' },
   { key: 'new', icon: 'sparkles', tint: 'blush' },
   { key: 'organic', icon: 'leaf', tint: 'sage' },
 ];
@@ -86,13 +94,13 @@ export function MarketSearchScreen() {
 
   if (submitted.length >= 1) {
     const filters = (
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips} style={styles.chipsWrap}>
+      <ChipScroller style={styles.chipsWrap} accessibilityLabel={t('marketSearch.sortLabel')}>
         {PRODUCT_SORTS.map((s) => (
           <Chip key={s} label={t(`marketSearch.sort.${s}`)} selected={sort === s} onPress={() => setSort(s)} />
         ))}
         <Chip label={t('marketSearch.organic')} icon="leaf" selected={organicOnly} onPress={() => setOrganicOnly((v) => !v)} />
         <Chip label={t('marketSearch.onlyOffers')} icon="percent" selected={promotedOnly} onPress={() => setPromotedOnly((v) => !v)} />
-      </ScrollView>
+      </ChipScroller>
     );
     return (
       <View style={styles.root}>
@@ -135,8 +143,8 @@ export function MarketSearchScreen() {
             key={link.key}
             title={quickTitle(link.key)}
             leading={
-              <View style={[styles.quickTile, { backgroundColor: tintColor(colors, link.tint) }]}>
-                <Icon name={link.icon} size={32} color={link.key === 'offers' ? colors.taste : link.key === 'new' ? colors.accent : colors.primary} />
+              <View style={[styles.quickTile, { backgroundColor: link.tint === 'promo' ? colors.promo : tintColor(colors, link.tint) }]}>
+                <Icon name={link.icon} size={32} color={link.key === 'offers' ? colors.onPromo : link.key === 'new' ? colors.accent : colors.primary} />
               </View>
             }
             onPress={() => openQuick(link.key)}
@@ -153,7 +161,7 @@ export function MarketSearchScreen() {
             key={category.id}
             title={category.name}
             leading={<ImageTile uri={category.imageUrl} size={72} radius={12} tint="sage" />}
-            {...(category.productCount != null ? { accessibilityLabel: `${category.name}, ${t('marketSearch.productCount', { count: category.productCount })}` } : {})}
+            {...(category.productCount != null ? { accessibilityLabel: forSpeech(`${category.name}, ${t('marketSearch.productCount', { count: category.productCount })}`) } : {})}
             onPress={() => navigation.navigate('MarketProducts', { title: category.name, filter: { categoryId: category.id } })}
             testID={`category-${category.id}`}
           />
@@ -171,7 +179,6 @@ const useStyles = makeStyles((t) => ({
   quickTile: { width: 72, height: 72, borderRadius: t.radii.pill, alignItems: 'center', justifyContent: 'center' },
   separator: { height: 1, backgroundColor: t.colors.separator, marginVertical: t.spacing.md },
   heading: { marginBottom: t.spacing.sm },
-  chipsWrap: { flexGrow: 0, marginBottom: t.spacing.md },
-  chips: { gap: t.spacing.sm, paddingHorizontal: t.layout.gutter },
+  chipsWrap: { marginBottom: t.spacing.md },
   count: { marginBottom: t.spacing.md },
 }));

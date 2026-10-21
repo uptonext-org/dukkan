@@ -1,5 +1,6 @@
 import { TextInput, View, type TextInputProps } from 'react-native';
 
+import { forSpeech } from '../format/bidi';
 import { makeStyles, useTheme } from '../theme';
 import { AppText } from './AppText';
 
@@ -22,8 +23,8 @@ export function TextField({ label, error, hint, accessibilityHint, inputDirectio
       </AppText>
       <View style={inputDirection !== undefined ? { direction: inputDirection } : undefined}>
         <TextInput
-          accessibilityLabel={label}
-          accessibilityHint={hasError ? error : (accessibilityHint ?? hint)}
+          accessibilityLabel={forSpeech(label)}
+          accessibilityHint={forSpeech(hasError ? error : (accessibilityHint ?? hint))}
           placeholderTextColor={colors.textPlaceholder}
           style={[styles.input, hasError && styles.inputError]}
           {...inputProps}

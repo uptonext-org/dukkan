@@ -103,6 +103,14 @@ describe('promotions', () => {
     const request = toPromotionRequest({ ...multi, bundleQuantity: '3', bundlePrice: '5' }, new Date('2026-10-20T10:00:00Z'));
     expect(request).toMatchObject({ type: 'MULTI_BUY', percentOff: null, bundleQuantity: 3, bundlePrice: { amountCents: 500 }, validFrom: '2026-10-20T10:00:00.000Z', validUntil: '2026-10-27T10:00:00.000Z' });
   });
+
+  it('rejects an end date that is not in the future before sending', () => {
+    const valid = { ...emptyPromotion(), title: { de: 'Herbst', en: '', ar: '' }, productIds: ['p1'] };
+    expect(validatePromotion(valid, 'de')).toEqual({});
+    expect(validatePromotion({ ...valid, days: 0 }, 'de')).toEqual({ days: 'endDateFuture' });
+    expect(validatePromotion({ ...valid, days: -1 }, 'de')).toEqual({ days: 'endDateFuture' });
+    expect(validatePromotion({ ...valid, days: Number.NaN }, 'de')).toEqual({ days: 'endDateFuture' });
+  });
 });
 
 describe('merchant order transitions (contract README)', () => {

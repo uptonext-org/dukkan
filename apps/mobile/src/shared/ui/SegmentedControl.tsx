@@ -1,5 +1,6 @@
 import { Pressable, View } from 'react-native';
 
+import { forSpeech } from '../format/bidi';
 import { makeStyles } from '../theme';
 import { AppText } from './AppText';
 import { Icon, type IconName } from './Icon';
@@ -26,7 +27,7 @@ export function SegmentedControl<T extends string>({
 }: SegmentedControlProps<T>) {
   const styles = useStyles();
   return (
-    <View style={styles.track} accessibilityRole="tablist" accessibilityLabel={accessibilityLabel}>
+    <View style={styles.track} accessibilityRole="tablist" accessibilityLabel={forSpeech(accessibilityLabel)}>
       {segments.map((segment) => {
         const selected = segment.value === value;
         return (
@@ -34,7 +35,7 @@ export function SegmentedControl<T extends string>({
             key={segment.value}
             onPress={() => onChange(segment.value)}
             accessibilityRole="tab"
-            accessibilityLabel={segment.label}
+            accessibilityLabel={forSpeech(segment.label)}
             accessibilityState={{ selected }}
             style={[styles.segment, selected && styles.selected]}>
             {segment.icon !== undefined && (
@@ -66,8 +67,21 @@ const useStyles = makeStyles((t) => ({
     justifyContent: 'center',
     borderRadius: t.radii.pill - 2,
     paddingHorizontal: t.spacing.md,
+    borderWidth: 1,
+    borderColor: 'transparent',
   },
-  selected: { backgroundColor: t.colors.surface, shadowColor: t.colors.shadow, shadowOpacity: 0.12, shadowRadius: 4, shadowOffset: { width: 0, height: 1 }, elevation: 1 },
+  // Selected segment: its own fill (white in light, a lighter elevated grey in dark) plus an
+  // outline in `controlTrackOff` (≥ 3:1 against the track), so the choice does not rely on a
+  // shadow that is invisible on dark backgrounds.
+  selected: {
+    backgroundColor: t.colors.segmentSelected,
+    borderColor: t.colors.controlTrackOff,
+    shadowColor: t.colors.shadow,
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 1,
+  },
   text: { color: t.colors.textSecondary },
-  selectedText: { color: t.colors.text },
+  selectedText: { color: t.colors.text, fontFamily: t.type.bodyStrong.fontFamily },
 }));

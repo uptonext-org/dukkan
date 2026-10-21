@@ -32,11 +32,15 @@ pairs below were checked against WCAG AA (≥ 4.5:1 for body text).
 | `taste` | `#7A6418` | `#D4B455` | Gold tagline above product names ("süß-säuerlich") | 5.7 |
 | `separator` | `#ECE9E5` | `#2E2C2A` | Hairlines between rows | |
 | `overlayText` | `#FFFFFF` + 35 % black scrim | same | Text on banner photos | |
+| `controlTrackOff` | `#857F78` | `#7A746E` | Switch track when off; outline of the selected segment | non-text ≥ 3:1: light 3.96 on `surface`/`bg` #FFF, 3.51 on `surfaceMuted`, 3.57 on `surfaceRose`; dark 3.61 on `surface` #1E1E1E, 4.06 on `bg` #121212, 3.32 on `surfaceMuted`; white thumb on it 3.96 / 4.61 |
+| `segmentSelected` | `#FFFFFF` | `#4A4844` | Fill of the selected segment (Liste \| Karte, Lieferung \| Abholung) | `text` on it 14.2 / 8.0; it is lighter than the dark track (1.7:1), and the `controlTrackOff` outline adds 3.3:1 against the track |
 
 **Radii:** 6 (labels), 12 (pills, fields), 16 (tiles, banners), 24 (sheets), full (badge, circle buttons).
 **Spacing scale:** 4, 8, 12, 16, 20, 24, 32. Screen gutter 16; the hero carousel lets the next card peek about 24 pt.
 **Elevation:** flat. Cards are separated by tint, not shadow; the floating "+" button gets a soft shadow (y 1, blur 4, 12 %).
 **Touch targets:** at least 44 × 44 pt (HIG accessibility).
+**Controls:** switches use `primary` when on and `controlTrackOff` when off (the earlier `surfaceMuted` off-track was 1.1:1 and invisible). The selected segment uses `segmentSelected` plus a 1 pt `controlTrackOff` outline, so it does not depend on a shadow that disappears in dark mode.
+**Values in sentences:** money, numbers, dates and times interpolated into translated text are wrapped in Unicode isolates (LRI … PDI, FSI … PDI for values with Arabic letters) by the i18n `escape` hook and `isolate()` (`shared/format/bidi.ts`), so Arabic shows "2,90 €" and "21.10." instead of "€ 2,90" and ".21.10". Accessibility labels get the marks stripped (`forSpeech()`); a Jest guard fails any test whose rendered labels still contain them.
 
 ## 2. Typography
 
@@ -52,7 +56,7 @@ pairs below were checked against WCAG AA (≥ 4.5:1 for body text).
 | `body` | 17 / 24 | 400 | Body copy, list rows |
 | `callout` | 16 / 22 | 400 | Tab-bar-adjacent copy |
 | `subhead` | 15 / 20 | 400 | Secondary lines, unit prices |
-| `caption` | 13 / 18 | 500 | Badges, tab labels (11 / 13 on the tab bar) |
+| `caption` | 13 / 18 | 500 | Badges, tab labels (11 / 13 on the tab bar; 11 / 18 in Arabic, IBM Plex Sans Arabic's own line height, with the tab bar 5 pt taller plus the bottom safe-area inset) |
 | `price` | 18 / 22 | 600 | Price; on cart rows the cents are superscript (`2¹⁴`) |
 
 ## 3. Internationalisation and RTL
@@ -85,19 +89,20 @@ pairs below were checked against WCAG AA (≥ 4.5:1 for body text).
 
 ### 4.3 Market sub-app: its own bottom tabs **Entdecken · Favoriten · Suchen · Warenkorb**
 A close/back control at the top start returns to the marketplace. The market's name and logo appear in the header.
-- **Entdecken:** green "Lieferzeit wählen ›" or "Abholzeit wählen ›" link on the start side of the header and the account icon on the end side. Then a hero carousel of banners (cover photo, white overline and title on a scrim, rounded 16 corners, next card peeks), the market info card on `surfaceRose` (opening hours, delivery/pickup, minimum order), and horizontal sections ("Angebote der Woche", "Neu im Markt", top categories) of product tiles.
+- **Entdecken:** green "Lieferzeit wählen ›" or "Abholzeit wählen ›" link on the start side of the header and the account icon on the end side. Then a hero carousel of banners (cover photo, white overline and title on a scrim, rounded 16 corners, next card peeks), the market info card on `surfaceRose` (opening hours, "Lieferung (2,90 €) · Abholung", minimum order, free delivery threshold), and horizontal sections ("Angebote der Woche", "Neu im Markt", top categories) of product tiles.
 - **Product tile (2-column grid or carousel item):**
   - Photo on `tileSage` with radius 16. A yellow promo pill at the bottom start, and a white square "+" button at the bottom end (it becomes a − n + stepper once added).
-  - Below the photo: an optional gold tagline, then the name in `headline` with a green "Bio " prefix when organic and a trailing ›.
+  - Below the photo: an optional gold tagline (in carousels the line is reserved when any tile of the row has one, so names line up), then the name in `headline` with a green "Bio " prefix when organic and a trailing ›. The prefix is left out when the localised name already contains the localised word ("Bio-Vollmilch", case- and diacritic-insensitive).
+  - Once the "+" turns into the − n + stepper, the promo pill moves to the top start of the photo so the stepper never covers it.
   - Price in `accent` with the old price struck through in `textSecondary` when discounted, otherwise in `text`. Last line: "550 g · 5,07 €/kg".
 - **Favoriten:** large title "Hier kommen deine Favoriten", an explanation, and an illustration of three tilted tiles with heart badges (our own vector drawing). Then product tiles grouped by category headers ("Obst"). Heart toggles appear on the tile and on product detail.
-- **Suchen:** a rounded `surfaceMuted` search field ("Suche nach Produkten"); quick links with 72 pt tinted icon tiles ("Alle Angebote" yellow %, "Neu im Markt" pink sparkles, "Regional"); a separator; "Alle Kategorien" as rows with a square image tile and a chevron. Typing shows suggestions, then a grid of results with sort and filter.
+- **Suchen:** a rounded `surfaceMuted` search field ("Suche nach Produkten"); quick links with 72 pt tinted icon tiles ("Alle Angebote" yellow `promo` %, "Neu im Markt" pink sparkles, "Bio"; "Regional" follows once `/markets/{id}/products` has a regional filter, the API has none yet); a separator; "Alle Kategorien" as rows with a square image tile and a chevron. Typing shows suggestions, then a grid of results with sort and filter.
 - **Warenkorb:**
   - A `surfaceMuted` bar at the top: truck icon, "Lieferzeit wählen" (or the chosen slot), and a ⋯ menu (empty the cart).
   - Each row: a quantity pill on the start side, a 64 pt image, the name, the unit size, a `primaryStrong` discount label, and on the end side the old price struck through with the new price in `accent`, cents in superscript.
-  - Summary: Rabatt, Lieferung ("Gratis" or the amount), **Total (inkl. MwSt.)**, and a minimum-order progress bar.
+  - Summary: Rabatt, the fee, **Total (inkl. MwSt.)**, and a minimum-order progress bar. Before a slot is reserved the fee rows describe the market: "Lieferung: ab 2,90 €" with "Gratis ab 40 €" below, and "Abholung: kostenlos" when pickup is offered; the total then reads "(inkl. MwSt., zzgl. Lieferung)". After a reservation the server's `deliveryFee` is shown ("Gratis" only when it is 0 for delivery; the label "Abholung" for pickup).
   - A sticky full-width `accent` button: "Lieferzeit wählen" until a slot is reserved, then "Bestellen · 23,40 €".
-- **Fulfilment sheet:** segmented Lieferung | Abholung (only the options the market offers), days as chips, and time windows as rows with fee and remaining capacity. Unavailable windows are disabled and announced as such.
+- **Fulfilment sheet:** segmented Lieferung | Abholung (only the options the market offers), days as chips that scroll edge to edge (the gutter is content inset), and time windows as rows with fee and remaining capacity. Unavailable windows are disabled and announced as such. With an empty cart the server refuses a reservation (`CART_EMPTY`), so the slots are shown read-only under the hint "Leg zuerst Produkte in den Warenkorb".
 - **Order confirmation:** a check illustration, the order number, the slot, and a status timeline (simulated).
 
 ### 4.4 Merchant mode ("Mein Markt")

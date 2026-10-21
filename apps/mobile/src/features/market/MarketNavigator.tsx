@@ -3,10 +3,11 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useMemo } from 'react';
 import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { tabBarOptions, tabIcon, tabLabel } from '../../navigation/tabBar';
 import type { MarketStackParamList, MarketTabParamList, RootStackScreenProps } from '../../navigation/types';
-import { formatAmount, formatMoneyForAccessibility } from '../../shared/format';
+import { formatAmount, formatMoneyForAccessibility, forSpeech } from '../../shared/format';
 import { useTheme } from '../../shared/theme';
 import { useCart } from '../cart/api/hooks';
 import { MarketCartScreen } from '../cart/screens/MarketCartScreen';
@@ -31,19 +32,20 @@ export function useCartBadge(marketId: string) {
   }
   return {
     badge: formatAmount(cart.total),
-    label: t('market.tabs.cartWithTotal', { amount: formatMoneyForAccessibility(cart.total) }),
+    label: forSpeech(t('market.tabs.cartWithTotal', { amount: formatMoneyForAccessibility(cart.total) })),
   };
 }
 
 function MarketTabs() {
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const { marketId } = useMarketContext();
   const { badge, label } = useCartBadge(marketId);
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.bg }}>
       <MarketHeader />
-      <Tab.Navigator screenOptions={tabBarOptions(theme)}>
+      <Tab.Navigator screenOptions={tabBarOptions(theme, insets.bottom)}>
         <Tab.Screen name="MarketHome" component={MarketHomeScreen} options={{ title: t('market.tabs.discover'), tabBarIcon: tabIcon('home'), tabBarAccessibilityLabel: tabLabel(t, t('market.tabs.discover'), 1, 4) }} />
         <Tab.Screen name="MarketFavorites" component={MarketFavoritesScreen} options={{ title: t('market.tabs.favorites'), tabBarIcon: tabIcon('heart'), tabBarAccessibilityLabel: tabLabel(t, t('market.tabs.favorites'), 2, 4) }} />
         <Tab.Screen name="MarketSearch" component={MarketSearchScreen} options={{ title: t('market.tabs.search'), tabBarIcon: tabIcon('search'), tabBarAccessibilityLabel: tabLabel(t, t('market.tabs.search'), 3, 4) }} />

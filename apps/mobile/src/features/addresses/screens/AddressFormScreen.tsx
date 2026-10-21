@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { Switch, View } from 'react-native';
+import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import type { RootStackScreenProps } from '../../../navigation/types';
 import { errorMessageKey, type Place } from '../../../shared/api';
 import { PlaceSearch } from '../../../shared/location';
-import { makeStyles, useTheme } from '../../../shared/theme';
-import { AppText, Button, Screen, ScreenHeader, TextField, queryState } from '../../../shared/ui';
+import { makeStyles } from '../../../shared/theme';
+import { AppText, Button, queryState, Screen, ScreenHeader, TextField, ToggleSwitch } from '../../../shared/ui';
 import { hasErrors } from '../../auth/validation';
 import { useAddresses, useSaveAddress } from '../api/hooks';
 import { EMPTY_ADDRESS, toAddressRequest, toFormValues, validateAddress, type AddressErrors, type AddressField, type AddressFormValues } from '../validation';
@@ -24,7 +24,6 @@ export function AddressFormScreen(props: RootStackScreenProps<'AddressForm'>) {
 
 function AddressForm({ route, navigation, initial }: RootStackScreenProps<'AddressForm'> & { initial: AddressFormValues }) {
   const styles = useStyles();
-  const { colors } = useTheme();
   const { t } = useTranslation();
   const addressId = route.params?.addressId;
   const [values, setValues] = useState<AddressFormValues>(initial);
@@ -84,11 +83,10 @@ function AddressForm({ route, navigation, initial }: RootStackScreenProps<'Addre
         <AppText variant="body" style={styles.flex}>
           {t('address.makeDefault')}
         </AppText>
-        <Switch
+        <ToggleSwitch
           value={values.isDefault}
           onValueChange={(isDefault) => setValues((v) => ({ ...v, isDefault }))}
           accessibilityLabel={t('address.makeDefault')}
-          trackColor={{ true: colors.primary, false: colors.surfaceMuted }}
         />
       </View>
       {save.isError && (

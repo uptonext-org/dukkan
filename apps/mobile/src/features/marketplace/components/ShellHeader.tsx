@@ -4,6 +4,7 @@ import { Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 
+import { forSpeech } from '../../../shared/format';
 import type { RootStackParamList } from '../../../navigation/types';
 import { useChosenPlace } from '../../../shared/location';
 import { makeStyles, useTheme } from '../../../shared/theme';
@@ -34,7 +35,7 @@ export function ShellHeader({ title, showAccount = true }: { title?: string; sho
       <Pressable
         onPress={() => navigation.navigate('Onboarding', { change: true })}
         accessibilityRole="button"
-        accessibilityLabel={t('shell.locationButton', { place: place?.shortLabel ?? '' })}
+        accessibilityLabel={forSpeech(t('shell.locationButton', { place: place?.shortLabel ?? '' }))}
         accessibilityHint={t('shell.locationHint')}
         style={({ pressed }) => [styles.location, pressed && styles.pressed]}
         testID="location-button">

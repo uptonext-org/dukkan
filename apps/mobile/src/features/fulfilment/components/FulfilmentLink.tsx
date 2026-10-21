@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Pressable } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
+import { forSpeech } from '../../../shared/format';
 import type { MarketSummary } from '../../../shared/api';
 import { makeStyles, useTheme } from '../../../shared/theme';
 import { AppText, Icon } from '../../../shared/ui';
@@ -30,7 +31,7 @@ export function FulfilmentLink({ market }: { market: MarketSummary }) {
       <Pressable
         onPress={() => requireAuth('checkout', () => setOpen(true))}
         accessibilityRole="button"
-        accessibilityLabel={label}
+        accessibilityLabel={forSpeech(label)}
         accessibilityHint={t('fulfilment.linkHint')}
         style={({ pressed }) => [styles.link, pressed && styles.pressed]}
         testID="fulfilment-link">

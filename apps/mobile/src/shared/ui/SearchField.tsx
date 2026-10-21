@@ -1,6 +1,7 @@
 import { Pressable, TextInput, View, type TextInputProps } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
+import { forSpeech } from '../format/bidi';
 import { makeStyles, useTheme } from '../theme';
 import { Icon } from './Icon';
 
@@ -23,7 +24,7 @@ export function SearchField({ value, onChangeText, placeholder, ...props }: Sear
         onChangeText={onChangeText}
         placeholder={placeholder}
         placeholderTextColor={colors.textPlaceholder}
-        accessibilityLabel={placeholder}
+        accessibilityLabel={forSpeech(placeholder)}
         accessibilityRole="search"
         returnKeyType="search"
         autoCorrect={false}

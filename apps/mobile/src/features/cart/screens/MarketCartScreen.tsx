@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import type { MarketTabScreenProps } from '../../../navigation/types';
 import { errorMessageKey } from '../../../shared/api';
-import { formatMoney } from '../../../shared/format';
+import { formatMoney, forSpeech } from '../../../shared/format';
 import { makeStyles, useTheme } from '../../../shared/theme';
 import { AppText, Button, EmptyState, Icon, IconButton, Screen, queryState } from '../../../shared/ui';
 import { useAuth } from '../../auth/AuthProvider';
@@ -118,7 +118,7 @@ export function MarketCartScreen({ navigation }: MarketTabScreenProps<'MarketCar
           <Pressable
             onPress={() => setSheetOpen(true)}
             accessibilityRole="button"
-            accessibilityLabel={barLabel}
+            accessibilityLabel={forSpeech(barLabel)}
             accessibilityHint={t('fulfilment.linkHint')}
             style={styles.barButton}
             testID="fulfilment-bar">

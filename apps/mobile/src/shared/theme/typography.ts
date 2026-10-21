@@ -51,6 +51,9 @@ export function fontFamily(script: FontScript, weight: Weight): string {
   return FAMILIES[script][weight];
 }
 
+/** IBM Plex Sans Arabic's natural line height relative to its size (ascender + descender). */
+const ARABIC_TIGHT_LINE_HEIGHT = 1.64;
+
 export type Typography = Record<TextVariant, TextStyle>;
 
 export function createTypography(script: FontScript): Typography {
@@ -58,7 +61,10 @@ export function createTypography(script: FontScript): Typography {
   for (const [variant, spec] of Object.entries(SCALE) as [TextVariant, (typeof SCALE)[TextVariant]][]) {
     // Arabic glyphs sit taller; give them a little more line height (right-to-left.md suggests
     // balancing Arabic next to Latin by size; we keep sizes equal and add leading instead).
-    const lineHeight = script === 'arabic' ? Math.round(spec.lineHeight * 1.12) : spec.lineHeight;
+    // The tab label is the tightest style (11/13); Plex Arabic needs ~1.6× its size there or the
+    // descenders are clipped (Arabic tab bar labels), so it gets the font's own line height.
+    const lineHeight =
+      script === 'arabic' ? (variant === 'tabLabel' ? Math.round(spec.fontSize * ARABIC_TIGHT_LINE_HEIGHT) : Math.round(spec.lineHeight * 1.12)) : spec.lineHeight;
     result[variant] = { fontSize: spec.fontSize, lineHeight, fontFamily: FAMILIES[script][spec.weight] };
   }
   return result;

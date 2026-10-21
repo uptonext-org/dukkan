@@ -14,6 +14,7 @@ export interface ApiErrorInit {
   title?: string | undefined;
   detail?: string | undefined;
   fieldErrors?: Record<string, string> | undefined;
+  fieldCodes?: Record<string, string> | undefined;
   cause?: unknown;
 }
 
@@ -27,6 +28,8 @@ export class ApiError extends Error {
   readonly detail: string | undefined;
   /** Validation messages keyed by request field name. */
   readonly fieldErrors: Readonly<Record<string, string>>;
+  /** Validation codes keyed by request field name, e.g. `{ password: 'MaxUtf8Bytes' }`. */
+  readonly fieldCodes: Readonly<Record<string, string>>;
 
   constructor(init: ApiErrorInit) {
     super(init.detail ?? init.title ?? init.code, { cause: init.cause });
@@ -37,6 +40,7 @@ export class ApiError extends Error {
     this.title = init.title;
     this.detail = init.detail;
     this.fieldErrors = init.fieldErrors ?? {};
+    this.fieldCodes = init.fieldCodes ?? {};
   }
 
   get isClientError(): boolean {
@@ -49,9 +53,13 @@ export class ApiError extends Error {
 
   static fromProblem(status: number, problem: Partial<Problem> | undefined): ApiError {
     const fieldErrors: Record<string, string> = {};
+    const fieldCodes: Record<string, string> = {};
     for (const entry of problem?.errors ?? []) {
-      // Keep the first message per field.
+      // Keep the first message and code per field.
       fieldErrors[entry.field] ??= entry.message;
+      if (typeof entry.code === 'string') {
+        fieldCodes[entry.field] ??= entry.code;
+      }
     }
     return new ApiError({
       kind: 'http',
@@ -60,6 +68,7 @@ export class ApiError extends Error {
       title: problem?.title,
       detail: problem?.detail,
       fieldErrors,
+      fieldCodes,
     });
   }
 }

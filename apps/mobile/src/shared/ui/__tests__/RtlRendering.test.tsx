@@ -105,9 +105,9 @@ describe('MarketCard in RTL (ar)', () => {
     await renderInAppRoot(<MarketCard market={market()} onPress={noop} />, dependencies);
     const card = screen.getByTestId(`market-card-${MARKET_ID}`);
     expect(inheritedDirection(card)).toBe('rtl');
-    expect(within(card).getByText('1,2 km · مفتوح حتى 20:00')).toBeOnTheScreen();
+    expect(within(card).getByText('1,2 km · مفتوح حتى 20:00', { normalizer: normalize })).toBeOnTheScreen();
     expect(within(card).getByText('الحد الأدنى للطلب 15 € · التوصيل 2,99 €', { normalizer: normalize, ...hidden })).toBeOnTheScreen();
-    expect(within(card).getByText('3 عروض')).toBeOnTheScreen();
+    expect(within(card).getByText('3 عروض', { normalizer: normalize })).toBeOnTheScreen();
     expect(within(card).getByText('توصيل')).toBeOnTheScreen();
     expect(within(card).getByText('استلام')).toBeOnTheScreen();
     expect(flatStyle(within(card).getByText('Anatolia Markt')).fontFamily).toBe('IBMPlexSansArabic-SemiBold');

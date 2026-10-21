@@ -1,5 +1,6 @@
 import { ApiError } from '../ApiError';
 import { buildUrl, createFetchApiClient } from '../client';
+import { errorMessageKey } from '../errorMessages';
 import { shouldRetry } from '../queryClient';
 
 const BASE = 'http://localhost:8080/api/v1';
@@ -195,6 +196,19 @@ describe('createFetchApiClient', () => {
     const pending = client.request({ method: 'GET', path: '/products', signal: controller.signal });
     controller.abort();
     await expect(pending).rejects.toBe(abortError);
+  });
+});
+
+describe('errorMessageKey', () => {
+  it('maps codes, known validation field codes and unknown errors to translation keys', () => {
+    const problem = (code: string, errors?: { field: string; code: string; message: string }[]) =>
+      ApiError.fromProblem(code === 'VALIDATION_FAILED' ? 400 : 409, { code, ...(errors ? { errors } : {}) });
+    expect(errorMessageKey(problem('IDEMPOTENCY_KEY_REUSED'))).toBe('errors.IDEMPOTENCY_KEY_REUSED');
+    expect(errorMessageKey(problem('VALIDATION_FAILED', [{ field: 'password', code: 'MaxUtf8Bytes', message: 'too long' }]))).toBe('errors.field.MaxUtf8Bytes');
+    expect(errorMessageKey(problem('VALIDATION_FAILED', [{ field: 'validUntil', code: 'Future', message: 'must be in the future' }]))).toBe('errors.field.Future');
+    expect(errorMessageKey(problem('VALIDATION_FAILED', [{ field: 'city', code: 'NotBlank', message: 'blank' }]))).toBe('errors.VALIDATION_FAILED');
+    expect(errorMessageKey(problem('SOMETHING_NEW'))).toBe('errors.UNKNOWN');
+    expect(errorMessageKey(new Error('x'))).toBe('errors.UNKNOWN');
   });
 });
 

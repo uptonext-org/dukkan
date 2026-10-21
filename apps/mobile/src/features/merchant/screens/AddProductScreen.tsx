@@ -1,13 +1,14 @@
 import { useState } from 'react';
-import { FlatList, ScrollView, Switch, View } from 'react-native';
+import { FlatList, ScrollView, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import type { RootStackScreenProps } from '../../../navigation/types';
 import { errorMessageKey, type CatalogProduct } from '../../../shared/api';
+import { withOrganicPrefix } from '../../../shared/format';
 import { useDebouncedValue } from '../../../shared/hooks/useDebouncedValue';
 import { isLanguage, type Language } from '../../../shared/i18n';
-import { makeStyles, useTheme } from '../../../shared/theme';
-import { AppText, Button, Chip, EmptyState, ErrorState, ImageTile, LoadingState, Screen, ScreenHeader, SearchField, SegmentedControl, TextField } from '../../../shared/ui';
+import { makeStyles } from '../../../shared/theme';
+import { AppText, Button, Chip, ChipScroller, EmptyState, ErrorState, ImageTile, LoadingState, Screen, ScreenHeader, SearchField, SegmentedControl, TextField, ToggleSwitch } from '../../../shared/ui';
 import { hasErrors } from '../../auth/validation';
 import { useAllCategories } from '../../catalog/api/hooks';
 import { useCuisines } from '../../marketplace/api/hooks';
@@ -50,7 +51,7 @@ function CatalogRow({ product, marketId, onAdded }: { product: CatalogProduct; m
         <ImageTile uri={product.imageUrl} size={52} radius={10} />
         <View style={styles.flex}>
           <AppText variant="body" dense numberOfLines={2}>
-            {product.organic ? `${t('product.organic')} ${product.name}` : product.name}
+            {withOrganicPrefix(product.name, product.organic, t('product.organic'))}
           </AppText>
           <AppText variant="subhead" color="textSecondary" dense>
             {[product.brand, product.unitSize, product.cuisines.map((c) => c.name).join(', ')].filter(Boolean).join(' · ')}
@@ -83,7 +84,6 @@ function CatalogRow({ product, marketId, onAdded }: { product: CatalogProduct; m
 
 function NewProductForm({ marketId, primaryLocale, onAdded }: { marketId: string; primaryLocale: Language; onAdded: () => void }) {
   const styles = useStyles();
-  const { colors } = useTheme();
   const { t } = useTranslation();
   const categories = useAllCategories();
   const cuisines = useCuisines();
@@ -134,7 +134,7 @@ function NewProductForm({ marketId, primaryLocale, onAdded }: { marketId: string
         <AppText variant="body" style={styles.flex}>
           {t('merchant.organic')}
         </AppText>
-        <Switch value={values.organic} onValueChange={(v) => set('organic', v)} accessibilityLabel={t('merchant.organic')} trackColor={{ true: colors.primary, false: colors.surfaceMuted }} />
+        <ToggleSwitch value={values.organic} onValueChange={(v) => set('organic', v)} accessibilityLabel={t('merchant.organic')} />
       </View>
       <TextField label={t('merchant.allergens')} value={values.allergens} onChangeText={(v) => set('allergens', v)} hint={t('merchant.allergensHint')} />
       <TextField label={t('merchant.price')} value={values.price} onChangeText={(v) => set('price', v)} error={err('price')} keyboardType="decimal-pad" inputDirection="ltr" testID="new-price" />
@@ -190,12 +190,12 @@ export function AddProductScreen({ route, navigation }: RootStackScreenProps<'Me
           <View style={styles.searchBox}>
             <SearchField value={text} onChangeText={setText} placeholder={t('merchant.searchCatalog')} testID="catalog-search" />
           </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsWrap} contentContainerStyle={styles.chips} accessibilityLabel={t('merchant.cuisineFilter')}>
+          <ChipScroller style={styles.chipsWrap} accessibilityLabel={t('merchant.cuisineFilter')} testID="cuisine-filters">
             <Chip label={t('discover.all')} selected={cuisine === null} onPress={() => setCuisine(null)} />
             {(cuisines.data ?? []).map((c) => (
               <Chip key={c.code} label={c.name} selected={cuisine === c.code} onPress={() => setCuisine(cuisine === c.code ? null : c.code)} testID={`cuisine-filter-${c.code}`} />
             ))}
-          </ScrollView>
+          </ChipScroller>
           {catalog.isPending ? (
             <LoadingState />
           ) : catalog.isError ? (
@@ -226,8 +226,7 @@ export function AddProductScreen({ route, navigation }: RootStackScreenProps<'Me
 const useStyles = makeStyles((t) => ({
   top: { paddingHorizontal: t.layout.gutter, gap: t.spacing.sm, paddingBottom: t.spacing.sm },
   searchBox: { paddingHorizontal: t.layout.gutter },
-  chipsWrap: { flexGrow: 0, marginVertical: t.spacing.sm },
-  chips: { gap: t.spacing.sm, paddingHorizontal: t.layout.gutter },
+  chipsWrap: { marginVertical: t.spacing.sm },
   list: { paddingHorizontal: t.layout.gutter, paddingBottom: t.spacing.xxxl, flexGrow: 1 },
   catalogRow: { paddingVertical: t.spacing.sm, borderBottomWidth: 1, borderBottomColor: t.colors.separator, gap: t.spacing.sm },
   rowMain: { flexDirection: 'row', alignItems: 'center', gap: t.spacing.md },

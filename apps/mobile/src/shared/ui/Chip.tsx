@@ -1,5 +1,6 @@
 import { Pressable } from 'react-native';
 
+import { forSpeech } from '../format/bidi';
 import { makeStyles } from '../theme';
 import { AppText } from './AppText';
 import { Icon, type IconName } from './Icon';
@@ -24,8 +25,8 @@ export function Chip({ label, selected = false, onPress, icon, accessibilityHint
       onPress={onPress}
       disabled={!interactive || disabled}
       accessibilityRole={interactive ? 'button' : 'text'}
-      accessibilityLabel={label}
-      accessibilityHint={accessibilityHint}
+      accessibilityLabel={forSpeech(label)}
+      accessibilityHint={forSpeech(accessibilityHint)}
       accessibilityState={interactive ? { selected, disabled } : undefined}
       style={({ pressed }) => [
         styles.chip,

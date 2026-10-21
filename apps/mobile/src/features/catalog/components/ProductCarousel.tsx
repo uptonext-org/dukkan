@@ -9,6 +9,8 @@ import { useProductActions } from '../useProductActions';
 export function ProductCarousel({ marketId, products, label }: { marketId: string; products: ProductSummary[]; label: string }) {
   const styles = useStyles();
   const actions = useProductActions(marketId);
+  // Keep a tagline line in every tile of the row when any product has one, so names line up.
+  const reserveTagline = products.some((p) => p.tagline != null && p.tagline !== '');
   return (
     <FlatList
       horizontal
@@ -22,6 +24,7 @@ export function ProductCarousel({ marketId, products, label }: { marketId: strin
           <ProductTile
             product={item}
             width={168}
+            reserveTagline={reserveTagline}
             quantity={actions.quantities.get(item.id) ?? 0}
             busy={actions.busyProductId === item.id}
             onPress={actions.openProduct}

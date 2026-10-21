@@ -3,7 +3,7 @@ import { screen, userEvent, waitFor, within } from '@testing-library/react-nativ
 import { ApiError } from '../../../shared/api';
 import { createFakeApiClient } from '../../../test/fakeApiClient';
 import { cart, cartItem, eur, market, MARKET_ID, marketHome, page, product } from '../../../test/fixtures';
-import { createTestDependencies, renderApp } from '../../../test/render';
+import { createTestDependencies, normalize, renderApp } from '../../../test/render';
 
 const PRODUCT_ID = product().id;
 
@@ -47,7 +47,9 @@ describe('Market sub-app: Entdecken', () => {
 
     // Info card on surfaceRose.
     const info = screen.getByTestId('market-info-card');
-    expect(within(info).getByText('Geöffnet bis 20:00 · heute 08:00–20:00')).toBeOnTheScreen();
+    expect(within(info).getByText('Geöffnet bis 20:00 · heute 08:00–20:00', { normalizer: normalize })).toBeOnTheScreen();
+    // The fee belongs to delivery: "Lieferung (2,99 €) · Abholung", not a third option.
+    expect(within(info).getByText('Lieferung (2,99 €) · Abholung', { normalizer: normalize })).toBeOnTheScreen();
 
     // Sections with items; empty sections are skipped.
     expect(screen.getByTestId('home-section-PROMOTIONS')).toHaveTextContent(/Angebote der Woche/);

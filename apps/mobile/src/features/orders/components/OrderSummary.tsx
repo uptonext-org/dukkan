@@ -2,7 +2,7 @@ import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import type { Order } from '../../../shared/api';
-import { formatMoney, formatMoneyForAccessibility } from '../../../shared/format';
+import { formatMoney, formatMoneyForAccessibility, forSpeech } from '../../../shared/format';
 import { makeStyles } from '../../../shared/theme';
 import { AppText } from '../../../shared/ui';
 
@@ -22,7 +22,7 @@ export function OrderSummary({ order }: { order: Order }) {
   return (
     <View style={styles.box}>
       {order.items.map((item) => (
-        <View key={item.productId} style={styles.row} accessible accessibilityLabel={`${item.quantity} × ${item.name}, ${formatMoneyForAccessibility(item.lineTotal)}`}>
+        <View key={item.productId} style={styles.row} accessible accessibilityLabel={forSpeech(`${item.quantity} × ${item.name}, ${formatMoneyForAccessibility(item.lineTotal)}`)}>
           <AppText variant="body" style={styles.flex}>
             {`${item.quantity} × ${item.name}`}
           </AppText>
@@ -33,7 +33,7 @@ export function OrderSummary({ order }: { order: Order }) {
       ))}
       <View style={styles.divider} />
       {rows.map(([label, value, spoken]) => (
-        <View key={label} style={styles.row} accessible accessibilityLabel={`${label}: ${spoken}`}>
+        <View key={label} style={styles.row} accessible accessibilityLabel={forSpeech(`${label}: ${spoken}`)}>
           <AppText variant="body" color="textSecondary" style={styles.flex}>
             {label}
           </AppText>

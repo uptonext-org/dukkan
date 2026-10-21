@@ -4,7 +4,7 @@ import type { Cart } from '../../../shared/api';
 import { createFakeApiClient } from '../../../test/fakeApiClient';
 import { cart, cartItem, eur, market, MARKET_ID, marketHome, order, page, slot } from '../../../test/fixtures';
 import { createTestDependencies, normalize, renderApp } from '../../../test/render';
-import { cartCta, minimumOrderProgress } from '../model';
+import { cartCta, feeLines, minimumOrderProgress } from '../model';
 
 const address = {
   id: '00000000-0000-4000-8000-0000000000ad',
@@ -77,8 +77,13 @@ describe('Market cart', () => {
 
     const summary = screen.getByTestId('cart-summary');
     expect(within(summary).getByLabelText('Rabatt: minus 0,77 Euro')).toBeOnTheScreen();
-    expect(within(summary).getByLabelText('Lieferung: Gratis')).toBeOnTheScreen();
-    expect(within(summary).getByLabelText('Total: 10,79 Euro')).toBeOnTheScreen();
+    // No slot yet: the market's fee "ab 2,99 €" with the free-delivery threshold, never "Gratis",
+    // plus pickup (free); the total says that delivery may be added.
+    expect(within(summary).queryByText('Gratis')).not.toBeOnTheScreen();
+    expect(within(summary).getByLabelText('Lieferung: ab 2,99 Euro, Gratis ab 50 €', { normalizer: normalize })).toBeOnTheScreen();
+    expect(within(summary).getByText('ab 2,99 €', { normalizer: normalize })).toBeOnTheScreen();
+    expect(within(summary).getByLabelText('Abholung: kostenlos')).toBeOnTheScreen();
+    expect(within(summary).getByLabelText('Total (inkl. MwSt., zzgl. Lieferung): 10,79 Euro')).toBeOnTheScreen();
     expect(within(summary).getByText('Noch 4,21 € bis zum Mindestbestellwert von 15,00 €.', { normalizer: normalize })).toBeOnTheScreen();
     expect(within(summary).getByRole('progressbar')).toBeOnTheScreen();
 
@@ -143,7 +148,11 @@ describe('Market cart', () => {
     const cta = screen.getByTestId('cart-cta');
     expect(normalize(cta.props.accessibilityLabel as string)).toBe('Bestellen · 10,79 €');
     expect(cta).toBeDisabled();
-    expect(within(screen.getByTestId('cart-summary')).getByLabelText('Abholung: Gratis')).toBeOnTheScreen();
+    // Reserved pickup: the server's fee (0) under the label "Abholung", no delivery row.
+    const summary = screen.getByTestId('cart-summary');
+    expect(within(summary).getByLabelText('Abholung: kostenlos')).toBeOnTheScreen();
+    expect(within(summary).queryByTestId('cart-fee-delivery')).not.toBeOnTheScreen();
+    expect(within(summary).getByLabelText('Total (inkl. MwSt.): 10,79 Euro')).toBeOnTheScreen();
   });
 
   it('offers only the fulfilment types the market has (pickup-only market)', async () => {
@@ -160,5 +169,39 @@ describe('Market cart', () => {
     expect(within(sheet).getByTestId('fulfilment-single-type')).toHaveTextContent('Dieser Markt bietet nur Abholung');
     expect(within(sheet).queryByText('Lieferadresse')).not.toBeOnTheScreen();
     await waitFor(() => expect(fake.calls).toContainEqual(expect.objectContaining({ path: `/markets/${MARKET_ID}/slots`, query: { type: 'PICKUP', addressId: undefined } })));
+  });
+
+  it('shows the server fee after a delivery reservation ("Gratis" only when it is 0)', async () => {
+    const delivery = { type: 'DELIVERY' as const, slot: reservedSlot, addressId: address.id, expiresAt: reservedSlot.orderCutoffAt };
+    const { dependencies } = setup(cart({ fulfilment: delivery, deliveryFee: eur(299) }));
+    await renderApp(dependencies);
+    await openCart();
+    const summary = screen.getByTestId('cart-summary');
+    expect(within(summary).getByLabelText('Lieferung: 2,99 Euro')).toBeOnTheScreen();
+    expect(within(summary).queryByTestId('cart-fee-pickup')).not.toBeOnTheScreen();
+    expect(feeLines(cart({ fulfilment: delivery, deliveryFee: eur(0) }))).toEqual([{ kind: 'delivery', fee: eur(0) }]);
+  });
+
+  it('describes fees before a reservation from the market options', () => {
+    const pickupOnly = market({ fulfilment: { delivery: false, pickup: true, minimumOrderValue: eur(0) } });
+    expect(feeLines(cart({ market: pickupOnly }))).toEqual([{ kind: 'pickupEstimate' }]);
+    expect(feeLines(cart())).toEqual([{ kind: 'deliveryEstimate', fee: eur(299), freeFrom: eur(5000) }, { kind: 'pickupEstimate' }]);
+  });
+
+  it('shows the slots read-only with a hint when the cart is empty (server: CART_EMPTY)', async () => {
+    const empty = cart({ items: [], itemCount: 0, total: eur(0), subtotal: eur(0), discountTotal: eur(0), fulfilment: null });
+    const { fake, dependencies } = setup(empty, {
+      [`GET /markets/${MARKET_ID}/slots`]: [reservedSlot],
+    });
+    await renderApp(dependencies);
+    const user = userEvent.setup();
+    await user.press(await screen.findByTestId(`market-card-${MARKET_ID}`));
+    await user.press(await screen.findByTestId('fulfilment-link'));
+    const sheet = await screen.findByTestId('fulfilment-sheet');
+    expect(within(sheet).getByTestId('fulfilment-empty-hint')).toHaveTextContent('Leg zuerst Produkte in den Warenkorb.', { exact: false });
+    const slotRow = await within(sheet).findByRole('button', { name: '08:00–09:00, Gratis, noch 4 frei' });
+    expect(slotRow).toBeDisabled();
+    await user.press(slotRow);
+    expect(fake.calls.some((c) => c.method === 'PUT' && c.path.endsWith('/cart/fulfilment'))).toBe(false);
   });
 });

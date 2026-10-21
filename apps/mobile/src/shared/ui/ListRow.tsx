@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Pressable, View } from 'react-native';
 
+import { forSpeech } from '../format/bidi';
 import { makeStyles, useTheme } from '../theme';
 import { AppText } from './AppText';
 import { Icon, type IconName } from './Icon';
@@ -57,7 +58,7 @@ export function ListRow({
   );
   if (onPress === undefined) {
     return (
-      <View style={styles.row} testID={testID} accessible accessibilityLabel={accessibilityLabel}>
+      <View style={styles.row} testID={testID} accessible accessibilityLabel={forSpeech(accessibilityLabel)}>
         {content}
       </View>
     );
@@ -68,8 +69,8 @@ export function ListRow({
       onPress={onPress}
       disabled={disabled}
       accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel ?? (subtitle !== undefined ? `${title}, ${subtitle}` : title)}
-      accessibilityHint={accessibilityHint}
+      accessibilityLabel={forSpeech(accessibilityLabel ?? (subtitle !== undefined ? `${title}, ${subtitle}` : title))}
+      accessibilityHint={forSpeech(accessibilityHint)}
       accessibilityState={{ disabled, ...(selected !== undefined ? { selected } : {}) }}
       style={({ pressed }) => [styles.row, pressed && styles.pressed, disabled && styles.disabled]}>
       {content}

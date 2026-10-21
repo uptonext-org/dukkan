@@ -3,6 +3,7 @@ import { View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { useTranslation } from 'react-i18next';
 
+import { forSpeech } from '../../../shared/format';
 import type { GeoPoint, MarketSummary } from '../../../shared/api';
 import { makeStyles } from '../../../shared/theme';
 import { AppText } from '../../../shared/ui';
@@ -31,7 +32,7 @@ export function MarketMap({ center, markets, onOpen }: MarketMapProps) {
         style={styles.map}
         initialRegion={{ latitude: center.lat, longitude: center.lng, latitudeDelta: 0.08, longitudeDelta: 0.08 }}
         showsUserLocation={false}
-        accessibilityLabel={t('discover.mapLabel', { count: markets.length })}
+        accessibilityLabel={forSpeech(t('discover.mapLabel', { count: markets.length }))}
         testID="market-map"
         mapPadding={{ top: 0, left: 0, right: 0, bottom: selected !== null ? 200 : 0 }}>
         {markets.map((market) => (
@@ -39,7 +40,7 @@ export function MarketMap({ center, markets, onOpen }: MarketMapProps) {
             key={market.id}
             coordinate={{ latitude: market.location.lat, longitude: market.location.lng }}
             onPress={() => setSelectedId(market.id)}
-            accessibilityLabel={market.name}
+            accessibilityLabel={forSpeech(market.name)}
             testID={`marker-${market.id}`}
             tracksViewChanges={false}>
             <View style={[styles.pin, market.id === selectedId && styles.pinSelected]}>

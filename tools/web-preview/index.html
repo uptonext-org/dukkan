@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Dukkan web preview (visual QA)</title>
+    <style>
+      html, body, #root { height: 100%; margin: 0; }
+      body { overflow: hidden; }
+      #root { display: flex; flex-direction: column; }
+      /* Browser focus rings on text inputs have no native counterpart; hide them for screenshots. */
+      input:focus, textarea:focus { outline: none; }
+      /* Yoga lets a flex:1 TextInput shrink to its available width; CSS gives inputs an intrinsic min width. */
+      input, textarea { min-width: 0; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/web/main.js"></script>
+  </body>
+</html>

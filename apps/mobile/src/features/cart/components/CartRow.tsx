@@ -3,7 +3,7 @@ import { Pressable, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import type { CartItem } from '../../../shared/api';
-import { formatMoneyForAccessibility } from '../../../shared/format';
+import { formatMoneyForAccessibility, forSpeech } from '../../../shared/format';
 import { makeStyles } from '../../../shared/theme';
 import { AppText, DiscountLabel, ImageTile, QuantityStepper, SuperscriptPrice } from '../../../shared/ui';
 
@@ -31,7 +31,7 @@ function CartRowComponent({ item, maxQuantity, busy, onChangeQuantity }: CartRow
         <Pressable
           onPress={() => setEditing((e) => !e)}
           accessibilityRole="button"
-          accessibilityLabel={t('cart.quantityPill', { count: item.quantity, name: item.name })}
+          accessibilityLabel={forSpeech(t('cart.quantityPill', { count: item.quantity, name: item.name }))}
           accessibilityHint={t('cart.quantityPillHint')}
           accessibilityState={{ expanded: editing }}
           style={styles.pill}>

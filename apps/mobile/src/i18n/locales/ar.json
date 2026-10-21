@@ -47,7 +47,12 @@
     "CART_EMPTY": "سلة التسوق فارغة.",
     "MINIMUM_ORDER_NOT_MET": "لم يتم بلوغ الحد الأدنى للطلب بعد.",
     "ORDER_NOT_CANCELLABLE": "لم يعد من الممكن إلغاء هذا الطلب.",
-    "INVALID_STATUS_TRANSITION": "تغيير الحالة هذا غير مسموح."
+    "INVALID_STATUS_TRANSITION": "تغيير الحالة هذا غير مسموح.",
+    "IDEMPOTENCY_KEY_REUSED": "تم إرسال هذا الطلب بالفعل لسوق آخر. يرجى إعادة تحميل السلة والطلب مرة أخرى.",
+    "field": {
+      "MaxUtf8Bytes": "كلمة المرور طويلة جدًا. الحروف العربية تُحسب مرتين.",
+      "Future": "يجب أن يكون تاريخ الانتهاء في المستقبل."
+    }
   },
   "validation": {
     "required": "هذا الحقل مطلوب.",
@@ -74,7 +79,9 @@
     "percent": "خصم من 1 إلى 90 %.",
     "bundleQuantity": "كمية من 2 إلى 20.",
     "productsRequired": "يُرجى اختيار منتج واحد على الأقل.",
-    "checkFields": "يُرجى مراجعة الحقول المميَّزة."
+    "checkFields": "يُرجى مراجعة الحقول المميَّزة.",
+    "passwordTooLong": "كلمة المرور طويلة جدًا (72 بايت كحد أقصى؛ الحروف العربية تُحسب مرتين).",
+    "endDateFuture": "يجب أن ينتهي العرض في المستقبل."
   },
   "language": {
     "button": "تغيير اللغة",
@@ -112,7 +119,7 @@
     "denied": "يمكن المتابعة دون مشاركة الموقع: يكفي البحث عن العنوان أو اختيار نقطة على الخريطة.",
     "failed": "تعذّر تحديد الموقع حاليًا. يمكن البحث عن العنوان أو اختيار نقطة على الخريطة.",
     "orSearch": "أو البحث عن عنوان أو حيّ",
-    "searchPlaceholder": "الشارع أو الرمز البريدي أو الحيّ",
+    "searchPlaceholder": "الشارع أو الرمز البريدي",
     "noPlaces": "لا توجد نتائج. يُرجى تجربة اسم شارع أو رمز بريدي.",
     "searchFailed": "لم ينجح البحث.",
     "pickOnMap": "الاختيار على الخريطة",
@@ -209,7 +216,9 @@
     "offers_two": "عرضان",
     "offers_few": "{{count}} عروض",
     "offers_many": "{{count}} عرضًا",
-    "offers_other": "{{count}} عرض"
+    "offers_other": "{{count}} عرض",
+    "deliveryWithFee": "التوصيل ({{amount}})",
+    "deliveryFreeShort": "التوصيل (مجانًا)"
   },
   "marketHome": {
     "banners": "أبرز العروض",
@@ -301,7 +310,7 @@
     "productCount_other": "{{count}} منتج"
   },
   "globalSearch": {
-    "placeholder": "البحث عن منتج في الأسواق القريبة",
+    "placeholder": "البحث عن منتجات قريبة",
     "introTitle": "مقارنة الأسعار",
     "introMessage": "البحث عن منتج يُظهر الأسواق القريبة التي توفّره، مع السعر والمسافة.",
     "sortLabel": "الترتيب",
@@ -344,7 +353,11 @@
     "quantityPill_two": "{{count}} × {{name}}",
     "quantityPill_few": "{{count}} × {{name}}",
     "quantityPill_many": "{{count}} × {{name}}",
-    "quantityPill_other": "{{count}} × {{name}}"
+    "quantityPill_other": "{{count}} × {{name}}",
+    "feeFrom": "ابتداءً من {{amount}}",
+    "freeDeliveryFrom": "مجانًا ابتداءً من {{amount}}",
+    "pickupFree": "مجانًا",
+    "inclVatPlusDelivery": "(شامل الضريبة، بدون التوصيل)"
   },
   "carts": {
     "title": "السلال",
@@ -384,7 +397,9 @@
     "remaining_two": "الأماكن المتبقية: {{count}}",
     "remaining_few": "الأماكن المتبقية: {{count}}",
     "remaining_many": "الأماكن المتبقية: {{count}}",
-    "remaining_other": "الأماكن المتبقية: {{count}}"
+    "remaining_other": "الأماكن المتبقية: {{count}}",
+    "emptyCartHint": "يجب إضافة منتجات إلى السلة أولًا، ثم يمكن حجز موعد.",
+    "days": "الأيام"
   },
   "order": {
     "title": "الطلب",
@@ -427,7 +442,7 @@
     "lastName": "اسم العائلة",
     "email": "البريد الإلكتروني",
     "password": "كلمة المرور",
-    "passwordHint": "10 أحرف على الأقل.",
+    "passwordHint": "من 10 إلى 128 حرفًا. الحروف العربية تُحسب مرتين (72 بايت كحد أقصى).",
     "reason": {
       "cart": "يلزم تسجيل الدخول لإضافة منتجات إلى السلة، ثم تستمر العملية مباشرة.",
       "favorites": "يلزم تسجيل الدخول لحفظ المفضلة.",

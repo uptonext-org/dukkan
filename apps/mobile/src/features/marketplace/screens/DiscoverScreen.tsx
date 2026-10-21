@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { FlatList, RefreshControl, ScrollView, View } from 'react-native';
+import { FlatList, RefreshControl, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { openMarket } from '../../../navigation/marketLinks';
@@ -7,7 +7,7 @@ import type { ShellTabScreenProps } from '../../../navigation/types';
 import type { CodeName, MarketSummary } from '../../../shared/api';
 import { HAMBURG, useChosenPlace } from '../../../shared/location';
 import { makeStyles, useTheme } from '../../../shared/theme';
-import { AppText, CardSkeletons, Chip, EmptyState, ErrorState, IconButton, SegmentedControl } from '../../../shared/ui';
+import { AppText, CardSkeletons, Chip, ChipScroller, EmptyState, ErrorState, IconButton, SegmentedControl } from '../../../shared/ui';
 import { useCuisines, useMarkets, useMarketTypes } from '../api/hooks';
 import { FilterSheet } from '../components/FilterSheet';
 import { MarketCard } from '../components/MarketCard';
@@ -34,14 +34,8 @@ function ChipRow({
   onClear: () => void;
   testID: string;
 }) {
-  const styles = useStyles();
   return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={styles.chipRow}
-      accessibilityLabel={label}
-      testID={testID}>
+    <ChipScroller accessibilityLabel={label} testID={testID}>
       {allLabel !== undefined && <Chip label={allLabel} selected={selected.length === 0} onPress={onClear} />}
       {items.map((item) => (
         <Chip
@@ -52,7 +46,7 @@ function ChipRow({
           testID={`chip-${item.code}`}
         />
       ))}
-    </ScrollView>
+    </ChipScroller>
   );
 }
 
@@ -215,7 +209,6 @@ const useStyles = makeStyles((t) => ({
   root: { flex: 1, backgroundColor: t.colors.bg },
   flex: { flex: 1 },
   controls: { gap: t.spacing.sm, paddingBottom: t.spacing.md },
-  chipRow: { gap: t.spacing.sm, paddingHorizontal: t.layout.gutter },
   modeRow: { flexDirection: 'row', alignItems: 'center', gap: t.spacing.sm, paddingHorizontal: t.layout.gutter },
   list: { paddingBottom: t.spacing.xxxl },
   item: { paddingHorizontal: t.layout.gutter },

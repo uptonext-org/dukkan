@@ -1,5 +1,6 @@
 import { View, type StyleProp, type ViewStyle } from 'react-native';
 
+import { forSpeech } from '../format/bidi';
 import type { Money } from '../api/types';
 import { formatMoney, formatMoneyForAccessibility, splitMoney } from '../format/money';
 import type { ColorTokens, TextVariant } from '../theme';
@@ -27,7 +28,7 @@ export function Price({ money, variant = 'price', color = 'text', strike = false
       strike={strike}
       dense={dense}
       accessible
-      accessibilityLabel={accessibilityPrefix !== undefined ? `${accessibilityPrefix} ${spoken}` : spoken}>
+      accessibilityLabel={forSpeech(accessibilityPrefix !== undefined ? `${accessibilityPrefix} ${spoken}` : spoken)}>
       {formatMoney(money)}
     </AppText>
   );
@@ -59,7 +60,7 @@ export function SuperscriptPrice({
       style={[{ flexDirection: 'row', alignItems: 'flex-start', direction: 'ltr' }, style]}
       accessible
       accessibilityRole="text"
-      accessibilityLabel={accessibilityPrefix !== undefined ? `${accessibilityPrefix} ${spoken}` : spoken}>
+      accessibilityLabel={forSpeech(accessibilityPrefix !== undefined ? `${accessibilityPrefix} ${spoken}` : spoken)}>
       <AppText variant={small ? 'callout' : 'title'} color={color} strike={strike} dense>
         {negative ? '−' : ''}
         {units}

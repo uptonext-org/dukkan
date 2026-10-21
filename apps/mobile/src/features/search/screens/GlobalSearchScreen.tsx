@@ -1,15 +1,15 @@
 import { useMemo, useState } from 'react';
-import { FlatList, Pressable, ScrollView, View } from 'react-native';
+import { FlatList, Pressable, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { openMarketProduct } from '../../../navigation/marketLinks';
 import type { ShellTabScreenProps } from '../../../navigation/types';
 import type { MarketOffer, OfferSort } from '../../../shared/api';
-import { formatDistance, formatMoney, formatMoneyForAccessibility } from '../../../shared/format';
+import { formatDistance, formatMoney, formatMoneyForAccessibility, forSpeech } from '../../../shared/format';
 import { useDebouncedValue } from '../../../shared/hooks/useDebouncedValue';
 import { HAMBURG, useChosenPlace } from '../../../shared/location';
 import { makeStyles, useTheme } from '../../../shared/theme';
-import { AppText, CardSkeletons, Chip, EmptyState, ErrorState, Icon, ImageTile, SearchField } from '../../../shared/ui';
+import { AppText, CardSkeletons, Chip, ChipScroller, EmptyState, ErrorState, Icon, ImageTile, SearchField } from '../../../shared/ui';
 import { ShellHeader } from '../../marketplace/components/ShellHeader';
 import { useNearbyOffers } from '../api/hooks';
 
@@ -92,7 +92,7 @@ export function GlobalSearchScreen({ navigation }: ShellTabScreenProps<'GlobalSe
                   key={`${market.id}-${product.id}`}
                   onPress={() => openMarketProduct(navigation, market.id, product.id)}
                   accessibilityRole="button"
-                  accessibilityLabel={[product.name, product.unitSize, market.name, distance, formatMoneyForAccessibility(price), product.promotion?.label].filter(Boolean).join(', ')}
+                  accessibilityLabel={forSpeech([product.name, product.unitSize, market.name, distance, formatMoneyForAccessibility(price), product.promotion?.label].filter(Boolean).join(', '))}
                   accessibilityHint={t('globalSearch.openHint')}
                   style={({ pressed }) => [styles.offer, pressed && styles.pressed]}
                   testID={`offer-${product.id}`}>
@@ -130,11 +130,11 @@ export function GlobalSearchScreen({ navigation }: ShellTabScreenProps<'GlobalSe
       <View style={styles.field}>
         <SearchField value={text} onChangeText={setText} placeholder={t('globalSearch.placeholder')} testID="global-search-field" />
       </View>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsWrap} contentContainerStyle={styles.chips} accessibilityLabel={t('globalSearch.sortLabel')}>
+      <ChipScroller style={styles.chipsWrap} accessibilityLabel={t('globalSearch.sortLabel')} testID="offer-sorts">
         {SORTS.map((s) => (
           <Chip key={s} label={t(`globalSearch.sort.${s}`)} selected={sort === s} onPress={() => setSort(s)} testID={`offer-sort-${s}`} />
         ))}
-      </ScrollView>
+      </ChipScroller>
       {body}
     </View>
   );
@@ -143,8 +143,7 @@ export function GlobalSearchScreen({ navigation }: ShellTabScreenProps<'GlobalSe
 const useStyles = makeStyles((t) => ({
   root: { flex: 1, backgroundColor: t.colors.bg },
   field: { paddingHorizontal: t.layout.gutter, paddingBottom: t.spacing.sm },
-  chipsWrap: { flexGrow: 0, marginBottom: t.spacing.sm },
-  chips: { gap: t.spacing.sm, paddingHorizontal: t.layout.gutter },
+  chipsWrap: { marginBottom: t.spacing.sm },
   list: { paddingHorizontal: t.layout.gutter, paddingBottom: t.spacing.xxxl, flexGrow: 1 },
   group: { paddingVertical: t.spacing.md, borderBottomWidth: 1, borderBottomColor: t.colors.separator },
   groupHeader: { flexDirection: 'row', alignItems: 'center', gap: t.spacing.md, marginBottom: t.spacing.xs },

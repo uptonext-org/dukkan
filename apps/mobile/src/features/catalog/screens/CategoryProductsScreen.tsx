@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import type { MarketStackScreenProps } from '../../../navigation/types';
 import type { ProductSort } from '../../../shared/api';
 import { makeStyles } from '../../../shared/theme';
-import { CardSkeletons, Chip, EmptyState, ErrorState, Screen, ScreenHeader } from '../../../shared/ui';
+import { CardSkeletons, Chip, ChipScroller, EmptyState, ErrorState, Screen, ScreenHeader } from '../../../shared/ui';
 import { useMarketContext } from '../../market/MarketContext';
 import { useMarketProducts } from '../api/hooks';
 import { ProductGrid } from '../components/ProductGrid';
@@ -32,11 +32,11 @@ export function CategoryProductsScreen({ route, navigation }: MarketStackScreenP
           products={query.products}
           header={
             <View style={styles.header}>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips} accessibilityLabel={t('marketSearch.sortLabel')}>
+              <ChipScroller accessibilityLabel={t('marketSearch.sortLabel')}>
                 {PRODUCT_SORTS.map((s) => (
                   <Chip key={s} label={t(`marketSearch.sort.${s}`)} selected={sort === s} onPress={() => setSort(s)} />
                 ))}
-              </ScrollView>
+              </ChipScroller>
             </View>
           }
           empty={<EmptyState icon="package" title={t('marketSearch.noProductsTitle')} message={t('marketSearch.noProductsMessage')} />}
@@ -56,5 +56,4 @@ export function CategoryProductsScreen({ route, navigation }: MarketStackScreenP
 
 const useStyles = makeStyles((t) => ({
   header: { marginHorizontal: -t.layout.gutter, marginBottom: t.spacing.lg },
-  chips: { gap: t.spacing.sm, paddingHorizontal: t.layout.gutter },
 }));

@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { ActivityIndicator, Animated, View, type DimensionValue } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
+import { forSpeech } from '../format/bidi';
 import { errorMessageKey } from '../api/errorMessages';
 import { isOfflineError } from '../api/ApiError';
 import { useReduceMotion } from '../hooks/useReduceMotion';
@@ -15,7 +16,7 @@ export function LoadingState({ label }: { label?: string }) {
   const { colors } = useTheme();
   const { t } = useTranslation();
   return (
-    <View style={styles.center} accessible accessibilityLabel={label ?? t('common.loading')} accessibilityRole="progressbar">
+    <View style={styles.center} accessible accessibilityLabel={forSpeech(label ?? t('common.loading'))} accessibilityRole="progressbar">
       <ActivityIndicator size="large" color={colors.primary} />
     </View>
   );

@@ -2,32 +2,108 @@ import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import type { Cart } from '../../../shared/api';
-import { formatMoney, formatMoneyForAccessibility } from '../../../shared/format';
+import { formatMoney, formatMoneyForAccessibility, formatMoneyShort, forSpeech } from '../../../shared/format';
 import { makeStyles } from '../../../shared/theme';
 import { AppText, ProgressBar } from '../../../shared/ui';
-import { minimumOrderProgress } from '../model';
+import { feeLines, minimumOrderProgress, type FeeLine } from '../model';
 
-function Row({ label, value, spoken, strong = false, accent = false }: { label: string; value: string; spoken: string; strong?: boolean; accent?: boolean }) {
+function Row({
+  label,
+  value,
+  spoken,
+  note,
+  strong = false,
+  accent = false,
+  testID,
+}: {
+  label: string;
+  value: string;
+  spoken: string;
+  note?: string;
+  strong?: boolean;
+  accent?: boolean;
+  testID?: string;
+}) {
   const styles = useStyles();
   return (
-    <View style={styles.row} accessible accessibilityLabel={`${label}: ${spoken}`}>
-      <AppText variant={strong ? 'title' : 'body'} style={styles.flex}>
-        {label}
-      </AppText>
-      <AppText variant={strong ? 'title' : 'body'} color={accent ? 'primary' : 'text'} dense>
-        {value}
-      </AppText>
+    <View accessible accessibilityLabel={forSpeech([`${label}: ${spoken}`, note].filter(Boolean).join(', '))} testID={testID}>
+      <View style={styles.row}>
+        <AppText variant={strong ? 'title' : 'body'} style={styles.flex}>
+          {label}
+        </AppText>
+        <AppText variant={strong ? 'title' : 'body'} color={accent ? 'primary' : 'text'} dense>
+          {value}
+        </AppText>
+      </View>
+      {note !== undefined && (
+        <AppText variant="subhead" color="textSecondary">
+          {note}
+        </AppText>
+      )}
     </View>
   );
 }
 
-/** Rabatt, Lieferung (Gratis or amount), Total (inkl. MwSt.) and the minimum-order progress. */
+/**
+ * Rabatt, the delivery/pickup fee and Total (inkl. MwSt.) plus the minimum-order progress.
+ * Before a slot is reserved the server's `deliveryFee` is not final, so the market's fee is shown
+ * as "ab 2,90 €" and the total says that delivery may be added. Server totals stay authoritative.
+ */
 export function CartSummary({ cart }: { cart: Cart }) {
   const styles = useStyles();
   const { t } = useTranslation();
   const progress = minimumOrderProgress(cart);
-  const pickup = cart.fulfilment?.type === 'PICKUP';
-  const feeIsFree = cart.deliveryFee.amountCents === 0;
+  const lines = feeLines(cart);
+  const feeMayBeAdded = lines.some((line) => line.kind === 'deliveryEstimate' && line.fee !== null && line.fee.amountCents > 0);
+
+  const feeRow = (line: FeeLine) => {
+    switch (line.kind) {
+      case 'deliveryEstimate': {
+        if (line.fee === null || line.fee.amountCents === 0) {
+          return <Row key="delivery" label={t('cart.delivery')} value={t('fulfilment.free')} spoken={t('fulfilment.free')} testID="cart-fee-delivery" />;
+        }
+        const note = line.freeFrom !== null ? t('cart.freeDeliveryFrom', { amount: formatMoneyShort(line.freeFrom) }) : undefined;
+        return (
+          <Row
+            key="delivery"
+            label={t('cart.delivery')}
+            value={t('cart.feeFrom', { amount: formatMoney(line.fee) })}
+            spoken={t('cart.feeFrom', { amount: formatMoneyForAccessibility(line.fee) })}
+            {...(note !== undefined ? { note } : {})}
+            testID="cart-fee-delivery"
+          />
+        );
+      }
+      case 'pickupEstimate':
+        return <Row key="pickup" label={t('cart.pickup')} value={t('cart.pickupFree')} spoken={t('cart.pickupFree')} testID="cart-fee-pickup" />;
+      case 'delivery': {
+        const free = line.fee.amountCents === 0;
+        return (
+          <Row
+            key="delivery"
+            label={t('cart.delivery')}
+            value={free ? t('fulfilment.free') : formatMoney(line.fee)}
+            spoken={free ? t('fulfilment.free') : formatMoneyForAccessibility(line.fee)}
+            testID="cart-fee-delivery"
+          />
+        );
+      }
+      case 'pickup': {
+        const free = line.fee.amountCents === 0;
+        return (
+          <Row
+            key="pickup"
+            label={t('cart.pickup')}
+            value={free ? t('cart.pickupFree') : formatMoney(line.fee)}
+            spoken={free ? t('cart.pickupFree') : formatMoneyForAccessibility(line.fee)}
+            testID="cart-fee-pickup"
+          />
+        );
+      }
+    }
+  };
+
+  const vatNote = feeMayBeAdded ? t('cart.inclVatPlusDelivery') : t('cart.inclVat');
   return (
     <View style={styles.box} testID="cart-summary">
       {cart.discountTotal.amountCents > 0 && (
@@ -38,20 +114,13 @@ export function CartSummary({ cart }: { cart: Cart }) {
           accent
         />
       )}
-      {!pickup && cart.market.fulfilment.delivery && (
-        <Row
-          label={t('cart.delivery')}
-          value={feeIsFree ? t('fulfilment.free') : formatMoney(cart.deliveryFee)}
-          spoken={feeIsFree ? t('fulfilment.free') : formatMoneyForAccessibility(cart.deliveryFee)}
-        />
-      )}
-      {pickup && <Row label={t('cart.pickup')} value={t('fulfilment.free')} spoken={t('fulfilment.free')} />}
+      {lines.map(feeRow)}
       <View style={styles.divider} />
-      <View style={styles.row} accessible accessibilityLabel={`${t('cart.total')}: ${formatMoneyForAccessibility(cart.total)}`} testID="cart-total">
+      <View style={styles.row} accessible accessibilityLabel={forSpeech(`${t('cart.total')} ${vatNote}: ${formatMoneyForAccessibility(cart.total)}`)} testID="cart-total">
         <AppText variant="title" style={styles.flex}>
           {t('cart.total')}{' '}
           <AppText variant="subhead" color="textSecondary">
-            {t('cart.inclVat')}
+            {vatNote}
           </AppText>
         </AppText>
         <AppText variant="title" dense>

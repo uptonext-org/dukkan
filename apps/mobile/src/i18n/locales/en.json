@@ -47,7 +47,12 @@
     "CART_EMPTY": "Your cart is empty.",
     "MINIMUM_ORDER_NOT_MET": "The minimum order value hasn't been reached yet.",
     "ORDER_NOT_CANCELLABLE": "This order can no longer be cancelled.",
-    "INVALID_STATUS_TRANSITION": "This status change isn't allowed."
+    "INVALID_STATUS_TRANSITION": "This status change isn't allowed.",
+    "IDEMPOTENCY_KEY_REUSED": "This order was already sent for another market. Please reload the cart and order again.",
+    "field": {
+      "MaxUtf8Bytes": "The password is too long. Arabic characters count double.",
+      "Future": "The end date must be in the future."
+    }
   },
   "validation": {
     "required": "Please fill this in.",
@@ -74,7 +79,9 @@
     "percent": "A discount from 1 to 90 %.",
     "bundleQuantity": "A quantity from 2 to 20.",
     "productsRequired": "Please choose at least one product.",
-    "checkFields": "Please check the highlighted fields."
+    "checkFields": "Please check the highlighted fields.",
+    "passwordTooLong": "Password is too long (at most 72 bytes; Arabic characters count double).",
+    "endDateFuture": "The offer must end in the future."
   },
   "language": {
     "button": "Change language",
@@ -112,7 +119,7 @@
     "denied": "That's fine without location access: search for your address or pick a spot on the map.",
     "failed": "We couldn't get your location just now. Search for your address or pick a spot on the map.",
     "orSearch": "Or search for an address or neighbourhood",
-    "searchPlaceholder": "Street, postal code or neighbourhood",
+    "searchPlaceholder": "Street, postcode or area",
     "noPlaces": "Nothing found. Try a street or postal code.",
     "searchFailed": "The search didn't work.",
     "pickOnMap": "Choose on the map",
@@ -193,7 +200,9 @@
       "search": "Search",
       "cart": "Cart",
       "cartWithTotal": "Cart, {{amount}}"
-    }
+    },
+    "deliveryWithFee": "Delivery ({{amount}})",
+    "deliveryFreeShort": "Delivery (free)"
   },
   "marketHome": {
     "banners": "Highlights",
@@ -261,7 +270,7 @@
     "noProductsMessage": "Check back soon."
   },
   "globalSearch": {
-    "placeholder": "Search products in nearby markets",
+    "placeholder": "Search products nearby",
     "introTitle": "Compare prices",
     "introMessage": "Search for a product and see which nearby markets have it, with price and distance.",
     "sortLabel": "Sorting",
@@ -300,7 +309,11 @@
     "minimumMissing": "{{missing}} more to reach the minimum order of {{minimum}}.",
     "minimumHint": "The minimum order value hasn't been reached yet",
     "orderCta": "Order · {{total}}",
-    "updateFailed": "Cart not updated"
+    "updateFailed": "Cart not updated",
+    "feeFrom": "from {{amount}}",
+    "freeDeliveryFrom": "Free from {{amount}}",
+    "pickupFree": "free",
+    "inclVatPlusDelivery": "(incl. VAT, plus delivery)"
   },
   "carts": {
     "title": "Carts",
@@ -332,7 +345,9 @@
     "free": "Free",
     "remaining_one": "{{count}} left",
     "remaining_other": "{{count}} left",
-    "unavailable": "not available"
+    "unavailable": "not available",
+    "emptyCartHint": "Add products to the cart first. Then you can reserve a time slot.",
+    "days": "Days"
   },
   "order": {
     "title": "Order",
@@ -375,7 +390,7 @@
     "lastName": "Last name",
     "email": "Email",
     "password": "Password",
-    "passwordHint": "At least 10 characters.",
+    "passwordHint": "10 to 128 characters. Arabic characters count double (at most 72 bytes).",
     "reason": {
       "cart": "Sign in to add products to your cart. You'll continue right where you were.",
       "favorites": "Sign in to save favourites.",

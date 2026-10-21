@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
-import { errorMessageKey, isApiError, type AccountType } from '../../../shared/api';
+import { errorMessageKey, isApiError, knownFieldError, type AccountType } from '../../../shared/api';
 import { useLanguage } from '../../../shared/i18n';
 import { makeStyles } from '../../../shared/theme';
 import { AppText, Button, SegmentedControl, TextField } from '../../../shared/ui';
@@ -59,6 +59,9 @@ export function AuthForm({ initialMode = 'login', onDone }: { initialMode?: Mode
       setServerError(t(errorMessageKey(error)));
       if (isApiError(error) && error.code === 'EMAIL_TAKEN') {
         setErrors((e) => ({ ...e, email: 'emailTaken' }));
+      }
+      if (knownFieldError(error)?.code === 'MaxUtf8Bytes') {
+        setErrors((e) => ({ ...e, password: 'passwordTooLong' }));
       }
     } finally {
       setSubmitting(false);

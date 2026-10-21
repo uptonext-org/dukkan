@@ -7,6 +7,7 @@ import { AppProviders, type AppDependencies } from '../app/AppProviders';
 import { AppRoot } from '../app/AppRoot';
 import { createAuthSession } from '../features/auth/session';
 import type { ApiClient, GeoPoint } from '../shared/api';
+import { forSpeech } from '../shared/format/bidi';
 import { createI18n, createLanguageStore, type Language } from '../shared/i18n';
 import type { ChosenPlace, LocationService } from '../shared/location';
 import { createMemoryKeyValueStorage, createMemoryTokenStorage, STORAGE_KEYS } from '../shared/storage';
@@ -70,8 +71,12 @@ export function renderApp(dependencies: AppDependencies) {
   );
 }
 
-/** de-DE uses NBSP before the euro sign; tests compare with normal spaces. */
-export const normalize = (s: string) => s.split(String.fromCharCode(160)).join(' ').split(String.fromCharCode(8239)).join(' ');
+/**
+ * de-DE uses NBSP before the euro sign; tests compare with normal spaces. Interpolated numbers
+ * carry invisible bidi isolates (shared/format/bidi.ts), which tests also ignore here.
+ */
+export const normalize = (s: string) =>
+  forSpeech(s).split(String.fromCharCode(160)).join(' ').split(String.fromCharCode(8239)).join(' ');
 
 /** Renders `ui` inside the real app root (providers + root `direction` view), without the navigator. */
 export function renderInAppRoot(ui: ReactElement, dependencies: AppDependencies, scheme: 'light' | 'dark' = 'light') {

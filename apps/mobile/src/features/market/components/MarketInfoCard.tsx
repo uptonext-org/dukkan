@@ -5,7 +5,7 @@ import type { MarketSummary } from '../../../shared/api';
 import { formatMoneyShort } from '../../../shared/format';
 import { makeStyles, useTheme } from '../../../shared/theme';
 import { AppText, Icon, type IconName } from '../../../shared/ui';
-import { deliveryFeeLabel, minimumOrderLabel, openingLabel } from '../../marketplace/format';
+import { minimumOrderLabel, openingLabel } from '../../marketplace/format';
 
 function Line({ icon, text }: { icon: IconName; text: string }) {
   const { colors } = useTheme();
@@ -23,10 +23,14 @@ function Line({ icon, text }: { icon: IconName; text: string }) {
 export function MarketInfoCard({ market }: { market: MarketSummary }) {
   const styles = useStyles();
   const { t } = useTranslation();
-  const ways = [market.fulfilment.delivery ? t('market.delivery') : null, market.fulfilment.pickup ? t('market.pickup') : null]
-    .filter(Boolean)
-    .join(' · ');
-  const fee = deliveryFeeLabel(t, market);
+  // "Lieferung (2,90 €) · Abholung": the fee belongs to delivery, not a third option.
+  const { deliveryFee } = market.fulfilment;
+  const delivery = !market.fulfilment.delivery
+    ? null
+    : deliveryFee == null || deliveryFee.amountCents === 0
+      ? t('market.deliveryFreeShort')
+      : t('market.deliveryWithFee', { amount: formatMoneyShort(deliveryFee) });
+  const ways = [delivery, market.fulfilment.pickup ? t('market.pickup') : null].filter(Boolean).join(' · ');
   const minimum = minimumOrderLabel(t, market);
   const freeFrom = market.fulfilment.freeDeliveryFrom;
   return (
@@ -37,7 +41,7 @@ export function MarketInfoCard({ market }: { market: MarketSummary }) {
       </AppText>
       <View style={styles.lines}>
         <Line icon="clock" text={[openingLabel(t, market), market.todayHours != null ? t('market.today', { hours: market.todayHours }) : null].filter(Boolean).join(' · ')} />
-        <Line icon={market.fulfilment.delivery ? 'truck' : 'store'} text={[ways, fee].filter(Boolean).join(' · ')} />
+        <Line icon={market.fulfilment.delivery ? 'truck' : 'store'} text={ways} />
         {minimum !== undefined && <Line icon="basket" text={minimum} />}
         {freeFrom != null && market.fulfilment.delivery && <Line icon="tag" text={t('market.freeDeliveryFrom', { amount: formatMoneyShort(freeFrom) })} />}
       </View>

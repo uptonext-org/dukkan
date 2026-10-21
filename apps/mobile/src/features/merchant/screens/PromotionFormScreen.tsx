@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import type { RootStackScreenProps } from '../../../navigation/types';
 import { errorMessageKey } from '../../../shared/api';
-import { formatMoney } from '../../../shared/format';
+import { formatMoney, isolate } from '../../../shared/format';
 import { isLanguage, type Language } from '../../../shared/i18n';
 import { makeStyles, useTheme } from '../../../shared/theme';
 import { AppText, Button, Chip, Icon, ListRow, Screen, ScreenHeader, SegmentedControl, TextField } from '../../../shared/ui';
@@ -83,6 +83,11 @@ export function PromotionFormScreen({ route, navigation }: RootStackScreenProps<
             <Chip key={days} label={t('merchant.days', { count: days })} selected={values.days === days} onPress={() => set('days', days)} />
           ))}
         </View>
+        {err('days') !== undefined && (
+          <AppText variant="caption" color="accent" accessibilityRole="alert">
+            {err('days')}
+          </AppText>
+        )}
         <AppText variant="headline" accessibilityRole="header" style={styles.gapTop}>
           {t('merchant.products')}
         </AppText>
@@ -97,7 +102,7 @@ export function PromotionFormScreen({ route, navigation }: RootStackScreenProps<
             <ListRow
               key={listing.id}
               title={listing.name}
-              subtitle={`${listing.unitSize} · ${formatMoney(listing.price)}`}
+              subtitle={`${listing.unitSize} · ${isolate(formatMoney(listing.price))}`}
               chevron={false}
               selected={selected}
               onPress={() => set('productIds', toggle(values.productIds, listing.id))}

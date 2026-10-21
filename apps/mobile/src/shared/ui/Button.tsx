@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
+import { forSpeech } from '../format/bidi';
 import { makeStyles, useTheme } from '../theme';
 import { AppText } from './AppText';
 import { Icon, type IconName } from './Icon';
@@ -50,8 +51,8 @@ export function Button({
       onPress={onPress}
       disabled={inactive}
       accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel ?? title}
-      accessibilityHint={accessibilityHint}
+      accessibilityLabel={forSpeech(accessibilityLabel ?? title)}
+      accessibilityHint={forSpeech(accessibilityHint)}
       accessibilityState={{ disabled: inactive, busy: loading }}
       style={({ pressed }) => [
         styles.base,
@@ -125,8 +126,8 @@ export function IconButton({
       onPress={onPress}
       disabled={disabled}
       accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityHint={hint}
+      accessibilityLabel={forSpeech(label)}
+      accessibilityHint={forSpeech(hint)}
       accessibilityState={{ disabled, ...(selected !== undefined ? { selected } : {}) }}
       hitSlop={4}
       style={({ pressed }) => [

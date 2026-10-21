@@ -101,24 +101,29 @@ const useStyles = makeStyles((t) => ({
 /** Section heading inside scroll content. */
 export function SectionTitle({ title, subtitle, trailing }: { title: string; subtitle?: string | null; trailing?: ReactNode }) {
   const styles = useSectionStyles();
+  // The trailing action ("Alle ›") sits in the title's row and is centred on its first line, so
+  // it lines up with the heading instead of the subtitle below it.
   return (
-    <View style={styles.row}>
-      <View style={styles.texts}>
-        <AppText variant="title" accessibilityRole="header">
+    <View style={styles.block}>
+      <View style={styles.row}>
+        <AppText variant="title" accessibilityRole="header" style={styles.title}>
           {title}
         </AppText>
-        {subtitle != null && subtitle !== '' && (
-          <AppText variant="subhead" color="textSecondary">
-            {subtitle}
-          </AppText>
-        )}
+        {trailing !== undefined && <View style={styles.trailing}>{trailing}</View>}
       </View>
-      {trailing}
+      {subtitle != null && subtitle !== '' && (
+        <AppText variant="subhead" color="textSecondary">
+          {subtitle}
+        </AppText>
+      )}
     </View>
   );
 }
 
 const useSectionStyles = makeStyles((t) => ({
-  row: { flexDirection: 'row', alignItems: 'flex-end', gap: t.spacing.sm, marginBottom: t.spacing.md },
-  texts: { flex: 1, gap: 2 },
+  block: { gap: 2, marginBottom: t.spacing.md },
+  row: { flexDirection: 'row', alignItems: 'flex-start', gap: t.spacing.sm },
+  title: { flex: 1 },
+  // Centre the 44 pt action on the title's first line.
+  trailing: { marginTop: ((t.type.title.lineHeight ?? 30) - t.touchTarget) / 2 },
 }));

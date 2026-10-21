@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import { openMarketCart } from '../../../navigation/marketLinks';
 import type { ShellTabScreenProps } from '../../../navigation/types';
-import { formatMoney, formatMoneyForAccessibility } from '../../../shared/format';
+import { formatMoney, formatMoneyForAccessibility, forSpeech } from '../../../shared/format';
 import { makeStyles, useTheme } from '../../../shared/theme';
 import { AppText, EmptyState, ImageTile, ListRow, queryState } from '../../../shared/ui';
 import { useAuth } from '../../auth/AuthProvider';
@@ -54,7 +54,7 @@ export function CartsScreen({ navigation }: ShellTabScreenProps<'Carts'>) {
                   {formatMoney(item.total)}
                 </AppText>
               }
-              accessibilityLabel={`${item.market.name}, ${t('carts.items', { count: item.itemCount })}, ${formatMoneyForAccessibility(item.total)}`}
+              accessibilityLabel={forSpeech(`${item.market.name}, ${t('carts.items', { count: item.itemCount })}, ${formatMoneyForAccessibility(item.total)}`)}
               accessibilityHint={t('carts.openHint')}
               onPress={() => openMarketCart(navigation, item.market.id)}
               testID={`cart-summary-${item.market.id}`}

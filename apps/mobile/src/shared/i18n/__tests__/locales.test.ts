@@ -1,7 +1,8 @@
 import ar from '../../../i18n/locales/ar.json';
 import de from '../../../i18n/locales/de.json';
 import en from '../../../i18n/locales/en.json';
-import { KNOWN_ERROR_CODES } from '../../api/errorMessages';
+import { KNOWN_ERROR_CODES, KNOWN_FIELD_CODES } from '../../api/errorMessages';
+import { forSpeech } from '../../format/bidi';
 import { createI18n } from '../i18n';
 import { pickDeviceLanguage } from '../languageStore';
 
@@ -68,6 +69,14 @@ describe('locale files', () => {
     }
   });
 
+  it('translate the validation field codes with their own message', () => {
+    for (const code of KNOWN_FIELD_CODES) {
+      for (const entries of Object.values(locales)) {
+        expect(entries[`errors.field.${code}`]).toEqual(expect.any(String));
+      }
+    }
+  });
+
   it('keep Arabic copy free of gendered singular imperatives used in UI buttons', () => {
     // Masculine singular imperatives we deliberately avoid (decision 18: neutral or plural).
     const imperatives = ['اختر ', 'أضف ', 'ابحث ', 'سجّل ', 'اضغط ', 'أدخل '];
@@ -84,9 +93,9 @@ describe('i18next setup', () => {
     const i18n = createI18n('ar');
     expect(i18n.t('market.offers', { count: 1 })).toBe('عرض واحد');
     expect(i18n.t('market.offers', { count: 2 })).toBe('عرضان');
-    expect(i18n.t('market.offers', { count: 3 })).toBe('3 عروض');
-    expect(i18n.t('market.offers', { count: 11 })).toBe('11 عرضًا');
-    expect(i18n.t('market.offers', { count: 100 })).toBe('100 عرض');
+    expect(forSpeech(i18n.t('market.offers', { count: 3 }))).toBe('3 عروض');
+    expect(forSpeech(i18n.t('market.offers', { count: 11 }))).toBe('11 عرضًا');
+    expect(forSpeech(i18n.t('market.offers', { count: 100 }))).toBe('100 عرض');
   });
 
   it('falls back to German for unsupported device languages', () => {

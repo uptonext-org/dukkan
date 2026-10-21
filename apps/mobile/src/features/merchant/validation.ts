@@ -385,14 +385,23 @@ export interface PromotionValues {
   productIds: string[];
 }
 
-export type PromotionField = 'title' | 'percentOff' | 'bundleQuantity' | 'bundlePrice' | 'productIds';
+export type PromotionField = 'title' | 'percentOff' | 'bundleQuantity' | 'bundlePrice' | 'days' | 'productIds';
 
 export function emptyPromotion(): PromotionValues {
   return { title: emptyLocalized(), type: 'PERCENT_OFF', percentOff: '20', bundleQuantity: '3', bundlePrice: '', days: 7, productIds: [] };
 }
 
-export function validatePromotion(values: PromotionValues, primaryLocale: Language): Errors<PromotionField> {
+/** End of the promotion: `days` after `now` (validFrom). */
+export function promotionEnd(values: Pick<PromotionValues, 'days'>, now: Date = new Date()): Date {
+  return new Date(now.getTime() + values.days * 24 * 60 * 60 * 1000);
+}
+
+export function validatePromotion(values: PromotionValues, primaryLocale: Language, now: Date = new Date()): Errors<PromotionField> {
   const errors: Errors<PromotionField> = {};
+  // Contract: validUntil after validFrom and in the future (server field code `Future`).
+  if (!Number.isFinite(values.days) || promotionEnd(values, now).getTime() <= now.getTime()) {
+    errors.days = 'endDateFuture';
+  }
   if (values.title[primaryLocale].trim() === '') {
     errors.title = 'namePrimaryRequired';
   }
@@ -420,7 +429,7 @@ export function validatePromotion(values: PromotionValues, primaryLocale: Langua
 }
 
 export function toPromotionRequest(values: PromotionValues, now: Date = new Date()): PromotionRequest {
-  const until = new Date(now.getTime() + values.days * 24 * 60 * 60 * 1000);
+  const until = promotionEnd(values, now);
   return {
     title: localized(values.title),
     type: values.type,
