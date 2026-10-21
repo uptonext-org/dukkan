@@ -35,4 +35,20 @@ public interface FulfilmentSlotRepository extends JpaRepository<FulfilmentSlot, 
       nativeQuery = true)
   int insertIfAbsent(
       UUID id, UUID marketId, String type, Instant startsAt, Instant endsAt, Instant cutoffAt, int capacity);
+
+  /**
+   * Deletes slots that ended before {@code endedBefore} and are referenced by no order and no cart.
+   * Slots of placed orders stay (orders snapshot their times but keep the FK for capacity release).
+   */
+  @Modifying
+  @Query(
+      value =
+          """
+          DELETE FROM fulfilment_slot s
+           WHERE s.ends_at < :endedBefore
+             AND NOT EXISTS (SELECT 1 FROM customer_order o WHERE o.slot_id = s.id)
+             AND NOT EXISTS (SELECT 1 FROM cart c WHERE c.reserved_slot_id = s.id)
+          """,
+      nativeQuery = true)
+  int deleteUnusedEndedBefore(Instant endedBefore);
 }

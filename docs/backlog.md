@@ -36,7 +36,7 @@ Product phases: [`docs/product/marketplace.md`](product/marketplace.md).
 | B-37 | Order events through a transactional outbox to RabbitMQ; push notifications to customer and merchant | M-06 | M | RabbitMQ adoption trigger (ADR 0002) |
 | B-38 | Machine translation of merchant content (DeepL or similar) into missing locales, editable | M-02 | M | Through the existing translation tables |
 | B-39 | Refresh tokens, login rate limiting, password reset, Sign in with Apple and Google | — | M | Apple requires Sign in with Apple when other social logins exist |
-| B-40 | Opening hours across midnight, several intervals per day in the app editor, slot clean-up job | M-04 | S | |
+| B-40 | Opening hours across midnight, several intervals per day in the app editor | M-04 | S | Nightly slot clean-up job is done (`SlotCleanupJob`, 03:15 Berlin) |
 | B-41 | Paging the `openNow` and name filters in SQL instead of Java; promotional price in `price_asc` sorting | M-04, M-05 | S | |
 | B-42 | Find and fix the Jest worker-exit warning in the full-app suites | M-12 | S | |
 | B-28 | Android and iOS native builds in CI (SDK runners), Detox end-to-end tests, check fonts, RTL and permissions on devices | M-10 | M | |
