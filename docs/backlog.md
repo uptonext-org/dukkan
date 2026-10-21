@@ -23,6 +23,7 @@ Product phases: [`docs/product/marketplace.md`](product/marketplace.md).
 | M-14 | Live API test (app client against the backend) plus CI job `e2e-api` | Done |
 | M-15 | Visual QA through a react-native-web preview with screenshots (de/ar, light/dark), and fixing what it finds (14 defects fixed) | Done |
 | M-16 | Security and correctness review of the backend, findings fixed with regression tests; admin API; rate limiting; slot clean-up; product icon placeholders | Done |
+| B-40 | Opening hours across midnight (`18:00–02:00`; migration V6) and several ranges per day in the app editor; overlap check in API and app (also Sunday → Monday); `openNow`, today's hours and slots follow overnight ranges | Done |
 | B-33 | AI product capture ("Schnell erfassen"): `POST /merchant/markets/{id}/product-drafts` turns a note (typed or dictated with the keyboard) and/or a photo into a draft (de/en/ar names, size, category, cuisines, EU allergens, price, barcode) plus shared catalog matches; Claude API (`claude-opus-5-5`, structured output, server-side fallbacks) behind a port, rule-based parser when there is no key or the model fails (ADR 0011); app panel fills the new-product form; allergens as localised chips | Done (video and several photos per draft: later) |
 | B-32 | Image upload for merchants: `POST /merchant/markets/{id}/media` (JPEG/PNG/WebP by magic bytes, 5 MB, 40 MP, 60/h per user), content-addressed filesystem storage behind `MediaStorage`, public `GET /media/{key}`; listing photos (`UpdateListingRequest.imageUrl`); app "Foto wählen" for logo, cover, new and existing products | Done (filesystem storage; S3 is B-32a) |
 
@@ -39,7 +40,6 @@ Product phases: [`docs/product/marketplace.md`](product/marketplace.md).
 | B-37 | Order events through a transactional outbox to RabbitMQ; push notifications to customer and merchant | M-06 | M | RabbitMQ adoption trigger (ADR 0002) |
 | B-38 | Machine translation of merchant content (DeepL or similar) into missing locales, editable | M-02 | M | Through the existing translation tables |
 | B-39 | Refresh tokens, password reset, Sign in with Apple and Google; shared (Redis) rate-limit store for several replicas | — | M | Per-IP login/registration rate limiting is done (per instance). Apple requires Sign in with Apple when other social logins exist |
-| B-40 | Opening hours across midnight, several intervals per day in the app editor | M-04 | S | Nightly slot clean-up job is done (`SlotCleanupJob`, 03:15 Berlin) |
 | B-41 | Paging the `openNow` and name filters in SQL instead of Java; promotional price in `price_asc` sorting | M-04, M-05 | S | |
 | B-42 | Find and fix the Jest worker-exit warning in the full-app suites | M-12 | S | |
 | B-28 | Android and iOS native builds in CI (SDK runners), Detox end-to-end tests, check fonts, RTL and permissions on devices | M-10 | M | Includes checking on device: Arabic sheet title padding and tab badge position (only verifiable natively) |

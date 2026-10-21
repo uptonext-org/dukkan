@@ -3,13 +3,16 @@ import {
   emptyMarketProfile,
   emptyNewProduct,
   emptyPromotion,
+  endsNextDay,
   fromDraft,
+  hoursOverlap,
   toMarketProfileRequest,
   toNewProductListing,
   toPromotionRequest,
   validateMarketProfile,
   validateNewProduct,
   validatePromotion,
+  type DayHours,
 } from '../validation';
 
 describe('create-product validation', () => {
@@ -99,8 +102,27 @@ describe('market profile validation', () => {
   it('requires name, type, an address from search, a fulfilment option and valid hours', () => {
     const errors = validateMarketProfile({ ...emptyMarketProfile('de'), delivery: false, pickup: false, hours: emptyMarketProfile('de').hours.map((d) => ({ ...d, open: false })) });
     expect(errors).toMatchObject({ name: 'required', typeCode: 'required', addressLine: 'addressFromSearch', fulfilment: 'fulfilmentRequired', hours: 'hoursRequired', legalName: 'required' });
-    const badHours = emptyMarketProfile('de').hours.map((d, i) => (i === 0 ? { ...d, opensAt: '20:00', closesAt: '08:00' } : d));
+    const badHours = emptyMarketProfile('de').hours.map((d, i) => (i === 0 ? { ...d, intervals: [{ opensAt: '20:00', closesAt: '20:00' }] } : d));
     expect(validateMarketProfile({ ...emptyMarketProfile('de'), hours: badHours }).hours).toBe('hours');
+  });
+
+  it('allows overnight ranges and several ranges per day, but no overlaps', () => {
+    const closed = { open: false, intervals: [{ opensAt: '08:00', closesAt: '20:00' }] };
+    const week = (friday: DayHours, saturday: DayHours = closed, sunday: DayHours = closed, monday: DayHours = closed) => [monday, closed, closed, closed, friday, saturday, sunday];
+    const lunch = { open: true, intervals: [{ opensAt: '08:00', closesAt: '12:00' }, { opensAt: '14:00', closesAt: '02:00' }] };
+    expect(hoursOverlap(week(lunch))).toBe(false);
+    expect(endsNextDay({ opensAt: '14:00', closesAt: '02:00' })).toBe(true);
+    expect(endsNextDay({ opensAt: '20:00', closesAt: '00:00' })).toBe(true);
+    expect(endsNextDay({ opensAt: '08:00', closesAt: '12:00' })).toBe(false);
+    expect(hoursOverlap(week(lunch, { open: true, intervals: [{ opensAt: '01:00', closesAt: '09:00' }] }))).toBe(true);
+    expect(hoursOverlap(week(closed, closed, { open: true, intervals: [{ opensAt: '22:00', closesAt: '09:00' }] }, { open: true, intervals: [{ opensAt: '08:00', closesAt: '12:00' }] }))).toBe(true);
+    expect(hoursOverlap(week({ open: true, intervals: [{ opensAt: '08:00', closesAt: '13:00' }, { opensAt: '12:00', closesAt: '18:00' }] }))).toBe(true);
+    const request = toMarketProfileRequest({ ...emptyMarketProfile('de'), hours: week(lunch) });
+    expect(request.openingHours).toEqual([
+      { dayOfWeek: 5, opensAt: '08:00', closesAt: '12:00' },
+      { dayOfWeek: 5, opensAt: '14:00', closesAt: '02:00' },
+    ]);
+    expect(validateMarketProfile({ ...emptyMarketProfile('de'), hours: week({ open: true, intervals: [{ opensAt: '08:00', closesAt: '13:00' }, { opensAt: '12:00', closesAt: '18:00' }] }) }).hours).toBe('hoursOverlap');
   });
 
   it('maps the form to MarketProfileRequest', () => {

@@ -80,13 +80,14 @@
     "fulfilmentRequired": "Bitte Lieferung, Abholung oder beides anbieten.",
     "radius": "Ein Radius von 0,5 bis 50 km.",
     "hoursRequired": "Mindestens ein Tag muss geöffnet sein.",
-    "hours": "Zeiten bitte als 08:00 eingeben; Schluss nach Beginn.",
+    "hours": "Zeiten bitte als 08:00 eingeben; Beginn und Schluss müssen sich unterscheiden.",
     "percent": "Ein Rabatt von 1 bis 90 %.",
     "bundleQuantity": "Eine Menge von 2 bis 20.",
     "productsRequired": "Bitte mindestens ein Produkt wählen.",
     "checkFields": "Bitte prüf die markierten Felder.",
     "passwordTooLong": "Passwort ist zu lang (höchstens 72 Bytes; arabische Zeichen zählen doppelt).",
-    "endDateFuture": "Das Angebot muss in der Zukunft enden."
+    "endDateFuture": "Das Angebot muss in der Zukunft enden.",
+    "hoursOverlap": "Die Zeiträume überschneiden sich."
   },
   "language": {
     "button": "Sprache ändern",
@@ -584,7 +585,11 @@
       "missing": "Bitte noch ergänzen: {{fields}}",
       "matchesTitle": "Schon im Katalog, in allen Sprachen",
       "matchesHint": "Passt eins davon? Dann übernimm es, statt ein neues Produkt anzulegen."
-    }
+    },
+    "addInterval": "{{day}}: Zeitraum hinzufügen",
+    "removeInterval": "{{day}}: Zeitraum entfernen",
+    "nextDay": "bis zum nächsten Tag",
+    "hoursHint": "Mittagspause? Zweiten Zeitraum mit + hinzufügen. Nach Mitternacht? Einfach z. B. 18:00–02:00 eingeben."
   },
   "allergen": {
     "gluten": "Gluten",

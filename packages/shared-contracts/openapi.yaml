@@ -1416,7 +1416,12 @@ components:
     OpeningHours:
       type: object
       required: [dayOfWeek, opensAt, closesAt]
-      description: One opening interval in the market's local time (Europe/Berlin). Several intervals per day are allowed.
+      description: |
+        One opening interval in the market's local time (Europe/Berlin), starting on `dayOfWeek`.
+        Several intervals per day are allowed (e.g. a lunch break). A `closesAt` earlier than
+        `opensAt` means the next day (`18:00`–`02:00`; `00:00` = midnight). Equal times answer 400
+        `NotEqualOpensAt`; overlapping intervals (also across midnight and Sunday → Monday) 400
+        `Overlap` on field `openingHours`.
       properties:
         dayOfWeek: { type: integer, minimum: 1, maximum: 7, description: 1 = Monday (ISO 8601). }
         opensAt: { type: string, pattern: '^[0-2][0-9]:[0-5][0-9]$', example: '08:00' }

@@ -349,7 +349,7 @@ The diagram shows the key columns; `created_at`/`updated_at` and some snapshot c
 | market | `market` | Status PENDING_REVIEW / ACTIVE / SUSPENDED. Delivery needs radius and fee (CHECK). Index on (lat, lng) for the bounding-box prefilter of the Haversine radius search |
 | market | `market_type`, `cuisine` (+ `_translation`), `market_cuisine` | Filter-chip code lists |
 | market | `market_translation` | Localised description |
-| market | `market_opening_hours` | Several intervals per day, Europe/Berlin local time, `closes_at > opens_at` |
+| market | `market_opening_hours` | Several intervals per day, Europe/Berlin local time, `closes_at <> opens_at`; an earlier `closes_at` ends on the next day (V6). Overlaps are rejected by the API |
 | market | `market_owner` | Merchant ownership; everything under `/merchant/**` is checked against it |
 | market | `banner`, `banner_translation` | Start-page banners with a tint instead of an image; target CATEGORY / PROMOTIONS / NEW / PRODUCT |
 | catalog | `category`, `category_translation` | Category tree via `parent_id` |

@@ -180,4 +180,35 @@ describe('Mein Markt: Fotos', () => {
       ),
     );
   });
+
+  it('edits opening hours with a second range and a range past midnight', async () => {
+    const listing = { current: { ...product(), privateProduct: false } as Listing };
+    const fake = createFakeApiClient({
+      ...baseHandlers(listing),
+      [`PUT /merchant/markets/${MARKET_ID}`]: (request: ApiRequest) => ({ ...marketDetail(), ...(request.body as object), status: 'ACTIVE' }),
+    });
+    const dependencies = createTestDependencies(fake.client, { token: 'merchant-jwt', photoPicker: createFakePhotoPicker(picked) });
+    await renderScreen('MerchantMarketForm', dependencies);
+    const user = userEvent.setup();
+
+    await user.press(await screen.findByTestId('hours-add-1'));
+    await user.clear(screen.getByTestId('hours-1-0-closes'));
+    await user.type(screen.getByTestId('hours-1-0-closes'), '12:00');
+    await user.clear(screen.getByTestId('hours-1-1-opens'));
+    await user.type(screen.getByTestId('hours-1-1-opens'), '18:00');
+    await user.clear(screen.getByTestId('hours-1-1-closes'));
+    await user.type(screen.getByTestId('hours-1-1-closes'), '02:00');
+    expect(screen.getByTestId('hours-1-1-next-day')).toHaveTextContent('bis zum nächsten Tag');
+
+    await user.press(screen.getByTestId('market-save'));
+    await waitFor(() => expect(fake.calls.some((c) => c.method === 'PUT')).toBe(true));
+    const body = fake.calls.find((c) => c.method === 'PUT' && c.path === `/merchant/markets/${MARKET_ID}`)?.body as { openingHours: unknown[] };
+    expect(body.openingHours).toEqual(
+      expect.arrayContaining([
+        { dayOfWeek: 1, opensAt: '08:00', closesAt: '12:00' },
+        { dayOfWeek: 1, opensAt: '18:00', closesAt: '02:00' },
+      ]),
+    );
+    expect(body.openingHours.filter((h) => (h as { dayOfWeek: number }).dayOfWeek === 1)).toHaveLength(2);
+  });
 });

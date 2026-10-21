@@ -211,10 +211,48 @@ export function toCatalogListing(catalogProductId: string, price: string): Creat
 
 // ---------------------------------------------------------------- market profile
 
+export interface TimeRange {
+  opensAt: string;
+  /** Earlier than (or equal to midnight after) `opensAt` means the next day. */
+  closesAt: string;
+}
+
 export interface DayHours {
   open: boolean;
-  opensAt: string;
-  closesAt: string;
+  /** At least one; several for e.g. a lunch break. */
+  intervals: TimeRange[];
+}
+
+export const MAX_INTERVALS_PER_DAY = 3;
+
+const minutes = (time: string) => Number(time.slice(0, 2)) * 60 + Number(time.slice(3, 5));
+
+/** True when the range ends on the next day (`18:00`–`02:00`, `20:00`–`00:00`). */
+export function endsNextDay(range: TimeRange): boolean {
+  return TIME.test(range.opensAt) && TIME.test(range.closesAt) && minutes(range.closesAt) < minutes(range.opensAt);
+}
+
+/** Same rule as the server: no two intervals share a minute of the week (also across midnight and Sunday → Monday). */
+export function hoursOverlap(hours: DayHours[]): boolean {
+  const week = 7 * 24 * 60;
+  const spans = hours
+    .flatMap((day, index) =>
+      day.open
+        ? day.intervals.map((r) => {
+            const start = index * 24 * 60 + minutes(r.opensAt);
+            const length = (minutes(r.closesAt) - minutes(r.opensAt) + 24 * 60) % (24 * 60);
+            return { start, end: start + length };
+          })
+        : [],
+    )
+    .sort((a, b) => a.start - b.start);
+  return spans.some((span, i) => {
+    if (spans.length < 2) {
+      return false;
+    }
+    const next = spans[(i + 1) % spans.length];
+    return next !== undefined && span.end > next.start + (i + 1 === spans.length ? week : 0);
+  });
 }
 
 export interface MarketProfileValues {
@@ -277,7 +315,7 @@ export function emptyMarketProfile(primaryLocale: Language): MarketProfileValues
     deliveryFee: '2,99',
     freeDeliveryFrom: '',
     minimumOrderValue: '15',
-    hours: Array.from({ length: 7 }, (_, i) => ({ open: i < 6, opensAt: '08:00', closesAt: '20:00' })),
+    hours: Array.from({ length: 7 }, (_, i) => ({ open: i < 6, intervals: [{ opensAt: '08:00', closesAt: '20:00' }] })),
     legalName: '',
     registerInfo: '',
   };
@@ -342,8 +380,10 @@ export function validateMarketProfile(values: MarketProfileValues): Errors<Marke
   const openDays = values.hours.filter((d) => d.open);
   if (openDays.length === 0) {
     errors.hours = 'hoursRequired';
-  } else if (openDays.some((d) => !TIME.test(d.opensAt) || !TIME.test(d.closesAt) || d.opensAt >= d.closesAt)) {
+  } else if (openDays.some((d) => d.intervals.length === 0 || d.intervals.some((r) => !TIME.test(r.opensAt) || !TIME.test(r.closesAt) || r.opensAt === r.closesAt))) {
     errors.hours = 'hours';
+  } else if (hoursOverlap(values.hours)) {
+    errors.hours = 'hoursOverlap';
   }
   const legal = values.legalName.trim();
   if (legal.length < 2) {
@@ -370,7 +410,7 @@ export function toMarketProfileRequest(values: MarketProfileValues): MarketProfi
     minimumOrderValue: money(values.minimumOrderValue),
   };
   const openingHours: OpeningHours[] = values.hours.flatMap((day, index) =>
-    day.open ? [{ dayOfWeek: index + 1, opensAt: day.opensAt, closesAt: day.closesAt }] : [],
+    day.open ? day.intervals.map((r) => ({ dayOfWeek: index + 1, opensAt: r.opensAt, closesAt: r.closesAt })) : [],
   );
   const description = localized(values.description);
   return {
@@ -398,9 +438,12 @@ export function toMarketProfileRequest(values: MarketProfileValues): MarketProfi
  */
 export function fromMerchantMarket(market: MerchantMarket, language: Language): MarketProfileValues {
   const base = emptyMarketProfile(CONTENT_LANGUAGES.includes(market.primaryLocale as Language) ? (market.primaryLocale as Language) : 'de');
-  const hours = base.hours.map((_, index) => {
-    const interval = market.openingHours.find((h) => h.dayOfWeek === index + 1);
-    return interval ? { open: true, opensAt: interval.opensAt, closesAt: interval.closesAt } : { open: false, opensAt: '08:00', closesAt: '20:00' };
+  const hours = base.hours.map((_, index): DayHours => {
+    const intervals = market.openingHours
+      .filter((h) => h.dayOfWeek === index + 1)
+      .sort((a, b) => a.opensAt.localeCompare(b.opensAt))
+      .map((h) => ({ opensAt: h.opensAt, closesAt: h.closesAt }));
+    return intervals.length > 0 ? { open: true, intervals } : { open: false, intervals: [{ opensAt: '08:00', closesAt: '20:00' }] };
   });
   const f = market.fulfilment;
   return {

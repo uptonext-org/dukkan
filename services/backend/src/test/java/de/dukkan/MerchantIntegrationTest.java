@@ -73,10 +73,29 @@ class MerchantIntegrationTest extends IntegrationTest {
         .andExpect(jsonPath("$.errors[?(@.field == 'name')].code").value("Size"));
 
     Map<String, Object> badHours = marketProfile("Testmarkt");
-    badHours.put("openingHours", List.of(Map.of("dayOfWeek", 1, "opensAt", "18:00", "closesAt", "08:00")));
+    badHours.put("openingHours", List.of(Map.of("dayOfWeek", 1, "opensAt", "18:00", "closesAt", "18:00")));
     mvc.perform(json(auth(post("/api/v1/merchant/markets"), merchant), toJson(badHours)))
         .andExpect(status().isBadRequest())
-        .andExpect(jsonPath("$.errors[0].code").value("AfterOpensAt"));
+        .andExpect(jsonPath("$.errors[0].code").value("NotEqualOpensAt"));
+    badHours.put(
+        "openingHours",
+        List.of(
+            Map.of("dayOfWeek", 5, "opensAt", "18:00", "closesAt", "03:00"),
+            Map.of("dayOfWeek", 6, "opensAt", "02:00", "closesAt", "12:00")));
+    mvc.perform(json(auth(post("/api/v1/merchant/markets"), merchant), toJson(badHours)))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.errors[0].field").value("openingHours"))
+        .andExpect(jsonPath("$.errors[0].code").value("Overlap"));
+    // Overnight hours and two intervals per day are valid.
+    Map<String, Object> lateShop = marketProfile("Spätkauf Mitternacht");
+    lateShop.put(
+        "openingHours",
+        List.of(
+            Map.of("dayOfWeek", 5, "opensAt", "08:00", "closesAt", "12:00"),
+            Map.of("dayOfWeek", 5, "opensAt", "18:00", "closesAt", "02:00")));
+    mvc.perform(json(auth(post("/api/v1/merchant/markets"), merchant), toJson(lateShop)))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.openingHours.length()").value(2));
 
     Map<String, Object> deliveryWithoutRadius = marketProfile("Testmarkt");
     Map<String, Object> fulfilment = new HashMap<>();

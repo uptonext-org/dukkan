@@ -81,4 +81,52 @@ class OpeningScheduleTest {
     assertThat(none.nextOpening(at("2026-10-19T10:00"))).isEmpty();
     assertThat(none.todayHours(at("2026-10-19T10:00"))).isEmpty();
   }
+
+  /** Late shop: Fri 18:00–02:00, Sat 20:00–00:00, Sun 10:00–14:00. */
+  private static final OpeningSchedule LATE =
+      new OpeningSchedule(
+          List.of(
+              new OpeningSchedule.Interval(DayOfWeek.FRIDAY, LocalTime.of(18, 0), LocalTime.of(2, 0)),
+              new OpeningSchedule.Interval(DayOfWeek.SATURDAY, LocalTime.of(20, 0), LocalTime.MIDNIGHT),
+              new OpeningSchedule.Interval(DayOfWeek.SUNDAY, LocalTime.of(10, 0), LocalTime.of(14, 0))));
+
+  @Test
+  void overnightIntervalsStayOpenPastMidnight() {
+    assertThat(LATE.isOpen(at("2026-10-23T23:30"))).isTrue(); // Friday night
+    assertThat(LATE.isOpen(at("2026-10-24T01:59"))).isTrue(); // Saturday early, from Friday
+    assertThat(LATE.isOpen(at("2026-10-24T02:00"))).isFalse();
+    assertThat(LATE.isOpen(at("2026-10-24T23:59"))).isTrue(); // Saturday 20:00–00:00
+    assertThat(LATE.isOpen(at("2026-10-25T00:00"))).isFalse();
+    assertThat(LATE.todayHours(at("2026-10-23T12:00"))).contains("18:00–02:00");
+    assertThat(LATE.nextOpening(at("2026-10-24T03:00"))).contains(at("2026-10-24T20:00"));
+  }
+
+  @Test
+  void detectsOverlapsIncludingOvernightAndSundayIntoMonday() {
+    assertThat(BUTCHER.hasOverlaps()).isFalse();
+    assertThat(LATE.hasOverlaps()).isFalse();
+    OpeningSchedule.Interval monday = new OpeningSchedule.Interval(DayOfWeek.MONDAY, LocalTime.of(8, 0), LocalTime.of(12, 0));
+    assertThat(
+            new OpeningSchedule(
+                    List.of(monday, new OpeningSchedule.Interval(DayOfWeek.MONDAY, LocalTime.of(11, 0), LocalTime.of(15, 0))))
+                .hasOverlaps())
+        .isTrue();
+    assertThat(
+            new OpeningSchedule(
+                    List.of(
+                        new OpeningSchedule.Interval(DayOfWeek.FRIDAY, LocalTime.of(18, 0), LocalTime.of(3, 0)),
+                        new OpeningSchedule.Interval(DayOfWeek.SATURDAY, LocalTime.of(2, 0), LocalTime.of(10, 0))))
+                .hasOverlaps())
+        .isTrue();
+    assertThat(
+            new OpeningSchedule(
+                    List.of(monday, new OpeningSchedule.Interval(DayOfWeek.SUNDAY, LocalTime.of(22, 0), LocalTime.of(9, 0))))
+                .hasOverlaps())
+        .isTrue();
+    assertThat(
+            new OpeningSchedule(
+                    List.of(monday, new OpeningSchedule.Interval(DayOfWeek.SUNDAY, LocalTime.of(22, 0), LocalTime.of(8, 0))))
+                .hasOverlaps())
+        .isFalse();
+  }
 }

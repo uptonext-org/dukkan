@@ -80,13 +80,14 @@
     "fulfilmentRequired": "Please offer delivery, pickup or both.",
     "radius": "A radius from 0,5 to 50 km.",
     "hoursRequired": "At least one day must be open.",
-    "hours": "Enter times like 08:00; closing after opening.",
+    "hours": "Enter times like 08:00; opening and closing must differ.",
     "percent": "A discount from 1 to 90 %.",
     "bundleQuantity": "A quantity from 2 to 20.",
     "productsRequired": "Please choose at least one product.",
     "checkFields": "Please check the highlighted fields.",
     "passwordTooLong": "Password is too long (at most 72 bytes; Arabic characters count double).",
-    "endDateFuture": "The offer must end in the future."
+    "endDateFuture": "The offer must end in the future.",
+    "hoursOverlap": "The time ranges overlap."
   },
   "language": {
     "button": "Change language",
@@ -584,7 +585,11 @@
       "missing": "Still to fill in: {{fields}}",
       "matchesTitle": "Already in the catalog, in every language",
       "matchesHint": "Is one of these it? Then pick it instead of creating a new product."
-    }
+    },
+    "addInterval": "{{day}}: add time range",
+    "removeInterval": "{{day}}: remove time range",
+    "nextDay": "until the next day",
+    "hoursHint": "Lunch break? Add a second range with +. Past midnight? Just enter e.g. 18:00–02:00."
   },
   "allergen": {
     "gluten": "Gluten",

@@ -35,6 +35,7 @@ public final class SlotPlanner {
 
   public List<PlannedSlot> plan(Instant now, List<OpeningWindow> openingHours, Duration cutoff) {
     LocalDate today = LocalDate.ofInstant(now, DukkanTime.ZONE);
+    Instant horizon = horizonEnd(now);
     List<PlannedSlot> slots = new ArrayList<>();
     for (int day = 0; day < daysAhead; day++) {
       LocalDate date = today.plusDays(day);
@@ -46,10 +47,12 @@ public final class SlotPlanner {
           continue;
         }
         ZonedDateTime start = date.atTime(window.opens()).atZone(DukkanTime.ZONE);
-        ZonedDateTime close = date.atTime(window.closes()).atZone(DukkanTime.ZONE);
+        // A closing time not after the opening time means the window ends on the next day.
+        LocalDate closeDate = window.closes().isAfter(window.opens()) ? date : date.plusDays(1);
+        ZonedDateTime close = closeDate.atTime(window.closes()).atZone(DukkanTime.ZONE);
         while (!start.plus(slotLength).isAfter(close)) {
           ZonedDateTime end = start.plus(slotLength);
-          if (start.toInstant().isAfter(now)) {
+          if (start.toInstant().isAfter(now) && start.toInstant().isBefore(horizon)) {
             slots.add(new PlannedSlot(start.toInstant(), end.toInstant(), start.toInstant().minus(cutoff)));
           }
           start = end;

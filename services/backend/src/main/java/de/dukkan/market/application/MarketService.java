@@ -333,16 +333,25 @@ public class MarketService {
         throw new InvalidRequestException("fulfilment", "Currency", "amounts must be in EUR");
       }
     }
+    List<OpeningSchedule.Interval> intervals = new ArrayList<>();
     for (int i = 0; i < p.openingHours().size(); i++) {
       OpeningHours h = p.openingHours().get(i);
+      LocalTime opens;
+      LocalTime closes;
       try {
-        if (!LocalTime.parse(h.closesAt()).isAfter(LocalTime.parse(h.opensAt()))) {
-          throw new InvalidRequestException(
-              "openingHours[" + i + "].closesAt", "AfterOpensAt", "must be after opensAt on the same day");
-        }
+        opens = LocalTime.parse(h.opensAt());
+        closes = LocalTime.parse(h.closesAt());
       } catch (DateTimeParseException e) {
         throw new InvalidRequestException("openingHours[" + i + "]", "Time", "must be a valid time HH:mm");
       }
+      if (closes.equals(opens)) {
+        throw new InvalidRequestException(
+            "openingHours[" + i + "].closesAt", "NotEqualOpensAt", "must differ from opensAt (earlier means the next day)");
+      }
+      intervals.add(new OpeningSchedule.Interval(DayOfWeek.of(h.dayOfWeek()), opens, closes));
+    }
+    if (new OpeningSchedule(intervals).hasOverlaps()) {
+      throw new InvalidRequestException("openingHours", "Overlap", "opening intervals must not overlap");
     }
   }
 

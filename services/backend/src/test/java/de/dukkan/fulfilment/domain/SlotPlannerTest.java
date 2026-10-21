@@ -96,4 +96,20 @@ class SlotPlannerTest {
     List<PlannedSlot> slots = planner.plan(saturday, everyDay("09:00", "10:00"), PICKUP_CUTOFF);
     assertThat(slots).extracting(PlannedSlot::startsAt).contains(Instant.parse("2026-10-24T07:00:00Z"), Instant.parse("2026-10-26T08:00:00Z"));
   }
+
+  @Test
+  void overnightWindowsGetSlotsAfterMidnightWithinTheHorizon() {
+    List<OpeningWindow> friday = List.of(new OpeningWindow(DayOfWeek.FRIDAY, LocalTime.of(20, 0), LocalTime.of(1, 0)));
+
+    List<PlannedSlot> slots = planner.plan(MONDAY_10, friday, PICKUP_CUTOFF);
+
+    assertThat(slots).extracting(PlannedSlot::startsAt)
+        .containsExactly(
+            berlin("2026-10-23T20:00"), berlin("2026-10-23T21:00"), berlin("2026-10-23T22:00"), berlin("2026-10-23T23:00"), berlin("2026-10-24T00:00"));
+    assertThat(slots.getLast().endsAt()).isEqualTo(berlin("2026-10-24T01:00"));
+    // On the last planned day, slots after midnight would start beyond the horizon and are left out.
+    SlotPlanner oneDay = new SlotPlanner(1, Duration.ofHours(1));
+    List<PlannedSlot> lastDay = oneDay.plan(MONDAY_10, List.of(new OpeningWindow(DayOfWeek.MONDAY, LocalTime.of(23, 0), LocalTime.of(2, 0))), PICKUP_CUTOFF);
+    assertThat(lastDay).extracting(PlannedSlot::startsAt).containsExactly(berlin("2026-10-19T23:00"));
+  }
 }

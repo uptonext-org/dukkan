@@ -8,7 +8,7 @@ import { errorMessageKey, type MarketTag, type Place } from '../../../shared/api
 import { LANGUAGES, useLanguage, type Language } from '../../../shared/i18n';
 import { PlaceSearch } from '../../../shared/location';
 import { makeStyles } from '../../../shared/theme';
-import { AppText, Button, Chip, queryState, Screen, ScreenHeader, TextField, ToggleSwitch } from '../../../shared/ui';
+import { AppText, Button, Chip, IconButton, queryState, Screen, ScreenHeader, TextField, ToggleSwitch } from '../../../shared/ui';
 import { hasErrors } from '../../auth/validation';
 import { useCuisines, useMarketTypes } from '../../marketplace/api/hooks';
 import { toggle } from '../../marketplace/model';
@@ -17,12 +17,16 @@ import { LocalizedFields } from '../components/LocalizedFields';
 import { PhotoField } from '../components/PhotoField';
 import {
   emptyMarketProfile,
+  endsNextDay,
   fromMerchantMarket,
+  MAX_INTERVALS_PER_DAY,
   toMarketProfileRequest,
   validateMarketProfile,
+  type DayHours,
   type Errors,
   type MarketProfileField,
   type MarketProfileValues,
+  type TimeRange,
 } from '../validation';
 
 const TAGS: MarketTag[] = ['ORGANIC', 'REGIONAL', 'HALAL', 'VEGAN_FRIENDLY'];
@@ -180,30 +184,57 @@ function MarketProfileForm({ route, navigation, initial }: RootStackScreenProps<
         </Section>
 
         <Section title={t('merchant.openingHours')}>
+          <AppText variant="caption" color="textSecondary" style={styles.hoursHint}>
+            {t('merchant.hoursHint')}
+          </AppText>
           {values.hours.map((day, index) => {
             const weekday = t(`weekdayLong.${(index + 1) as 1 | 2 | 3 | 4 | 5 | 6 | 7}`);
-            const update = (patch: Partial<typeof day>) =>
+            const update = (patch: Partial<DayHours>) =>
               set(
                 'hours',
                 values.hours.map((d, i) => (i === index ? { ...d, ...patch } : d)),
               );
+            const setRange = (r: number, patch: Partial<TimeRange>) => update({ intervals: day.intervals.map((range, j) => (j === r ? { ...range, ...patch } : range)) });
             return (
-              <View key={index} style={styles.dayRow}>
-                <ToggleSwitch value={day.open} onValueChange={(open) => update({ open })} accessibilityLabel={t('merchant.openOn', { day: weekday })} />
-                <AppText variant="body" style={styles.day}>
-                  {weekday}
-                </AppText>
-                {day.open ? (
-                  <View style={styles.times}>
-                    <TextInput value={day.opensAt} onChangeText={(opensAt) => update({ opensAt })} style={styles.time} accessibilityLabel={forSpeech(t('merchant.opensAt', { day: weekday }))} keyboardType="numbers-and-punctuation" maxLength={5} />
-                    <AppText variant="body">–</AppText>
-                    <TextInput value={day.closesAt} onChangeText={(closesAt) => update({ closesAt })} style={styles.time} accessibilityLabel={forSpeech(t('merchant.closesAt', { day: weekday }))} keyboardType="numbers-and-punctuation" maxLength={5} />
-                  </View>
-                ) : (
-                  <AppText variant="subhead" color="textSecondary">
-                    {t('market.closed')}
+              <View key={index} style={styles.dayBlock} testID={`hours-day-${index + 1}`}>
+                <View style={styles.dayRow}>
+                  <ToggleSwitch value={day.open} onValueChange={(open) => update({ open })} accessibilityLabel={t('merchant.openOn', { day: weekday })} />
+                  <AppText variant="body" style={styles.day}>
+                    {weekday}
                   </AppText>
-                )}
+                  {!day.open && (
+                    <AppText variant="subhead" color="textSecondary">
+                      {t('market.closed')}
+                    </AppText>
+                  )}
+                  {day.open && day.intervals.length < MAX_INTERVALS_PER_DAY && (
+                    <IconButton
+                      icon="plus"
+                      label={t('merchant.addInterval', { day: weekday })}
+                      onPress={() => update({ intervals: [...day.intervals, { opensAt: day.intervals.at(-1)?.closesAt ?? '14:00', closesAt: '18:00' }] })}
+                      testID={`hours-add-${index + 1}`}
+                    />
+                  )}
+                </View>
+                {day.open &&
+                  day.intervals.map((range, r) => (
+                    <View key={r} style={styles.rangeRow}>
+                      <View style={styles.times}>
+                        <TextInput value={range.opensAt} onChangeText={(opensAt) => setRange(r, { opensAt })} style={styles.time} accessibilityLabel={forSpeech(t('merchant.opensAt', { day: weekday }))} keyboardType="numbers-and-punctuation" maxLength={5} testID={`hours-${index + 1}-${r}-opens`} />
+                        <AppText variant="body">–</AppText>
+                        <TextInput value={range.closesAt} onChangeText={(closesAt) => setRange(r, { closesAt })} style={styles.time} accessibilityLabel={forSpeech(t('merchant.closesAt', { day: weekday }))} keyboardType="numbers-and-punctuation" maxLength={5} testID={`hours-${index + 1}-${r}-closes`} />
+                      </View>
+                      {endsNextDay(range) && (
+                        <AppText variant="caption" color="textSecondary" testID={`hours-${index + 1}-${r}-next-day`}>
+                          {t('merchant.nextDay')}
+                        </AppText>
+                      )}
+                      <View style={styles.flex} />
+                      {day.intervals.length > 1 && (
+                        <IconButton icon="close" label={t('merchant.removeInterval', { day: weekday })} onPress={() => update({ intervals: day.intervals.filter((_, j) => j !== r) })} testID={`hours-remove-${index + 1}-${r}`} />
+                      )}
+                    </View>
+                  ))}
               </View>
             );
           })}
@@ -249,7 +280,10 @@ const useStyles = makeStyles((t) => ({
   content: { padding: t.layout.gutter, paddingBottom: t.spacing.xxxl },
   switchRow: { flexDirection: 'row', alignItems: 'center', minHeight: 48, gap: t.spacing.md },
   flex: { flex: 1 },
+  dayBlock: { paddingVertical: t.spacing.xs, borderBottomWidth: 1, borderBottomColor: t.colors.separator },
   dayRow: { flexDirection: 'row', alignItems: 'center', gap: t.spacing.sm, minHeight: 52 },
+  rangeRow: { flexDirection: 'row', alignItems: 'center', gap: t.spacing.sm, minHeight: 48, paddingStart: 60 },
+  hoursHint: { marginBottom: t.spacing.xs },
   day: { flex: 1 },
   times: { flexDirection: 'row', alignItems: 'center', gap: t.spacing.xs, direction: 'ltr' as const },
   time: { ...t.type.body, color: t.colors.text, backgroundColor: t.colors.surfaceMuted, borderRadius: t.radii.label, minWidth: 68, minHeight: 44, textAlign: 'center' as const, paddingHorizontal: t.spacing.sm },
