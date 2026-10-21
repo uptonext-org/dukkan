@@ -1065,6 +1065,47 @@ paths:
         '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '415': { $ref: '#/components/responses/UnsupportedMediaType' }
         '429': { $ref: '#/components/responses/TooManyRequests' }
+  /merchant/markets/{marketId}/product-drafts:
+    parameters:
+      - { $ref: '#/components/parameters/MarketId' }
+    post:
+      tags: [merchant]
+      operationId: createProductDraft
+      summary: Turn a short text and/or a product photo into a product draft (AI capture)
+      description: |
+        Nothing is saved. The merchant reviews the draft and then creates the listing with
+        createListing: `catalogProductId` of one of `catalogMatches` (preferred, the shared catalog
+        already carries every language), or `newProduct` filled from `product` plus `price`.
+
+        - `text`: what the merchant typed or dictated (keyboard dictation), in any language, e.g.
+          `Sucuk Gazi 400 g 4,49 €` or `عدس أحمر ١ كيلو ٢٫٩٩`. `imageKey`: a key returned by
+          uploadMedia (purpose PRODUCT), e.g. a photo of the pack. At least one of both.
+        - `engine` = `AI` when the configured language model produced the draft. Without a model
+          (no API key), or when it fails or declines, the server falls back to its rule-based parser
+          (`engine` = `RULES`) and says why in `warnings`. The rule-based parser reads text only.
+        - Category, cuisines and allergens are always restricted to the codes the server knows;
+          unknown values from the model are dropped (`CATEGORY_UNCERTAIN` when no category is left).
+        - The draft is returned in the request's language for `name`, but the model also fills the
+          other supported locales; review the translations before saving.
+        - 30 drafts per user per hour (per instance) → 429 `RATE_LIMITED` with `Retry-After`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ProductDraftRequest' }
+      parameters:
+        - { $ref: '#/components/parameters/AcceptLanguage' }
+      responses:
+        '200':
+          description: The draft (not saved).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProductDraft' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
   /media/{key}:
     get:
       tags: [media]
@@ -1208,7 +1249,7 @@ components:
         application/problem+json:
           schema: { $ref: '#/components/schemas/Problem' }
     TooManyRequests:
-      description: Rate limit exceeded (per client IP for login/registration, per user for uploads; `code` = RATE_LIMITED); see the `Retry-After` header (seconds).
+      description: Rate limit exceeded (per client IP for login/registration, per user for uploads and product drafts; `code` = RATE_LIMITED); see the `Retry-After` header (seconds).
       headers:
         Retry-After:
           schema: { type: integer, minimum: 1 }
@@ -1826,6 +1867,58 @@ components:
         allergens: { type: array, items: { type: string } }
         imageUrl: { type: [string, 'null'], format: uri }
         barcode: { type: [string, 'null'], maxLength: 20 }
+    ProductDraftRequest:
+      type: object
+      description: At least one of `text` and `imageKey` (otherwise 400 VALIDATION_FAILED).
+      properties:
+        text: { type: [string, 'null'], maxLength: 1000, description: 'Free text in any language (name, size, price, …).' }
+        imageKey:
+          type: [string, 'null']
+          pattern: '^[0-9a-f]{64}\.(jpg|png|webp)$'
+          description: '`key` of an uploadMedia result. Unknown keys answer 400 VALIDATION_FAILED (field `imageKey`, code `NotFound`).'
+    ProductDraftWarning:
+      type: string
+      description: |
+        `AI_NOT_CONFIGURED` no language model is configured, `AI_UNAVAILABLE` the model failed or
+        timed out, `AI_DECLINED` the model declined the request, `IMAGE_NOT_ANALYSED` a photo was
+        sent but only the rule-based parser ran (or the photo was too large for the model),
+        `NAME_MISSING`, `CATEGORY_UNCERTAIN`, `UNIT_SIZE_MISSING`, `PRICE_MISSING` fields the
+        merchant has to fill in.
+      enum: [AI_NOT_CONFIGURED, AI_UNAVAILABLE, AI_DECLINED, IMAGE_NOT_ANALYSED, NAME_MISSING, CATEGORY_UNCERTAIN, UNIT_SIZE_MISSING, PRICE_MISSING]
+    ProductDraftProduct:
+      type: object
+      description: Like NewCatalogProduct, but every field may still be missing.
+      required: [name, description, keywords, cuisineCodes, organic, allergens]
+      properties:
+        name: { type: object, additionalProperties: { type: string, maxLength: 120 }, description: Locale code → name; may be empty. }
+        description: { type: object, additionalProperties: { type: string, maxLength: 2000 } }
+        keywords: { type: array, items: { type: string, maxLength: 60 }, maxItems: 30 }
+        brand: { type: [string, 'null'], maxLength: 80 }
+        unitSize: { type: [string, 'null'], maxLength: 40 }
+        netQuantity: { type: [number, 'null'], exclusiveMinimum: 0 }
+        netUnit: { type: [string, 'null'], enum: [kg, l, piece, null] }
+        categoryId: { type: [string, 'null'], format: uuid }
+        cuisineCodes: { type: array, items: { type: string } }
+        organic: { type: boolean }
+        allergens: { type: array, items: { type: string }, description: 'EU allergen codes: gluten, crustaceans, eggs, fish, peanuts, soy, milk, nuts, celery, mustard, sesame, sulphites, lupin, molluscs.' }
+        imageUrl: { type: [string, 'null'], format: uri, description: URL of `imageKey` when one was sent. }
+        barcode: { type: [string, 'null'], maxLength: 20 }
+    ProductDraft:
+      type: object
+      required: [engine, product, catalogMatches, warnings]
+      properties:
+        engine: { type: string, enum: [AI, RULES] }
+        product: { $ref: '#/components/schemas/ProductDraftProduct' }
+        price:
+          oneOf:
+            - type: 'null'
+            - $ref: '#/components/schemas/Money'
+        catalogMatches:
+          type: array
+          maxItems: 5
+          description: Shared catalog products that look like the same product, best first (`alreadyListed` set for this market).
+          items: { $ref: '#/components/schemas/CatalogProduct' }
+        warnings: { type: array, items: { $ref: '#/components/schemas/ProductDraftWarning' } }
     CreateListingRequest:
       type: object
       description: Exactly one of catalogProductId or newProduct.

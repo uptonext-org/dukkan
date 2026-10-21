@@ -41,6 +41,7 @@ availability it receives.
 | "New" | A listing created within the last 14 days |
 | Frequently ordered | A listing that appears in ≥ 2 of the user's non-cancelled orders in that market. Shown in favourites with reason `FREQUENTLY_ORDERED` |
 | Image upload | `POST /merchant/markets/{id}/media` (multipart `file` + `purpose`). JPEG, PNG or WebP detected from the bytes (declared type ignored) → else 415 `UNSUPPORTED_MEDIA_TYPE`; ≤ 5 MB → else 413 `FILE_TOO_LARGE`; must decode → else 400 `INVALID_IMAGE`; ≤ 40 megapixels → else 400 `IMAGE_TOO_LARGE`; 60 uploads per user per hour → 429. Key = SHA-256 of the bytes + extension (same bytes, same URL). `GET /media/{key}` is public and immutable |
+| Product drafts (AI capture) | `POST /merchant/markets/{id}/product-drafts` with `text` (≤ 1000) and/or `imageKey` (an uploadMedia key; unknown → 400 field `imageKey` code `NotFound`), at least one → else 400. Nothing is saved. `engine` AI (language model) or RULES (rule-based parser: no key, model failed or declined); `warnings` say why and what is missing. Category, cuisines, allergens (14 EU codes), `netUnit` and lengths are restricted to known values; price only when stated (1–10,000,000 cents). Up to 5 shared catalog matches. 30 drafts per merchant per hour → 429 |
 | Listing photo | `UpdateListingRequest.imageUrl`: absent = unchanged, `null` = remove. For a shared catalog product it applies to this market's listing only |
 | Merchant scope | Merchants can only read and change their own markets, listings, promotions and orders (other markets return 404) |
 

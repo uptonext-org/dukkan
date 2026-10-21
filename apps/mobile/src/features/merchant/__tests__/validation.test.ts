@@ -3,6 +3,7 @@ import {
   emptyMarketProfile,
   emptyNewProduct,
   emptyPromotion,
+  fromDraft,
   toMarketProfileRequest,
   toNewProductListing,
   toPromotionRequest,
@@ -42,7 +43,7 @@ describe('create-product validation', () => {
       unitSize: '250 g',
       categoryId: 'c1',
       cuisineCodes: ['TURKISH'],
-      allergens: 'Senf',
+      allergens: ['mustard'],
       price: '4,99',
       maxOrderQuantity: '10',
     });
@@ -56,12 +57,41 @@ describe('create-product validation', () => {
         categoryId: 'c1',
         cuisineCodes: ['TURKISH'],
         organic: false,
-        allergens: ['Senf'],
+        allergens: ['mustard'],
       },
       price: { amountCents: 499, currency: 'EUR' },
       available: true,
       maxOrderQuantity: 10,
     });
+  });
+});
+
+describe('capture draft → form', () => {
+  it('fills what the draft knows, keeps what the merchant typed and merges allergens', () => {
+    const typed = { ...emptyNewProduct(), name: { de: '', en: 'My name', ar: '' }, brand: 'Eigenmarke', allergens: ['milk'], price: '5,00' };
+    const values = fromDraft(
+      {
+        engine: 'RULES',
+        product: { name: { de: 'Sucuk Gazi' }, description: {}, keywords: [], unitSize: '400 g', netQuantity: 0.4, netUnit: 'kg', categoryId: null, cuisineCodes: [], organic: true, allergens: ['mustard', 'milk'] },
+        price: { amountCents: 1249, currency: 'EUR' },
+        catalogMatches: [],
+        warnings: [],
+      },
+      typed,
+    );
+    expect(values).toMatchObject({
+      name: { de: 'Sucuk Gazi', en: 'My name', ar: '' },
+      brand: 'Eigenmarke',
+      unitSize: '400 g',
+      categoryId: null,
+      organic: true,
+      allergens: ['milk', 'mustard'],
+      price: '12,49',
+      net: { quantity: 0.4, unit: 'kg' },
+      barcode: null,
+      imageUrl: null,
+    });
+    expect(fromDraft({ engine: 'RULES', product: { name: {}, description: {}, keywords: [], cuisineCodes: [], organic: false, allergens: [] }, catalogMatches: [], warnings: [] }, typed).price).toBe('5,00');
   });
 });
 

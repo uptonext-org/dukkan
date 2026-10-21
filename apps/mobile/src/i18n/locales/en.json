@@ -513,7 +513,7 @@
     "category": "Category",
     "organic": "Organic",
     "allergens": "Allergens",
-    "allergensHint": "Comma-separated",
+    "allergensHint": "Select all that the product contains.",
     "maxQuantity": "Maximum per order",
     "createProduct": "Create product",
     "createPromotion": "Create offer",
@@ -565,6 +565,41 @@
       "cameraUnavailable": "No camera is available on this device.",
       "pickFailed": "The photo could not be opened. Please choose another one.",
       "afterCreate": "You can add a logo and cover photo once the market has been created."
+    },
+    "capture": {
+      "title": "Quick capture",
+      "intro": "Type or dictate what you sell, or take a photo of the pack. We fill in the form for you.",
+      "textLabel": "What are you selling?",
+      "placeholder": "e.g. Sucuk Gazi 400 g 4,49 €",
+      "dictationHint": "Tip: use your keyboard's microphone to dictate.",
+      "photoLabel": "Photo of the pack (optional)",
+      "submit": "Fill in the form",
+      "working": "Reading …",
+      "needInput": "Type something or add a photo.",
+      "resultAi": "Suggested by AI. Please check everything, especially allergens and translations.",
+      "resultRules": "Read from your text. Please check the details and add the translations.",
+      "aiUnavailable": "The AI is not available right now, so only your text was read.",
+      "aiDeclined": "The AI could not process this input, so only your text was read.",
+      "imageNotAnalysed": "The photo was not analysed, but it is used as the product photo.",
+      "missing": "Still to fill in: {{fields}}",
+      "matchesTitle": "Already in the catalog, in every language",
+      "matchesHint": "Is one of these it? Then pick it instead of creating a new product."
     }
+  },
+  "allergen": {
+    "gluten": "Gluten",
+    "crustaceans": "Crustaceans",
+    "eggs": "Eggs",
+    "fish": "Fish",
+    "peanuts": "Peanuts",
+    "soy": "Soy",
+    "milk": "Milk",
+    "nuts": "Tree nuts",
+    "celery": "Celery",
+    "mustard": "Mustard",
+    "sesame": "Sesame",
+    "sulphites": "Sulphites",
+    "lupin": "Lupin",
+    "molluscs": "Molluscs"
   }
 }

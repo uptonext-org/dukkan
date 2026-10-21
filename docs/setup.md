@@ -55,6 +55,22 @@ Image URLs are stored as absolute URLs. A photo uploaded from the Android emulat
 `DUKKAN_MEDIA_PUBLIC_BASE_URL` to an address every client reaches. Files in the default temp directory may be
 removed by the OS; set `DUKKAN_MEDIA_DIRECTORY` to keep them.
 
+**AI product capture** ("Schnell erfassen", `POST /api/v1/merchant/markets/{id}/product-drafts`, ADR 0011)
+works without any key: the rule-based parser reads price, pack size and category from the text
+(`engine: RULES`). To let Claude read photos and translate names, set an Anthropic API key:
+
+| Setting | Env var | Default |
+|---|---|---|
+| `dukkan.capture.anthropic.api-key` | `DUKKAN_ANTHROPIC_API_KEY` | empty: rules only |
+| `dukkan.capture.anthropic.model` | `DUKKAN_ANTHROPIC_MODEL` | `claude-opus-5-5` |
+| `dukkan.capture.anthropic.effort` | | `low` |
+| `dukkan.capture.anthropic.timeout` | | `PT30S` per attempt, one retry |
+| `dukkan.capture.anthropic.server-side-fallbacks` | | `true` (`fallbacks: "default"`: a declined request is retried by the API on its recommended model) |
+| `dukkan.capture.drafts-per-hour` | | 30 per merchant and instance (429 `RATE_LIMITED`) |
+
+The key is read only from this setting (not from `ANTHROPIC_API_KEY`). With a key, merchant notes and
+photos are sent to Anthropic; see ADR 0011 before enabling it in production.
+
 To run the full stack in containers:
 ```bash
 docker compose -f infrastructure/docker/compose.yaml --profile app up --build

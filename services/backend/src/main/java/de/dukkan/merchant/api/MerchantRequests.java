@@ -1,6 +1,7 @@
 package de.dukkan.merchant.api;
 
 import com.fasterxml.jackson.annotation.JsonSetter;
+import de.dukkan.capture.application.ProductDraftInput;
 import de.dukkan.catalog.application.ListingDraft;
 import de.dukkan.catalog.application.ListingUpdate;
 import de.dukkan.catalog.application.NewProduct;
@@ -182,6 +183,15 @@ final class MerchantRequests {
           validFrom.toInstant(),
           validUntil.toInstant(),
           productIds.stream().distinct().toList());
+    }
+  }
+
+  record ProductDraftRequest(
+      @Nullable @Size(max = 1000) String text,
+      @Nullable @Pattern(regexp = "^[0-9a-f]{64}\\.(jpg|png|webp)$") String imageKey) {
+
+    ProductDraftInput toInput() {
+      return new ProductDraftInput(text, imageKey);
     }
   }
 

@@ -522,6 +522,50 @@ export interface MediaUpload {
  */
 export type UploadFile = { uri: string; type: string; name: string } | { blob: Blob; name: string };
 
+/** `POST /merchant/markets/{marketId}/product-drafts`: at least one of both. */
+export interface ProductDraftRequest {
+  text?: string | null;
+  /** `key` of an uploadMedia result. */
+  imageKey?: string | null;
+}
+
+export type ProductDraftWarning =
+  | 'AI_NOT_CONFIGURED'
+  | 'AI_UNAVAILABLE'
+  | 'AI_DECLINED'
+  | 'IMAGE_NOT_ANALYSED'
+  | 'NAME_MISSING'
+  | 'CATEGORY_UNCERTAIN'
+  | 'UNIT_SIZE_MISSING'
+  | 'PRICE_MISSING';
+
+/** Like NewCatalogProduct, but every field may still be missing. */
+export interface ProductDraftProduct {
+  name: LocalizedText;
+  description: LocalizedText;
+  keywords: string[];
+  brand?: string | null;
+  unitSize?: string | null;
+  netQuantity?: number | null;
+  netUnit?: 'kg' | 'l' | 'piece' | null;
+  categoryId?: string | null;
+  cuisineCodes: string[];
+  organic: boolean;
+  allergens: string[];
+  imageUrl?: string | null;
+  barcode?: string | null;
+}
+
+/** A product draft from text and/or a photo; nothing is saved until createListing. */
+export interface ProductDraft {
+  engine: 'AI' | 'RULES';
+  product: ProductDraftProduct;
+  price?: Money | null;
+  /** Shared catalog products that look like the same product, best first. */
+  catalogMatches: CatalogProduct[];
+  warnings: ProductDraftWarning[];
+}
+
 export interface Listing extends ProductSummary {
   privateProduct: boolean;
 }

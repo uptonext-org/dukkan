@@ -42,6 +42,7 @@ dependencies {
     implementation(libs.spring.boot.starter.validation)
     implementation(libs.spring.boot.starter.actuator)
     implementation(libs.springdoc.webmvc.ui)
+    implementation(libs.anthropic.java)
     runtimeOnly(libs.flyway.postgresql)
     runtimeOnly(libs.postgresql)
 

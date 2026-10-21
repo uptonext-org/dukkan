@@ -97,7 +97,7 @@ export function ListingsScreen({ route, navigation }: RootStackScreenProps<'Merc
     <Screen
       padded={false}
       header={<ScreenHeader title={t('merchant.listings')} onBack={() => navigation.goBack()} />}
-      footer={<Button title={t('merchant.addProduct')} icon="plus" onPress={() => navigation.navigate('MerchantAddProduct', { marketId })} />}>
+      footer={<Button title={t('merchant.addProduct')} icon="plus" onPress={() => navigation.navigate('MerchantAddProduct', { marketId })} testID="listings-add" />}>
       <View style={styles.search}>
         <SearchField value={text} onChangeText={setText} placeholder={t('merchant.searchListings')} />
       </View>

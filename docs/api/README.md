@@ -22,7 +22,7 @@
 | Addresses | `GET/POST /addresses`, `PUT/DELETE /addresses/{id}` | JWT |
 | Orders | `POST /markets/{id}/orders`, `GET /orders`, `GET /orders/{id}`, `POST /orders/{id}/cancel` | JWT |
 | Admin | `GET /admin/markets?status=`, `POST /admin/markets/{id}/status` (ACTIVE / SUSPENDED / PENDING_REVIEW) | JWT + ADMIN |
-| Merchant | `GET/POST /merchant/markets`, `PUT /merchant/markets/{id}`, `GET /merchant/catalog?marketId=`, listings (CRUD, `imageUrl` on update), promotions, `GET /merchant/markets/{id}/orders`, `POST /merchant/orders/{id}/status`, `POST /merchant/markets/{id}/media` (photo upload) | JWT + MERCHANT |
+| Merchant | `GET/POST /merchant/markets`, `PUT /merchant/markets/{id}`, `GET /merchant/catalog?marketId=`, listings (CRUD, `imageUrl` on update), promotions, `GET /merchant/markets/{id}/orders`, `POST /merchant/orders/{id}/status`, `POST /merchant/markets/{id}/media` (photo upload), `POST /merchant/markets/{id}/product-drafts` (AI capture) | JWT + MERCHANT |
 | Media | `GET /media/{sha256}.{jpg\|png\|webp}` (uploaded images, long-lived cache) | public (always) |
 
 \* Public while `dukkan.features.require-login-to-browse=false` (phase 1 default).
@@ -124,6 +124,30 @@ shared catalog image then shows again). The same bytes always give the same URL.
 `GET /media/{key}` answers with the stored bytes, `Content-Type` from the detected format,
 `Cache-Control: max-age=31536000, public, immutable`, an `ETag` (304 on `If-None-Match`),
 `X-Content-Type-Options: nosniff` and `Content-Security-Policy: default-src 'none'; sandbox`.
+
+### Product draft (AI capture)
+`POST /merchant/markets/{id}/product-drafts` turns a note and/or an uploaded photo (`imageKey`) into a
+draft that is not saved. Captured from the local run without an API key (`engine: RULES`);
+`catalogMatches` is cut to one entry:
+```bash
+curl -s -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' -H 'Accept-Language: de' \
+  -d '{"text":"Sucuk Gazi 400 g 4,49 €"}' localhost:8080/api/v1/merchant/markets/$MARKET/product-drafts
+```
+```json
+{"engine":"RULES",
+ "product":{"name":{"de":"Sucuk Gazi"},"description":{},"keywords":[],"brand":null,"unitSize":"400 g",
+   "netQuantity":0.4,"netUnit":"kg","categoryId":"e717949d-a6bf-5996-b710-2be121395249","cuisineCodes":[],
+   "organic":false,"allergens":[],"imageUrl":null,"barcode":null},
+ "price":{"amountCents":449,"currency":"EUR"},
+ "catalogMatches":[{"id":"2cf10041-f61a-5063-b8b4-b31c1cb0d69b","name":"Sucuk","brand":"Bereket Hof","unitSize":"400 g", "…":"…"}],
+ "warnings":["AI_NOT_CONFIGURED"]}
+```
+With `DUKKAN_ANTHROPIC_API_KEY` set, `engine` is `AI`: the photo is read too, names and descriptions
+come in de/en/ar, plus brand, cuisines, allergens and keywords. If the model fails or declines, the
+rules answer with `AI_UNAVAILABLE` / `AI_DECLINED`. Field-level warnings (`NAME_MISSING`,
+`CATEGORY_UNCERTAIN`, `UNIT_SIZE_MISSING`, `PRICE_MISSING`) list what the merchant still has to fill.
+Errors: 400 `VALIDATION_FAILED` (neither `text` nor `imageKey`, text > 1000, unknown `imageKey`),
+403/404 (not a merchant / not the owner), 429 `RATE_LIMITED` (30 per merchant and hour).
 
 ### Errors
 Every error is `application/problem+json` with a stable `code`. Validation

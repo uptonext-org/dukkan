@@ -3,8 +3,8 @@ import { FlatList, ScrollView, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import type { RootStackScreenProps } from '../../../navigation/types';
-import { errorMessageKey, type CatalogProduct } from '../../../shared/api';
-import { withOrganicPrefix } from '../../../shared/format';
+import { errorMessageKey, type CatalogProduct, type ProductDraft } from '../../../shared/api';
+import { ALLERGEN_CODES, centsToInput, withOrganicPrefix } from '../../../shared/format';
 import { useDebouncedValue } from '../../../shared/hooks/useDebouncedValue';
 import { isLanguage, type Language } from '../../../shared/i18n';
 import { makeStyles } from '../../../shared/theme';
@@ -14,10 +14,12 @@ import { useAllCategories } from '../../catalog/api/hooks';
 import { useCuisines } from '../../marketplace/api/hooks';
 import { toggle } from '../../marketplace/model';
 import { useCatalogSearch, useCreateListing, useMyMarkets } from '../api/hooks';
+import { CapturePanel } from '../components/CapturePanel';
 import { LocalizedFields } from '../components/LocalizedFields';
 import { PhotoField } from '../components/PhotoField';
 import {
   emptyNewProduct,
+  fromDraft,
   toCatalogListing,
   toNewProductListing,
   validateNewProduct,
@@ -29,12 +31,12 @@ import {
 
 type Mode = 'catalog' | 'new';
 
-function CatalogRow({ product, marketId, onAdded }: { product: CatalogProduct; marketId: string; onAdded: () => void }) {
+function CatalogRow({ product, marketId, onAdded, initialPrice = '' }: { product: CatalogProduct; marketId: string; onAdded: () => void; initialPrice?: string }) {
   const styles = useStyles();
   const { t } = useTranslation();
   const create = useCreateListing(marketId);
   const [open, setOpen] = useState(false);
-  const [price, setPrice] = useState('');
+  const [price, setPrice] = useState(initialPrice);
   const [error, setError] = useState<string | undefined>();
   const listed = product.alreadyListed === true;
   const add = () => {
@@ -91,6 +93,12 @@ function NewProductForm({ marketId, primaryLocale, onAdded }: { marketId: string
   const create = useCreateListing(marketId);
   const [values, setValues] = useState<NewProductValues>(emptyNewProduct);
   const [errors, setErrors] = useState<Errors<NewProductField>>({});
+  const [draft, setDraft] = useState<ProductDraft | null>(null);
+  const applyDraft = (d: ProductDraft) => {
+    setDraft(d);
+    setValues((v) => fromDraft(d, v));
+    setErrors({});
+  };
   const set = <K extends keyof NewProductValues>(key: K, value: NewProductValues[K]) => setValues((v) => ({ ...v, [key]: value }));
   const err = (field: NewProductField) => {
     const key = errors[field];
@@ -106,7 +114,22 @@ function NewProductForm({ marketId, primaryLocale, onAdded }: { marketId: string
   };
   return (
     <ScrollView contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled" testID="new-product-form">
+      <CapturePanel marketId={marketId} onDraft={applyDraft} />
+      {draft !== null && draft.catalogMatches.length > 0 && (
+        <View style={styles.matches} testID="capture-matches">
+          <AppText variant="headline" accessibilityRole="header">
+            {t('merchant.capture.matchesTitle')}
+          </AppText>
+          <AppText variant="subhead" color="textSecondary">
+            {t('merchant.capture.matchesHint')}
+          </AppText>
+          {draft.catalogMatches.map((m) => (
+            <CatalogRow key={m.id} product={m} marketId={marketId} onAdded={onAdded} initialPrice={draft.price != null ? centsToInput(draft.price.amountCents) : ''} />
+          ))}
+        </View>
+      )}
       <LocalizedFields label={t('merchant.productName')} values={values.name} primary={primaryLocale} error={err('name')} onChange={(lang, text) => set('name', { ...values.name, [lang]: text })} testIDPrefix="new-name" />
+      <LocalizedFields label={t('merchant.description')} values={values.description} primary={primaryLocale} error={err('description')} onChange={(lang, text) => set('description', { ...values.description, [lang]: text })} multiline testIDPrefix="new-description" />
       <TextField label={t('merchant.keywords')} value={values.keywords} onChangeText={(v) => set('keywords', v)} error={err('keywords')} hint={t('merchant.keywordsHint')} />
       <TextField label={t('merchant.brand')} value={values.brand} onChangeText={(v) => set('brand', v)} error={err('brand')} hint={t('merchant.optional')} />
       <TextField label={t('merchant.unitSize')} value={values.unitSize} onChangeText={(v) => set('unitSize', v)} error={err('unitSize')} placeholder="500 g" testID="new-unit" />
@@ -137,7 +160,17 @@ function NewProductForm({ marketId, primaryLocale, onAdded }: { marketId: string
         </AppText>
         <ToggleSwitch value={values.organic} onValueChange={(v) => set('organic', v)} accessibilityLabel={t('merchant.organic')} />
       </View>
-      <TextField label={t('merchant.allergens')} value={values.allergens} onChangeText={(v) => set('allergens', v)} hint={t('merchant.allergensHint')} />
+      <AppText variant="subhead" color="textSecondary" style={styles.gapTop}>
+        {t('merchant.allergens')}
+      </AppText>
+      <AppText variant="caption" color="textSecondary">
+        {t('merchant.allergensHint')}
+      </AppText>
+      <View style={styles.wrap} testID="new-allergens">
+        {ALLERGEN_CODES.map((code) => (
+          <Chip key={code} label={t(`allergen.${code}`)} selected={values.allergens.includes(code)} onPress={() => set('allergens', toggle(values.allergens, code))} testID={`allergen-${code}`} />
+        ))}
+      </View>
       <PhotoField label={t('merchant.productPhoto')} marketId={marketId} purpose="PRODUCT" value={values.imageUrl} onChange={(url) => set('imageUrl', url)} placeholderIcon="package" testID="new-photo" />
       <TextField label={t('merchant.price')} value={values.price} onChangeText={(v) => set('price', v)} error={err('price')} keyboardType="decimal-pad" inputDirection="ltr" testID="new-price" />
       <TextField label={t('merchant.maxQuantity')} value={values.maxOrderQuantity} onChangeText={(v) => set('maxOrderQuantity', v)} error={err('maxOrderQuantity')} keyboardType="number-pad" inputDirection="ltr" />
@@ -235,6 +268,7 @@ const useStyles = makeStyles((t) => ({
   priceRow: { flexDirection: 'row', alignItems: 'center', gap: t.spacing.md },
   flex: { flex: 1 },
   form: { padding: t.layout.gutter, paddingBottom: t.spacing.xxxl, gap: t.spacing.xs },
+  matches: { gap: t.spacing.xs, marginBottom: t.spacing.lg },
   wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: t.spacing.sm },
   gapTop: { marginTop: t.spacing.md },
   switchRow: { flexDirection: 'row', alignItems: 'center', minHeight: 52, gap: t.spacing.md },

@@ -92,6 +92,20 @@ dukkan:
     max-file-size: 5MB
     max-pixels: 40000000
     uploads-per-hour: 60
+  capture:
+    # AI product capture: drafts per merchant and hour (each one may call the language model).
+    drafts-per-hour: 30
+    anthropic:
+      # Empty: no language model, the rule-based parser answers alone (engine RULES).
+      api-key: ${DUKKAN_ANTHROPIC_API_KEY:}
+      model: ${DUKKAN_ANTHROPIC_MODEL:claude-opus-5-5}
+      effort: low
+      # Per attempt; one retry. The app waits up to 75 s for a draft.
+      timeout: PT30S
+      max-tokens: 8000
+      # fallbacks: "default" (beta server-side-fallback-2026-07-01): a declined request is retried
+      # by the API on the model it recommends for that case.
+      server-side-fallbacks: true
   security:
     jwt:
       # No default: must be provided via DUKKAN_JWT_SECRET (>= 32 bytes). Startup fails otherwise.

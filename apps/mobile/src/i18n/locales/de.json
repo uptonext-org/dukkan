@@ -513,7 +513,7 @@
     "category": "Kategorie",
     "organic": "Bio",
     "allergens": "Allergene",
-    "allergensHint": "Durch Komma getrennt",
+    "allergensHint": "Wähle alle, die enthalten sind.",
     "maxQuantity": "Höchstmenge pro Bestellung",
     "createProduct": "Produkt anlegen",
     "createPromotion": "Angebot erstellen",
@@ -565,6 +565,41 @@
       "cameraUnavailable": "Auf diesem Gerät ist keine Kamera verfügbar.",
       "pickFailed": "Das Foto konnte nicht geöffnet werden. Bitte ein anderes wählen.",
       "afterCreate": "Logo und Titelfoto kannst du hinzufügen, sobald der Markt angelegt ist."
+    },
+    "capture": {
+      "title": "Schnell erfassen",
+      "intro": "Schreib oder diktiere, was du verkaufst, oder fotografiere die Packung. Wir füllen das Formular für dich aus.",
+      "textLabel": "Was verkaufst du?",
+      "placeholder": "z. B. Sucuk Gazi 400 g 4,49 €",
+      "dictationHint": "Tipp: Mit dem Mikrofon der Tastatur kannst du diktieren.",
+      "photoLabel": "Foto der Packung (optional)",
+      "submit": "Formular ausfüllen",
+      "working": "Wird ausgewertet …",
+      "needInput": "Schreib etwas oder füge ein Foto hinzu.",
+      "resultAi": "Vorschlag der KI. Bitte prüfe alle Angaben, besonders Allergene und Übersetzungen.",
+      "resultRules": "Aus deinem Text gelesen. Bitte prüfe die Angaben und ergänze die Übersetzungen.",
+      "aiUnavailable": "Die KI ist gerade nicht erreichbar, deshalb wurde nur dein Text ausgewertet.",
+      "aiDeclined": "Die KI konnte die Eingabe nicht bearbeiten, deshalb wurde nur dein Text ausgewertet.",
+      "imageNotAnalysed": "Das Foto wurde nicht ausgewertet, ist aber als Produktfoto übernommen.",
+      "missing": "Bitte noch ergänzen: {{fields}}",
+      "matchesTitle": "Schon im Katalog, in allen Sprachen",
+      "matchesHint": "Passt eins davon? Dann übernimm es, statt ein neues Produkt anzulegen."
     }
+  },
+  "allergen": {
+    "gluten": "Gluten",
+    "crustaceans": "Krebstiere",
+    "eggs": "Eier",
+    "fish": "Fisch",
+    "peanuts": "Erdnüsse",
+    "soy": "Soja",
+    "milk": "Milch",
+    "nuts": "Schalenfrüchte",
+    "celery": "Sellerie",
+    "mustard": "Senf",
+    "sesame": "Sesam",
+    "sulphites": "Sulfite",
+    "lupin": "Lupinen",
+    "molluscs": "Weichtiere"
   }
 }

@@ -7,6 +7,7 @@ import type {
   MerchantMarket,
   OpeningHours,
   PromotionRequest,
+  ProductDraft,
   PromotionType,
 } from '../../shared/api';
 import { centsToInput, parseMoneyInput } from '../../shared/format';
@@ -43,34 +44,77 @@ export function splitList(input: string): string[] {
 
 export interface NewProductValues {
   name: Record<Language, string>;
+  description: Record<Language, string>;
   keywords: string;
   brand: string;
   unitSize: string;
   categoryId: string | null;
   cuisineCodes: string[];
   organic: boolean;
-  allergens: string;
+  /** Allergen codes (ALLERGEN_CODES). */
+  allergens: string[];
   price: string;
   maxOrderQuantity: string;
   /** Uploaded product photo (URL), or null. */
   imageUrl: string | null;
+  /** Net quantity for the comparison price; only set from a capture draft. */
+  net: { quantity: number; unit: 'kg' | 'l' | 'piece' } | null;
+  /** Only set from a capture draft (read from the photo). */
+  barcode: string | null;
 }
 
-export type NewProductField = 'name' | 'keywords' | 'brand' | 'unitSize' | 'categoryId' | 'price' | 'maxOrderQuantity';
+export type NewProductField = 'name' | 'description' | 'keywords' | 'brand' | 'unitSize' | 'categoryId' | 'price' | 'maxOrderQuantity';
 
 export function emptyNewProduct(): NewProductValues {
   return {
     name: emptyLocalized(),
+    description: emptyLocalized(),
     keywords: '',
     brand: '',
     unitSize: '',
     categoryId: null,
     cuisineCodes: [],
     organic: false,
-    allergens: '',
+    allergens: [],
     price: '',
     maxOrderQuantity: '24',
     imageUrl: null,
+    net: null,
+    barcode: null,
+  };
+}
+
+/**
+ * Fills the form from a capture draft. What the draft knows replaces the field; what it does not
+ * know keeps what the merchant already entered. Allergens are merged, never removed.
+ */
+export function fromDraft(draft: ProductDraft, current: NewProductValues): NewProductValues {
+  const p = draft.product;
+  const pick = (values: Record<Language, string>, from: Partial<Record<string, string>>) => {
+    const next = { ...values };
+    for (const lang of CONTENT_LANGUAGES) {
+      const text = from[lang];
+      if (text !== undefined && text.trim() !== '') {
+        next[lang] = text;
+      }
+    }
+    return next;
+  };
+  return {
+    ...current,
+    name: pick(current.name, p.name),
+    description: pick(current.description, p.description),
+    keywords: p.keywords.length > 0 ? p.keywords.join(', ') : current.keywords,
+    brand: p.brand ?? current.brand,
+    unitSize: p.unitSize ?? current.unitSize,
+    categoryId: p.categoryId ?? current.categoryId,
+    cuisineCodes: p.cuisineCodes.length > 0 ? p.cuisineCodes : current.cuisineCodes,
+    organic: p.organic || current.organic,
+    allergens: [...new Set([...current.allergens, ...p.allergens])],
+    price: draft.price != null ? centsToInput(draft.price.amountCents) : current.price,
+    imageUrl: p.imageUrl ?? current.imageUrl,
+    net: p.netQuantity != null && p.netUnit != null ? { quantity: p.netQuantity, unit: p.netUnit } : current.net,
+    barcode: p.barcode ?? current.barcode,
   };
 }
 
@@ -109,6 +153,9 @@ export function validateNewProduct(values: NewProductValues, primaryLocale: Lang
   if (values.categoryId === null) {
     errors.categoryId = 'categoryRequired';
   }
+  if (CONTENT_LANGUAGES.some((l) => values.description[l].trim().length > 2000)) {
+    errors.description = 'tooLong';
+  }
   const keywords = splitList(values.keywords);
   if (keywords.length > 30 || keywords.some((k) => k.length > 60)) {
     errors.keywords = 'keywords';
@@ -129,19 +176,22 @@ export function validateNewProduct(values: NewProductValues, primaryLocale: Lang
 
 export function toNewProductListing(values: NewProductValues): CreateListingRequest {
   const brand = values.brand.trim();
-  const allergens = splitList(values.allergens);
+  const description = localized(values.description);
   return {
     catalogProductId: null,
     newProduct: {
       name: localized(values.name),
+      ...(Object.keys(description).length > 0 ? { description } : {}),
       keywords: splitList(values.keywords),
       brand: brand === '' ? null : brand,
       unitSize: values.unitSize.trim(),
       categoryId: values.categoryId ?? '',
       cuisineCodes: values.cuisineCodes,
       organic: values.organic,
-      allergens,
+      allergens: values.allergens,
       ...(values.imageUrl !== null ? { imageUrl: values.imageUrl } : {}),
+      ...(values.net !== null ? { netQuantity: values.net.quantity, netUnit: values.net.unit } : {}),
+      ...(values.barcode !== null ? { barcode: values.barcode } : {}),
     },
     price: { amountCents: parseMoneyInput(values.price) ?? 0, currency: 'EUR' },
     available: true,

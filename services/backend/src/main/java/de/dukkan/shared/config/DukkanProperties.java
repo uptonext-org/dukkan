@@ -5,6 +5,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import java.net.URI;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Set;
 import org.jspecify.annotations.Nullable;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.DefaultValue;
@@ -21,7 +22,8 @@ public record DukkanProperties(
     @DefaultValue Catalog catalog,
     @DefaultValue Markets markets,
     @DefaultValue Security security,
-    @DefaultValue Media media) {
+    @DefaultValue Media media,
+    @DefaultValue Capture capture) {
 
   /** Feature flags. */
   public record Features(
@@ -144,6 +146,57 @@ public record DukkanProperties(
       if (maxFileSize.toBytes() < 1 || maxPixels < 1 || uploadsPerHour < 1) {
         throw new IllegalArgumentException("dukkan.media limits must be >= 1");
       }
+    }
+  }
+
+  /**
+   * AI product capture (module {@code capture}): {@code draftsPerHour} per user and instance, and the
+   * optional language model. Without {@code anthropic.apiKey} the rule-based parser answers alone.
+   */
+  public record Capture(@DefaultValue("30") int draftsPerHour, @DefaultValue Anthropic anthropic) {
+    public Capture {
+      if (draftsPerHour < 1) {
+        throw new IllegalArgumentException("dukkan.capture.drafts-per-hour must be >= 1");
+      }
+    }
+  }
+
+  /**
+   * Claude API settings for product capture. {@code effort} is {@code low}, {@code medium} or
+   * {@code high}. {@code serverSideFallbacks} lets the API retry a declined request on the model it
+   * recommends for that case ({@code fallbacks: "default"}); {@code baseUrl} is only for tests or a
+   * gateway.
+   */
+  public record Anthropic(
+      @Nullable String apiKey,
+      @DefaultValue("claude-opus-5-5") String model,
+      @DefaultValue("low") String effort,
+      @DefaultValue("PT30S") Duration timeout,
+      @DefaultValue("8000") long maxTokens,
+      @DefaultValue("true") boolean serverSideFallbacks,
+      @Nullable String baseUrl) {
+    public Anthropic {
+      if (apiKey != null && apiKey.isBlank()) {
+        apiKey = null;
+      }
+      if (baseUrl != null && baseUrl.isBlank()) {
+        baseUrl = null;
+      }
+      if (!Set.of("low", "medium", "high").contains(effort)) {
+        throw new IllegalArgumentException("dukkan.capture.anthropic.effort must be low, medium or high");
+      }
+      if (timeout.isNegative() || timeout.isZero() || maxTokens < 1024) {
+        throw new IllegalArgumentException("dukkan.capture.anthropic timeout must be positive and max-tokens >= 1024");
+      }
+    }
+
+    public boolean enabled() {
+      return apiKey != null;
+    }
+
+    @Override
+    public String toString() {
+      return "Anthropic[apiKey=" + (apiKey == null ? "unset" : "***") + ", model=" + model + ", effort=" + effort + "]";
     }
   }
 }

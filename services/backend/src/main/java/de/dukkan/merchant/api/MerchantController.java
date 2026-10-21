@@ -1,5 +1,6 @@
 package de.dukkan.merchant.api;
 
+import de.dukkan.capture.application.ProductDraftResult;
 import de.dukkan.catalog.application.CatalogProduct;
 import de.dukkan.catalog.application.Listing;
 import de.dukkan.i18n.application.ContentLocale;
@@ -11,6 +12,7 @@ import de.dukkan.media.application.StoredMedia;
 import de.dukkan.merchant.api.MerchantRequests.CreateListingRequest;
 import de.dukkan.merchant.api.MerchantRequests.MarketProfileRequest;
 import de.dukkan.merchant.api.MerchantRequests.OrderStatusRequest;
+import de.dukkan.merchant.api.MerchantRequests.ProductDraftRequest;
 import de.dukkan.merchant.api.MerchantRequests.PromotionRequest;
 import de.dukkan.merchant.api.MerchantRequests.UpdateListingRequest;
 import de.dukkan.merchant.application.MerchantService;
@@ -96,6 +98,17 @@ final class MerchantController {
     StoredMedia stored = merchant.uploadMedia(CurrentUser.id(security), marketId, purpose, file.getSize(), file);
     String url = mediaUrls.urlFor(stored.key());
     return ResponseEntity.created(URI.create(url)).body(MediaUploadResponse.of(stored, url));
+  }
+
+  /** AI product capture: a draft to review, nothing is saved. */
+  @PostMapping("/markets/{marketId}/product-drafts")
+  ProductDraftResponse draftProduct(
+      @CurrentSecurityContext SecurityContext security,
+      @PathVariable UUID marketId,
+      @RequestBody @Valid ProductDraftRequest request,
+      @RequestAttribute(ContentLocale.REQUEST_ATTRIBUTE) ContentLocale locale) {
+    ProductDraftResult result = merchant.draftProduct(CurrentUser.id(security), marketId, request.toInput(), locale);
+    return ProductDraftResponse.of(result, mediaUrls::urlFor);
   }
 
   @GetMapping("/catalog")

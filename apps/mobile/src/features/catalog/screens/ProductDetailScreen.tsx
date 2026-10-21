@@ -2,7 +2,7 @@ import { ScrollView, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import type { MarketStackScreenProps } from '../../../navigation/types';
-import { formatMoney, formatMoneyForAccessibility, forSpeech, isolate, needsOrganicPrefix } from '../../../shared/format';
+import { allergenLabel, formatMoney, formatMoneyForAccessibility, forSpeech, isolate, needsOrganicPrefix } from '../../../shared/format';
 import { makeStyles, useTheme } from '../../../shared/theme';
 import { AppText, Button, IconButton, ImageTile, Price, PromoPill, QuantityStepper, Screen, ScreenHeader, placeholderProps, queryState } from '../../../shared/ui';
 import { useCartQuantities } from '../../cart/api/hooks';
@@ -114,7 +114,7 @@ export function ProductDetailScreen({ route, navigation }: MarketStackScreenProp
         </View>
         {product.description != null && product.description !== '' && <Section title={t('product.description')}>{product.description}</Section>}
         {product.ingredients != null && product.ingredients !== '' && <Section title={t('product.ingredients')}>{product.ingredients}</Section>}
-        <Section title={t('product.allergens')}>{product.allergens.length > 0 ? product.allergens.join(', ') : t('product.noAllergens')}</Section>
+        <Section title={t('product.allergens')}>{product.allergens.length > 0 ? product.allergens.map((a) => allergenLabel(t, a)).join(', ') : t('product.noAllergens')}</Section>
         {product.origin != null && product.origin !== '' && <Section title={t('product.origin')}>{product.origin}</Section>}
         <AppText variant="caption" color="textSecondary">
           {t('product.soldBy', { market: product.market.name })}

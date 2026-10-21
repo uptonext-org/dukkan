@@ -226,4 +226,19 @@ describeLive('live API (app client against the real backend)', () => {
       merchant.uploadMedia(shop.id, { blob: blobOf('<html></html>', 'image/jpeg'), name: 'fake.jpg' }, 'PRODUCT'),
     ).rejects.toMatchObject({ status: 415, code: 'UNSUPPORTED_MEDIA_TYPE' });
   });
+
+  it('drafts a product from a merchant note and offers the shared catalog product (no API key: rules)', async () => {
+    const merchant = await signIn('haendler@dukkan.local');
+    const shop = required((await merchant.listMyMarkets())[0], 'demo merchant market');
+
+    const draft = await merchant.createProductDraft(shop.id, { text: 'Rote Linsen 1 kg 2,99 €' });
+    expect(['AI', 'RULES']).toContain(draft.engine);
+    expect(draft.price).toEqual({ amountCents: 299, currency: 'EUR' });
+    expect(draft.product.unitSize).toBe('1 kg');
+    expect(draft.catalogMatches.map((m) => m.name)).toContain('Rote Linsen');
+    if (draft.engine === 'RULES') {
+      expect(draft.warnings).toContain('AI_NOT_CONFIGURED');
+    }
+    await expect(merchant.createProductDraft(shop.id, {})).rejects.toMatchObject({ status: 400, code: 'VALIDATION_FAILED' });
+  });
 });

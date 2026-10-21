@@ -29,7 +29,7 @@ const KEYCHAIN_KEY = 'rn-keychain:app.dukkan.mobile.auth';
 
 const VARIANTS = [
   { lang: 'de', theme: 'light', full: true },
-  { lang: 'ar', theme: 'light', full: false },
+  { lang: 'ar', theme: 'light', full: false, merchant: true },
   { lang: 'de', theme: 'dark', full: false },
 ].filter((v) => !process.env.ONLY || process.env.ONLY.split(',').includes(`${v.lang}-${v.theme}`));
 
@@ -388,8 +388,8 @@ async function main() {
         await context.close();
       }
 
-      // ---- Merchant: 9 Mein Markt, listings, Produkt hinzufügen
-      if (variant.full) {
+      // ---- Merchant: 9 Mein Markt, listings, Produkt hinzufügen, Schnell erfassen
+      if (variant.full || variant.merchant) {
         const context = await newContext(browser, variant, { token: merchantToken });
         const page = await openPage(context, errors);
         await step('09 merchant', async () => {
@@ -409,10 +409,22 @@ async function main() {
           await page.locator('[data-testid^="availability-"]:visible').first().waitFor();
           await settle(page, 900);
           await shot(page, '09', 'merchant-listings');
-          await page.getByRole('button', { name: 'Produkt hinzufügen' }).last().click();
+          await testId(page, 'listings-add').click();
           await testId(page, 'catalog-search').waitFor();
           await settle(page, 900);
           await shot(page, '09', 'merchant-add-product');
+          // Second segment: new product with the capture panel on top.
+          await page.getByRole('tab').nth(1).click();
+          await testId(page, 'capture-panel').waitFor();
+          await settle(page);
+          await shot(page, '10', 'capture-panel');
+          await testId(page, 'capture-text').fill(variant.lang === 'ar' ? 'عدس أحمر ١ كيلو ٢٫٩٩' : 'Sucuk Gazi 400 g 4,49 €');
+          await testId(page, 'capture-submit').click();
+          await testId(page, 'capture-result').waitFor();
+          await settle(page, 900);
+          await shot(page, '10', 'capture-result');
+          await scrollMain(page, 700);
+          await shot(page, '10', 'capture-form-filled');
         });
         await context.close();
       }

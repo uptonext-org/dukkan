@@ -10,6 +10,8 @@ kubectl apply -k infrastructure/kubernetes
 # Create the secret out of band; never commit it:
 kubectl -n dukkan create secret generic dukkan-backend \
   --from-literal=DUKKAN_DB_PASSWORD=... --from-literal=DUKKAN_JWT_SECRET=...
+# Optional: AI product capture with Claude (ADR 0011). Without it the rule-based parser answers.
+#   --from-literal=DUKKAN_ANTHROPIC_API_KEY=...
 ```
 
 Helm is not used: one service with static configuration does not need templating.

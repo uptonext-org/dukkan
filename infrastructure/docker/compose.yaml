@@ -33,6 +33,8 @@ services:
       DUKKAN_JWT_SECRET: ${DUKKAN_JWT_SECRET:-}
       # Absolute prefix of image URLs returned by uploads; empty = derived from the request host.
       DUKKAN_MEDIA_PUBLIC_BASE_URL: ${DUKKAN_MEDIA_PUBLIC_BASE_URL:-}
+      # Optional: Claude for AI product capture (ADR 0011); empty = rule-based parser only.
+      DUKKAN_ANTHROPIC_API_KEY: ${DUKKAN_ANTHROPIC_API_KEY:-}
     ports:
       - "127.0.0.1:8080:8080"
     volumes:

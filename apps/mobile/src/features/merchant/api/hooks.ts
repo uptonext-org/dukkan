@@ -8,6 +8,7 @@ import {
   type CreateListingRequest,
   type MarketProfileRequest,
   type OrderStatus,
+  type ProductDraftRequest,
   type PromotionRequest,
   type SearchCatalogParams,
   type MediaPurpose,
@@ -145,4 +146,10 @@ export function useUploadMedia(marketId: string) {
   return useMutation({
     mutationFn: ({ file, purpose }: { file: UploadFile; purpose: MediaPurpose }) => api.uploadMedia(marketId, file, purpose),
   });
+}
+
+/** AI product capture; the draft only fills the form, so nothing is invalidated. */
+export function useProductDraft(marketId: string) {
+  const api = useApi();
+  return useMutation({ mutationFn: (request: ProductDraftRequest) => api.createProductDraft(marketId, request) });
 }

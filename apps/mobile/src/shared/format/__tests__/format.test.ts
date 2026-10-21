@@ -4,6 +4,7 @@ import { needsOrganicPrefix, withOrganicPrefix } from '../text';
 import { formatDateTime, formatShortDate, formatTimeRange, isoWeekday } from '../dates';
 import { centsToInput, formatAmount, formatMoney, formatMoneyForAccessibility, formatMoneyShort, parseMoneyInput, splitMoney } from '../money';
 import { formatDistance, formatPercent } from '../numbers';
+import { ALLERGEN_CODES, allergenLabel, isAllergenCode } from '../allergens';
 
 const plain = (s: string) => forSpeech(s).split(String.fromCharCode(160)).join(' ');
 
@@ -86,5 +87,19 @@ describe('organic prefix', () => {
     expect(withOrganicPrefix('Bio-Vollmilch', true, 'Bio')).toBe('Bio-Vollmilch');
     expect(withOrganicPrefix('Vollmilch', true, 'Bio')).toBe('Bio Vollmilch');
     expect(withOrganicPrefix('Vollmilch', false, 'Bio')).toBe('Vollmilch');
+  });
+});
+
+describe('allergens', () => {
+  it('names the 14 EU allergens in every language and keeps older free-text values', () => {
+    const de = createI18n('de');
+    const ar = createI18n('ar');
+    expect(ALLERGEN_CODES).toHaveLength(14);
+    expect(ALLERGEN_CODES.map((code) => allergenLabel(de.t, code))).not.toContain(expect.stringMatching(/^allergen\./));
+    expect(allergenLabel(de.t, 'milk')).toBe('Milch');
+    expect(allergenLabel(ar.t, 'sesame')).toBe('السمسم');
+    expect(allergenLabel(de.t, 'Senf')).toBe('Senf');
+    expect(isAllergenCode('nuts')).toBe(true);
+    expect(isAllergenCode('glitter')).toBe(false);
   });
 });

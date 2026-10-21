@@ -45,7 +45,8 @@ class ArchitectureTest {
           "order",
           "merchant",
           "admin",
-          "media");
+          "media",
+          "capture");
   private static final Pattern MODULE_PACKAGE = Pattern.compile("^de\\.dukkan\\.([a-z]+)\\.([a-z]+)(\\..*)?$");
 
   private static JavaClasses classes;

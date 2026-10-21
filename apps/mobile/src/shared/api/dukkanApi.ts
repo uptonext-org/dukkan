@@ -27,6 +27,8 @@ import type {
   Page,
   Place,
   ProductDetail,
+  ProductDraft,
+  ProductDraftRequest,
   ProductSummary,
   Promotion,
   PromotionRequest,
@@ -124,10 +126,15 @@ export interface DukkanApi {
   advanceOrderStatus(orderId: string, status: OrderStatus): Promise<Order>;
   /** Multipart upload of a JPEG, PNG or WebP photo (≤ 5 MB) for one of my markets. */
   uploadMedia(marketId: string, file: UploadFile, purpose: MediaPurpose): Promise<MediaUpload>;
+  /** AI product capture: a draft from text and/or an uploaded photo (nothing is saved). */
+  createProductDraft(marketId: string, request: ProductDraftRequest): Promise<ProductDraft>;
 }
 
 /** Uploads may take longer than ordinary requests on mobile networks. */
 export const UPLOAD_TIMEOUT_MS = 60_000;
+
+/** The server may wait for a language model (30 s per attempt, one retry) before answering. */
+export const DRAFT_TIMEOUT_MS = 75_000;
 
 export function mediaForm(file: UploadFile, purpose: MediaPurpose): FormData {
   const form = new FormData();
@@ -262,6 +269,13 @@ export function createDukkanApi(client: ApiClient): DukkanApi {
         path: `/merchant/markets/${enc(marketId)}/media`,
         body: mediaForm(file, purpose),
         timeoutMs: UPLOAD_TIMEOUT_MS,
+      }),
+    createProductDraft: (marketId, body) =>
+      client.request({
+        method: 'POST',
+        path: `/merchant/markets/${enc(marketId)}/product-drafts`,
+        body,
+        timeoutMs: DRAFT_TIMEOUT_MS,
       }),
   };
 }

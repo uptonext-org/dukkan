@@ -62,7 +62,10 @@ flowchart TB
     order[order<br/>simulated checkout, status machine]
     favorite[favorite]
     merchant[merchant<br/>owner-checked facade]
-    shared[shared<br/>money, errors, security, logging, clock]
+    admin[admin<br/>market review]
+    media[media<br/>image upload, MediaStorage]
+    capture[capture<br/>AI product capture, rule-based parser]
+    shared[shared<br/>money, errors, security, rate limits, clock]
   end
   address --> geo
   market --> geo
@@ -91,7 +94,16 @@ flowchart TB
   merchant --> order
   merchant --> address
   merchant --> identity
+  merchant --> media
+  merchant --> capture
+  capture --> catalog
+  capture --> market
+  capture --> media
+  admin --> market
 ```
+
+`capture` calls the Claude API (optional, `ProductDraftExtractor` port, ADR 0011); without a key it
+runs only its rule-based parser. Both paths run outside a database transaction.
 
 Edges show module dependencies derived from the imports. Every module also uses `i18n` and `shared`.
 Modules call each other only through `application` interfaces. Where a

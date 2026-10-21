@@ -25,7 +25,7 @@ pflegen ihren Markt selbst: Profil, Produkte, Angebote und Zeitfenster.
 | 7 | Warenkorb | Ein Warenkorb pro Markt, nichts wird vermischt. Jeder Markt ist eine Sub-App | F |
 | 8 | Suche über alle Märkte | Ja, von außen über alle Märkte in der Nähe (mit Preisvergleich) und innen pro Markt | F |
 | 9 | Produktdaten | **Gemeinsamer Produktkatalog** (Modell B) mit Übersetzungen, Bildern, Allergenen und Herkunftsküche, also z. B. eine „türkische Produktdatenbank“. Der Markt übernimmt Produkte daraus und setzt Preis und Verfügbarkeit. Fehlt ein Produkt, legt er es selbst an | F |
-| 10 | KI-Erfassung | Produkte per Sprache, Foto, Video oder Text anlegen. **Später.** Die Architektur sieht dafür eine Schnittstelle vor (siehe §4) | F (später) |
+| 10 | KI-Erfassung | Produkte per Sprache, Foto, Video oder Text anlegen. **Umgesetzt (B-33):** „Schnell erfassen“ im Händlermodus – Text (getippt oder mit dem Tastaturmikrofon diktiert) und/oder ein Foto der Packung füllen das Formular und schlagen passende Katalogprodukte vor; Claude als optionales Modell, ohne Schlüssel liest ein Regel-Parser den Text (ADR 0011). Video folgt später | F (Text/Foto umgesetzt, Video später) |
 | 11 | Bezahlung | Simuliert. Die App ist nicht in Produktion | F |
 | 12 | Geschäftsmodell | Offen. Zunächst kostenlos für alle | F |
 | 13 | Startregion | Deutschland, **Hamburg**. Die Testmärkte liegen in Hamburger Stadtteilen | F |

@@ -1,5 +1,8 @@
 package de.dukkan.merchant.application;
 
+import de.dukkan.capture.application.ProductCaptureService;
+import de.dukkan.capture.application.ProductDraftInput;
+import de.dukkan.capture.application.ProductDraftResult;
 import de.dukkan.catalog.application.CatalogProduct;
 import de.dukkan.catalog.application.CatalogService;
 import de.dukkan.catalog.application.Listing;
@@ -30,6 +33,7 @@ import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import org.springframework.core.io.InputStreamSource;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -46,14 +50,21 @@ public class MerchantService {
   private final PromotionService promotions;
   private final OrderService orders;
   private final MediaService media;
+  private final ProductCaptureService capture;
 
   public MerchantService(
-      MarketService markets, CatalogService catalog, PromotionService promotions, OrderService orders, MediaService media) {
+      MarketService markets,
+      CatalogService catalog,
+      PromotionService promotions,
+      OrderService orders,
+      MediaService media,
+      ProductCaptureService capture) {
     this.markets = markets;
     this.catalog = catalog;
     this.promotions = promotions;
     this.orders = orders;
     this.media = media;
+    this.capture = capture;
   }
 
   @Transactional(readOnly = true)
@@ -169,6 +180,16 @@ public class MerchantService {
       throw new UncheckedIOException("Cannot read upload", e);
     }
     return media.store(userId, purpose, bytes);
+  }
+
+  /**
+   * AI product capture for one of the caller's markets. Runs outside a transaction: the language
+   * model may take several seconds, and no connection should be held meanwhile.
+   */
+  @Transactional(propagation = Propagation.NOT_SUPPORTED)
+  public ProductDraftResult draftProduct(UUID userId, UUID marketId, ProductDraftInput input, ContentLocale locale) {
+    MarketInfo market = requireOwner(userId, marketId);
+    return capture.draft(userId, marketId, market.primaryLocale(), input, locale);
   }
 
   private MarketInfo requireOwner(UUID userId, UUID marketId) {

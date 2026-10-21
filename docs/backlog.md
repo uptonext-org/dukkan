@@ -23,6 +23,7 @@ Product phases: [`docs/product/marketplace.md`](product/marketplace.md).
 | M-14 | Live API test (app client against the backend) plus CI job `e2e-api` | Done |
 | M-15 | Visual QA through a react-native-web preview with screenshots (de/ar, light/dark), and fixing what it finds (14 defects fixed) | Done |
 | M-16 | Security and correctness review of the backend, findings fixed with regression tests; admin API; rate limiting; slot clean-up; product icon placeholders | Done |
+| B-33 | AI product capture ("Schnell erfassen"): `POST /merchant/markets/{id}/product-drafts` turns a note (typed or dictated with the keyboard) and/or a photo into a draft (de/en/ar names, size, category, cuisines, EU allergens, price, barcode) plus shared catalog matches; Claude API (`claude-opus-5-5`, structured output, server-side fallbacks) behind a port, rule-based parser when there is no key or the model fails (ADR 0011); app panel fills the new-product form; allergens as localised chips | Done (video and several photos per draft: later) |
 | B-32 | Image upload for merchants: `POST /merchant/markets/{id}/media` (JPEG/PNG/WebP by magic bytes, 5 MB, 40 MP, 60/h per user), content-addressed filesystem storage behind `MediaStorage`, public `GET /media/{key}`; listing photos (`UpdateListingRequest.imageUrl`); app "Foto wählen" for logo, cover, new and existing products | Done (filesystem storage; S3 is B-32a) |
 
 ## P1: Next
@@ -31,7 +32,7 @@ Product phases: [`docs/product/marketplace.md`](product/marketplace.md).
 |---|---|---|---|---|
 | B-31 | Merchant web portal (Phase 2): profile, bulk product import (CSV), orders board | M-08 | L | Mobile merchant mode stays for quick actions |
 | B-32a | S3-compatible object storage (S3/R2, MinIO locally) + CDN for uploaded media: an `S3MediaStorage` behind the existing `MediaStorage` port, `dukkan.media.public-base-url` pointing at the CDN, migration of files from the volume; optional server-side resizing/thumbnails and EXIF stripping; banner management API (banner photos can already be uploaded with purpose BANNER) | B-32 | M | Upload API, validation and the app are done (B-32). The filesystem/emptyDir storage does not work with several replicas |
-| B-33 | AI product capture: voice, photo or video becomes a `catalog_product` draft that the merchant confirms | B-32a | L | Through the shared-catalog model (ADR 0009). Provider TBD |
+| B-33a | AI capture follow-ups: drafts from several photos or a short video, barcode lookup against open data, Anthropic in the privacy notice/DPA before enabling the key in production, shared rate-limit store | B-33 | M | ADR 0011 |
 | B-34 | Grow the shared catalog per cuisine (Turkish, Arabic, Indian, Polish, …) with barcode, allergens and images | M-05 | L | Data work. Consider open data such as Open Food Facts (licence check) |
 | B-35 | Real geocoding and maps provider (Google, Mapbox or OSM-based) behind `GeocodingService`; Android Maps key | M-03 | M | Decision pending (product decision 15) |
 | B-36 | Admin UI (web) for market review, plus moderation of shared catalog products | M-08 | M | **Admin API for reviewing, approving and suspending markets is done.** Turn `merchant-auto-approve` off in production |
