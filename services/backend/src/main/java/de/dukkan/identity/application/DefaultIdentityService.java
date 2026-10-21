@@ -1,5 +1,7 @@
 package de.dukkan.identity.application;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import de.dukkan.i18n.application.LocaleService;
 import de.dukkan.identity.domain.Role;
 import de.dukkan.identity.domain.User;
@@ -21,6 +23,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Transactional
 class DefaultIdentityService implements IdentityService {
+
+  /** bcrypt input limit; registration enforces it with {@code @MaxUtf8Bytes(72)}. */
+  private static final int MAX_PASSWORD_BYTES = 72;
 
   private final UserRepository users;
   private final PasswordEncoder passwordEncoder;
@@ -58,7 +63,9 @@ class DefaultIdentityService implements IdentityService {
   public AuthResult login(String email, String password) {
     Optional<User> user = users.findByEmail(User.normalizeEmail(email));
     String hash = user.map(User::getPasswordHash).orElse(dummyHash);
-    boolean matches = passwordEncoder.matches(password, hash);
+    // bcrypt rejects inputs over 72 bytes; no stored password can be that long, so it is simply wrong.
+    String candidate = password.getBytes(UTF_8).length > MAX_PASSWORD_BYTES ? "" : password;
+    boolean matches = passwordEncoder.matches(candidate, hash) && candidate.equals(password);
     if (user.isEmpty() || !matches) {
       throw new InvalidCredentialsException();
     }

@@ -32,10 +32,14 @@ class SlotCapacityConcurrencyIntegrationTest extends IntegrationTest {
 
   @Test
   void concurrentReservationsDoNotExceedCapacity() throws Exception {
-    UUID market = createMarket(registerMerchant(), "Kapazität Testmarkt");
+    String merchant = registerMerchant();
+    UUID market = createMarket(merchant, "Kapazität Testmarkt");
+    UUID listing = addListing(merchant, market, "Äpfel Elstar", 299);
     List<UUID> customers = new ArrayList<>();
     for (int i = 0; i < USERS; i++) {
-      customers.add(userId(registerUser()));
+      String token = registerUser();
+      setQuantity(token, market, listing, 1); // empty carts cannot reserve
+      customers.add(userId(token));
     }
     List<SlotView> slots = fulfilment.listSlots(market, FulfilmentType.PICKUP, null, null);
     SlotView slot = slots.stream().filter(SlotView::available).skip(3).findFirst().orElseThrow();

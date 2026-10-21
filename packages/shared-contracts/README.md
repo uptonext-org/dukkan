@@ -23,11 +23,15 @@ availability it receives.
 | Open now | Opening hours in `Europe/Berlin`. A market can have several intervals per day |
 | Minimum order value | Per market, after discounts, excluding delivery fee. Applies to delivery **and** pickup |
 | Delivery fee | Market `deliveryFee`, or 0 when the subtotal after discounts ≥ `freeDeliveryFrom`. Pickup is always 0 |
-| Max quantity per line | `maxOrderQuantity` per listing (default 24, hard cap 99) |
+| Max quantity per line | `maxOrderQuantity` per listing (default 24, hard cap 99). Checked when setting a quantity **and again at checkout** |
 | Slots | The next 7 days, Monday to Saturday, during opening hours. 1-hour windows. Capacity 6 for delivery and 10 for pickup per window (defaults) |
 | Order cutoff | Delivery: 2 h before the window starts. Pickup: 1 h before |
-| Reservation | Holds capacity until the cutoff, or until the cart is cleared or the reservation replaced |
+| Reservation | Only for a non-empty cart (`CART_EMPTY`). Holds capacity until the cutoff, or until the cart is cleared, emptied or the reservation replaced |
 | Cart | One per user per market. Placing an order empties only that market's cart |
+| Idempotency-Key | Scoped to the user. Reusing it in the same market replays the order; in another market → 409 `IDEMPOTENCY_KEY_REUSED` |
+| Passwords | 10–128 characters and at most 72 UTF-8 bytes (bcrypt) |
+| Amounts in requests | 0–10,000,000 cents |
+| Promotions | `validUntil` after `validFrom` and in the future |
 | Cancellation (customer) | `PLACED` or `ACCEPTED`, before the cutoff |
 | Order status (merchant) | PLACED→ACCEPTED or REJECTED; ACCEPTED→READY_FOR_PICKUP (pickup) or OUT_FOR_DELIVERY (delivery); those → COMPLETED. REJECTED and CANCELLED release capacity |
 | PERCENT_OFF | Per unit: `round_half_up(unitPrice * percentOff / 100)` off. `promotionalPrice = unitPrice - discount` |

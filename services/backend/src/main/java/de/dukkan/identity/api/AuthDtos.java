@@ -16,7 +16,7 @@ final class AuthDtos {
 
   record RegisterRequest(
       @Email @NotBlank @Size(max = 254) String email,
-      @NotNull @Size(min = 10, max = 128) String password,
+      @NotNull @Size(min = 10, max = 128) @MaxUtf8Bytes(72) String password,
       @NotBlank @Size(min = 1, max = 100) String firstName,
       @NotBlank @Size(min = 1, max = 100) String lastName,
       @Nullable @Pattern(regexp = "CUSTOMER|MERCHANT", message = "must be CUSTOMER or MERCHANT") String accountType,

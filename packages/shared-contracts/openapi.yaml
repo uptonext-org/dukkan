@@ -577,7 +577,7 @@ paths:
       tags: [cart, fulfilment]
       operationId: reserveFulfilment
       summary: Reserve a delivery or pickup slot for the cart
-      description: Replaces any previous reservation. Delivery needs an address inside the market's delivery radius.
+      description: Replaces any previous reservation. The cart must not be empty (CART_EMPTY). Delivery needs an address inside the market's delivery radius.
       parameters:
         - { $ref: '#/components/parameters/MarketId' }
         - { $ref: '#/components/parameters/AcceptLanguage' }
@@ -1076,7 +1076,7 @@ components:
         application/problem+json:
           schema: { $ref: '#/components/schemas/Problem' }
     Conflict:
-      description: State conflict (`code` = EMAIL_TAKEN, SLOT_FULL, LISTING_EXISTS, CONCURRENT_MODIFICATION or CONFLICT).
+      description: State conflict (`code` = EMAIL_TAKEN, SLOT_FULL, LISTING_EXISTS, IDEMPOTENCY_KEY_REUSED, CONCURRENT_MODIFICATION or CONFLICT).
       content:
         application/problem+json:
           schema: { $ref: '#/components/schemas/Problem' }
@@ -1135,7 +1135,7 @@ components:
       type: object
       required: [amountCents, currency]
       properties:
-        amountCents: { type: integer, format: int64, example: 249 }
+        amountCents: { type: integer, format: int64, minimum: 0, maximum: 10000000, example: 249, description: 'Requests are limited to 0–10,000,000 cents (100,000 €).' }
         currency: { type: string, pattern: '^[A-Z]{3}$', example: EUR }
     GeoPoint:
       type: object
@@ -1169,7 +1169,7 @@ components:
       required: [email, password, firstName, lastName]
       properties:
         email: { type: string, format: email, maxLength: 254 }
-        password: { type: string, minLength: 10, maxLength: 128 }
+        password: { type: string, minLength: 10, maxLength: 128, description: 'At most 72 bytes in UTF-8 (bcrypt limit; about 36 Arabic letters). Longer passwords fail with VALIDATION_FAILED, field code MaxUtf8Bytes.' }
         firstName: { type: string, minLength: 1, maxLength: 100 }
         lastName: { type: string, minLength: 1, maxLength: 100 }
         accountType: { type: string, enum: [CUSTOMER, MERCHANT], default: CUSTOMER }

@@ -22,6 +22,7 @@ import de.dukkan.order.infrastructure.OrderRepository;
 import de.dukkan.shared.domain.FulfilmentType;
 import de.dukkan.shared.api.GeoPoint;
 import de.dukkan.shared.error.BusinessRuleException;
+import de.dukkan.shared.error.ConflictException;
 import de.dukkan.shared.error.ErrorCodes;
 import de.dukkan.shared.error.NotFoundException;
 import java.time.Clock;
@@ -75,7 +76,12 @@ public class OrderService {
     if (idempotencyKey != null) {
       Optional<CustomerOrder> existing = orders.findByUserIdAndIdempotencyKey(userId, idempotencyKey);
       if (existing.isPresent()) {
-        return view(existing.orElseThrow(), locale, false);
+        CustomerOrder stored = existing.orElseThrow();
+        if (!stored.getMarketId().equals(marketId)) {
+          throw new ConflictException(
+              ErrorCodes.IDEMPOTENCY_KEY_REUSED, "This Idempotency-Key was already used for an order in another market.");
+        }
+        return view(stored, locale, false);
       }
     }
     MarketInfo market = markets.info(marketId);
@@ -97,6 +103,12 @@ public class OrderService {
     if (cart.lines().stream().anyMatch(line -> !line.available())) {
       throw new BusinessRuleException(ErrorCodes.PRODUCT_UNAVAILABLE, "Some products in the cart are no longer available.");
     }
+    // Limits and offered fulfilment types may have changed since the cart was filled.
+    if (cart.lines().stream().anyMatch(line -> line.quantity() > line.maxOrderQuantity())) {
+      throw new BusinessRuleException(
+          ErrorCodes.MAX_QUANTITY_EXCEEDED, "Some products exceed their maximum order quantity; please adjust the cart.");
+    }
+    fulfilment.requireOffered(market, reservation.type());
     if (!cart.meetsMinimumOrderValue()) {
       throw new BusinessRuleException(
           ErrorCodes.MINIMUM_ORDER_NOT_MET,

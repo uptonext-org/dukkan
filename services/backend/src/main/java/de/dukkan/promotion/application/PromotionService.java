@@ -141,6 +141,9 @@ public class PromotionService {
     if (!draft.validUntil().isAfter(draft.validFrom())) {
       throw new InvalidRequestException("validUntil", "AfterValidFrom", "must be after validFrom");
     }
+    if (!draft.validUntil().isAfter(clock.instant())) {
+      throw new InvalidRequestException("validUntil", "Future", "must be in the future");
+    }
     switch (draft.type()) {
       case "PERCENT_OFF" -> {
         if (draft.percentOff() == null) {

@@ -8,6 +8,7 @@ import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import com.nimbusds.jose.proc.SecurityContext;
 import de.dukkan.shared.config.DukkanProperties;
 import java.time.Clock;
+import java.util.Objects;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import org.springframework.context.annotation.Bean;
@@ -21,6 +22,8 @@ import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtClaimNames;
+import org.springframework.security.oauth2.jwt.JwtClaimValidator;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtIssuerValidator;
@@ -135,7 +138,10 @@ public class SecurityConfiguration {
   public static OAuth2TokenValidator<Jwt> jwtValidator(String issuer, Clock clock) {
     JwtTimestampValidator timestamps = new JwtTimestampValidator();
     timestamps.setClock(clock);
-    return new DelegatingOAuth2TokenValidator<>(timestamps, new JwtIssuerValidator(issuer));
+    // JwtTimestampValidator only checks exp when present; we never issue tokens without exp/iat, so require them.
+    OAuth2TokenValidator<Jwt> hasExpiry = new JwtClaimValidator<Object>(JwtClaimNames.EXP, Objects::nonNull);
+    OAuth2TokenValidator<Jwt> hasIssuedAt = new JwtClaimValidator<Object>(JwtClaimNames.IAT, Objects::nonNull);
+    return new DelegatingOAuth2TokenValidator<>(timestamps, hasExpiry, hasIssuedAt, new JwtIssuerValidator(issuer));
   }
 
   private static SecretKey secretKey(DukkanProperties properties) {

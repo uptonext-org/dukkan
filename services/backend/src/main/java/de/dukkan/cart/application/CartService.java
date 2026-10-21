@@ -109,6 +109,7 @@ public class CartService {
     Cart cart = loadForUpdate(userId, marketId);
     releaseIfExpired(cart);
     cart.setQuantity(listingId, quantity, clock.instant());
+    releaseIfEmptied(cart);
     return view(cart, market, locale);
   }
 
@@ -117,6 +118,7 @@ public class CartService {
     Cart cart = loadForUpdate(userId, marketId);
     releaseIfExpired(cart);
     cart.setQuantity(listingId, 0, clock.instant());
+    releaseIfEmptied(cart);
     return view(cart, market, locale);
   }
 
@@ -150,6 +152,10 @@ public class CartService {
       reservedAddress = address.id();
     }
     Cart cart = loadForUpdate(userId, marketId);
+    if (cart.isEmpty()) {
+      // Capacity is scarce; an empty cart must not hold it (otherwise throwaway accounts can block slots).
+      throw new BusinessRuleException(ErrorCodes.CART_EMPTY, "Add products before choosing a time.");
+    }
     releaseIfExpired(cart);
     Instant now = clock.instant();
     Optional<Cart.Reservation> previous = cart.getReservation();
@@ -204,6 +210,13 @@ public class CartService {
 
   private void releaseIfExpired(Cart cart) {
     if (isExpired(cart)) {
+      releaseReservation(cart);
+    }
+  }
+
+  /** A cart that became empty gives its reserved capacity back. */
+  private void releaseIfEmptied(Cart cart) {
+    if (cart.isEmpty() && cart.getReservation().isPresent()) {
       releaseReservation(cart);
     }
   }

@@ -18,6 +18,7 @@ public final class ErrorCodes {
   public static final String EMAIL_TAKEN = "EMAIL_TAKEN";
   public static final String SLOT_FULL = "SLOT_FULL";
   public static final String LISTING_EXISTS = "LISTING_EXISTS";
+  public static final String IDEMPOTENCY_KEY_REUSED = "IDEMPOTENCY_KEY_REUSED";
 
   // 422
   public static final String PRODUCT_UNAVAILABLE = "PRODUCT_UNAVAILABLE";

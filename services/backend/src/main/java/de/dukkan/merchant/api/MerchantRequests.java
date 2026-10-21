@@ -80,7 +80,7 @@ final class MerchantRequests {
       @NotNull UUID categoryId,
       @Nullable List<@NotBlank String> cuisineCodes,
       @Nullable Boolean organic,
-      @Nullable List<@NotBlank String> allergens,
+      @Nullable @Size(max = 20) List<@NotBlank @Size(max = 60) String> allergens,
       @Nullable @URL String imageUrl,
       @Nullable @Size(max = 20) String barcode) {
 
