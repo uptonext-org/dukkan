@@ -6,10 +6,10 @@ import java.util.Optional;
  * Port for the bytes of uploaded media. Keys are content-addressed ({@link MediaKeys}), so a
  * {@code put} of an existing key is a no-op and objects never change after they are written.
  *
- * <p>The only implementation today is {@code media.infrastructure.FileSystemMediaStorage}. An
- * S3-compatible store (S3, MinIO, R2) can implement the same three methods with {@code
- * HeadObject}, {@code PutObject} ({@code If-None-Match: *}) and {@code GetObject}; with a CDN in
- * front, set {@code dukkan.media.public-base-url} to the CDN and {@link #open} is no longer hit.
+ * <p>Implementations ({@code dukkan.media.storage}): {@code media.infrastructure.FileSystemMediaStorage}
+ * ({@code filesystem}, default; one instance or a shared volume) and {@code S3MediaStorage}
+ * ({@code s3}: S3, R2, MinIO, …; several instances). With a CDN in front, set {@code
+ * dukkan.media.public-base-url} to the CDN and {@link #open} is no longer hit.
  */
 public interface MediaStorage {
 

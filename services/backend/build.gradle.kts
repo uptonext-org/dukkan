@@ -43,6 +43,14 @@ dependencies {
     implementation(libs.spring.boot.starter.actuator)
     implementation(libs.springdoc.webmvc.ui)
     implementation(libs.anthropic.java)
+    implementation(platform(libs.awssdk.bom))
+    // S3MediaStorage (B-32a): the JDK-based HTTP client only, no Netty or Apache client.
+    implementation(libs.awssdk.s3) {
+        exclude(group = "software.amazon.awssdk", module = "netty-nio-client")
+        exclude(group = "software.amazon.awssdk", module = "apache-client")
+        exclude(group = "software.amazon.awssdk", module = "apache5-client")
+    }
+    implementation(libs.awssdk.url.connection.client)
     runtimeOnly(libs.flyway.postgresql)
     runtimeOnly(libs.postgresql)
 

@@ -129,8 +129,16 @@ public record DukkanProperties(
       @Nullable String publicBaseUrl,
       @DefaultValue("5MB") DataSize maxFileSize,
       @DefaultValue("40000000") long maxPixels,
-      @DefaultValue("60") int uploadsPerHour) {
+      @DefaultValue("60") int uploadsPerHour,
+      @DefaultValue("filesystem") String storage,
+      @DefaultValue S3 s3) {
     public Media {
+      if (!Set.of("filesystem", "s3").contains(storage)) {
+        throw new IllegalArgumentException("dukkan.media.storage must be filesystem or s3");
+      }
+      if ("s3".equals(storage) && s3.bucket() == null) {
+        throw new IllegalArgumentException("dukkan.media.s3.bucket (env DUKKAN_MEDIA_S3_BUCKET) is required for storage s3");
+      }
       if (directory == null) {
         directory = Path.of(System.getProperty("java.io.tmpdir"), "dukkan-media");
       }
@@ -147,6 +155,41 @@ public record DukkanProperties(
         throw new IllegalArgumentException("dukkan.media limits must be >= 1");
       }
     }
+  }
+
+  /**
+   * S3-compatible object storage for media ({@code dukkan.media.storage=s3}): AWS S3, Cloudflare R2,
+   * MinIO, Ceph, …. {@code endpoint} is empty for AWS; set it (and usually {@code pathStyle}) for
+   * other providers. Without {@code accessKey}/{@code secretKey} the AWS default credentials chain
+   * is used (environment, web identity / IRSA, instance profile). {@code createBucket} is for local
+   * development only.
+   */
+  public record S3(
+      @Nullable String endpoint,
+      @DefaultValue("eu-central-1") String region,
+      @Nullable String bucket,
+      @Nullable String accessKey,
+      @Nullable String secretKey,
+      @DefaultValue("false") boolean pathStyle,
+      @DefaultValue("false") boolean createBucket) {
+    public S3 {
+      endpoint = blankToNull(endpoint);
+      bucket = blankToNull(bucket);
+      accessKey = blankToNull(accessKey);
+      secretKey = blankToNull(secretKey);
+      if ((accessKey == null) != (secretKey == null)) {
+        throw new IllegalArgumentException("dukkan.media.s3.access-key and secret-key must be set together");
+      }
+    }
+
+    @Override
+    public String toString() {
+      return "S3[endpoint=" + endpoint + ", region=" + region + ", bucket=" + bucket + ", accessKey=" + (accessKey == null ? "unset" : "***") + "]";
+    }
+  }
+
+  private static @Nullable String blankToNull(@Nullable String value) {
+    return value == null || value.isBlank() ? null : value;
   }
 
   /**

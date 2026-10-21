@@ -36,7 +36,8 @@ class JwtTokenServiceTest {
         new DukkanProperties.Markets(10, 50),
         new DukkanProperties.Security(
             new DukkanProperties.Jwt(secret, ttl, "dukkan"), new DukkanProperties.RateLimit(true, 20, 10)),
-        new DukkanProperties.Media(null, null, org.springframework.util.unit.DataSize.ofMegabytes(5), 40_000_000, 60),
+        new DukkanProperties.Media(null, null, org.springframework.util.unit.DataSize.ofMegabytes(5), 40_000_000, 60, "filesystem",
+            new DukkanProperties.S3(null, "eu-central-1", null, null, null, false, false)),
         new DukkanProperties.Capture(
             30, new DukkanProperties.Anthropic(null, "claude-opus-5-5", "low", Duration.ofSeconds(60), 8000, true, null)));
   }

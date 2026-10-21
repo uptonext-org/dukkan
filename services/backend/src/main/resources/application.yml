@@ -92,6 +92,19 @@ dukkan:
     max-file-size: 5MB
     max-pixels: 40000000
     uploads-per-hour: 60
+    # filesystem (default: dukkan.media.directory, one instance) or s3 (S3, R2, MinIO …; several instances).
+    storage: ${DUKKAN_MEDIA_STORAGE:filesystem}
+    s3:
+      # Empty for AWS; e.g. https://<account>.r2.cloudflarestorage.com or http://localhost:9090.
+      endpoint: ${DUKKAN_MEDIA_S3_ENDPOINT:}
+      region: ${DUKKAN_MEDIA_S3_REGION:eu-central-1}
+      bucket: ${DUKKAN_MEDIA_S3_BUCKET:}
+      # Empty: AWS default credentials chain (env, IRSA / web identity, instance profile).
+      access-key: ${DUKKAN_MEDIA_S3_ACCESS_KEY:}
+      secret-key: ${DUKKAN_MEDIA_S3_SECRET_KEY:}
+      path-style: ${DUKKAN_MEDIA_S3_PATH_STYLE:false}
+      # Local development only.
+      create-bucket: ${DUKKAN_MEDIA_S3_CREATE_BUCKET:false}
   capture:
     # AI product capture: drafts per merchant and hour (each one may call the language model).
     drafts-per-hour: 30

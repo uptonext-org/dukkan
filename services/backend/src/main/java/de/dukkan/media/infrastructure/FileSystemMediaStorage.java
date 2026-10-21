@@ -15,6 +15,7 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.FileSystemResource;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 /**
@@ -24,6 +25,7 @@ import org.springframework.stereotype.Component;
  * (ReadWriteMany) volume; see {@link MediaStorage} for the S3 path.
  */
 @Component
+@ConditionalOnProperty(name = "dukkan.media.storage", havingValue = "filesystem", matchIfMissing = true)
 public class FileSystemMediaStorage implements MediaStorage {
 
   private static final Logger LOG = LoggerFactory.getLogger(FileSystemMediaStorage.class);
