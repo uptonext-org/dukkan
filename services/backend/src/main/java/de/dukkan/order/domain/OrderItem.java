@@ -11,7 +11,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.util.UUID;
 
-/** A line of a placed order with its price snapshot. */
+/** A line of a placed order with its price and name snapshot. */
 @Entity
 @Table(name = "order_item")
 public class OrderItem {
@@ -26,8 +26,11 @@ public class OrderItem {
   @Column(name = "line_no", nullable = false)
   private int lineNo;
 
-  @Column(name = "product_id", nullable = false)
-  private UUID productId;
+  @Column(name = "market_product_id", nullable = false)
+  private UUID listingId;
+
+  @Column(name = "catalog_product_id", nullable = false)
+  private UUID catalogProductId;
 
   @Column(nullable = false)
   private String name;
@@ -43,11 +46,20 @@ public class OrderItem {
 
   protected OrderItem() {}
 
-  OrderItem(CustomerOrder order, int lineNo, UUID productId, String name, long unitPriceCents, int quantity, long lineTotalCents) {
+  OrderItem(
+      CustomerOrder order,
+      int lineNo,
+      UUID listingId,
+      UUID catalogProductId,
+      String name,
+      long unitPriceCents,
+      int quantity,
+      long lineTotalCents) {
     this.id = randomUUID();
     this.order = order;
     this.lineNo = lineNo;
-    this.productId = productId;
+    this.listingId = listingId;
+    this.catalogProductId = catalogProductId;
     this.name = name;
     this.unitPriceCents = unitPriceCents;
     this.quantity = quantity;
@@ -58,8 +70,12 @@ public class OrderItem {
     return lineNo;
   }
 
-  public UUID getProductId() {
-    return productId;
+  public UUID getListingId() {
+    return listingId;
+  }
+
+  public UUID getCatalogProductId() {
+    return catalogProductId;
   }
 
   public String getName() {

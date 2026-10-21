@@ -36,19 +36,19 @@ class AuthRequestValidationTest {
 
   @Test
   void validRegistrationPasses() {
-    assertThat(invalidFields(new RegisterRequest("anna@example.org", "correct-horse", "Anna", "Muster"))).isEmpty();
+    assertThat(invalidFields(new RegisterRequest("anna@example.org", "correct-horse", "Anna", "Muster", null, null))).isEmpty();
   }
 
   @Test
   void registrationRejectsBadEmailShortPasswordAndBlankNames() {
-    assertThat(invalidFields(new RegisterRequest("not-an-email", "short", " ", "")))
+    assertThat(invalidFields(new RegisterRequest("not-an-email", "short", " ", "", null, null)))
         .containsExactlyInAnyOrder("email", "password", "firstName", "lastName");
   }
 
   @Test
   void registrationRejectsTooLongValues() {
     String longName = "x".repeat(101);
-    assertThat(invalidFields(new RegisterRequest("anna@example.org", "p".repeat(129), longName, longName)))
+    assertThat(invalidFields(new RegisterRequest("anna@example.org", "p".repeat(129), longName, longName, null, null)))
         .containsExactlyInAnyOrder("password", "firstName", "lastName");
   }
 
@@ -60,7 +60,7 @@ class AuthRequestValidationTest {
 
   @Test
   void passwordsAreNotPrinted() {
-    assertThat(new RegisterRequest("a@b.de", "secret-password", "A", "B").toString()).doesNotContain("secret-password");
+    assertThat(new RegisterRequest("a@b.de", "secret-password", "A", "B", null, null).toString()).doesNotContain("secret-password");
     assertThat(new LoginRequest("a@b.de", "secret-password").toString()).doesNotContain("secret-password");
   }
 }

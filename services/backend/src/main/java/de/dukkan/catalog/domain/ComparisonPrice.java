@@ -8,8 +8,7 @@ import org.jspecify.annotations.Nullable;
 /** Price per reference unit (Grundpreis), rounded half-up to whole cents. */
 public record ComparisonPrice(long amountCents, String unit) {
 
-  public static Optional<ComparisonPrice> of(
-      long priceCents, @Nullable BigDecimal netQuantity, @Nullable String netUnit) {
+  public static Optional<ComparisonPrice> of(long priceCents, @Nullable BigDecimal netQuantity, @Nullable String netUnit) {
     if (netQuantity == null || netUnit == null || netQuantity.signum() <= 0) {
       return Optional.empty();
     }

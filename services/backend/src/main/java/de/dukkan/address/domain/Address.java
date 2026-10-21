@@ -2,6 +2,7 @@ package de.dukkan.address.domain;
 
 import static java.util.UUID.randomUUID;
 
+import de.dukkan.address.application.AddressDetails;
 import de.dukkan.shared.persistence.AuditedEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -43,6 +44,10 @@ public class Address extends AuditedEntity {
   @Column(name = "delivery_instructions")
   private String deliveryInstructions;
 
+  private Double lat;
+
+  private Double lng;
+
   @Column(name = "is_default", nullable = false)
   private boolean defaultAddress;
 
@@ -64,6 +69,20 @@ public class Address extends AuditedEntity {
     this.postalCode = details.postalCode();
     this.city = details.city();
     this.deliveryInstructions = details.deliveryInstructions();
+  }
+
+  /** Sets the coordinates (both null when unknown). */
+  public void locate(Double lat, Double lng) {
+    this.lat = lat;
+    this.lng = lng;
+  }
+
+  public Double getLat() {
+    return lat;
+  }
+
+  public Double getLng() {
+    return lng;
   }
 
   public void setDefaultAddress(boolean defaultAddress) {

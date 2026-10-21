@@ -1,12 +1,13 @@
 package de.dukkan.cart.application;
 
-import de.dukkan.promotion.application.PromotionRule;
+import de.dukkan.catalog.application.PromotionBadge;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 
 /** A priced cart line. */
 public record CartLineView(
-    UUID productId,
+    UUID listingId,
+    UUID catalogProductId,
     String name,
     String unitSize,
     @Nullable String imageUrl,
@@ -15,5 +16,5 @@ public record CartLineView(
     long subtotalCents,
     long discountCents,
     long totalCents,
-    @Nullable PromotionRule promotion,
+    @Nullable PromotionBadge promotion,
     boolean available) {}

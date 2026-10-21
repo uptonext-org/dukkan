@@ -1,6 +1,7 @@
 package de.dukkan.identity.application;
 
 import de.dukkan.shared.config.DukkanProperties;
+import de.dukkan.shared.security.SecurityConfiguration;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -38,6 +39,7 @@ public final class JwtTokenService {
             .issuedAt(now)
             .expiresAt(now.plus(settings.ttl()))
             .claim("email", user.email())
+            .claim(SecurityConfiguration.ROLES_CLAIM, user.roles())
             .build();
     JwsHeader header = JwsHeader.with(MacAlgorithm.HS256).build();
     return encoder.encode(JwtEncoderParameters.from(header, claims)).getTokenValue();

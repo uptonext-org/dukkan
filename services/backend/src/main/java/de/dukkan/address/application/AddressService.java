@@ -1,9 +1,10 @@
 package de.dukkan.address.application;
 
-import de.dukkan.address.domain.AddressDetails;
+import de.dukkan.shared.api.GeoPoint;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 
 /** Manages a user's addresses. Every lookup is scoped to the owning user. */
 public interface AddressService {
@@ -11,9 +12,10 @@ public interface AddressService {
   /** The user's addresses, default first. */
   List<AddressView> list(UUID userId);
 
-  AddressView create(UUID userId, AddressDetails details, boolean makeDefault);
+  /** Without {@code location} the address is geocoded (stored without coordinates if that fails). */
+  AddressView create(UUID userId, AddressDetails details, @Nullable GeoPoint location, boolean makeDefault);
 
-  AddressView update(UUID userId, UUID addressId, AddressDetails details, boolean makeDefault);
+  AddressView update(UUID userId, UUID addressId, AddressDetails details, @Nullable GeoPoint location, boolean makeDefault);
 
   void delete(UUID userId, UUID addressId);
 

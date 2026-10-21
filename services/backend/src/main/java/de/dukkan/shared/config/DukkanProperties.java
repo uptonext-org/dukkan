@@ -12,36 +12,57 @@ import org.springframework.boot.context.properties.bind.DefaultValue;
  */
 @ConfigurationProperties("dukkan")
 public record DukkanProperties(
-    @DefaultValue Checkout checkout, @DefaultValue Delivery delivery, @DefaultValue Security security) {
+    @DefaultValue Features features,
+    @DefaultValue Fulfilment fulfilment,
+    @DefaultValue Catalog catalog,
+    @DefaultValue Markets markets,
+    @DefaultValue Security security) {
 
-  /** Checkout rules. */
-  public record Checkout(@DefaultValue("3500") long minimumOrderCents) {
-    public Checkout {
-      if (minimumOrderCents < 0) {
-        throw new IllegalArgumentException("dukkan.checkout.minimum-order-cents must be >= 0");
+  /** Feature flags. */
+  public record Features(
+      @DefaultValue("false") boolean requireLoginToBrowse, @DefaultValue("true") boolean merchantAutoApprove) {}
+
+  /** Slot generation and capacity rules (business rules in packages/shared-contracts/README.md). */
+  public record Fulfilment(
+      @DefaultValue("7") int daysAhead,
+      @DefaultValue("PT1H") Duration slotLength,
+      @DefaultValue("6") int deliveryCapacity,
+      @DefaultValue("10") int pickupCapacity,
+      @DefaultValue("PT2H") Duration deliveryCutoff,
+      @DefaultValue("PT1H") Duration pickupCutoff) {
+    public Fulfilment {
+      if (daysAhead < 1 || daysAhead > 31) {
+        throw new IllegalArgumentException("dukkan.fulfilment.days-ahead must be within 1..31");
+      }
+      if (slotLength.isNegative() || slotLength.isZero() || slotLength.compareTo(Duration.ofHours(12)) > 0) {
+        throw new IllegalArgumentException("dukkan.fulfilment.slot-length must be within (0, 12h]");
+      }
+      if (deliveryCapacity < 1 || pickupCapacity < 1) {
+        throw new IllegalArgumentException("dukkan.fulfilment capacities must be >= 1");
+      }
+      if (deliveryCutoff.isNegative() || pickupCutoff.isNegative()) {
+        throw new IllegalArgumentException("dukkan.fulfilment cutoffs must not be negative");
       }
     }
   }
 
-  /** Delivery slot generation rules. */
-  public record Delivery(
-      @DefaultValue("8") int slotCapacity,
-      @DefaultValue("22") int cutoffHour,
-      @DefaultValue("7") int daysAhead,
-      @DefaultValue("8") int firstSlotHour,
-      @DefaultValue("20") int lastSlotHour) {
-    public Delivery {
-      if (slotCapacity < 1) {
-        throw new IllegalArgumentException("dukkan.delivery.slot-capacity must be >= 1");
+  /** Catalog rules. */
+  public record Catalog(@DefaultValue("14") int newListingDays, @DefaultValue("24") int defaultMaxOrderQuantity) {
+    public Catalog {
+      if (newListingDays < 0) {
+        throw new IllegalArgumentException("dukkan.catalog.new-listing-days must be >= 0");
       }
-      if (cutoffHour < 0 || cutoffHour > 23) {
-        throw new IllegalArgumentException("dukkan.delivery.cutoff-hour must be within 0..23");
+      if (defaultMaxOrderQuantity < 1 || defaultMaxOrderQuantity > 99) {
+        throw new IllegalArgumentException("dukkan.catalog.default-max-order-quantity must be within 1..99");
       }
-      if (daysAhead < 1 || daysAhead > 31) {
-        throw new IllegalArgumentException("dukkan.delivery.days-ahead must be within 1..31");
-      }
-      if (firstSlotHour < 0 || lastSlotHour > 22 || firstSlotHour > lastSlotHour) {
-        throw new IllegalArgumentException("dukkan.delivery slot hours must satisfy 0 <= first <= last <= 22");
+    }
+  }
+
+  /** Market discovery rules. */
+  public record Markets(@DefaultValue("10") double defaultRadiusKm, @DefaultValue("50") double maxRadiusKm) {
+    public Markets {
+      if (defaultRadiusKm <= 0 || maxRadiusKm < defaultRadiusKm) {
+        throw new IllegalArgumentException("dukkan.markets radii must satisfy 0 < default <= max");
       }
     }
   }

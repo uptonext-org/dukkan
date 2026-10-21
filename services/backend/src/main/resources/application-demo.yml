@@ -1,0 +1,5 @@
+# Demo profile: creates the demo accounts (see README) on startup. Combine with local or docker,
+# e.g. --spring.profiles.active=docker,demo. Never enable in production.
+logging:
+  level:
+    de.dukkan.merchant: INFO

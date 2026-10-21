@@ -23,14 +23,27 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * Module boundaries of the modular monolith. Modules are the top-level packages below {@code
  * de.dukkan} (except {@code shared}). A module may use another module only through its {@code
- * application} package (service interfaces and read models); API layers may additionally reuse
+ * application} package (services, read models and ports); API layers may additionally reuse
  * another module's response DTOs from its {@code api} package. {@code domain} and {@code
- * infrastructure} are private to their module.
+ * infrastructure} are private to their module. Ports such as {@code catalog.application.PurchaseHistory}
+ * are implemented by higher modules, which keeps the module graph acyclic.
  */
 class ArchitectureTest {
 
   private static final Set<String> MODULES =
-      Set.of("identity", "catalog", "promotion", "cart", "address", "delivery", "order");
+      Set.of(
+          "identity",
+          "i18n",
+          "geo",
+          "market",
+          "catalog",
+          "promotion",
+          "favorite",
+          "cart",
+          "fulfilment",
+          "address",
+          "order",
+          "merchant");
   private static final Pattern MODULE_PACKAGE = Pattern.compile("^de\\.dukkan\\.([a-z]+)\\.([a-z]+)(\\..*)?$");
 
   private static JavaClasses classes;

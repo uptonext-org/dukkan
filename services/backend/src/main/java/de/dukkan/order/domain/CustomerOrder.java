@@ -2,6 +2,7 @@ package de.dukkan.order.domain;
 
 import static java.util.UUID.randomUUID;
 
+import de.dukkan.shared.domain.FulfilmentType;
 import de.dukkan.shared.persistence.AuditedEntity;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -20,7 +21,7 @@ import java.util.List;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 
-/** A placed order. Prices, slot and address are snapshots taken at placement time. */
+/** A placed order in one market. Names, prices, slot and address are snapshots taken at placement. */
 @Entity
 @Table(name = "customer_order")
 public class CustomerOrder extends AuditedEntity {
@@ -28,10 +29,16 @@ public class CustomerOrder extends AuditedEntity {
   /** Totals of an order in cents. */
   public record Totals(long subtotalCents, long discountTotalCents, long deliveryFeeCents, long totalCents) {}
 
+  /** Who and where the order is for. */
+  public record Parties(UUID userId, String customerName, UUID marketId, String marketName) {}
+
   @Id private UUID id;
 
   @Column(name = "user_id", nullable = false, updatable = false)
   private UUID userId;
+
+  @Column(name = "market_id", nullable = false, updatable = false)
+  private UUID marketId;
 
   @Column(name = "order_number", nullable = false, updatable = false)
   private String orderNumber;
@@ -40,11 +47,21 @@ public class CustomerOrder extends AuditedEntity {
   @Enumerated(EnumType.STRING)
   private OrderStatus status;
 
+  @Column(name = "fulfilment_type", nullable = false, updatable = false)
+  @Enumerated(EnumType.STRING)
+  private FulfilmentType fulfilmentType;
+
   @Column(name = "placed_at", nullable = false, updatable = false)
   private Instant placedAt;
 
   @Column(name = "idempotency_key", updatable = false)
   private @Nullable String idempotencyKey;
+
+  @Column(name = "market_name", nullable = false, updatable = false)
+  private String marketName;
+
+  @Column(name = "customer_name", nullable = false, updatable = false)
+  private String customerName;
 
   @Column(name = "subtotal_cents", nullable = false)
   private long subtotalCents;
@@ -63,7 +80,7 @@ public class CustomerOrder extends AuditedEntity {
 
   @Embedded private SlotSnapshot slot;
 
-  @Embedded private AddressSnapshot address;
+  @Embedded private @Nullable AddressSnapshot address;
 
   @Version private long version;
 
@@ -74,17 +91,22 @@ public class CustomerOrder extends AuditedEntity {
   protected CustomerOrder() {}
 
   public CustomerOrder(
-      UUID userId,
+      Parties parties,
       String orderNumber,
+      FulfilmentType fulfilmentType,
       Instant placedAt,
       @Nullable String idempotencyKey,
       Totals totals,
       SlotSnapshot slot,
-      AddressSnapshot address) {
+      @Nullable AddressSnapshot address) {
     this.id = randomUUID();
-    this.userId = userId;
+    this.userId = parties.userId();
+    this.customerName = parties.customerName();
+    this.marketId = parties.marketId();
+    this.marketName = parties.marketName();
     this.orderNumber = orderNumber;
     this.status = OrderStatus.PLACED;
+    this.fulfilmentType = fulfilmentType;
     this.placedAt = placedAt;
     this.idempotencyKey = idempotencyKey;
     this.subtotalCents = totals.subtotalCents();
@@ -96,13 +118,14 @@ public class CustomerOrder extends AuditedEntity {
     this.address = address;
   }
 
-  public void addItem(UUID productId, String name, long unitPriceCents, int quantity, long lineTotalCents) {
-    items.add(new OrderItem(this, items.size() + 1, productId, name, unitPriceCents, quantity, lineTotalCents));
+  public void addItem(UUID listingId, UUID catalogProductId, String name, long unitPriceCents, int quantity, long lineTotalCents) {
+    items.add(
+        new OrderItem(this, items.size() + 1, listingId, catalogProductId, name, unitPriceCents, quantity, lineTotalCents));
   }
 
-  /** Cancellation is allowed only while PLACED and before the slot's order cutoff. */
+  /** Customers may cancel PLACED or ACCEPTED orders before the slot's order cutoff. */
   public boolean isCancellable(Instant now) {
-    return status == OrderStatus.PLACED && now.isBefore(slot.orderCutoffAt());
+    return status.isCancellableByCustomer() && now.isBefore(slot.orderCutoffAt());
   }
 
   public void cancel(Instant now) {
@@ -110,6 +133,15 @@ public class CustomerOrder extends AuditedEntity {
       throw new IllegalStateException("Order " + orderNumber + " cannot be cancelled");
     }
     status = OrderStatus.CANCELLED;
+  }
+
+  /** Merchant transition; returns false (and changes nothing) if it is not allowed. */
+  public boolean advanceTo(OrderStatus target) {
+    if (!status.canAdvanceTo(target, fulfilmentType)) {
+      return false;
+    }
+    status = target;
+    return true;
   }
 
   @Override
@@ -121,6 +153,10 @@ public class CustomerOrder extends AuditedEntity {
     return userId;
   }
 
+  public UUID getMarketId() {
+    return marketId;
+  }
+
   public String getOrderNumber() {
     return orderNumber;
   }
@@ -129,8 +165,20 @@ public class CustomerOrder extends AuditedEntity {
     return status;
   }
 
+  public FulfilmentType getFulfilmentType() {
+    return fulfilmentType;
+  }
+
   public Instant getPlacedAt() {
     return placedAt;
+  }
+
+  public String getMarketName() {
+    return marketName;
+  }
+
+  public String getCustomerName() {
+    return customerName;
   }
 
   public Totals getTotals() {
@@ -141,7 +189,7 @@ public class CustomerOrder extends AuditedEntity {
     return slot;
   }
 
-  public AddressSnapshot getAddress() {
+  public @Nullable AddressSnapshot getAddress() {
     return address;
   }
 

@@ -36,14 +36,14 @@ final class AddressController {
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
   AddressResponse create(@CurrentSecurityContext SecurityContext security, @RequestBody @Valid AddressRequest request) {
-    return AddressResponse.from(addresses.create(CurrentUser.id(security), request.toDetails(), request.makeDefault()));
+    return AddressResponse.from(addresses.create(CurrentUser.id(security), request.toDetails(), request.location(), request.makeDefault()));
   }
 
   @PutMapping("/{addressId}")
   AddressResponse update(
       @CurrentSecurityContext SecurityContext security, @PathVariable UUID addressId, @RequestBody @Valid AddressRequest request) {
     return AddressResponse.from(
-        addresses.update(CurrentUser.id(security), addressId, request.toDetails(), request.makeDefault()));
+        addresses.update(CurrentUser.id(security), addressId, request.toDetails(), request.location(), request.makeDefault()));
   }
 
   @DeleteMapping("/{addressId}")

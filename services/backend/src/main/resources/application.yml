@@ -54,14 +54,24 @@ logging:
       console: ecs
 
 dukkan:
-  checkout:
-    minimum-order-cents: 3500
-  delivery:
-    slot-capacity: 8
-    cutoff-hour: 22
+  features:
+    # Phase 1: browsing is public; set to true to require a login for the catalog GET endpoints.
+    require-login-to-browse: ${DUKKAN_REQUIRE_LOGIN_TO_BROWSE:false}
+    # New merchant markets go live immediately (otherwise PENDING_REVIEW).
+    merchant-auto-approve: ${DUKKAN_MERCHANT_AUTO_APPROVE:true}
+  fulfilment:
     days-ahead: 7
-    first-slot-hour: 8
-    last-slot-hour: 20
+    slot-length: PT1H
+    delivery-capacity: 6
+    pickup-capacity: 10
+    delivery-cutoff: PT2H
+    pickup-cutoff: PT1H
+  catalog:
+    new-listing-days: 14
+    default-max-order-quantity: 24
+  markets:
+    default-radius-km: 10
+    max-radius-km: 50
   security:
     jwt:
       # No default: must be provided via DUKKAN_JWT_SECRET (>= 32 bytes). Startup fails otherwise.

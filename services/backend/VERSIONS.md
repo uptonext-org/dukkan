@@ -40,3 +40,12 @@ from the Boot BOM and are not overridden. Exact resolved versions are in `gradle
   with CHECK constraints instead (e.g. postal codes `^[0-9]{5}$`).
 - Spring Boot 4 moved test auto-configuration: `org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc`
   (`spring-boot-starter-webmvc-test`).
+- Marketplace iteration (2026-10-21): no dependency or version changed, lockfiles untouched. The schema uses the
+  `pg_trgm` extension, which ships with the official `postgres:18.6` image (`CREATE EXTENSION IF NOT EXISTS pg_trgm`
+  in `V1__schema.sql`); no PostGIS. `org.hibernate.validator.constraints.URL` comes with
+  `spring-boot-starter-validation`.
+- Error Prone Support's `RequestMappingAnnotation` has no option to ignore custom argument types, so controllers bind
+  the resolved content locale with `@RequestAttribute(ContentLocale.REQUEST_ATTRIBUTE)` (set by `ContentLocaleFilter`)
+  instead of a custom `HandlerMethodArgumentResolver`.
+- Jackson 3 serialises `@JsonUnwrapped` record components (used for the contract's `allOf` schemas such as
+  `MarketDetail`, `ProductDetail`, `Listing`); verified by `ResponseSchemaIntegrationTest`.

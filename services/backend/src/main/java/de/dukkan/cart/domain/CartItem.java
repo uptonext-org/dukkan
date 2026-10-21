@@ -12,7 +12,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.util.UUID;
 
-/** One product line in a cart. */
+/** One listing line in a cart. */
 @Entity
 @Table(name = "cart_item")
 public class CartItem extends AuditedEntity {
@@ -24,18 +24,18 @@ public class CartItem extends AuditedEntity {
   @SuppressWarnings("UnusedVariable") // Owning side of the JPA association; written, read by Hibernate.
   private Cart cart;
 
-  @Column(name = "product_id", nullable = false, updatable = false)
-  private UUID productId;
+  @Column(name = "market_product_id", nullable = false, updatable = false)
+  private UUID listingId;
 
   @Column(nullable = false)
   private int quantity;
 
   protected CartItem() {}
 
-  CartItem(Cart cart, UUID productId, int quantity) {
+  CartItem(Cart cart, UUID listingId, int quantity) {
     this.id = randomUUID();
     this.cart = cart;
-    this.productId = productId;
+    this.listingId = listingId;
     this.quantity = quantity;
   }
 
@@ -44,8 +44,8 @@ public class CartItem extends AuditedEntity {
     return id;
   }
 
-  public UUID getProductId() {
-    return productId;
+  public UUID getListingId() {
+    return listingId;
   }
 
   public int getQuantity() {

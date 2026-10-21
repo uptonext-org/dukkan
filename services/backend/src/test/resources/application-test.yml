@@ -10,3 +10,5 @@ dukkan:
   security:
     jwt:
       secret: integration-test-secret-0123456789abcdef
+      # Tests move the clock by days (cutoffs, "new" window); tokens must outlive that.
+      ttl: P30D

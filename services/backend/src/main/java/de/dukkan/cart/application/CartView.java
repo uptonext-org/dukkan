@@ -1,14 +1,16 @@
 package de.dukkan.cart.application;
 
-import de.dukkan.delivery.application.SlotView;
+import de.dukkan.fulfilment.application.SlotView;
+import de.dukkan.shared.domain.FulfilmentType;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 
-/** A cart with server-computed totals. */
+/** A cart in one market with server-computed totals. */
 public record CartView(
     UUID id,
+    UUID marketId,
     List<CartLineView> lines,
     int itemCount,
     long subtotalCents,
@@ -16,10 +18,11 @@ public record CartView(
     long deliveryFeeCents,
     long totalCents,
     long minimumOrderCents,
-    @Nullable ReservationView reservation) {
+    @Nullable ReservationView reservation,
+    Instant updatedAt) {
 
-  /** The reserved slot and the address it is reserved for. */
-  public record ReservationView(SlotView slot, UUID addressId, Instant expiresAt) {}
+  /** The reserved slot; {@code addressId} is set for delivery. */
+  public record ReservationView(FulfilmentType type, SlotView slot, @Nullable UUID addressId, Instant expiresAt) {}
 
   /** Merchandise value after discounts, excluding the delivery fee. */
   public long merchandiseTotalCents() {

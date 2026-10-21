@@ -2,13 +2,11 @@ package de.dukkan;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import de.dukkan.address.application.AddressService;
-import de.dukkan.address.domain.AddressDetails;
 import de.dukkan.cart.application.CartService;
-import de.dukkan.delivery.application.DeliveryService;
-import de.dukkan.delivery.application.SlotView;
-import de.dukkan.identity.application.IdentityService;
-import de.dukkan.identity.application.RegisterCommand;
+import de.dukkan.fulfilment.application.FulfilmentService;
+import de.dukkan.fulfilment.application.SlotView;
+import de.dukkan.i18n.application.ContentLocale;
+import de.dukkan.shared.domain.FulfilmentType;
 import de.dukkan.shared.error.ConflictException;
 import de.dukkan.shared.error.ErrorCodes;
 import de.dukkan.support.IntegrationTest;
@@ -23,43 +21,35 @@ import java.util.concurrent.Future;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-/** Concurrent reservations must never oversell a slot (pessimistic row lock on delivery_slot). */
+/** Concurrent reservations must never oversell a slot (pessimistic row lock on fulfilment_slot). */
 class SlotCapacityConcurrencyIntegrationTest extends IntegrationTest {
 
-  private static final int USERS = 12;
+  private static final int USERS = 16;
+  private static final int PICKUP_CAPACITY = 10;
 
-  @Autowired private IdentityService identity;
-  @Autowired private AddressService addresses;
-  @Autowired private DeliveryService delivery;
+  @Autowired private FulfilmentService fulfilment;
   @Autowired private CartService carts;
-
-  private record Customer(UUID userId, UUID addressId) {}
 
   @Test
   void concurrentReservationsDoNotExceedCapacity() throws Exception {
-    List<Customer> customers = new ArrayList<>();
+    UUID market = createMarket(registerMerchant(), "Kapazität Testmarkt");
+    List<UUID> customers = new ArrayList<>();
     for (int i = 0; i < USERS; i++) {
-      UUID userId =
-          identity.register(new RegisterCommand(uniqueEmail(), "correct-horse-battery", "C", "U")).user().id();
-      UUID addressId =
-          addresses
-              .create(userId, new AddressDetails(null, "Domplatz", String.valueOf(i + 1), null, "50667", "Köln", null), false)
-              .id();
-      customers.add(new Customer(userId, addressId));
+      customers.add(userId(registerUser()));
     }
-    List<SlotView> slots = delivery.listSlotsForAddress(customers.getFirst().userId(), customers.getFirst().addressId());
-    SlotView slot = slots.get(slots.size() / 2);
-    assertThat(slot.remainingCapacity()).isEqualTo(8);
+    List<SlotView> slots = fulfilment.listSlots(market, FulfilmentType.PICKUP, null, null);
+    SlotView slot = slots.stream().filter(SlotView::available).skip(3).findFirst().orElseThrow();
+    assertThat(slot.remainingCapacity()).isEqualTo(PICKUP_CAPACITY);
 
     CountDownLatch start = new CountDownLatch(1);
     List<Future<String>> outcomes = new ArrayList<>();
     try (ExecutorService pool = Executors.newFixedThreadPool(USERS)) {
-      for (Customer customer : customers) {
+      for (UUID customer : customers) {
         Callable<String> task =
             () -> {
               start.await();
               try {
-                carts.reserveSlot(customer.userId(), slot.id(), customer.addressId());
+                carts.reserve(customer, market, FulfilmentType.PICKUP, slot.id(), null, ContentLocale.of(null));
                 return "RESERVED";
               } catch (ConflictException e) {
                 return e.code();
@@ -73,10 +63,10 @@ class SlotCapacityConcurrencyIntegrationTest extends IntegrationTest {
         results.add(outcome.get());
       }
 
-      assertThat(results).filteredOn("RESERVED"::equals).hasSize(8);
-      assertThat(results).filteredOn(ErrorCodes.SLOT_FULL::equals).hasSize(USERS - 8);
+      assertThat(results).filteredOn("RESERVED"::equals).hasSize(PICKUP_CAPACITY);
+      assertThat(results).filteredOn(ErrorCodes.SLOT_FULL::equals).hasSize(USERS - PICKUP_CAPACITY);
     }
-    SlotView after = delivery.getSlot(slot.id());
+    SlotView after = fulfilment.getSlot(slot.id());
     assertThat(after.remainingCapacity()).isZero();
     assertThat(after.available()).isFalse();
   }

@@ -30,7 +30,7 @@ class AddressRequestValidationTest {
   }
 
   private static AddressRequest withPostalCode(String postalCode) {
-    return new AddressRequest("Home", "Musterweg", "12a", null, postalCode, "Neuss", null, null);
+    return new AddressRequest("Home", "Musterweg", "12a", null, postalCode, "Hamburg", null, null, null);
   }
 
   private static Set<String> invalidFields(AddressRequest request) {
@@ -51,15 +51,23 @@ class AddressRequestValidationTest {
   @Test
   void requiredFieldsAndLengths() {
     AddressRequest request =
-        new AddressRequest("l".repeat(51), "", "12345678901", null, null, " ", "d".repeat(301), true);
+        new AddressRequest("l".repeat(51), "", "12345678901", null, null, " ", "d".repeat(301), null, true);
 
     assertThat(invalidFields(request))
         .containsExactlyInAnyOrder("label", "street", "houseNumber", "postalCode", "city", "deliveryInstructions");
   }
 
   @Test
+  void locationMustBeValidCoordinates() {
+    AddressRequest request =
+        new AddressRequest(null, "Kardamomweg", "1", null, "20099", "Hamburg", null, new de.dukkan.shared.api.GeoPoint(91.0, 10.0), null);
+
+    assertThat(invalidFields(request)).containsExactly("location.lat");
+  }
+
+  @Test
   void blankOptionalFieldsAreStoredAsNull() {
-    AddressRequest request = new AddressRequest(" ", " Musterweg ", "1", "", "41460", "Neuss", "  ", null);
+    AddressRequest request = new AddressRequest(" ", " Musterweg ", "1", "", "20099", "Hamburg", "  ", null, null);
 
     assertThat(request.toDetails().label()).isNull();
     assertThat(request.toDetails().addition()).isNull();

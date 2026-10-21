@@ -2,8 +2,9 @@ package de.dukkan.cart.api;
 
 import de.dukkan.cart.application.CartLineView;
 import de.dukkan.cart.application.CartView;
-import de.dukkan.delivery.api.DeliverySlotResponse;
-import de.dukkan.promotion.api.PromotionBadge;
+import de.dukkan.catalog.application.PromotionBadge;
+import de.dukkan.fulfilment.api.SlotResponse;
+import de.dukkan.market.application.MarketSummary;
 import de.dukkan.shared.api.Money;
 import de.dukkan.shared.time.DukkanTime;
 import java.time.OffsetDateTime;
@@ -14,6 +15,7 @@ import org.jspecify.annotations.Nullable;
 /** Contract schema {@code Cart}. */
 record CartResponse(
     UUID id,
+    MarketSummary market,
     List<Item> items,
     int itemCount,
     Money subtotal,
@@ -22,7 +24,7 @@ record CartResponse(
     Money total,
     Money minimumOrderValue,
     boolean meetsMinimumOrderValue,
-    @Nullable Delivery delivery) {
+    @Nullable Reservation fulfilment) {
 
   /** Contract schema {@code CartItem}. */
   record Item(
@@ -35,11 +37,12 @@ record CartResponse(
       Money lineSubtotal,
       Money lineDiscount,
       Money lineTotal,
-      @Nullable PromotionBadge promotion) {
+      @Nullable PromotionBadge promotion,
+      boolean available) {
 
     static Item from(CartLineView line) {
       return new Item(
-          line.productId(),
+          line.listingId(),
           line.name(),
           line.unitSize(),
           line.imageUrl(),
@@ -48,17 +51,26 @@ record CartResponse(
           Money.eur(line.subtotalCents()),
           Money.eur(line.discountCents()),
           Money.eur(line.totalCents()),
-          PromotionBadge.from(line.promotion()));
+          line.promotion(),
+          line.available());
     }
   }
 
-  /** Contract schema {@code DeliveryReservation}. */
-  record Delivery(DeliverySlotResponse slot, UUID addressId, OffsetDateTime expiresAt) {}
+  /** Contract schema {@code FulfilmentReservation}. */
+  record Reservation(String type, SlotResponse slot, @Nullable UUID addressId, OffsetDateTime expiresAt) {}
 
-  static CartResponse from(CartView cart) {
+  /** Contract schema {@code CartSummary}. */
+  record Summary(UUID cartId, MarketSummary market, int itemCount, Money total, OffsetDateTime updatedAt) {
+    static Summary from(CartView cart, MarketSummary market) {
+      return new Summary(cart.id(), market, cart.itemCount(), Money.eur(cart.totalCents()), DukkanTime.toApi(cart.updatedAt()));
+    }
+  }
+
+  static CartResponse from(CartView cart, MarketSummary market) {
     CartView.ReservationView reservation = cart.reservation();
     return new CartResponse(
         cart.id(),
+        market,
         cart.lines().stream().map(Item::from).toList(),
         cart.itemCount(),
         Money.eur(cart.subtotalCents()),
@@ -69,8 +81,9 @@ record CartResponse(
         cart.meetsMinimumOrderValue(),
         reservation == null
             ? null
-            : new Delivery(
-                DeliverySlotResponse.from(reservation.slot()),
+            : new Reservation(
+                reservation.type().name(),
+                SlotResponse.from(reservation.slot()),
                 reservation.addressId(),
                 DukkanTime.toApi(reservation.expiresAt())));
   }

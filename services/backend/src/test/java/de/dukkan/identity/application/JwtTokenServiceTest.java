@@ -26,12 +26,14 @@ class JwtTokenServiceTest {
   private static final String SECRET = "test-secret-0123456789abcdef0123456789";
   private static final Instant NOW = Instant.parse("2026-10-19T08:00:00Z");
   private static final Clock FIXED = Clock.fixed(NOW, ZoneOffset.UTC);
-  private final UserView user = new UserView(UUID.randomUUID(), "anna@example.org", "Anna", "Muster");
+  private final UserView user = new UserView(UUID.randomUUID(), "anna@example.org", "Anna", "Muster", java.util.List.of("CUSTOMER", "MERCHANT"), "de");
 
   private static DukkanProperties properties(String secret, Duration ttl) {
     return new DukkanProperties(
-        new DukkanProperties.Checkout(3500),
-        new DukkanProperties.Delivery(8, 22, 7, 8, 20),
+        new DukkanProperties.Features(false, true),
+        new DukkanProperties.Fulfilment(7, Duration.ofHours(1), 6, 10, Duration.ofHours(2), Duration.ofHours(1)),
+        new DukkanProperties.Catalog(14, 24),
+        new DukkanProperties.Markets(10, 50),
         new DukkanProperties.Security(new DukkanProperties.Jwt(secret, ttl, "dukkan")));
   }
 
@@ -62,6 +64,7 @@ class JwtTokenServiceTest {
     assertThat(jwt.getSubject()).isEqualTo(user.id().toString());
     assertThat(jwt.getClaimAsString("iss")).isEqualTo("dukkan");
     assertThat(jwt.getClaimAsString("email")).isEqualTo("anna@example.org");
+    assertThat(jwt.getClaimAsStringList("roles")).containsExactly("CUSTOMER", "MERCHANT");
     assertThat(jwt.getHeaders()).containsEntry("alg", "HS256");
     assertThat(Duration.between(jwt.getIssuedAt(), jwt.getExpiresAt())).isEqualTo(Duration.ofHours(1));
   }

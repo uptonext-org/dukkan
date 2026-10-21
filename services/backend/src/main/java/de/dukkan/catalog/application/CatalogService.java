@@ -1,22 +1,513 @@
 package de.dukkan.catalog.application;
 
+import de.dukkan.catalog.domain.ComparisonPrice;
+import de.dukkan.catalog.domain.SearchText;
+import de.dukkan.catalog.infrastructure.CatalogProductRepository;
+import de.dukkan.catalog.infrastructure.CatalogProductRepository.CatalogPage;
+import de.dukkan.catalog.infrastructure.CategoryRepository;
+import de.dukkan.catalog.infrastructure.CategoryRepository.CategoryRow;
+import de.dukkan.catalog.infrastructure.ListingRepository;
+import de.dukkan.catalog.infrastructure.ListingRepository.Hit;
+import de.dukkan.catalog.infrastructure.ListingRepository.IdPage;
+import de.dukkan.catalog.infrastructure.ListingRepository.ListingRow;
+import de.dukkan.i18n.application.ContentLocale;
+import de.dukkan.i18n.application.LocaleService;
+import de.dukkan.i18n.application.TextNormalizer;
+import de.dukkan.market.application.MarketDistance;
+import de.dukkan.market.application.MarketInfo;
+import de.dukkan.market.application.MarketService;
+import de.dukkan.market.application.MarketSummary;
+import de.dukkan.promotion.application.PricingEngine;
+import de.dukkan.promotion.application.PromotionRule;
+import de.dukkan.promotion.application.PromotionService;
+import de.dukkan.shared.api.GeoPoint;
+import de.dukkan.shared.api.Money;
+import de.dukkan.shared.api.PageResponse;
+import de.dukkan.shared.config.DukkanProperties;
+import de.dukkan.shared.error.ConflictException;
+import de.dukkan.shared.error.ErrorCodes;
+import de.dukkan.shared.error.InvalidRequestException;
+import de.dukkan.shared.error.NotFoundException;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
+import org.jspecify.annotations.Nullable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-/** Categories, product browsing/search and product lookups for other modules. */
-public interface CatalogService {
+/**
+ * Categories, listings (a market's offer of a catalog product), language-independent search and
+ * the merchant's catalog operations. Product ids in the API are listing ids.
+ */
+@Service
+@Transactional(readOnly = true)
+public class CatalogService {
 
-  List<CategoryView> listCategories();
+  /** Upper bound of matches considered by the cross-market search before sorting and paging. */
+  private static final int NEARBY_CAP = 1000;
 
-  ProductPageView search(ProductQuery query);
+  private final ListingRepository listings;
+  private final CatalogProductRepository products;
+  private final CategoryRepository categories;
+  private final MarketService markets;
+  private final PromotionService promotions;
+  private final ListingFavorites favorites;
+  private final LocaleService locales;
+  private final Clock clock;
+  private final DukkanProperties properties;
+  private final AtomicReference<@Nullable List<CategoryRow>> categoryCache = new AtomicReference<>();
 
-  /** Fails with {@code NOT_FOUND} if the product does not exist. */
-  ProductView getProduct(UUID productId);
+  public CatalogService(
+      ListingRepository listings,
+      CatalogProductRepository products,
+      CategoryRepository categories,
+      MarketService markets,
+      PromotionService promotions,
+      ListingFavorites favorites,
+      LocaleService locales,
+      Clock clock,
+      DukkanProperties properties) {
+    this.listings = listings;
+    this.products = products;
+    this.categories = categories;
+    this.markets = markets;
+    this.promotions = promotions;
+    this.favorites = favorites;
+    this.locales = locales;
+    this.clock = clock;
+    this.properties = properties;
+  }
 
-  List<String> suggest(String q, int limit);
+  // ------------------------------------------------------------------ customer reads
 
-  /** Current data for the given products; unknown ids are absent from the result. */
-  Map<UUID, ProductView> findProducts(Collection<UUID> productIds);
+  /** Categories with products in an active market, with product counts (parents include children). */
+  public List<CategoryView> marketCategories(UUID marketId, ContentLocale locale) {
+    MarketInfo market = markets.activeInfo(marketId);
+    Map<UUID, Integer> direct = listings.countByCategory(marketId);
+    Map<UUID, Integer> total = new HashMap<>(direct);
+    for (CategoryRow row : categoryRows()) {
+      if (row.parentId() != null && direct.containsKey(row.id())) {
+        total.merge(row.parentId(), direct.get(row.id()), Integer::sum);
+      }
+    }
+    return categoryRows().stream()
+        .filter(row -> total.getOrDefault(row.id(), 0) > 0)
+        .map(row -> category(row, locale, market.primaryLocale(), total.get(row.id())))
+        .toList();
+  }
+
+  /** Localised categories by id (no counts), in sort order. */
+  public List<CategoryView> categories(Collection<UUID> ids, ContentLocale locale, @Nullable String primaryLocale) {
+    return categoryRows().stream()
+        .filter(row -> ids.contains(row.id()))
+        .map(row -> category(row, locale, primaryLocale, null))
+        .toList();
+  }
+
+  /** Browse and search one active market. */
+  public PageResponse<ProductSummary> searchMarket(
+      UUID marketId, MarketProductQuery query, ContentLocale locale, @Nullable UUID userId) {
+    MarketInfo market = markets.activeInfo(marketId);
+    String term = normalizedTerm(query.q());
+    Set<UUID> promoted = query.promotedOnly() ? promotions.activeListingIds(marketId) : null;
+    Instant newSince = query.newOnly() ? newSince() : null;
+    IdPage page =
+        listings.search(
+            new ListingRepository.MarketSearch(
+                marketId,
+                term,
+                query.categoryId(),
+                promoted,
+                newSince,
+                query.organicOnly(),
+                false,
+                query.sort(),
+                locale.chain(market.primaryLocale())),
+            query.page(),
+            query.size());
+    return PageResponse.of(summaries(page.ids(), locale, userId), query.page(), query.size(), page.total());
+  }
+
+  /** Localised product names in one active market, best match first. */
+  public List<String> suggestions(UUID marketId, String q, int limit, ContentLocale locale) {
+    MarketInfo market = markets.activeInfo(marketId);
+    String term = normalizedTerm(q);
+    if (term == null) {
+      return List.of();
+    }
+    return listings.suggest(marketId, term, locale.chain(market.primaryLocale()), limit);
+  }
+
+  /** Product details of a listing in an active market. */
+  public ProductDetail product(UUID listingId, ContentLocale locale, @Nullable UUID userId) {
+    ListingRow row = listings.findByIds(List.of(listingId)).get(listingId);
+    if (row == null || row.deleted()) {
+      throw productNotFound();
+    }
+    MarketInfo market = markets.findInfo(row.marketId()).filter(MarketInfo::isActive).orElseThrow(CatalogService::productNotFound);
+    ProductSummary summary = summarize(List.of(row), locale, userId).get(listingId);
+    MarketSummary marketSummary = markets.summary(market.id(), locale);
+    String primary = market.primaryLocale();
+    return new ProductDetail(
+        Objects.requireNonNull(summary),
+        row.categoryId(),
+        locale.pick(row.texts().descriptions(), primary),
+        locale.pick(row.texts().ingredients(), primary),
+        row.allergens(),
+        row.origin(),
+        markets.cuisineNames(row.cuisines(), locale),
+        row.barcode(),
+        marketSummary);
+  }
+
+  /** Available offers matching {@code q} in active markets around a location. */
+  public PageResponse<MarketOffer> searchNearby(
+      String q, GeoPoint location, double radiusKm, String sort, int page, int size, ContentLocale locale, @Nullable UUID userId) {
+    String term = normalizedTerm(q);
+    List<MarketDistance> nearby = markets.activeWithin(location, radiusKm);
+    if (term == null || nearby.isEmpty()) {
+      return PageResponse.of(List.of(), page, size, 0);
+    }
+    Map<UUID, Double> distance = new HashMap<>();
+    nearby.forEach(m -> distance.put(m.marketId(), m.distanceMeters()));
+    List<Hit> hits = new ArrayList<>(listings.searchMarkets(distance.keySet(), term, locale.chain(null), NEARBY_CAP));
+    Comparator<Hit> relevance =
+        Comparator.comparingInt(Hit::tier).thenComparingInt(Hit::nameLength).thenComparing(Hit::name);
+    Comparator<Hit> byDistance = Comparator.comparing(h -> distance.get(h.marketId()));
+    hits.sort(
+        switch (sort) {
+          case "price_asc" -> Comparator.comparingLong(Hit::priceCents).thenComparing(relevance);
+          case "distance" -> byDistance.thenComparing(relevance);
+          default -> relevance.thenComparing(byDistance);
+        });
+    PageResponse<Hit> slice = PageResponse.slice(hits, page, size);
+    Map<UUID, ProductSummary> summaries = summarizeMap(slice.items().stream().map(Hit::listingId).toList(), locale, userId);
+    Map<UUID, MarketSummary> marketSummaries =
+        markets.summaries(slice.items().stream().map(Hit::marketId).toList(), location, locale);
+    return slice.map(h -> new MarketOffer(summaries.get(h.listingId()), marketSummaries.get(h.marketId())));
+  }
+
+  /** Product summaries in the given order (deleted listings are skipped). */
+  public List<ProductSummary> summaries(List<UUID> listingIds, ContentLocale locale, @Nullable UUID userId) {
+    Map<UUID, ProductSummary> map = summarizeMap(listingIds, locale, userId);
+    return listingIds.stream().map(map::get).filter(Objects::nonNull).toList();
+  }
+
+  /** Facts of listings for carts and orders (including deleted ones), keyed by listing id. */
+  public Map<UUID, ListingInfo> listingInfos(Collection<UUID> listingIds, ContentLocale locale) {
+    Map<UUID, ListingRow> rows = listings.findByIds(listingIds);
+    Map<UUID, String> primary = primaryLocales(rows.values());
+    Map<UUID, PromotionRule> rules = promotions.winningRules(rows.keySet());
+    Map<UUID, ListingInfo> result = new LinkedHashMap<>();
+    for (ListingRow row : rows.values()) {
+      PromotionRule rule = row.deleted() ? null : rules.get(row.id());
+      result.put(
+          row.id(),
+          new ListingInfo(
+              row.id(),
+              row.marketId(),
+              row.catalogProductId(),
+              row.categoryId(),
+              name(row, locale, primary.get(row.marketId())),
+              row.unitSize(),
+              row.imageUrl(),
+              row.priceCents(),
+              rule,
+              badge(rule, locale),
+              row.available() && !row.deleted(),
+              row.deleted(),
+              row.maxOrderQuantity()));
+    }
+    return result;
+  }
+
+  /** Non-deleted listing ids of the market among {@code listingIds}. */
+  public Set<UUID> activeListingIdsOfMarket(UUID marketId, Collection<UUID> listingIds) {
+    return listings.findActiveIdsOfMarket(marketId, listingIds);
+  }
+
+  /** Listing ids created within the "new" window, newest first. */
+  public List<UUID> newListingIds(UUID marketId, int limit) {
+    return listings
+        .search(
+            new ListingRepository.MarketSearch(
+                marketId, null, null, null, newSince(), false, true, "newest", List.of(ContentLocale.DEFAULT)),
+            0,
+            limit)
+        .ids();
+  }
+
+  /** Listing ids of one category (incl. sub-categories), by name. */
+  public List<UUID> categoryListingIds(UUID marketId, UUID categoryId, List<String> localeChain, int limit) {
+    return listings
+        .search(
+            new ListingRepository.MarketSearch(
+                marketId, null, categoryId, null, null, false, true, "name", localeChain),
+            0,
+            limit)
+        .ids();
+  }
+
+  public Map<UUID, Integer> categoryCounts(UUID marketId) {
+    return listings.countByCategory(marketId);
+  }
+
+  // ------------------------------------------------------------------ merchant
+
+  /** Shared catalog search; {@code alreadyListed} is computed for {@code marketContext} when given. */
+  public PageResponse<CatalogProduct> sharedCatalog(
+      @Nullable String q,
+      @Nullable String cuisine,
+      @Nullable UUID categoryId,
+      @Nullable UUID marketContext,
+      int page,
+      int size,
+      ContentLocale locale) {
+    CatalogPage result =
+        products.searchShared(normalizedTerm(q), cuisine, categoryId, marketContext, locale.chain(null), page, size);
+    List<CatalogProduct> items =
+        result.rows().stream()
+            .map(
+                row -> {
+                  String name = locale.pick(row.names());
+                  return new CatalogProduct(
+                      row.id(),
+                      name == null ? "" : name,
+                      row.brand(),
+                      row.unitSize(),
+                      row.imageUrl(),
+                      row.categoryId(),
+                      markets.cuisineNames(row.cuisines(), locale),
+                      row.organic(),
+                      row.barcode(),
+                      row.alreadyListed());
+                })
+            .toList();
+    return PageResponse.of(items, page, size, result.total());
+  }
+
+  /** All non-deleted listings of a market (any status, available or not). */
+  public PageResponse<Listing> merchantListings(UUID marketId, @Nullable String q, int page, int size, ContentLocale locale) {
+    MarketInfo market = markets.info(marketId);
+    IdPage ids = listings.merchantListings(marketId, normalizedTerm(q), locale.chain(market.primaryLocale()), page, size);
+    Map<UUID, ListingRow> rows = listings.findByIds(ids.ids());
+    Map<UUID, ProductSummary> summaries = summarize(List.copyOf(rows.values()), locale, null);
+    List<Listing> items =
+        ids.ids().stream()
+            .filter(summaries::containsKey)
+            .map(id -> new Listing(summaries.get(id), rows.get(id).ownerMarketId() != null))
+            .toList();
+    return PageResponse.of(items, page, size, ids.total());
+  }
+
+  @Transactional
+  public Listing createListing(UUID marketId, ListingDraft draft, ContentLocale locale) {
+    MarketInfo market = markets.info(marketId);
+    if ((draft.catalogProductId() == null) == (draft.newProduct() == null)) {
+      throw new InvalidRequestException("catalogProductId", "ExactlyOne", "give exactly one of catalogProductId or newProduct");
+    }
+    Instant now = clock.instant();
+    UUID catalogProductId;
+    if (draft.catalogProductId() != null) {
+      catalogProductId = draft.catalogProductId();
+      UUID owner =
+          products
+              .findOwner(catalogProductId)
+              .orElseThrow(() -> new NotFoundException("Catalog product not found."))
+              .ownerMarketId();
+      if (owner != null && !owner.equals(marketId)) {
+        throw new NotFoundException("Catalog product not found.");
+      }
+      if (listings.findActiveListingId(marketId, catalogProductId).isPresent()) {
+        throw new ConflictException(ErrorCodes.LISTING_EXISTS, "This market already lists the product.");
+      }
+    } else {
+      NewProduct product = Objects.requireNonNull(draft.newProduct());
+      validate(product, market);
+      catalogProductId = UUID.randomUUID();
+      products.insertPrivate(
+          catalogProductId,
+          marketId,
+          product,
+          SearchText.build(product.name().values(), product.brand(), product.keywords()),
+          now);
+      product.name().forEach((code, name) -> products.updateSearchName(catalogProductId, code, TextNormalizer.normalize(name)));
+    }
+    UUID listingId = UUID.randomUUID();
+    listings.insert(listingId, marketId, catalogProductId, draft.priceCents(), draft.available(), draft.maxOrderQuantity(), now);
+    return listing(listingId, locale);
+  }
+
+  @Transactional
+  public Listing updateListing(UUID marketId, UUID listingId, ListingUpdate update, ContentLocale locale) {
+    ListingRow row = ownedListing(marketId, listingId);
+    Instant now = clock.instant();
+    if (update.priceCents() != null && update.priceCents() != row.priceCents()) {
+      listings.updatePrice(listingId, update.priceCents(), now);
+    }
+    if (update.available() != null || update.maxOrderQuantity() != null) {
+      listings.updateFlags(listingId, update.available(), update.maxOrderQuantity(), now);
+    }
+    return listing(listingId, locale);
+  }
+
+  @Transactional
+  public void deleteListing(UUID marketId, UUID listingId) {
+    if (listings.softDelete(marketId, listingId, clock.instant()) == 0) {
+      throw productNotFound();
+    }
+  }
+
+  private Listing listing(UUID listingId, ContentLocale locale) {
+    ListingRow row = Objects.requireNonNull(listings.findByIds(List.of(listingId)).get(listingId));
+    return new Listing(Objects.requireNonNull(summarize(List.of(row), locale, null).get(listingId)), row.ownerMarketId() != null);
+  }
+
+  private ListingRow ownedListing(UUID marketId, UUID listingId) {
+    ListingRow row = listings.findByIds(List.of(listingId)).get(listingId);
+    if (row == null || row.deleted() || !row.marketId().equals(marketId)) {
+      throw productNotFound();
+    }
+    return row;
+  }
+
+  private void validate(NewProduct p, MarketInfo market) {
+    if (p.name().isEmpty() || !p.name().containsKey(market.primaryLocale())) {
+      throw new InvalidRequestException(
+          "newProduct.name", "PrimaryLocaleRequired", "must contain the market's primary locale " + market.primaryLocale());
+    }
+    for (Map<String, String> texts : List.of(p.name(), p.description(), p.tagline())) {
+      for (String code : texts.keySet()) {
+        if (!locales.isEnabled(code)) {
+          throw new InvalidRequestException("newProduct", "SupportedLocale", "contains a locale that is not enabled: " + code);
+        }
+      }
+    }
+    if (p.name().values().stream().anyMatch(n -> n == null || n.isBlank() || n.length() > 150)) {
+      throw new InvalidRequestException("newProduct.name", "Size", "names must have 1 to 150 characters");
+    }
+    if (categoryRows().stream().noneMatch(c -> c.id().equals(p.categoryId()))) {
+      throw new InvalidRequestException("newProduct.categoryId", "UnknownCode", "is not a known category");
+    }
+    for (String cuisine : p.cuisineCodes()) {
+      if (!markets.isCuisine(cuisine)) {
+        throw new InvalidRequestException("newProduct.cuisineCodes", "UnknownCode", "contains an unknown cuisine: " + cuisine);
+      }
+    }
+    if ((p.netQuantity() == null) != (p.netUnit() == null)) {
+      throw new InvalidRequestException("newProduct.netUnit", "NetQuantity", "netQuantity and netUnit must be given together");
+    }
+  }
+
+  // ------------------------------------------------------------------ mapping
+
+  private Map<UUID, ProductSummary> summarizeMap(List<UUID> listingIds, ContentLocale locale, @Nullable UUID userId) {
+    Map<UUID, ListingRow> rows = listings.findByIds(listingIds);
+    return summarize(rows.values().stream().filter(r -> !r.deleted()).toList(), locale, userId);
+  }
+
+  private Map<UUID, ProductSummary> summarize(List<ListingRow> rows, ContentLocale locale, @Nullable UUID userId) {
+    if (rows.isEmpty()) {
+      return Map.of();
+    }
+    List<UUID> ids = rows.stream().map(ListingRow::id).toList();
+    Map<UUID, PromotionRule> rules = promotions.winningRules(ids);
+    Set<UUID> favoriteIds = userId == null ? Set.of() : favorites.favoriteListingIds(userId, ids);
+    Map<UUID, String> primary = primaryLocales(rows);
+    Instant newSince = newSince();
+    Map<UUID, ProductSummary> result = new LinkedHashMap<>();
+    for (ListingRow row : rows) {
+      String primaryLocale = primary.get(row.marketId());
+      PromotionRule rule = rules.get(row.id());
+      Long promotional = null;
+      if (rule instanceof PromotionRule.PercentOff) {
+        promotional =
+            PricingEngine.price(List.of(new PricingEngine.Line(row.id(), row.priceCents(), 1, rule)), 0).totalCents();
+      }
+      long effective = promotional == null ? row.priceCents() : promotional;
+      UnitPrice unitPrice =
+          ComparisonPrice.of(effective, row.netQuantity(), row.netUnit())
+              .map(c -> new UnitPrice(Money.eur(c.amountCents()), c.unit()))
+              .orElse(null);
+      result.put(
+          row.id(),
+          new ProductSummary(
+              row.id(),
+              row.marketId(),
+              row.catalogProductId(),
+              name(row, locale, primaryLocale),
+              row.brand(),
+              locale.pick(row.texts().taglines(), primaryLocale),
+              row.unitSize(),
+              row.imageUrl(),
+              Money.eur(row.priceCents()),
+              promotional == null ? null : Money.eur(promotional),
+              unitPrice,
+              badge(rule, locale),
+              row.available() && !row.deleted(),
+              row.organic(),
+              !row.createdAt().isBefore(newSince),
+              row.maxOrderQuantity(),
+              userId == null ? null : favoriteIds.contains(row.id())));
+    }
+    return result;
+  }
+
+  private @Nullable PromotionBadge badge(@Nullable PromotionRule rule, ContentLocale locale) {
+    return rule == null ? null : new PromotionBadge(rule.promotionId(), promotions.badgeLabel(rule, locale), rule.type());
+  }
+
+  private static String name(ListingRow row, ContentLocale locale, @Nullable String primaryLocale) {
+    String name = locale.pick(row.texts().names(), primaryLocale);
+    return name == null ? "" : name;
+  }
+
+  private Map<UUID, String> primaryLocales(Collection<ListingRow> rows) {
+    Map<UUID, String> primary = new HashMap<>();
+    for (UUID marketId : rows.stream().map(ListingRow::marketId).distinct().toList()) {
+      markets.findInfo(marketId).ifPresent(m -> primary.put(marketId, m.primaryLocale()));
+    }
+    return primary;
+  }
+
+  private Instant newSince() {
+    return clock.instant().minus(Duration.ofDays(properties.catalog().newListingDays()));
+  }
+
+  private static @Nullable String normalizedTerm(@Nullable String q) {
+    String term = TextNormalizer.normalize(q);
+    return term.isEmpty() ? null : term;
+  }
+
+  private List<CategoryRow> categoryRows() {
+    List<CategoryRow> rows = categoryCache.get();
+    if (rows == null) {
+      rows = categories.findAll();
+      categoryCache.set(rows);
+    }
+    return rows;
+  }
+
+  private static CategoryView category(
+      CategoryRow row, ContentLocale locale, @Nullable String primaryLocale, @Nullable Integer count) {
+    String name = locale.pick(row.names(), primaryLocale);
+    return new CategoryView(
+        row.id(), row.parentId(), row.slug(), name == null ? row.slug() : name, row.iconKey(), row.imageUrl(), row.sortOrder(), count);
+  }
+
+  private static NotFoundException productNotFound() {
+    return new NotFoundException("Product not found.");
+  }
 }

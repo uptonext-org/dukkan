@@ -5,7 +5,7 @@ import jakarta.persistence.Embeddable;
 import java.time.Instant;
 import java.util.UUID;
 
-/** Copy of the delivery slot taken when the order was placed. */
+/** Copy of the slot taken when the order was placed. */
 @Embeddable
 public record SlotSnapshot(
     @Column(name = "slot_id", nullable = false) UUID slotId,

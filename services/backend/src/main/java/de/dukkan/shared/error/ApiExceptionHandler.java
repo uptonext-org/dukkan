@@ -42,8 +42,8 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
   private static final Logger LOG = LoggerFactory.getLogger(ApiExceptionHandler.class);
 
-  /** One entry of the {@code errors[]} array. */
-  public record FieldViolation(String field, String message) {}
+  /** One entry of the {@code errors[]} array; {@code code} is the constraint name, e.g. NotBlank. */
+  public record FieldViolation(String field, String code, String message) {}
 
   @ExceptionHandler(DomainException.class)
   ResponseEntity<ProblemDetail> handleDomain(DomainException ex, HttpServletRequest request) {
@@ -53,7 +53,17 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
           case ConflictException _ -> HttpStatus.CONFLICT;
           case BusinessRuleException _ -> HttpStatus.UNPROCESSABLE_CONTENT;
           case InvalidCredentialsException _ -> HttpStatus.UNAUTHORIZED;
+          case InvalidRequestException _ -> HttpStatus.BAD_REQUEST;
+          case UnauthorizedException _ -> HttpStatus.UNAUTHORIZED;
         };
+    if (ex instanceof InvalidRequestException invalid) {
+      ProblemDetail problem =
+          Problems.of(HttpStatus.BAD_REQUEST, ErrorCodes.VALIDATION_FAILED, "The request failed validation.", request.getRequestURI());
+      problem.setTitle("Validation failed");
+      problem.setProperty(
+          "errors", List.of(new FieldViolation(invalid.field(), invalid.violation(), invalid.getMessage())));
+      return ResponseEntity.status(status).contentType(APPLICATION_PROBLEM_JSON).body(problem);
+    }
     return problem(status, ex.code(), ex.getMessage(), request);
   }
 
@@ -115,7 +125,7 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
   protected ResponseEntity<Object> handleMissingServletRequestParameter(
       MissingServletRequestParameterException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
     return validationProblem(
-        List.of(new FieldViolation(ex.getParameterName(), "is required")), headers, request);
+        List.of(new FieldViolation(ex.getParameterName(), "NotNull", "is required")), headers, request);
   }
 
   @Override
@@ -126,7 +136,9 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
       WebRequest request) {
     String field = ex instanceof MethodArgumentTypeMismatchException m ? m.getName() : ex.getPropertyName();
     return validationProblem(
-        List.of(new FieldViolation(field == null ? "request" : field, "has an invalid format")), headers, request);
+        List.of(new FieldViolation(field == null ? "request" : field, "TypeMismatch", "has an invalid format")),
+        headers,
+        request);
   }
 
   @Override
@@ -136,7 +148,7 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
       HttpStatusCode status,
       WebRequest request) {
     return validationProblem(
-        List.of(new FieldViolation("body", "is missing or not valid JSON")), headers, request);
+        List.of(new FieldViolation("body", "NotReadable", "is missing or not valid JSON")), headers, request);
   }
 
   @Override
@@ -147,7 +159,7 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
       WebRequest request) {
     if (ex instanceof MissingRequestHeaderException missing) {
       return validationProblem(
-          List.of(new FieldViolation(missing.getHeaderName(), "is required")), headers, request);
+          List.of(new FieldViolation(missing.getHeaderName(), "NotNull", "is required")), headers, request);
     }
     return super.handleServletRequestBindingException(ex, headers, status, request);
   }
@@ -182,7 +194,10 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
   private static FieldViolation violation(String field, MessageSourceResolvable error) {
     String message = error.getDefaultMessage();
-    return new FieldViolation(field, message == null ? "is invalid" : message);
+    String[] codes = error.getCodes();
+    // Bean Validation codes run from most to least specific; the last one is the constraint name.
+    String code = codes == null || codes.length == 0 ? "Invalid" : codes[codes.length - 1];
+    return new FieldViolation(field, code, message == null ? "is invalid" : message);
   }
 
   private static String codeFor(HttpStatusCode status) {

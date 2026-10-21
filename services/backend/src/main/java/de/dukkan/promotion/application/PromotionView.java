@@ -1,16 +1,21 @@
 package de.dukkan.promotion.application;
 
-import java.time.Instant;
+import de.dukkan.shared.api.Money;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 
-/** Read model of an active promotion. */
+/** A promotion with localised title (contract schema {@code Promotion}). */
 public record PromotionView(
     UUID id,
+    UUID marketId,
     String title,
     @Nullable String description,
-    PromotionRule rule,
-    Instant validFrom,
-    Instant validUntil,
+    String type,
+    @Nullable Integer percentOff,
+    @Nullable Integer bundleQuantity,
+    @Nullable Money bundlePrice,
+    OffsetDateTime validFrom,
+    OffsetDateTime validUntil,
     List<UUID> productIds) {}

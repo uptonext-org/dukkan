@@ -5,8 +5,9 @@ import de.dukkan.identity.application.UserView;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
-import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 
 /** Request and response bodies of the auth endpoints. */
 final class AuthDtos {
@@ -17,7 +18,13 @@ final class AuthDtos {
       @Email @NotBlank @Size(max = 254) String email,
       @NotNull @Size(min = 10, max = 128) String password,
       @NotBlank @Size(min = 1, max = 100) String firstName,
-      @NotBlank @Size(min = 1, max = 100) String lastName) {
+      @NotBlank @Size(min = 1, max = 100) String lastName,
+      @Nullable @Pattern(regexp = "CUSTOMER|MERCHANT", message = "must be CUSTOMER or MERCHANT") String accountType,
+      @Nullable String preferredLocale) {
+
+    boolean merchant() {
+      return "MERCHANT".equals(accountType);
+    }
 
     @Override
     public String toString() {
@@ -33,16 +40,14 @@ final class AuthDtos {
     }
   }
 
-  record UserResponse(UUID id, String email, String firstName, String lastName) {
-    static UserResponse from(UserView user) {
-      return new UserResponse(user.id(), user.email(), user.firstName(), user.lastName());
-    }
-  }
+  record UpdateUserRequest(
+      @Nullable @Size(min = 1, max = 100) String firstName,
+      @Nullable @Size(min = 1, max = 100) String lastName,
+      @Nullable String preferredLocale) {}
 
-  record AuthResponse(String accessToken, String tokenType, long expiresIn, UserResponse user) {
+  record AuthResponse(String accessToken, String tokenType, long expiresIn, UserView user) {
     static AuthResponse from(AuthResult result) {
-      return new AuthResponse(
-          result.accessToken(), "Bearer", result.expiresIn().toSeconds(), UserResponse.from(result.user()));
+      return new AuthResponse(result.accessToken(), "Bearer", result.expiresIn().toSeconds(), result.user());
     }
   }
 }

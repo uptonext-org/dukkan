@@ -1,6 +1,7 @@
 package de.dukkan.order.infrastructure;
 
 import de.dukkan.order.domain.CustomerOrder;
+import de.dukkan.order.domain.OrderStatus;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -14,6 +15,10 @@ public interface OrderRepository extends JpaRepository<CustomerOrder, UUID> {
   Optional<CustomerOrder> findByUserIdAndIdempotencyKey(UUID userId, String idempotencyKey);
 
   List<CustomerOrder> findByUserIdOrderByPlacedAtDescOrderNumberDesc(UUID userId);
+
+  List<CustomerOrder> findByMarketIdOrderByPlacedAtDescOrderNumberDesc(UUID marketId);
+
+  List<CustomerOrder> findByMarketIdAndStatusOrderByPlacedAtDescOrderNumberDesc(UUID marketId, OrderStatus status);
 
   @Query(value = "SELECT nextval('order_number_seq')", nativeQuery = true)
   long nextOrderSequence();

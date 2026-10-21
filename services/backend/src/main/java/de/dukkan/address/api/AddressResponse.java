@@ -2,6 +2,7 @@ package de.dukkan.address.api;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import de.dukkan.address.application.AddressView;
+import de.dukkan.shared.api.GeoPoint;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 
@@ -16,8 +17,8 @@ public record AddressResponse(
     String city,
     String countryCode,
     @Nullable String deliveryInstructions,
-    @JsonProperty("isDefault") boolean isDefault,
-    boolean serviceable) {
+    @Nullable GeoPoint location,
+    @JsonProperty("isDefault") boolean isDefault) {
 
   public static AddressResponse from(AddressView a) {
     return new AddressResponse(
@@ -30,7 +31,7 @@ public record AddressResponse(
         a.city(),
         a.countryCode(),
         a.deliveryInstructions(),
-        a.isDefault(),
-        a.serviceable());
+        a.location(),
+        a.isDefault());
   }
 }

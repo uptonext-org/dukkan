@@ -2,7 +2,12 @@ package de.dukkan.shared.error;
 
 /** Base type of all expected, client-visible business errors. */
 public abstract sealed class DomainException extends RuntimeException
-    permits BusinessRuleException, ConflictException, InvalidCredentialsException, NotFoundException {
+    permits BusinessRuleException,
+        ConflictException,
+        InvalidCredentialsException,
+        InvalidRequestException,
+        NotFoundException,
+        UnauthorizedException {
 
   private static final long serialVersionUID = 1L;
 

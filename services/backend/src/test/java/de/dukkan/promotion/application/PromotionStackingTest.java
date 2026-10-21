@@ -2,7 +2,7 @@ package de.dukkan.promotion.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.time.Instant;
+import de.dukkan.promotion.infrastructure.PromotionRepository.RuleRow;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -10,28 +10,30 @@ import org.junit.jupiter.api.Test;
 
 class PromotionStackingTest {
 
-  private static final Instant FROM = Instant.parse("2026-01-01T00:00:00Z");
-  private static final Instant UNTIL = Instant.parse("2030-12-31T00:00:00Z");
-
   @Test
-  void mostRecentlyCreatedPromotionWinsPerProduct() {
+  void mostRecentlyCreatedPromotionWinsPerListing() {
     UUID shared = UUID.randomUUID();
     UUID onlyOld = UUID.randomUUID();
-    PromotionView newer =
-        new PromotionView(
-            UUID.randomUUID(), "new", null, new PromotionRule.PercentOff(UUID.randomUUID(), 30), FROM, UNTIL, List.of(shared));
-    PromotionView older =
-        new PromotionView(
-            UUID.randomUUID(),
-            "old",
-            null,
-            new PromotionRule.PercentOff(UUID.randomUUID(), 20),
-            FROM,
-            UNTIL,
-            List.of(shared, onlyOld));
+    UUID newer = UUID.randomUUID();
+    UUID older = UUID.randomUUID();
+    // Rows come newest promotion first (ORDER BY created_at DESC).
+    List<RuleRow> rows =
+        List.of(
+            new RuleRow(newer, shared, "PERCENT_OFF", 30, null, null),
+            new RuleRow(older, shared, "MULTI_BUY", null, 3, 500L),
+            new RuleRow(older, onlyOld, "MULTI_BUY", null, 3, 500L));
 
-    Map<UUID, PromotionRule> winners = DefaultPromotionService.winnersByProduct(List.of(newer, older));
+    Map<UUID, PromotionRule> winners = PromotionService.winnersByListing(rows);
 
-    assertThat(winners).containsEntry(shared, newer.rule()).containsEntry(onlyOld, older.rule()).hasSize(2);
+    assertThat(winners)
+        .hasSize(2)
+        .containsEntry(shared, new PromotionRule.PercentOff(newer, 30))
+        .containsEntry(onlyOld, new PromotionRule.MultiBuy(older, 3, 500));
+  }
+
+  @Test
+  void eurosAreFormattedTheGermanWay() {
+    assertThat(PromotionService.formatEuro(500)).isEqualTo("5,00 €");
+    assertThat(PromotionService.formatEuro(123456)).isEqualTo("1.234,56 €");
   }
 }
