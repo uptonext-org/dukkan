@@ -321,6 +321,36 @@ paths:
         '204': { description: Removed (or not registered for this account). }
         '400': { $ref: '#/components/responses/ValidationError' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+  /me/notification-settings:
+    get:
+      tags: [notifications]
+      operationId: getNotificationSettings
+      summary: The signed-in user's notification settings
+      responses:
+        '200':
+          description: Settings (push is on until switched off).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/NotificationSettings' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    put:
+      tags: [notifications]
+      operationId: updateNotificationSettings
+      summary: Switch push messages on or off
+      description: With push off, notifications still appear in the inbox; only the phone's push message is skipped.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/NotificationSettings' }
+      responses:
+        '200':
+          description: The saved settings.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/NotificationSettings' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
   /me/notifications:
     get:
       tags: [notifications]
@@ -1796,6 +1826,11 @@ components:
         marketId: { type: [string, 'null'], format: uuid, description: 'For merchant notifications: the market whose order list to open.' }
         createdAt: { type: string, format: date-time }
         read: { type: boolean }
+    NotificationSettings:
+      type: object
+      required: [pushEnabled]
+      properties:
+        pushEnabled: { type: boolean }
     NotificationPage:
       type: object
       required: [items, page, size, totalItems, totalPages, unreadCount]

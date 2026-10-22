@@ -35,6 +35,7 @@ export const queryKeys = {
     ['slots', marketId, type, addressId ?? null] as const,
   addresses: ['addresses'] as const,
   notifications: ['notifications'] as const,
+  notificationSettings: ['notificationSettings'] as const,
   orders: (lang: string) => ['orders', lang] as const,
   order: (lang: string, orderId: string) => ['order', lang, orderId] as const,
   myMarkets: (lang: string) => ['myMarkets', lang] as const,

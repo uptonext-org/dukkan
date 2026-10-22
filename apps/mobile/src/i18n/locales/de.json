@@ -644,6 +644,8 @@
     "emptyMessage": "Hier erscheinen Neuigkeiten zu deinen Bestellungen.",
     "unread": "Ungelesen",
     "newCount_one": "{{count}} neu",
-    "newCount_other": "{{count}} neu"
+    "newCount_other": "{{count}} neu",
+    "push": "Push-Mitteilungen",
+    "pushHint": "Neuigkeiten erscheinen immer hier; mit Push zeigt sie auch dein Telefon an."
   }
 }

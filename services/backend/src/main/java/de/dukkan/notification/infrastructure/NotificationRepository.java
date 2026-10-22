@@ -4,6 +4,7 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -100,5 +101,27 @@ public class NotificationRepository {
         .param("now", Timestamp.from(now))
         .param("user", userId)
         .update();
+  }
+
+  /** Push switch of a user; absent means on. */
+  public Optional<Boolean> pushEnabled(UUID userId) {
+    return jdbc.sql("SELECT push_enabled FROM notification_setting WHERE user_id = :userId").param("userId", userId).query(Boolean.class).optional();
+  }
+
+  public void setPushEnabled(UUID userId, boolean enabled, Instant now) {
+    jdbc.sql(
+            """
+            INSERT INTO notification_setting (user_id, push_enabled, updated_at) VALUES (:userId, :enabled, :now)
+            ON CONFLICT (user_id) DO UPDATE SET push_enabled = EXCLUDED.push_enabled, updated_at = EXCLUDED.updated_at
+            """)
+        .param("userId", userId)
+        .param("enabled", enabled)
+        .param("now", Timestamp.from(now))
+        .update();
+  }
+
+  /** Read notifications created before the cutoff; unread ones stay. */
+  public int deleteReadBefore(Instant cutoff) {
+    return jdbc.sql("DELETE FROM notification WHERE read_at IS NOT NULL AND created_at < :cutoff").param("cutoff", Timestamp.from(cutoff)).update();
   }
 }

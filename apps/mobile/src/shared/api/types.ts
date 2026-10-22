@@ -126,6 +126,11 @@ export interface AppNotification {
   read: boolean;
 }
 
+/** Push messages on or off; the inbox always fills. */
+export interface NotificationSettings {
+  pushEnabled: boolean;
+}
+
 export interface NotificationPage extends Page<AppNotification> {
   unreadCount: number;
 }

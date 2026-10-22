@@ -644,6 +644,8 @@
     "emptyMessage": "Updates about your orders appear here.",
     "unread": "Unread",
     "newCount_one": "{{count}} new",
-    "newCount_other": "{{count}} new"
+    "newCount_other": "{{count}} new",
+    "push": "Push notifications",
+    "pushHint": "Updates always appear here; with push, your phone shows them too."
   }
 }

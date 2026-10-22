@@ -708,6 +708,8 @@
     "newCount_two": "{{count}} جديدان",
     "newCount_few": "{{count}} جديدة",
     "newCount_many": "{{count}} جديداً",
-    "newCount_other": "{{count}} جديد"
+    "newCount_other": "{{count}} جديد",
+    "push": "الإشعارات الفورية",
+    "pushHint": "تظهر التحديثات هنا دائماً، ومع الإشعارات الفورية تظهر على الهاتف أيضاً."
   }
 }

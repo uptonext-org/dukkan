@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
@@ -42,6 +43,9 @@ final class NotificationController {
   /** Contract schema {@code NotificationPage}. */
   record NotificationPageResponse(List<NotificationResponse> items, int page, int size, long totalItems, int totalPages, long unreadCount) {}
 
+  /** Contract schema {@code NotificationSettings}. */
+  record NotificationSettings(@NotNull Boolean pushEnabled) {}
+
   private final NotificationService notifications;
 
   NotificationController(NotificationService notifications) {
@@ -72,6 +76,17 @@ final class NotificationController {
             .toList();
     int totalPages = (int) ((inbox.totalItems() + size - 1) / size);
     return new NotificationPageResponse(items, page, size, inbox.totalItems(), totalPages, inbox.unreadCount());
+  }
+
+  @GetMapping("/notification-settings")
+  NotificationSettings settings(@CurrentSecurityContext SecurityContext security) {
+    return new NotificationSettings(notifications.pushEnabled(CurrentUser.id(security)));
+  }
+
+  @PutMapping("/notification-settings")
+  NotificationSettings updateSettings(@CurrentSecurityContext SecurityContext security, @RequestBody @Valid NotificationSettings request) {
+    notifications.setPushEnabled(CurrentUser.id(security), request.pushEnabled());
+    return new NotificationSettings(notifications.pushEnabled(CurrentUser.id(security)));
   }
 
   @PostMapping("/notifications/read")

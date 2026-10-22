@@ -24,6 +24,7 @@ import type {
   MarketSummary,
   MerchantMarket,
   NotificationPage,
+  NotificationSettings,
   Order,
   OrderStatus,
   Page,
@@ -77,6 +78,8 @@ export interface DukkanApi {
   // notifications (B-37)
   listNotifications(signal?: Signal): Promise<NotificationPage>;
   markNotificationsRead(): Promise<void>;
+  getNotificationSettings(signal?: Signal): Promise<NotificationSettings>;
+  updateNotificationSettings(settings: NotificationSettings): Promise<NotificationSettings>;
   registerDevice(token: string, platform: DevicePlatform): Promise<void>;
   unregisterDevice(token: string): Promise<void>;
   getCurrentUser(signal?: Signal): Promise<User>;
@@ -193,6 +196,8 @@ export function createDukkanApi(client: ApiClient): DukkanApi {
     socialSignIn: (body) => client.request({ method: 'POST', path: '/auth/social', body, anonymous: true }),
     listNotifications: (signal) => get('/me/notifications', { size: 50 }, signal),
     markNotificationsRead: () => client.request({ method: 'POST', path: '/me/notifications/read' }),
+    getNotificationSettings: (signal) => get('/me/notification-settings', undefined, signal),
+    updateNotificationSettings: (body) => client.request({ method: 'PUT', path: '/me/notification-settings', body }),
     registerDevice: (token, platform) => client.request({ method: 'PUT', path: '/me/devices', body: { token, platform } }),
     unregisterDevice: (token) => client.request({ method: 'DELETE', path: '/me/devices', body: { token } }),
     getCurrentUser: (signal) => get('/me', undefined, signal),

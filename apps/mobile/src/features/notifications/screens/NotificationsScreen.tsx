@@ -6,8 +6,9 @@ import type { RootStackScreenProps } from '../../../navigation/types';
 import type { AppNotification } from '../../../shared/api';
 import { formatDateTime } from '../../../shared/format';
 import { makeStyles, useTheme } from '../../../shared/theme';
-import { AppText, EmptyState, Screen, ScreenHeader, queryState } from '../../../shared/ui';
-import { useMarkNotificationsRead, useNotifications } from '../api/hooks';
+import { errorMessageKey } from '../../../shared/api';
+import { AppText, EmptyState, Screen, ScreenHeader, ToggleSwitch, queryState } from '../../../shared/ui';
+import { useMarkNotificationsRead, useNotificationSettings, useNotifications, useUpdateNotificationSettings } from '../api/hooks';
 
 const MERCHANT_KINDS = new Set(['NEW_ORDER', 'ORDER_CANCELLED']);
 
@@ -44,6 +45,7 @@ export function NotificationsScreen({ navigation }: RootStackScreenProps<'Notifi
           keyExtractor={(n) => n.id}
           contentContainerStyle={styles.list}
           refreshControl={<RefreshControl refreshing={query.isRefetching} onRefresh={() => void query.refetch()} tintColor={colors.primary} />}
+          ListHeaderComponent={<PushSetting />}
           ListEmptyComponent={<EmptyState icon="bell" title={t('notifications.emptyTitle')} message={t('notifications.emptyMessage')} />}
           renderItem={({ item }) => (
             <Pressable
@@ -72,9 +74,44 @@ export function NotificationsScreen({ navigation }: RootStackScreenProps<'Notifi
   );
 }
 
+/** "Push-Mitteilungen" switch; the inbox fills either way. */
+function PushSetting() {
+  const styles = useStyles();
+  const { t } = useTranslation();
+  const settings = useNotificationSettings();
+  const update = useUpdateNotificationSettings();
+  if (settings.data === undefined) {
+    return null;
+  }
+  return (
+    <View style={styles.setting}>
+      <View style={styles.texts}>
+        <AppText variant="bodyStrong" dense>
+          {t('notifications.push')}
+        </AppText>
+        <AppText variant="caption" color="textSecondary">
+          {t('notifications.pushHint')}
+        </AppText>
+        {update.isError && (
+          <AppText variant="caption" color="accent" accessibilityRole="alert">
+            {t(errorMessageKey(update.error))}
+          </AppText>
+        )}
+      </View>
+      <ToggleSwitch
+        accessibilityLabel={t('notifications.push')}
+        value={settings.data.pushEnabled}
+        onValueChange={(pushEnabled) => update.mutate({ pushEnabled })}
+        testID="push-setting"
+      />
+    </View>
+  );
+}
+
 const useStyles = makeStyles((t) => ({
   list: { paddingHorizontal: t.layout.gutter, paddingBottom: t.spacing.xxxl, flexGrow: 1 },
   row: { flexDirection: 'row', gap: t.spacing.sm, paddingVertical: t.spacing.md, borderBottomWidth: 1, borderBottomColor: t.colors.separator, minHeight: 64 },
   dot: { width: 10, height: 10, borderRadius: 5, marginTop: 6 },
   texts: { flex: 1, gap: 2 },
+  setting: { flexDirection: 'row', alignItems: 'center', gap: t.spacing.md, paddingVertical: t.spacing.md, borderBottomWidth: 1, borderBottomColor: t.colors.separator },
 }));

@@ -71,7 +71,8 @@ class OrderNotificationHandler implements EventHandler {
     }
     Text t = text.get();
     repository.insert(UUID.randomUUID(), userId, t.kind(), t.title(), t.body(), order.orderId(), order.marketId(), clock.instant());
-    if (!push.enabled()) {
+    if (!push.enabled() || !repository.pushEnabled(userId).orElse(true)) {
+      // Push off (no FCM, or the user switched it off): the inbox entry is enough.
       return;
     }
     List<String> tokens = repository.deviceTokens(userId);

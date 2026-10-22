@@ -40,4 +40,13 @@ public class NotificationService {
   public void markAllRead(UUID userId) {
     repository.markAllRead(userId, clock.instant());
   }
+
+  /** Whether push messages are on for the user (default on). */
+  public boolean pushEnabled(UUID userId) {
+    return repository.pushEnabled(userId).orElse(true);
+  }
+
+  public void setPushEnabled(UUID userId, boolean enabled) {
+    repository.setPushEnabled(userId, enabled, clock.instant());
+  }
 }

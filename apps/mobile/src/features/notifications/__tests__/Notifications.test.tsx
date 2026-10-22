@@ -1,6 +1,6 @@
-import { screen, userEvent, waitFor } from '@testing-library/react-native';
+import { fireEvent, screen, userEvent, waitFor } from '@testing-library/react-native';
 
-import type { AppNotification, NotificationPage } from '../../../shared/api';
+import { ApiError, type AppNotification, type NotificationPage } from '../../../shared/api';
 import { createFakePushRegistration } from '../../../shared/push';
 import { createFakeApiClient } from '../../../test/fakeApiClient';
 import { market, page } from '../../../test/fixtures';
@@ -44,6 +44,36 @@ describe('Mitteilungen (B-37)', () => {
 
     await user.press(screen.getByTestId('notification-n1'));
     await waitFor(() => expect(fake.calls.some((c) => c.path === '/merchant/markets/mk1/orders')).toBe(true));
+  });
+
+  it('switches push off and back on; a failed save puts the switch back', async () => {
+    let fail = false;
+    const fake = createFakeApiClient({
+      ...base,
+      'GET /me': merchant,
+      'GET /me/notifications': { ...page([]), unreadCount: 0 },
+      'GET /me/notification-settings': { pushEnabled: true },
+      'PUT /me/notification-settings': (request) => {
+        if (fail) {
+          throw new ApiError({ kind: 'network', status: 0, code: 'NETWORK_ERROR' });
+        }
+        return request.body;
+      },
+    });
+    await renderApp(createTestDependencies(fake.client, { token: 'jwt' }));
+    const user = await openProfile();
+    await user.press(await screen.findByTestId('profile-notifications'));
+
+    const toggle = await screen.findByTestId('push-setting');
+    expect(toggle.props.value).toBe(true);
+    await fireEvent(toggle, 'valueChange', false);
+    await waitFor(() => expect(fake.calls).toContainEqual(expect.objectContaining({ method: 'PUT', path: '/me/notification-settings', body: { pushEnabled: false } })));
+    await waitFor(() => expect(screen.getByTestId('push-setting').props.value).toBe(false));
+
+    fail = true;
+    await fireEvent(screen.getByTestId('push-setting'), 'valueChange', true);
+    expect(await screen.findByRole('alert')).toBeOnTheScreen();
+    await waitFor(() => expect(screen.getByTestId('push-setting').props.value).toBe(false));
   });
 
   it('registers the device for push after sign-in and removes it on logout', async () => {

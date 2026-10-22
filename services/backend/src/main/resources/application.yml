@@ -117,6 +117,11 @@ dukkan:
     transport: ${DUKKAN_EVENTS_TRANSPORT:in-process}
     rabbitmq-uri: ${DUKKAN_RABBITMQ_URI:amqp://dukkan:dukkan@localhost:5672}
     publish-interval: PT1S
+    # Published events and idempotency records are deleted after this (nightly job, B-37a).
+    retention: P14D
+  notifications:
+    # Read inbox entries are deleted after this; unread ones stay (nightly job, B-37a).
+    retention: P180D
   push:
     fcm:
       # Firebase Cloud Messaging HTTP v1 (Android and iOS). Empty = no push, notifications stay in the inbox.
