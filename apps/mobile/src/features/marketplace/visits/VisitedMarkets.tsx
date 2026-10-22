@@ -40,28 +40,34 @@ const systemNow = () => new Date();
 
 /** Remembers the markets opened on this device (also for guests) for the start page view "Meine Märkte". */
 export function VisitedMarketsProvider({ storage, children, now = systemNow }: { storage: KeyValueStorage; children: ReactNode; now?: () => Date }) {
-  const [visits, setVisits] = useState<MarketVisit[]>([]);
+  const [state, setState] = useState<{ loaded: boolean; visits: MarketVisit[] }>({ loaded: false, visits: [] });
   useEffect(() => {
     let active = true;
-    void storage.get(STORAGE_KEYS.visitedMarkets).then((raw) => {
-      if (active) {
+    const merge = (stored: MarketVisit[]) =>
+      setState((current) => ({
+        loaded: true,
         // A visit recorded before the stored list arrived stays first.
-        setVisits((current) => current.reduceRight((list, visit) => addVisit(list, visit.marketId, visit.at), parse(raw)));
-      }
-    });
+        visits: current.visits.reduceRight((list, visit) => addVisit(list, visit.marketId, visit.at), stored),
+      }));
+    storage
+      .get(STORAGE_KEYS.visitedMarkets)
+      .then((raw) => active && merge(parse(raw)))
+      .catch(() => active && merge([]));
     return () => {
       active = false;
     };
   }, [storage]);
+  // Written only once the stored list is merged in, so an early visit cannot overwrite the history.
+  useEffect(() => {
+    if (state.loaded) {
+      void storage.set(STORAGE_KEYS.visitedMarkets, JSON.stringify(state.visits));
+    }
+  }, [state, storage]);
   const recordVisit = useCallback(
-    (marketId: string) =>
-      setVisits((current) => {
-        const next = addVisit(current, marketId, now().toISOString());
-        void storage.set(STORAGE_KEYS.visitedMarkets, JSON.stringify(next));
-        return next;
-      }),
-    [storage, now],
+    (marketId: string) => setState((current) => ({ ...current, visits: addVisit(current.visits, marketId, now().toISOString()) })),
+    [now],
   );
+  const visits = state.visits;
   const value = useMemo(() => ({ visits, recordVisit }), [visits, recordVisit]);
   return <Context value={value}>{children}</Context>;
 }

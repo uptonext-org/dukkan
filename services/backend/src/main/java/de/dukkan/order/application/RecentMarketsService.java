@@ -9,6 +9,7 @@ import de.dukkan.market.application.MarketSummary;
 import de.dukkan.order.infrastructure.PurchaseStatistics;
 import de.dukkan.shared.api.GeoPoint;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -55,25 +56,37 @@ public class RecentMarketsService {
     Set<UUID> ids = new LinkedHashSet<>(ordered.keySet());
     visited.stream().limit(MAX_MARKETS).forEach(ids::add);
     Map<UUID, MarketSummary> summaries = markets.summaries(ids, reference, locale);
+    Map<UUID, MarketInfo> infos = markets.infos(ids);
+    List<UUID> shown =
+        ids.stream()
+            .filter(id -> summaries.containsKey(id) && infos.containsKey(id) && infos.get(id).isActive())
+            .limit(MAX_MARKETS)
+            .toList();
+
+    // Products bought per ordered market: one query, then one catalog lookup for all of them.
+    List<UUID> orderedShown = shown.stream().filter(ordered::containsKey).toList();
+    Map<UUID, List<UUID>> bought =
+        userId == null || orderedShown.isEmpty() ? Map.of() : statistics.recentlyBoughtListings(userId, orderedShown, RECENT_PRODUCTS * 2);
+    Map<UUID, ProductSummary> products = new HashMap<>();
+    for (ProductSummary product : catalog.summaries(bought.values().stream().flatMap(List::stream).toList(), locale, userId)) {
+      products.put(product.id(), product);
+    }
 
     List<RecentMarket> result = new ArrayList<>();
-    for (UUID id : ids) {
+    for (UUID id : shown) {
       MarketSummary summary = summaries.get(id);
-      if (summary == null || !markets.findInfo(id).map(MarketInfo::isActive).orElse(false)) {
-        continue;
-      }
       PurchaseStatistics.MarketActivity activity = ordered.get(id);
       if (activity == null) {
         result.add(new RecentMarket(summary, null, null, 0, List.of()));
         continue;
       }
-      List<UUID> bought = statistics.recentlyBoughtListings(userId, id, RECENT_PRODUCTS * 2);
-      List<ProductSummary> products =
-          catalog.summaries(bought, locale, userId).stream().filter(ProductSummary::available).limit(RECENT_PRODUCTS).toList();
-      result.add(new RecentMarket(summary, activity.lastOrderAt(), activity.lastOrderId(), activity.orderCount(), products));
-      if (result.size() == MAX_MARKETS) {
-        break;
-      }
+      List<ProductSummary> recent =
+          bought.getOrDefault(id, List.of()).stream()
+              .map(products::get)
+              .filter(p -> p != null && p.available())
+              .limit(RECENT_PRODUCTS)
+              .toList();
+      result.add(new RecentMarket(summary, activity.lastOrderAt(), activity.lastOrderId(), activity.orderCount(), recent));
     }
     return result;
   }

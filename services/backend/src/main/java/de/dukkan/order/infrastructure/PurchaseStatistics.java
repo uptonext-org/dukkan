@@ -1,7 +1,11 @@
 package de.dukkan.order.infrastructure;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
@@ -59,21 +63,31 @@ public class PurchaseStatistics {
         .list();
   }
 
-  /** Listings the user bought in the market, most recently bought first. */
-  public List<UUID> recentlyBoughtListings(UUID userId, UUID marketId, int limit) {
-    return jdbc.sql(
+  /** Per market, the listings the user bought there, most recently bought first (one query). */
+  public Map<UUID, List<UUID>> recentlyBoughtListings(UUID userId, Collection<UUID> marketIds, int perMarket) {
+    if (marketIds.isEmpty()) {
+      return Map.of();
+    }
+    Map<UUID, List<UUID>> out = new LinkedHashMap<>();
+    jdbc.sql(
             """
-            SELECT oi.market_product_id
-              FROM order_item oi JOIN customer_order o ON o.id = oi.order_id
-             WHERE o.user_id = :userId AND o.market_id = :marketId AND o.status NOT IN ('CANCELLED', 'REJECTED')
-             GROUP BY oi.market_product_id
-             ORDER BY max(o.placed_at) DESC, sum(oi.quantity) DESC, oi.market_product_id
-             LIMIT :limit
+            SELECT market_id, market_product_id FROM (
+              SELECT o.market_id, oi.market_product_id,
+                     row_number() OVER (PARTITION BY o.market_id
+                                        ORDER BY max(o.placed_at) DESC, sum(oi.quantity) DESC, oi.market_product_id) AS rank
+                FROM order_item oi JOIN customer_order o ON o.id = oi.order_id
+               WHERE o.user_id = :userId AND o.market_id IN (:marketIds) AND o.status NOT IN ('CANCELLED', 'REJECTED')
+               GROUP BY o.market_id, oi.market_product_id
+            ) ranked
+             WHERE rank <= :perMarket
+             ORDER BY market_id, rank
             """)
         .param("userId", userId)
-        .param("marketId", marketId)
-        .param("limit", limit)
-        .query(UUID.class)
-        .list();
+        .param("marketIds", marketIds)
+        .param("perMarket", perMarket)
+        .query((rs, n) -> Map.entry(rs.getObject("market_id", UUID.class), rs.getObject("market_product_id", UUID.class)))
+        .list()
+        .forEach(row -> out.computeIfAbsent(row.getKey(), k -> new ArrayList<>()).add(row.getValue()));
+    return out;
   }
 }
