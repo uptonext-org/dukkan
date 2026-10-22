@@ -48,6 +48,7 @@ class ArchitectureTest {
           "media",
           "capture",
           "translation",
+          "shoppinglist",
           "privacy",
           "notification");
   private static final Pattern MODULE_PACKAGE = Pattern.compile("^de\\.dukkan\\.([a-z]+)\\.([a-z]+)(\\..*)?$");

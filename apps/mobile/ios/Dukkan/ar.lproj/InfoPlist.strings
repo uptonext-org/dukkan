@@ -1,6 +1,9 @@
 /* Shown in the system location prompt. */
 "NSLocationWhenInUseUsageDescription" = "يستخدم دكّان موقعكم لعرض الأسواق القريبة والمسافة إليها.";
 "CFBundleDisplayName" = "Dukkan";
-/* Shown in the system photo library and camera prompts (merchant photos). */
-"NSPhotoLibraryUsageDescription" = "يستخدم دكّان صوركم فقط عند اختيار شعار أو صورة غلاف أو صورة منتج لسوقكم.";
-"NSCameraUsageDescription" = "يستخدم دكّان الكاميرا فقط عند التقاط صورة لسوقكم.";
+/* Shown in the system photo library and camera prompts (merchant photos, shopping lists). */
+"NSPhotoLibraryUsageDescription" = "يستخدم دكّان صوركم ومقاطع الفيديو فقط عند اختيارها: لصور سوقكم أو لقائمة تسوّق.";
+"NSCameraUsageDescription" = "يستخدم دكّان الكاميرا فقط عند التقاط صورة أو فيديو: لسوقكم أو لقائمة تسوّق.";
+/* Shown in the system microphone and speech recognition prompts (shopping list by voice). */
+"NSMicrophoneUsageDescription" = "يستخدم دكّان الميكروفون فقط أثناء نطق قائمة التسوّق.";
+"NSSpeechRecognitionUsageDescription" = "يحوّل دكّان قائمة التسوّق المنطوقة إلى نص للعثور على المنتجات المناسبة.";

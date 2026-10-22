@@ -1,6 +1,9 @@
 /* Shown in the system location prompt. */
 "NSLocationWhenInUseUsageDescription" = "Dukkan uses your location to show markets near you and how far away they are.";
 "CFBundleDisplayName" = "Dukkan";
-/* Shown in the system photo library and camera prompts (merchant photos). */
-"NSPhotoLibraryUsageDescription" = "Dukkan uses your photos only when you choose a logo, cover photo or product photo for your market.";
-"NSCameraUsageDescription" = "Dukkan uses the camera only when you take a photo for your market.";
+/* Shown in the system photo library and camera prompts (merchant photos, shopping lists). */
+"NSPhotoLibraryUsageDescription" = "Dukkan uses your photos and videos only when you choose them: for photos of your market or for a shopping list.";
+"NSCameraUsageDescription" = "Dukkan uses the camera only when you take a photo or video: for your market or for a shopping list.";
+/* Shown in the system microphone and speech recognition prompts (shopping list by voice). */
+"NSMicrophoneUsageDescription" = "Dukkan uses the microphone only while you speak a shopping list.";
+"NSSpeechRecognitionUsageDescription" = "Dukkan turns your spoken shopping list into text so the matching products can be found.";

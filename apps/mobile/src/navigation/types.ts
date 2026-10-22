@@ -29,6 +29,8 @@ export type MarketStackParamList = {
   MarketProduct: { productId: string };
   MarketProducts: { title: string; filter: ProductFilter };
   OrderConfirmation: { orderId: string };
+  /** Shopping list by voice, photo or video (F1). */
+  ShoppingList: undefined;
 };
 
 export type RootStackParamList = {

@@ -147,10 +147,14 @@ dukkan:
   translation:
     # Machine translation suggestions per merchant and hour (B-38, ADR 0013).
     requests-per-hour: 60
+  shopping-list:
+    # Shopping lists by voice, photo or video per customer and hour (each one may call the language model).
+    requests-per-hour: 20
   ai:
-    # Language model for AI capture and machine translation (ADR 0011, 0013).
+    # Language model for AI capture, machine translation and shopping lists (ADR 0011, 0013).
     anthropic:
-      # Empty: no language model (capture uses its rule-based parser, translation is unavailable).
+      # Empty: no language model (capture and typed or spoken shopping lists use rule-based parsers,
+      # translation and shopping lists from photos or videos are unavailable).
       api-key: ${DUKKAN_ANTHROPIC_API_KEY:}
       model: ${DUKKAN_ANTHROPIC_MODEL:claude-opus-5-5}
       effort: low

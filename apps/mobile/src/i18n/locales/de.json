@@ -69,7 +69,8 @@
     "TRANSLATION_UNAVAILABLE": "Die automatische Übersetzung ist gerade nicht verfügbar.",
     "ACCOUNT_HAS_OPEN_ORDERS": "Du hast noch offene Bestellungen. Warte, bis sie abgeschlossen sind, oder storniere sie.",
     "ACCOUNT_OWNS_MARKETS": "Dieses Konto führt einen Markt. Bitte wende dich an den Dukkan-Support, um den Markt zu schließen oder zu übergeben.",
-    "EMAIL_NOT_VERIFIED": "Bitte bestätige zuerst deine E-Mail-Adresse (Link in der Willkommens-Mail)."
+    "EMAIL_NOT_VERIFIED": "Bitte bestätige zuerst deine E-Mail-Adresse (Link in der Willkommens-Mail).",
+    "SHOPPING_LIST_AI_UNAVAILABLE": "Fotos und Videos können gerade nicht gelesen werden, weil die KI nicht eingerichtet ist."
   },
   "validation": {
     "required": "Bitte ausfüllen.",
@@ -684,5 +685,50 @@
     "banner": "Bitte bestätige deine E-Mail-Adresse über den Link in unserer Willkommens-Mail.",
     "resend": "Mail erneut senden",
     "sent": "Gesendet. Schau auch im Spam-Ordner nach."
+  },
+  "shoppingList": {
+    "title": "Einkaufsliste",
+    "entryTitle": "Einkaufsliste sprechen oder filmen",
+    "entrySubtitle": "Sag, tippe oder zeig, was du brauchst – wir finden die Produkte.",
+    "intro": "Sprich oder tippe deine Liste, z. B. „2 Gurken, 1 kg Tomaten“. Du kannst auch deinen Einkaufszettel oder deinen Kühlschrank fotografieren oder kurz filmen.",
+    "introNoAi": "Sprich oder tippe deine Liste, z. B. „2 Gurken, 1 kg Tomaten“.",
+    "speak": "Liste sprechen",
+    "stopSpeaking": "Fertig gesprochen",
+    "listening": "Ich höre zu … Tippen, wenn du fertig bist",
+    "placeholder": "z. B. 2 Gurken, 1 kg Tomaten und eine Packung Milch",
+    "textLabel": "Deine Einkaufsliste",
+    "mediaTitle": "Foto oder Video",
+    "mediaHint": "Zettel, Kühlschrank oder leere Verpackungen: Aus einem Video nehmen wir ein paar Standbilder, das Video selbst bleibt auf deinem Handy.",
+    "recordVideo": "Video aufnehmen",
+    "takePhoto": "Foto aufnehmen",
+    "fromLibrary": "Aus der Mediathek",
+    "images_one": "{{count}} Bild ausgewählt",
+    "images_other": "{{count}} Bilder ausgewählt",
+    "removeImages": "Bilder entfernen",
+    "noAi": "Die KI ist für diesen Dienst noch nicht eingerichtet. Fotos und Videos können deshalb gerade nicht gelesen werden – gesprochene und getippte Listen funktionieren.",
+    "recognise": "Produkte finden",
+    "speechError": {
+      "permission": "Bitte erlaube den Zugriff auf das Mikrofon und die Spracherkennung in den Einstellungen.",
+      "unavailable": "Spracherkennung ist auf diesem Gerät nicht verfügbar. Du kannst die Liste tippen oder die Diktierfunktion der Tastatur nutzen.",
+      "busy": "Die Spracherkennung ist gerade beschäftigt. Bitte versuch es gleich noch einmal.",
+      "network": "Die Spracherkennung braucht eine Internetverbindung.",
+      "failed": "Das hat nicht geklappt. Bitte versuch es noch einmal."
+    },
+    "mediaPermission": "Bitte erlaube den Zugriff auf Kamera oder Fotos in den Einstellungen.",
+    "mediaFailed": "Das Bild konnte nicht geladen werden.",
+    "videoFailed": "Aus dem Video konnten keine Bilder gelesen werden.",
+    "addToCart_one": "{{count}} Artikel in den Warenkorb",
+    "addToCart_other": "{{count}} Artikel in den Warenkorb",
+    "nothingFound": "In deiner Liste haben wir keine Lebensmittel erkannt.",
+    "found_one": "{{count}} Artikel gefunden.",
+    "found_other": "{{count}} Artikel gefunden.",
+    "notFound_one": "{{count}} nicht im Sortiment.",
+    "notFound_other": "{{count}} nicht im Sortiment.",
+    "rulesFallback": "Die KI war gerade nicht erreichbar, deshalb wurde die Liste einfach gelesen. Bitte prüf die Treffer.",
+    "rulesOnly": "Ohne KI wird die Liste einfach gelesen. Bitte prüf die Treffer.",
+    "again": "Neue Liste",
+    "lineNotFound": "Nicht im Sortiment dieses Markts gefunden",
+    "include": "{{name}} in den Warenkorb legen",
+    "alternatives": "Andere passende Produkte"
   }
 }

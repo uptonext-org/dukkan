@@ -53,6 +53,7 @@ public final class ErrorCodes {
   public static final String SOCIAL_PROVIDER_DISABLED = "SOCIAL_PROVIDER_DISABLED";
   public static final String SOCIAL_EMAIL_MISSING = "SOCIAL_EMAIL_MISSING";
   public static final String TRANSLATION_UNAVAILABLE = "TRANSLATION_UNAVAILABLE";
+  public static final String SHOPPING_LIST_AI_UNAVAILABLE = "SHOPPING_LIST_AI_UNAVAILABLE";
 
   private ErrorCodes() {}
 }

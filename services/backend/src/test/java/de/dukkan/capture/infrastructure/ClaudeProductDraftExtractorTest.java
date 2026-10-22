@@ -12,6 +12,7 @@ import de.dukkan.capture.application.ProductDraftExtractor.Outcome;
 import de.dukkan.capture.application.ProductDraftExtractor.Request;
 import de.dukkan.capture.domain.Allergens;
 import de.dukkan.capture.domain.ExtractedProduct;
+import de.dukkan.shared.ai.ModelImages;
 import de.dukkan.shared.config.DukkanProperties;
 import de.dukkan.support.TestImages;
 import java.awt.Color;
@@ -183,7 +184,7 @@ class ClaudeProductDraftExtractorTest {
   void largePhotosAreScaledDownToJpeg() {
     byte[] png = TestImages.png(3000, 2000, Color.GREEN);
 
-    var prepared = ModelImages.prepare(new Image(png, "image/png"));
+    var prepared = ModelImages.prepare(new ModelImages.Image(png, "image/png"));
 
     assertThat(prepared).hasValueSatisfying(image -> {
       assertThat(image.contentType()).isEqualTo("image/jpeg");

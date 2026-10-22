@@ -46,6 +46,9 @@ import type {
   SocialSignInRequest,
   TranslationRequest,
   TranslationResult,
+  ShoppingListCapabilities,
+  ShoppingListRequest,
+  ShoppingListResult,
   UpdateListingRequest,
   UpdateUserRequest,
   UploadFile,
@@ -159,6 +162,9 @@ export interface DukkanApi {
   /** AI product capture: a draft from text and/or an uploaded photo (nothing is saved). */
   createProductDraft(marketId: string, request: ProductDraftRequest): Promise<ProductDraft>;
   translateTexts(request: TranslationRequest): Promise<TranslationResult>;
+  getShoppingListCapabilities(signal?: Signal): Promise<ShoppingListCapabilities>;
+  /** Shopping list by voice, photo or video: matched products to confirm (nothing is added yet). */
+  readShoppingList(marketId: string, request: ShoppingListRequest): Promise<ShoppingListResult>;
 }
 
 /** Uploads may take longer than ordinary requests on mobile networks. */
@@ -176,6 +182,21 @@ export function mediaForm(file: UploadFile, purpose: MediaPurpose): FormData {
   } else {
     // React Native's FormData sends { uri, type, name } as a file part read from the device.
     form.append('file', { uri: file.uri, type: file.type, name: file.name });
+  }
+  return form;
+}
+
+export function shoppingListForm(request: ShoppingListRequest): FormData {
+  const form = new FormData();
+  if (request.text !== undefined && request.text.trim() !== '') {
+    form.append('text', request.text.trim());
+  }
+  for (const file of request.images) {
+    if ('blob' in file) {
+      (form as unknown as { append(name: string, value: Blob, fileName: string): void }).append('images', file.blob, file.name);
+    } else {
+      form.append('images', { uri: file.uri, type: file.type, name: file.name });
+    }
   }
   return form;
 }
@@ -327,5 +348,13 @@ export function createDukkanApi(client: ApiClient): DukkanApi {
         timeoutMs: DRAFT_TIMEOUT_MS,
       }),
     translateTexts: (body) => client.request({ method: 'POST', path: '/merchant/translations', body, timeoutMs: DRAFT_TIMEOUT_MS }),
+    getShoppingListCapabilities: (signal) => get('/shopping-list', undefined, signal),
+    readShoppingList: (marketId, request) =>
+      client.request({
+        method: 'POST',
+        path: `/markets/${enc(marketId)}/shopping-list`,
+        body: shoppingListForm(request),
+        timeoutMs: DRAFT_TIMEOUT_MS,
+      }),
   };
 }

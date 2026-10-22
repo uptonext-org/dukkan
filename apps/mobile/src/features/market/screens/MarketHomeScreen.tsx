@@ -9,6 +9,7 @@ import { makeStyles, useTheme } from '../../../shared/theme';
 import { AppText, CardSkeletons, ErrorState, Icon, IconButton, SectionTitle } from '../../../shared/ui';
 import { ProductCarousel } from '../../catalog/components/ProductCarousel';
 import { FulfilmentLink } from '../../fulfilment/components/FulfilmentLink';
+import { ShoppingListEntry } from '../../shoppingList/components/ShoppingListEntry';
 import { useMarketHome } from '../api/hooks';
 import { BannerCarousel } from '../components/BannerCarousel';
 import { MarketInfoCard } from '../components/MarketInfoCard';
@@ -78,6 +79,9 @@ export function MarketHomeScreen({ navigation }: MarketTabScreenProps<'MarketHom
         <IconButton icon="user" label={t('shell.account')} onPress={() => rootNavigation.navigate('Shell', { screen: 'Profile' })} />
       </View>
       {banners.length > 0 && <BannerCarousel banners={banners} onPress={openBanner} label={t('marketHome.banners')} />}
+      <View style={styles.gutter}>
+        <ShoppingListEntry onPress={() => navigation.navigate('ShoppingList')} />
+      </View>
       <View style={styles.gutter}>
         <MarketInfoCard market={market} />
       </View>
