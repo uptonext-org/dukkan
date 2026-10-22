@@ -241,7 +241,9 @@
   "marketHome": {
     "banners": "أبرز العروض",
     "all": "الكل",
-    "showAll": "عرض الكل: {{title}}"
+    "showAll": "عرض الكل: {{title}}",
+    "categories": "الفئات",
+    "categoryHint": "يعرض منتجات هذه الفئة"
   },
   "product": {
     "organic": "عضوي",

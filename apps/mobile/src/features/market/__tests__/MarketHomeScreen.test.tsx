@@ -58,6 +58,29 @@ describe('Market sub-app: Entdecken', () => {
     expect(screen.getByTestId(`product-tile-${PRODUCT_ID}`)).toBeOnTheScreen();
   });
 
+  it('shows a band of the market\'s categories right below the delivery time; a tap opens the category', async () => {
+    const category = (id: string, slug: string, name: string, sortOrder: number, extra: object = {}) => ({ id, slug, name, sortOrder, parentId: null, iconKey: slug, productCount: 4, ...extra });
+    const { fake, dependencies } = setup(null, {
+      [`GET /markets/${MARKET_ID}/categories`]: [
+        category('c-meat', 'meat', 'Fleisch & Geflügel', 30),
+        category('c-veg', 'fruit-veg', 'Obst & Gemüse', 10),
+        category('c-apples', 'apples', 'Äpfel', 11, { parentId: 'c-veg' }),
+        category('c-empty', 'frozen', 'Tiefkühl', 90, { productCount: 0 }),
+      ],
+      [`GET /markets/${MARKET_ID}/products`]: () => page([product()]),
+    });
+    await renderApp(dependencies);
+    const user = await openMarket();
+
+    const band = await screen.findByTestId('category-band');
+    // Top-level categories with products only, in the market's order.
+    const chips = within(band).getAllByRole('button').map((chip) => chip.props.accessibilityLabel as string);
+    expect(chips).toEqual(['Obst & Gemüse', 'Fleisch & Geflügel']);
+
+    await user.press(within(band).getByRole('button', { name: 'Fleisch & Geflügel' }));
+    await waitFor(() => expect(fake.calls.some((c) => c.path === `/markets/${MARKET_ID}/products` && c.query?.categoryId === 'c-meat')).toBe(true));
+  });
+
   it('asks a guest to sign in when adding to the cart, then continues with the add', async () => {
     const afterAdd = cart({ items: [cartItem({ productId: PRODUCT_ID, name: 'Äpfel Pink Lady', quantity: 1 })], itemCount: 1, total: eur(279) });
     const { fake, dependencies } = setup(null, {
