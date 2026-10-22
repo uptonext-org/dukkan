@@ -287,5 +287,15 @@
     "delivery_one": "{{n}} delivery",
     "delivery_other": "{{n}} deliveries",
     "lineRevenue": "Revenue before discounts"
+  },
+  "alerts": {
+    "newOrder": "New order",
+    "open": "View",
+    "dismiss": "Dismiss notice for {{number}}",
+    "on": "🔔 Alerts on",
+    "off": "🔕 Alerts off",
+    "toggleHint": "Sound and system notification for new orders, also while the portal is in the background",
+    "notificationTitle_one": "New order",
+    "notificationTitle_other": "{{count}} new orders"
   }
 }

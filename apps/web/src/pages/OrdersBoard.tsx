@@ -38,7 +38,11 @@ export function OrdersBoard({ marketId }: { marketId: string }) {
   const orders = useQuery({ queryKey: ['orders', marketId, i18n.language], queryFn: () => api.orders(marketId), refetchInterval: 30_000, placeholderData: keepPreviousData });
   const advance = useMutation({
     mutationFn: ({ order, status }: { order: Order; status: OrderStatus }) => api.advanceOrder(order.id, status),
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ['orders', marketId] }),
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: ['orders', marketId] });
+      // The tab title counts orders waiting for a decision.
+      void queryClient.invalidateQueries({ queryKey: ['placedOrders', marketId] });
+    },
   });
 
   return (

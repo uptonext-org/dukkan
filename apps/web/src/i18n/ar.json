@@ -297,5 +297,19 @@
     "days_many": "{{count}} يوماً",
     "days_other": "{{count}} يوم",
     "lineRevenue": "المبيعات قبل الخصومات"
+  },
+  "alerts": {
+    "newOrder": "طلب جديد",
+    "open": "عرض",
+    "dismiss": "إغلاق التنبيه للطلب {{number}}",
+    "on": "🔔 التنبيهات مفعّلة",
+    "off": "🔕 التنبيهات متوقفة",
+    "toggleHint": "صوت وإشعار من النظام عند وصول طلبات جديدة، حتى عندما تكون البوابة في الخلفية",
+    "notificationTitle_zero": "لا توجد طلبات جديدة",
+    "notificationTitle_one": "طلب جديد",
+    "notificationTitle_two": "طلبان جديدان",
+    "notificationTitle_few": "{{count}} طلبات جديدة",
+    "notificationTitle_many": "{{count}} طلباً جديداً",
+    "notificationTitle_other": "{{count}} طلب جديد"
   }
 }

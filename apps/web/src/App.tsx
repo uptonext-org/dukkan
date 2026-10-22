@@ -2,6 +2,8 @@ import { keepPreviousData, QueryClient, QueryClientProvider, useQuery } from '@t
 import { useState, useSyncExternalStore } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { OrderAlerts } from './alerts/OrderAlerts';
+import { browserSignals, loadAlertsEnabled, saveAlertsEnabled, type AlertSignals } from './alerts/signals';
 import { ApiProvider, useApi } from './api/ApiContext';
 import { createApi, type Session, type SessionStore } from './api/client';
 import { applyLanguage, isLanguage, LANGUAGES } from './i18n';
@@ -34,6 +36,8 @@ export interface AppDependencies {
   fetch?: typeof fetch;
   store?: SessionStore;
   queryClient?: QueryClient;
+  /** How often new orders are looked for (default 20 s), and how merchants are alerted. */
+  alerts?: { intervalMs?: number; signals?: AlertSignals; enabled?: boolean };
 }
 
 export function App({ dependencies = {} }: { dependencies?: AppDependencies }) {
@@ -66,12 +70,12 @@ export function App({ dependencies = {} }: { dependencies?: AppDependencies }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ApiProvider value={{ api, session }}>{session === null ? <LoginPage /> : <Shell session={session} />}</ApiProvider>
+      <ApiProvider value={{ api, session }}>{session === null ? <LoginPage /> : <Shell session={session} alerts={dependencies.alerts} />}</ApiProvider>
     </QueryClientProvider>
   );
 }
 
-function Shell({ session }: { session: Session }) {
+function Shell({ session, alerts }: { session: Session; alerts: AppDependencies['alerts'] }) {
   const { t, i18n } = useTranslation();
   const api = useApi();
   const isMerchant = session.user.roles.includes('MERCHANT');
@@ -80,6 +84,8 @@ function Shell({ session }: { session: Session }) {
   const markets = useQuery({ queryKey: ['myMarkets', i18n.language], queryFn: () => api.myMarkets(), enabled: isMerchant, placeholderData: keepPreviousData });
   const [marketId, setMarketId] = useState<string | null>(null);
   const selected = markets.data?.find((m) => m.id === marketId) ?? markets.data?.[0];
+  const signals = alerts?.signals ?? browserSignals;
+  const [alertsOn, setAlertsOn] = useState(() => alerts?.enabled ?? loadAlertsEnabled());
 
   const available: Route[] = [...(isMerchant ? (['orders', 'insights', 'listings', 'promotions', 'import', 'profile'] as const) : []), ...(isAdmin ? (['admin', 'catalog'] as const) : [])];
   const current = route !== null && available.includes(route) ? route : available[0];
@@ -116,6 +122,25 @@ function Shell({ session }: { session: Session }) {
             ))}
           </select>
         </label>
+        {isMerchant && (
+          <button
+            className="button secondary"
+            type="button"
+            aria-pressed={alertsOn}
+            title={t('alerts.toggleHint')}
+            onClick={() => {
+              const next = !alertsOn;
+              if (next) {
+                // From the click: browsers allow sound and the permission prompt only after a gesture.
+                signals.prepare();
+              }
+              saveAlertsEnabled(next);
+              setAlertsOn(next);
+            }}
+          >
+            {alertsOn ? t('alerts.on') : t('alerts.off')}
+          </button>
+        )}
         <button className="button secondary" type="button" onClick={() => void api.logout()}>
           {t('app.logout')}
         </button>
@@ -127,6 +152,18 @@ function Shell({ session }: { session: Session }) {
           </button>
         ))}
       </nav>
+      {isMerchant && markets.data !== undefined && markets.data.length > 0 && (
+        <OrderAlerts
+          markets={markets.data}
+          intervalMs={alerts?.intervalMs ?? 20_000}
+          enabled={alertsOn}
+          signals={signals}
+          onOpen={(id) => {
+            setMarketId(id);
+            setRoute('orders');
+          }}
+        />
+      )}
       <main>
         {current === 'admin' && <AdminMarketsPage />}
         {current === 'catalog' && <AdminCatalogPage />}
