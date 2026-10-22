@@ -23,6 +23,7 @@ Product phases: [`docs/product/marketplace.md`](product/marketplace.md).
 | M-14 | Live API test (app client against the backend) plus CI job `e2e-api` | Done |
 | M-15 | Visual QA through a react-native-web preview with screenshots (de/ar, light/dark), and fixing what it finds (14 defects fixed) | Done |
 | M-16 | Security and correctness review of the backend, findings fixed with regression tests; admin API; rate limiting; slot clean-up; product icon placeholders | Done |
+| B-29 | Dependency scanning: `.github/dependabot.yml` (weekly Gradle and npm updates with groups, monthly Bundler, Actions, Docker) and the Gradle dependency graph submitted to GitHub on `main` (`dependency-submission.yml`), so security alerts cover transitive backend dependencies too | Done (Dependabot alerts must be switched on in the repository settings) |
 | B-28 | Native builds in CI: workflow `native.yml` (Android release APK with JDK 17 and the AGP-installed SDK 37 / NDK 27.1, uploaded as artifact; iOS Release build for the simulator on macOS 15 with CocoaPods from a committed `Gemfile.lock`, no signing); release JS bundles for both platforms compiled to Hermes bytecode in the regular mobile job (`npm run bundle:check`) | Done: first CI run on 2026-10-21 green (Android APK in 16 min, iOS simulator build in 9 min). Not run on devices yet; device checks and Detox: B-28a |
 | B-36 | Admin market review in the web portal: markets by status, approve, suspend, return to review | Done (catalog moderation: B-36a) |
 | B-31 | Merchant web portal `apps/web` (Vite, React 19, de/en/ar with RTL): orders board with status actions and auto-refresh, assortment with inline price and availability, CSV import (`POST /merchant/markets/{id}/listings/import`: Excel-style CSV with `;`/`,`, German column names, matching by barcode or name + size, dry run, all or nothing, re-import only updates); CI job `web` | Done (market profile editing stays in the app; promotions in the portal: later) |
@@ -48,7 +49,6 @@ Product phases: [`docs/product/marketplace.md`](product/marketplace.md).
 | B-39a | Native Apple/Google adapters behind the `SocialSignIn` port once the OAuth clients exist (docs/setup.md has the adapter); shared (Redis) rate-limit store for several replicas; optional e-mail verification at registration | B-39, B-28 | S | Needs Apple Developer and Google Cloud accounts (product owner) |
 | B-41 | Paging the `openNow` and name filters in SQL instead of Java; promotional price in `price_asc` sorting | M-04, M-05 | S | |
 | B-28a | Detox end-to-end tests on emulator/simulator; check fonts, RTL and permissions on devices (Arabic sheet title padding, tab badge position); signed release builds (upload keystore, App Store Connect) | B-28 | M | Needs green native jobs first, and signing secrets from the product owner |
-| B-29 | Dependency scanning for Gradle (OWASP dependency-check or Dependabot) | — | S | |
 | B-16 | (Reverse engineering) Get a Picnic APK lawfully and run the REA plan | user-supplied APK | M | `docs/reverse-engineering/technical-analysis.md` |
 
 ## P2: Later
