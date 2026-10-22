@@ -1286,8 +1286,12 @@ paths:
         - At most 5 MB (5 × 1024 × 1024 bytes) per file → otherwise 413 `FILE_TOO_LARGE`.
         - JPEG and PNG must decode completely, WebP must have a consistent RIFF/VP8 header →
           otherwise 400 `INVALID_IMAGE`. At most 40 megapixels → otherwise 400 `IMAGE_TOO_LARGE`.
-        - The file is stored unchanged under a content-addressed key (SHA-256 of the bytes plus
-          the extension), so uploading the same bytes again returns the same URL.
+        - Metadata is removed before storing, without re-encoding the image: EXIF (GPS position,
+          device, time), XMP, IPTC and comments in JPEG; text, EXIF and time chunks in PNG; EXIF
+          and XMP in WebP. Only a JPEG's EXIF orientation is kept, so portrait photos stay upright.
+          `sizeBytes` is the stored size.
+        - The cleaned file is stored under a content-addressed key (SHA-256 of the bytes plus
+          the extension), so uploading the same file again returns the same URL.
         - 60 uploads per user per hour (per instance) → 429 `RATE_LIMITED` with `Retry-After`.
       requestBody:
         required: true

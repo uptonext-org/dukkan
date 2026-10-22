@@ -2,6 +2,7 @@ package de.dukkan.media.application;
 
 import de.dukkan.media.domain.ImageInfo;
 import de.dukkan.media.domain.ImageInspector;
+import de.dukkan.media.domain.MetadataStripper;
 import de.dukkan.shared.config.DukkanProperties;
 import de.dukkan.shared.error.ContentRejectedException;
 import java.util.Optional;
@@ -50,10 +51,17 @@ public class MediaService {
       throw ContentRejectedException.invalidImage("The file is empty.");
     }
     ImageInfo info = ImageInspector.inspect(bytes, maxPixels);
-    String key = MediaKeys.of(bytes, info.format());
+    byte[] clean;
+    try {
+      // Uploads are public: EXIF (GPS, device), XMP and IPTC never reach storage (B-32b).
+      clean = MetadataStripper.strip(bytes, info.format());
+    } catch (IllegalArgumentException e) {
+      throw ContentRejectedException.invalidImage("The image structure is damaged.");
+    }
+    String key = MediaKeys.of(clean, info.format());
     boolean existed = storage.exists(key);
     if (!existed) {
-      storage.put(key, bytes, info.format().contentType());
+      storage.put(key, clean, info.format().contentType());
     }
     LOG.info(
         "Media {} {} {}x{} {} bytes by user {} ({})",
@@ -61,10 +69,10 @@ public class MediaService {
         key,
         info.width(),
         info.height(),
-        bytes.length,
+        clean.length,
         uploaderId,
         existed ? "deduplicated" : "stored");
-    return new StoredMedia(key, info.format().contentType(), info.width(), info.height(), bytes.length);
+    return new StoredMedia(key, info.format().contentType(), info.width(), info.height(), clean.length);
   }
 
   public Optional<MediaObject> open(String key) {

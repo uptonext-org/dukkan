@@ -117,6 +117,29 @@ class MediaIntegrationTest extends IntegrationTest {
   }
 
   @Test
+  void photoMetadataNeverReachesTheServedImage() throws Exception {
+    String merchant = registerMerchant();
+    UUID market = createMarket(merchant, "Datenschutzmarkt");
+    byte[] plain = TestImages.jpeg(30, 20, randomColor());
+    String secret = "GPS 53.5511N 9.9937E";
+    byte[] comment = new byte[4 + secret.length()];
+    comment[0] = (byte) 0xFF;
+    comment[1] = (byte) 0xFE;
+    comment[3] = (byte) (secret.length() + 2);
+    System.arraycopy(secret.getBytes(java.nio.charset.StandardCharsets.ISO_8859_1), 0, comment, 4, secret.length());
+    byte[] photo = new byte[plain.length + comment.length];
+    System.arraycopy(plain, 0, photo, 0, 2);
+    System.arraycopy(comment, 0, photo, 2, comment.length);
+    System.arraycopy(plain, 2, photo, 2 + comment.length, plain.length - 2);
+
+    MvcResult uploaded = upload(merchant, market, photo, "image/jpeg").andExpect(status().isCreated()).andReturn();
+    assertThat((Integer) read(uploaded, "$.sizeBytes")).isEqualTo(plain.length);
+    byte[] served = mvc.perform(get("/api/v1/media/" + read(uploaded, "$.key"))).andReturn().getResponse().getContentAsByteArray();
+    assertThat(new String(served, java.nio.charset.StandardCharsets.ISO_8859_1)).doesNotContain(secret);
+    assertThat(served).isEqualTo(plain);
+  }
+
+  @Test
   void identicalBytesDeduplicateToTheSameKey() throws Exception {
     String merchant = registerMerchant();
     UUID market = createMarket(merchant, "Dedupemarkt");

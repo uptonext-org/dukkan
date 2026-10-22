@@ -44,7 +44,7 @@ public final class TestImages {
     return Arrays.copyOf(bytes, (int) (bytes.length * fraction));
   }
 
-  private static void chunk(ByteArrayOutputStream out, String type, byte[] data) {
+  public static void chunk(ByteArrayOutputStream out, String type, byte[] data) {
     byte[] typeBytes = type.getBytes(StandardCharsets.US_ASCII);
     out.writeBytes(ByteBuffer.allocate(4).putInt(data.length).array());
     out.writeBytes(typeBytes);
