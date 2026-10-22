@@ -45,7 +45,7 @@ jobs:
       - name: Assemble release APK
         working-directory: apps/mobile/android
         run: ./gradlew assembleRelease --no-daemon --stacktrace
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         with:
           name: dukkan-android-release-apk
           path: apps/mobile/android/app/build/outputs/apk/release/*.apk
