@@ -58,6 +58,26 @@ describe('Market sub-app: Entdecken', () => {
     expect(screen.getByTestId(`product-tile-${PRODUCT_ID}`)).toBeOnTheScreen();
   });
 
+  it('shows the best sellers and lists all of them in their rank order', async () => {
+    const home = marketHome();
+    const { fake, dependencies } = setup(null, {
+      [`GET /markets/${MARKET_ID}/home`]: {
+        ...home,
+        sections: [{ key: 'BESTSELLERS', title: 'Meistverkauft', subtitle: 'Das kaufen die anderen hier gerade', items: [product()] }, ...home.sections],
+      },
+      [`GET /markets/${MARKET_ID}/products`]: () => page([product()]),
+    });
+    await renderApp(dependencies);
+    const user = await openMarket();
+
+    const section = screen.getByTestId('home-section-BESTSELLERS');
+    expect(section).toHaveTextContent(/Meistverkauft.*Das kaufen die anderen hier gerade/);
+    await user.press(within(section).getByRole('button', { name: 'Alle anzeigen: Meistverkauft' }));
+    await waitFor(() => expect(fake.calls.some((c) => c.path === `/markets/${MARKET_ID}/products` && c.query?.bestsellersOnly === true)).toBe(true));
+    // No sort chips: the order is the rank.
+    expect(screen.queryByRole('button', { name: 'Preis aufsteigend' })).not.toBeOnTheScreen();
+  });
+
   it('asks a guest to sign in when adding to the cart, then continues with the add', async () => {
     const afterAdd = cart({ items: [cartItem({ productId: PRODUCT_ID, name: 'Äpfel Pink Lady', quantity: 1 })], itemCount: 1, total: eur(279) });
     const { fake, dependencies } = setup(null, {

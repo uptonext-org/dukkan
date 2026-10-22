@@ -57,6 +57,7 @@ final class MarketCatalogController {
       @RequestParam(defaultValue = "false") boolean promotedOnly,
       @RequestParam(defaultValue = "false") boolean newOnly,
       @RequestParam(defaultValue = "false") boolean organicOnly,
+      @RequestParam(defaultValue = "false") boolean bestsellersOnly,
       @Pattern(regexp = "relevance|price_asc|price_desc|name", message = "must be one of relevance, price_asc, price_desc, name")
           @RequestParam(defaultValue = "relevance")
           String sort,
@@ -65,7 +66,7 @@ final class MarketCatalogController {
       @RequestAttribute(ContentLocale.REQUEST_ATTRIBUTE) ContentLocale locale) {
     return catalog.searchMarket(
         marketId,
-        new MarketProductQuery(q, categoryId, promotedOnly, newOnly, organicOnly, sort, page, size),
+        new MarketProductQuery(q, categoryId, promotedOnly, newOnly, organicOnly, bestsellersOnly, sort, page, size),
         locale,
         CurrentUser.optionalId(security).orElse(null));
   }

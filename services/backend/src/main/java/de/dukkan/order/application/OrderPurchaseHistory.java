@@ -2,6 +2,7 @@ package de.dukkan.order.application;
 
 import de.dukkan.catalog.application.PurchaseHistory;
 import de.dukkan.order.infrastructure.PurchaseStatistics;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Component;
@@ -21,5 +22,10 @@ public class OrderPurchaseHistory implements PurchaseHistory {
   @Override
   public List<UUID> frequentlyOrderedListingIds(UUID userId, UUID marketId) {
     return statistics.listingsOrderedAtLeast(userId, marketId, FREQUENT_MIN_ORDERS);
+  }
+
+  @Override
+  public List<UUID> bestSellingListingIds(UUID marketId, Instant since, int limit) {
+    return statistics.bestSellingListings(marketId, since, limit);
   }
 }

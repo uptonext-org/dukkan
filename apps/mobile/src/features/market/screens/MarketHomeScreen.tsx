@@ -58,6 +58,9 @@ export function MarketHomeScreen({ navigation }: MarketTabScreenProps<'MarketHom
       case 'NEW':
         navigation.navigate('MarketProducts', { title: section.title, filter: { newOnly: true } });
         return;
+      case 'BESTSELLERS':
+        navigation.navigate('MarketProducts', { title: section.title, filter: { bestsellersOnly: true } });
+        return;
       case 'FREQUENTLY_ORDERED':
         navigation.navigate('MarketFavorites');
         return;

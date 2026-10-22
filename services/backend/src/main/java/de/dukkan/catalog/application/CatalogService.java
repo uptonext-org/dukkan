@@ -66,6 +66,7 @@ public class CatalogService {
   private final MarketService markets;
   private final PromotionService promotions;
   private final ListingFavorites favorites;
+  private final PurchaseHistory purchases;
   private final LocaleService locales;
   private final Clock clock;
   private final DukkanProperties properties;
@@ -79,6 +80,7 @@ public class CatalogService {
       MarketService markets,
       PromotionService promotions,
       ListingFavorites favorites,
+      PurchaseHistory purchases,
       LocaleService locales,
       Clock clock,
       DukkanProperties properties,
@@ -89,6 +91,7 @@ public class CatalogService {
     this.markets = markets;
     this.promotions = promotions;
     this.favorites = favorites;
+    this.purchases = purchases;
     this.locales = locales;
     this.clock = clock;
     this.properties = properties;
@@ -130,6 +133,12 @@ public class CatalogService {
   public PageResponse<ProductSummary> searchMarket(
       UUID marketId, MarketProductQuery query, ContentLocale locale, @Nullable UUID userId) {
     MarketInfo market = markets.activeInfo(marketId);
+    if (query.bestsellersOnly()) {
+      List<ProductSummary> ranked = bestsellers(marketId, BESTSELLER_LIST_SIZE, locale, userId);
+      int from = Math.min(ranked.size(), query.page() * query.size());
+      int to = Math.min(ranked.size(), from + query.size());
+      return PageResponse.of(ranked.subList(from, to), query.page(), query.size(), ranked.size());
+    }
     String term = normalizedTerm(query.q());
     Set<UUID> promoted = query.promotedOnly() ? promotions.activeListingIds(marketId) : null;
     Instant newSince = query.newOnly() ? newSince() : null;
@@ -149,6 +158,23 @@ public class CatalogService {
             query.page(),
             query.size());
     return PageResponse.of(summaries(page.ids(), locale, userId), query.page(), query.size(), page.total());
+  }
+
+  /** Days of orders that count for a market's best sellers. */
+  public static final int BESTSELLER_DAYS = 30;
+
+  /** Best sellers shown under "Alle". */
+  static final int BESTSELLER_LIST_SIZE = 50;
+
+  /**
+   * The market's available products sold most in the last {@link #BESTSELLER_DAYS} days (units,
+   * counted orders only), most first.
+   */
+  public List<ProductSummary> bestsellers(UUID marketId, int limit, ContentLocale locale, @Nullable UUID userId) {
+    Instant since = clock.instant().minus(Duration.ofDays(BESTSELLER_DAYS));
+    // Some of the best sellers may be sold out right now; ask for more than needed.
+    List<UUID> ranked = purchases.bestSellingListingIds(marketId, since, limit * 2);
+    return summaries(ranked, locale, userId).stream().filter(ProductSummary::available).limit(limit).toList();
   }
 
   /** Localised product names in one active market, best match first. */
