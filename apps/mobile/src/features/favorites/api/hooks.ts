@@ -30,6 +30,33 @@ export function useFavoriteMarkets() {
 }
 
 /** Toggle a product heart; guests sign in first. Refreshes every view that shows `favorite`. */
+/**
+ * Sets `favorite` on every cached copy of the product (start page sections, lists, detail), so
+ * the heart changes at once; returns whether anything changed.
+ */
+export function withFavorite(value: unknown, productId: string, favorite: boolean): unknown {
+  if (Array.isArray(value)) {
+    const next = value.map((v) => withFavorite(v, productId, favorite));
+    return next.some((v, i) => v !== value[i]) ? next : value;
+  }
+  if (value === null || typeof value !== 'object') {
+    return value;
+  }
+  const record = value as Record<string, unknown>;
+  let changed = false;
+  const next: Record<string, unknown> = {};
+  for (const [key, child] of Object.entries(record)) {
+    const mapped = withFavorite(child, productId, favorite);
+    changed ||= mapped !== child;
+    next[key] = mapped;
+  }
+  if (record.id === productId && 'favorite' in record && record.favorite !== favorite) {
+    next.favorite = favorite;
+    changed = true;
+  }
+  return changed ? next : value;
+}
+
 export function useToggleProductFavorite() {
   const api = useApi();
   const queryClient = useQueryClient();
@@ -37,6 +64,11 @@ export function useToggleProductFavorite() {
   const mutation = useMutation({
     mutationFn: ({ productId, favorite }: { productId: string; favorite: boolean }) =>
       favorite ? api.addFavoriteProduct(productId) : api.removeFavoriteProduct(productId),
+    onMutate: ({ productId, favorite }) => {
+      for (const key of ['product', 'products', 'marketHome']) {
+        queryClient.setQueriesData({ queryKey: [key] }, (data: unknown) => withFavorite(data, productId, favorite));
+      }
+    },
     onSettled: () => {
       for (const key of ['marketFavorites', 'product', 'products', 'marketHome']) {
         void queryClient.invalidateQueries({ queryKey: [key] });

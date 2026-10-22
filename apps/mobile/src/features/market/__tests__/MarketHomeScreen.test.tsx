@@ -58,6 +58,39 @@ describe('Market sub-app: Entdecken', () => {
     expect(screen.getByTestId(`product-tile-${PRODUCT_ID}`)).toBeOnTheScreen();
   });
 
+  it('puts a favourite heart on every product of the start page; it changes at once', async () => {
+    let favorite = false;
+    const home = marketHome();
+    const { fake, dependencies } = setup('jwt', {
+      'GET /me': { id: 'u1', email: 'a@b.de', firstName: 'Ada', lastName: 'L', roles: ['CUSTOMER'] },
+      'GET /me/notifications': { ...page([]), unreadCount: 0 },
+      [`GET /markets/${MARKET_ID}/home`]: () => ({
+        ...home,
+        sections: home.sections.map((section) => ({ ...section, items: section.items.map((item) => ({ ...item, favorite })) })),
+      }),
+      [`GET /markets/${MARKET_ID}/cart`]: cart({ items: [] }),
+      [`PUT /favorites/products/${PRODUCT_ID}`]: () => {
+        favorite = true;
+        return undefined;
+      },
+    });
+    await renderApp(dependencies);
+    const user = await openMarket();
+
+    const firstTile = () => {
+      const [tile] = screen.getAllByTestId(`product-tile-${PRODUCT_ID}`);
+      if (tile === undefined) {
+        throw new Error('no tile');
+      }
+      return tile;
+    };
+    const name = product().name;
+    await user.press(within(firstTile()).getByRole('button', { name: `${name} zu Favoriten` }));
+    // Optimistic: the heart is filled before the server answers and the page reloads.
+    expect(await within(firstTile()).findByRole('button', { name: `${name} aus Favoriten entfernen` })).toBeOnTheScreen();
+    await waitFor(() => expect(fake.calls.some((c) => c.method === 'PUT' && c.path === `/favorites/products/${PRODUCT_ID}`)).toBe(true));
+  });
+
   it('asks a guest to sign in when adding to the cart, then continues with the add', async () => {
     const afterAdd = cart({ items: [cartItem({ productId: PRODUCT_ID, name: 'Äpfel Pink Lady', quantity: 1 })], itemCount: 1, total: eur(279) });
     const { fake, dependencies } = setup(null, {
