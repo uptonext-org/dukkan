@@ -22,7 +22,8 @@
     "admin": "Market review",
     "market": "Market",
     "catalog": "Catalog review",
-    "promotions": "Promotions"
+    "promotions": "Promotions",
+    "profile": "Market profile"
   },
   "status": {
     "PENDING_REVIEW": "In review",
@@ -126,7 +127,11 @@
       "TooManyRows": "At most 1000 products per file."
     },
     "PRODUCT_DUPLICATE": "The shared catalog already has a product with this barcode.",
-    "TRANSLATION_UNAVAILABLE": "Machine translation is not available right now."
+    "TRANSLATION_UNAVAILABLE": "Machine translation is not available right now.",
+    "UNSUPPORTED_MEDIA_TYPE": "Only JPEG, PNG or WebP.",
+    "FILE_TOO_LARGE": "The image is larger than 5 MB.",
+    "INVALID_IMAGE": "The image is damaged.",
+    "IMAGE_TOO_LARGE": "The image has too many pixels (max. 40 MP)."
   },
   "catalog": {
     "title": "Catalog review",
@@ -179,5 +184,74 @@
     "percentInvalid": "Discount between 1 and 90%.",
     "bundleInvalid": "Enter a quantity of 2 to 20 and a price like 4.99.",
     "productsRequired": "Please choose at least one product."
+  },
+  "profile": {
+    "title": "Market profile",
+    "hint": "This is how customers see your market in the app. Changes apply immediately.",
+    "basics": "General",
+    "name": "Market name",
+    "type": "Type",
+    "primaryLocale": "Main language",
+    "cuisines": "Cuisines ({{n}} of {{max}})",
+    "tags": "Features",
+    "tag": {
+      "ORGANIC": "Organic",
+      "REGIONAL": "Regional",
+      "HALAL": "Halal",
+      "VEGAN_FRIENDLY": "Vegan-friendly"
+    },
+    "description": "Description",
+    "images": "Images",
+    "logo": "Logo",
+    "cover": "Cover image",
+    "upload": "Upload image",
+    "removeImage": "Remove",
+    "noImage": "No image",
+    "contact": "Address & contact",
+    "address": "Address",
+    "findAddress": "Find address",
+    "suggestions": "Addresses found",
+    "noPlaces": "No address found.",
+    "located": "✓ Position set",
+    "notLocated": "Search for the address and pick a suggestion so the position is right.",
+    "phone": "Phone",
+    "fulfilment": "Delivery & pickup",
+    "pickup": "Pickup",
+    "delivery": "Delivery",
+    "radius": "Delivery radius (km)",
+    "fee": "Delivery fee (€)",
+    "freeFrom": "Free from (€, optional)",
+    "minimum": "Minimum order (€)",
+    "hours": "Opening hours",
+    "hoursHint": "Up to three periods a day, e.g. with a lunch break. A period that ends before it starts runs into the next day (18:00–02:00).",
+    "closed": "Closed",
+    "opensAt": "{{day}} opens at",
+    "closesAt": "{{day}} closes at",
+    "addInterval": "Add a period on {{day}}",
+    "removeInterval": "Remove period on {{day}}",
+    "copyPrevious": "Same as day before",
+    "imprint": "Legal notice",
+    "legalName": "Company name",
+    "registerInfo": "Register entry (optional)",
+    "save": "Save profile",
+    "saved": "Profile saved.",
+    "problems": "Please check {{n}} marked field(s).",
+    "problem": {
+      "name": "2 to 80 characters.",
+      "type": "Choose a type.",
+      "cuisines": "At most 5 cuisines.",
+      "address": "Pick an address that was found.",
+      "phone": "Enter a valid phone number.",
+      "fulfilment": "Offer delivery, pickup or both.",
+      "radius": "0.5 to 50 km.",
+      "amount": "Enter an amount like 2.50.",
+      "hoursRequired": "At least one period.",
+      "time": "Fill in every time.",
+      "sameTime": "Start and end must differ.",
+      "overlap": "Periods overlap.",
+      "legalName": "2 to 120 characters.",
+      "tooLong": "Too long.",
+      "invalid": "Please check."
+    }
   }
 }

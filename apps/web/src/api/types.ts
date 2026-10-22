@@ -32,12 +32,73 @@ export interface Money {
 
 export type MarketStatus = 'PENDING_REVIEW' | 'ACTIVE' | 'SUSPENDED';
 
+export interface CodeName {
+  code: string;
+  name: string;
+}
+
+export interface GeoPoint {
+  lat: number;
+  lng: number;
+}
+
+export interface FulfilmentOptions {
+  delivery: boolean;
+  pickup: boolean;
+  deliveryRadiusKm?: number | null;
+  deliveryFee?: Money | null;
+  freeDeliveryFrom?: Money | null;
+  minimumOrderValue: Money;
+}
+
+export interface OpeningHours {
+  dayOfWeek: number;
+  opensAt: string;
+  closesAt: string;
+}
+
+export type MarketTag = 'ORGANIC' | 'REGIONAL' | 'HALAL' | 'VEGAN_FRIENDLY';
+
+export interface Place {
+  label: string;
+  city: string;
+  location: GeoPoint;
+}
+
+export interface MarketProfileRequest {
+  name: string;
+  typeCode: string;
+  cuisineCodes: string[];
+  description?: Record<string, string>;
+  primaryLocale: string;
+  addressLine: string;
+  location: GeoPoint;
+  phone: string | null;
+  logoUrl: string | null;
+  coverImageUrl: string | null;
+  tags: MarketTag[];
+  fulfilment: FulfilmentOptions;
+  openingHours: OpeningHours[];
+  legalName: string;
+  registerInfo: string | null;
+}
+
 export interface MerchantMarket {
   id: string;
   slug: string;
   name: string;
   status: MarketStatus;
   primaryLocale: string;
+  cuisines?: CodeName[];
+  description?: string | null;
+  descriptions?: Record<string, string>;
+  phone?: string | null;
+  logoUrl?: string | null;
+  coverImageUrl?: string | null;
+  location?: GeoPoint;
+  tags?: MarketTag[];
+  fulfilment?: FulfilmentOptions;
+  openingHours?: OpeningHours[];
   addressLine: string;
   type: { code: string; name: string };
   imprint: { legalName: string; addressLine: string; registerInfo?: string | null };

@@ -433,8 +433,9 @@ export function toMarketProfileRequest(values: MarketProfileValues): MarketProfi
 }
 
 /**
- * Prefill from an existing market. The API returns the description only in the requested
- * language, so it lands in that language's field; other languages start empty (see README).
+ * Prefill from an existing market. All languages come from `descriptions`; saving replaces every
+ * language, so an empty field here would delete that translation. Older servers only send the
+ * requested language in `description`.
  */
 export function fromMerchantMarket(market: MerchantMarket, language: Language): MarketProfileValues {
   const base = emptyMarketProfile(CONTENT_LANGUAGES.includes(market.primaryLocale as Language) ? (market.primaryLocale as Language) : 'de');
@@ -451,7 +452,10 @@ export function fromMerchantMarket(market: MerchantMarket, language: Language): 
     name: market.name,
     typeCode: market.type.code,
     cuisineCodes: market.cuisines.map((c) => c.code),
-    description: { ...base.description, [language]: market.description ?? '' },
+    description:
+      market.descriptions !== undefined
+        ? { ...base.description, ...Object.fromEntries(CONTENT_LANGUAGES.map((l) => [l, market.descriptions?.[l] ?? ''])) }
+        : { ...base.description, [language]: market.description ?? '' },
     addressLine: market.addressLine,
     location: market.location,
     phone: market.phone ?? '',

@@ -252,20 +252,20 @@ public class MarketService {
     Map<UUID, MarketRow> rows = markets.findByIds(markets.findOwnedIds(userId));
     return rows.values().stream()
         .sorted((a, b) -> a.name().compareToIgnoreCase(b.name()))
-        .map(row -> new MerchantMarket(detail(row, null, locale), row.status()))
+        .map(row -> new MerchantMarket(detail(row, null, locale), row.status(), Map.copyOf(row.descriptions())))
         .toList();
   }
 
   public MerchantMarket merchantView(UUID marketId, ContentLocale locale) {
     MarketRow row = row(marketId);
-    return new MerchantMarket(detail(row, null, locale), row.status());
+    return new MerchantMarket(detail(row, null, locale), row.status(), Map.copyOf(row.descriptions()));
   }
 
   /** Admin view: markets of a status (all when null), newest first. */
   public List<MerchantMarket> listForAdmin(@Nullable String status, ContentLocale locale) {
     List<UUID> ids = markets.findIdsByStatus(status);
     Map<UUID, MarketRow> rows = markets.findByIds(ids);
-    return ids.stream().map(rows::get).filter(Objects::nonNull).map(row -> new MerchantMarket(detail(row, null, locale), row.status())).toList();
+    return ids.stream().map(rows::get).filter(Objects::nonNull).map(row -> new MerchantMarket(detail(row, null, locale), row.status(), Map.copyOf(row.descriptions()))).toList();
   }
 
   /** Admin: approve (ACTIVE), suspend (SUSPENDED) or send back to review; {@code NOT_FOUND} if missing. */

@@ -23,6 +23,18 @@ import org.springframework.test.web.servlet.MvcResult;
 class MerchantIntegrationTest extends IntegrationTest {
 
   @Test
+  void merchantViewsCarryTheDescriptionInEveryLanguage() throws Exception {
+    String merchant = registerMerchant();
+    UUID market = createMarket(merchant, "Beschreibungsmarkt");
+    MvcResult mine = mvc.perform(auth(get("/api/v1/merchant/markets"), merchant).header(HttpHeaders.ACCEPT_LANGUAGE, "en")).andReturn();
+    int index = strings(mine, "$[*].id").indexOf(market.toString());
+    // marketProfile() sets de and en; the requested language is in description, all of them in descriptions.
+    assertThat((String) read(mine, "$[" + index + "].description")).isEqualTo("Test market");
+    assertThat((String) read(mine, "$[" + index + "].descriptions.de")).isEqualTo("Testmarkt");
+    assertThat((String) read(mine, "$[" + index + "].descriptions.en")).isEqualTo("Test market");
+  }
+
+  @Test
   void priceSortingUsesThePromotionalPrice() throws Exception {
     String merchant = registerMerchant();
     UUID market = createMarket(merchant, "Preismarkt");

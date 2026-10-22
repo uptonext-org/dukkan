@@ -2444,9 +2444,13 @@ components:
       allOf:
         - $ref: '#/components/schemas/MarketDetail'
         - type: object
-          required: [status]
+          required: [status, descriptions]
           properties:
             status: { $ref: '#/components/schemas/MarketStatus' }
+            descriptions:
+              type: object
+              additionalProperties: { type: string }
+              description: The description in every language (locale → text); `description` is only the requested one. Prefill profile forms from this, since updateMyMarket replaces all languages.
     CatalogProduct:
       type: object
       required: [id, name, unitSize, categoryId, cuisines, organic]
