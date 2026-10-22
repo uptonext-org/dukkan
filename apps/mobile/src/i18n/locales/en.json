@@ -220,7 +220,8 @@
       "cartWithTotal": "Cart, {{amount}}"
     },
     "deliveryWithFee": "Delivery ({{amount}})",
-    "deliveryFreeShort": "Delivery (free)"
+    "deliveryFreeShort": "Delivery (free)",
+    "openHomeHint": "Opens the market's start page"
   },
   "marketHome": {
     "banners": "Highlights",
