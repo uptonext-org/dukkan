@@ -4,8 +4,8 @@ export interface AlertSignals {
   sound: () => void;
   /** A system notification, only while the tab is in the background and permission was given. */
   notify: (title: string, body: string) => void;
-  /** Asks for notification permission (from a click) and unlocks audio. */
-  prepare: () => void;
+  /** Asks for notification permission (from a click) and unlocks audio; false when notifications are blocked. */
+  prepare: () => boolean;
 }
 
 let audio: AudioContext | null = null;
@@ -21,9 +21,19 @@ function context(): AudioContext | null {
 /** Two short tones (no audio file needed). Browsers only play after a user gesture unlocked audio. */
 function chime() {
   const ctx = context();
-  if (ctx === null || ctx.state !== 'running') {
+  if (ctx === null) {
     return;
   }
+  if (ctx.state !== 'running') {
+    // After a reload (or an iOS interruption) the context starts suspended; it resumes once the
+    // page has had any user activation.
+    ctx.resume().then(() => play(ctx), () => undefined);
+    return;
+  }
+  play(ctx);
+}
+
+function play(ctx: AudioContext) {
   [880, 1320].forEach((frequency, i) => {
     const start = ctx.currentTime + i * 0.18;
     const oscillator = ctx.createOscillator();
@@ -51,10 +61,14 @@ export const browserSignals: AlertSignals = {
     }
   },
   prepare() {
-    void context()?.resume();
-    if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+    void context()?.resume().catch(() => undefined);
+    if (typeof Notification === 'undefined') {
+      return true;
+    }
+    if (Notification.permission === 'default') {
       void Notification.requestPermission();
     }
+    return Notification.permission !== 'denied';
   },
 };
 

@@ -17,6 +17,8 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
@@ -83,11 +85,37 @@ class OrderNotificationHandler implements EventHandler {
     }
     Map<String, String> data =
         Map.of("kind", t.kind(), "orderId", order.orderId().toString(), "marketId", order.marketId().toString(), "audience", audience);
-    List<String> invalid = push.send(tokens, new PushGateway.PushMessage(t.title(), t.body(), data));
+    PushGateway.PushMessage message = new PushGateway.PushMessage(t.title(), t.body(), data);
+    // FCM calls take up to seconds; sending after the commit keeps the account lock short and
+    // never pushes a notification whose inbox entry was rolled back.
+    afterCommit(() -> send(userId, tokens, message));
+  }
+
+  private void send(UUID userId, List<String> tokens, PushGateway.PushMessage message) {
+    List<String> invalid = push.send(tokens, message);
     if (!invalid.isEmpty()) {
       repository.deleteDevices(invalid);
       LOG.info("Removed {} expired device token(s) of user {}", invalid.size(), userId);
     }
+  }
+
+  private static void afterCommit(Runnable action) {
+    if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+      action.run();
+      return;
+    }
+    TransactionSynchronizationManager.registerSynchronization(
+        new TransactionSynchronization() {
+          @Override
+          public void afterCommit() {
+            try {
+              action.run();
+            } catch (RuntimeException e) {
+              // The inbox entry is committed; a failed push is not retried.
+              LOG.warn("Push after commit failed: {}", e.toString());
+            }
+          }
+        });
   }
 
   private String locale(UUID userId) {

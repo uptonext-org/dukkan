@@ -17,7 +17,11 @@ public interface UserRepository extends JpaRepository<User, UUID> {
   @Query(value = "SELECT deleted_at IS NULL FROM app_user WHERE id = :id FOR SHARE", nativeQuery = true)
   Optional<Boolean> lockActive(@Param("id") UUID id);
 
-  /** Exclusive row lock for the deletion: waits for writers that hold {@link #lockActive}. */
-  @Query(value = "SELECT CAST(id AS varchar) FROM app_user WHERE id = :id FOR UPDATE", nativeQuery = true)
+  /**
+   * Row lock for the deletion: waits for writers that hold {@link #lockActive}. NO KEY UPDATE, so
+   * inserts that only reference the user (refresh tokens, carts) are not blocked; a plain FOR UPDATE
+   * would deadlock with a token refresh that runs at the same time.
+   */
+  @Query(value = "SELECT CAST(id AS varchar) FROM app_user WHERE id = :id FOR NO KEY UPDATE", nativeQuery = true)
   Optional<String> lockForUpdate(@Param("id") UUID id);
 }

@@ -292,10 +292,14 @@
     "newOrder": "Neue Bestellung",
     "open": "Ansehen",
     "dismiss": "Hinweis zu {{number}} schließen",
-    "on": "🔔 Hinweise an",
-    "off": "🔕 Hinweise aus",
     "toggleHint": "Ton und Systembenachrichtigung bei neuen Bestellungen, auch wenn das Portal im Hintergrund ist",
     "notificationTitle_one": "Neue Bestellung",
-    "notificationTitle_other": "{{count}} neue Bestellungen"
+    "notificationTitle_other": "{{count}} neue Bestellungen",
+    "label": "Hinweise",
+    "blocked": "Der Browser blockiert Benachrichtigungen; der Ton und der Hinweis im Portal kommen trotzdem.",
+    "announce_one": "Neue Bestellung {{numbers}}",
+    "announce_other": "{{count}} neue Bestellungen: {{numbers}}",
+    "more_one": "und {{count}} weitere neue Bestellung",
+    "more_other": "und {{count}} weitere neue Bestellungen"
   }
 }

@@ -1,5 +1,5 @@
 import { keepPreviousData, QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
-import { useState, useSyncExternalStore } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { OrderAlerts } from './alerts/OrderAlerts';
@@ -86,6 +86,22 @@ function Shell({ session, alerts }: { session: Session; alerts: AppDependencies[
   const selected = markets.data?.find((m) => m.id === marketId) ?? markets.data?.[0];
   const signals = alerts?.signals ?? browserSignals;
   const [alertsOn, setAlertsOn] = useState(() => alerts?.enabled ?? loadAlertsEnabled());
+  const [notificationsBlocked, setNotificationsBlocked] = useState(false);
+  // Switched on in an earlier visit: audio needs a gesture in this one, so the first click or key unlocks it.
+  useEffect(() => {
+    if (!alertsOn) {
+      return;
+    }
+    const unlock = () => {
+      signals.prepare();
+    };
+    window.addEventListener('pointerdown', unlock, { once: true });
+    window.addEventListener('keydown', unlock, { once: true });
+    return () => {
+      window.removeEventListener('pointerdown', unlock);
+      window.removeEventListener('keydown', unlock);
+    };
+  }, [alertsOn, signals]);
 
   const available: Route[] = [...(isMerchant ? (['orders', 'insights', 'listings', 'promotions', 'import', 'profile'] as const) : []), ...(isAdmin ? (['admin', 'catalog'] as const) : [])];
   const current = route !== null && available.includes(route) ? route : available[0];
@@ -127,18 +143,19 @@ function Shell({ session, alerts }: { session: Session; alerts: AppDependencies[
             className="button secondary"
             type="button"
             aria-pressed={alertsOn}
-            title={t('alerts.toggleHint')}
+            title={notificationsBlocked && alertsOn ? t('alerts.blocked') : t('alerts.toggleHint')}
             onClick={() => {
               const next = !alertsOn;
               if (next) {
                 // From the click: browsers allow sound and the permission prompt only after a gesture.
-                signals.prepare();
+                setNotificationsBlocked(!signals.prepare());
               }
               saveAlertsEnabled(next);
               setAlertsOn(next);
             }}
           >
-            {alertsOn ? t('alerts.on') : t('alerts.off')}
+            <span aria-hidden="true">{alertsOn ? '🔔 ' : '🔕 '}</span>
+            {t('alerts.label')}
           </button>
         )}
         <button className="button secondary" type="button" onClick={() => void api.logout()}>

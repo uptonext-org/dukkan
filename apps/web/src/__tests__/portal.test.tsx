@@ -528,7 +528,7 @@ describe('new order alerts', () => {
           fetch: backend.fetch,
           store: memoryStore(merchantSession),
           queryClient,
-          alerts: { intervalMs: 50, enabled: true, signals: { sound, notify, prepare: vi.fn() } },
+          alerts: { intervalMs: 50, enabled: true, signals: { sound, notify, prepare: vi.fn(() => true) } },
         }}
       />,
     );
@@ -538,6 +538,7 @@ describe('new order alerts', () => {
     expect(sound).toHaveBeenCalledTimes(1);
     expect(notify).toHaveBeenCalledWith('Neue Bestellung', expect.stringContaining('DK-2'));
     await waitFor(() => expect(document.title).toBe('(2) Dukkan Portal'));
+    expect(screen.getByTestId('order-announcement')).toHaveTextContent('Neue Bestellung DK-2');
     // Further polls with the same orders stay quiet.
     await waitFor(() => expect(polls).toBeGreaterThan(3));
     expect(sound).toHaveBeenCalledTimes(1);
@@ -547,7 +548,7 @@ describe('new order alerts', () => {
   });
 
   it('only reports orders that were not there before', () => {
-    const baseline = newArrivals(null, ['a', 'b']);
+    const baseline = newArrivals(undefined, ['a', 'b']);
     expect(baseline.added).toEqual([]);
     expect(newArrivals(baseline.seen, ['b', 'c']).added).toEqual(['c']);
     expect(newArrivals(baseline.seen, ['a']).added).toEqual([]);

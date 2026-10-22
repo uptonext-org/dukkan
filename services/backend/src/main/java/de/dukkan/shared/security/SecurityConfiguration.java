@@ -23,6 +23,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
+import org.springframework.security.oauth2.jwt.BadJwtException;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtClaimNames;
 import org.springframework.security.oauth2.jwt.JwtClaimValidator;
@@ -154,19 +155,28 @@ public class SecurityConfiguration {
   JwtDecoder jwtDecoder(DukkanProperties properties, Clock clock, AccountStatus accounts) {
     NimbusJwtDecoder decoder =
         NimbusJwtDecoder.withSecretKey(secretKey(properties)).macAlgorithm(MacAlgorithm.HS256).build();
-    decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(jwtValidator(properties.security().jwt().issuer(), clock), openAccount(accounts)));
-    return decoder;
+    decoder.setJwtValidator(jwtValidator(properties.security().jwt().issuer(), clock));
+    return openAccountsOnly(decoder, accounts);
   }
 
-  /** Rejects tokens of deleted accounts (401), checked after the signature and expiry. */
-  static OAuth2TokenValidator<Jwt> openAccount(AccountStatus accounts) {
-    return new JwtClaimValidator<String>(JwtClaimNames.SUB, subject -> {
+  /**
+   * Rejects tokens of deleted accounts (401). The account is looked up only for tokens that passed
+   * the signature, expiry and issuer checks, so invalid tokens cost no database query.
+   */
+  static JwtDecoder openAccountsOnly(JwtDecoder decoder, AccountStatus accounts) {
+    return token -> {
+      Jwt jwt = decoder.decode(token);
+      UUID subject;
       try {
-        return subject != null && !accounts.isClosed(UUID.fromString(subject));
-      } catch (IllegalArgumentException notAUuid) {
-        return false;
+        subject = UUID.fromString(Objects.requireNonNull(jwt.getSubject()));
+      } catch (IllegalArgumentException | NullPointerException notAUserId) {
+        throw new BadJwtException("The token has no valid subject.", notAUserId);
       }
-    });
+      if (accounts.isClosed(subject)) {
+        throw new BadJwtException("The account of this token was deleted.");
+      }
+      return jwt;
+    };
   }
 
   /** Validates expiry/not-before against the application clock and the expected issuer. */

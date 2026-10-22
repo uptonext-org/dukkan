@@ -1,5 +1,6 @@
 package de.dukkan;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 
@@ -28,6 +29,21 @@ class AccountDeletionRaceIntegrationTest extends IntegrationTest {
 
   private long notifications(UUID userId) {
     return jdbc.sql("SELECT count(*) FROM notification WHERE user_id = :u").param("u", userId).query(Long.class).single();
+  }
+
+  private boolean waitsForLock(String statement) throws InterruptedException {
+    for (int i = 0; i < 100; i++) {
+      long waiting =
+          jdbc.sql("SELECT count(*) FROM pg_stat_activity WHERE wait_event_type = 'Lock' AND query LIKE :q")
+              .param("q", "%" + statement + "%")
+              .query(Long.class)
+              .single();
+      if (waiting > 0) {
+        return true;
+      }
+      Thread.sleep(50);
+    }
+    return false;
   }
 
   @Test
@@ -74,8 +90,8 @@ class AccountDeletionRaceIntegrationTest extends IntegrationTest {
                 throw new IllegalStateException(e);
               }
             });
-    // The deletion is blocked by the handler's row lock.
-    Thread.sleep(500);
+    // The deletion waits on the handler's row lock (seen by the database, not guessed from timing).
+    assertThat(waitsForLock("FOR NO KEY UPDATE")).isTrue();
     assertThat(deletion).isNotDone();
 
     write.countDown();
@@ -85,5 +101,47 @@ class AccountDeletionRaceIntegrationTest extends IntegrationTest {
     // Afterwards handlers see the account as gone and write nothing.
     Boolean stillActive = handlerTransaction.execute(status -> identity.holdActiveAccount(userId));
     assertThat(stillActive).isFalse();
+  }
+
+  @Test
+  void theDeletionLockDoesNotBlockRowsThatOnlyReferenceTheUser() throws Exception {
+    // A token refresh inserts a refresh_token row (a foreign key to app_user) while the deletion
+    // holds its lock; with FOR UPDATE the two would deadlock, with FOR NO KEY UPDATE the insert passes.
+    UUID userId = userId(registerUser());
+    TransactionTemplate deletion = new TransactionTemplate(transactionManager);
+    deletion.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+    CountDownLatch locked = new CountDownLatch(1);
+    CountDownLatch release = new CountDownLatch(1);
+    CompletableFuture<Void> holder =
+        CompletableFuture.runAsync(
+            () ->
+                deletion.executeWithoutResult(
+                    status -> {
+                      identity.lockForDeletion(userId);
+                      locked.countDown();
+                      try {
+                        assertThat(release.await(10, TimeUnit.SECONDS)).isTrue();
+                      } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        throw new IllegalStateException(e);
+                      }
+                    }));
+    assertThat(locked.await(10, TimeUnit.SECONDS)).isTrue();
+    try {
+      CompletableFuture<Integer> insert =
+          CompletableFuture.supplyAsync(
+              () ->
+                  jdbc.sql(
+                          "INSERT INTO refresh_token (id, user_id, family_id, token_hash, created_at, expires_at)"
+                              + " VALUES (:id, :u, :id, :hash, now(), now() + interval '1 day')")
+                      .param("id", UUID.randomUUID())
+                      .param("u", userId)
+                      .param("hash", UUID.randomUUID().toString().getBytes(UTF_8))
+                      .update());
+      assertThat(insert.get(5, TimeUnit.SECONDS)).isEqualTo(1);
+    } finally {
+      release.countDown();
+      holder.get(10, TimeUnit.SECONDS);
+    }
   }
 }

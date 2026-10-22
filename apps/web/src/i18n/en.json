@@ -292,10 +292,14 @@
     "newOrder": "New order",
     "open": "View",
     "dismiss": "Dismiss notice for {{number}}",
-    "on": "🔔 Alerts on",
-    "off": "🔕 Alerts off",
     "toggleHint": "Sound and system notification for new orders, also while the portal is in the background",
     "notificationTitle_one": "New order",
-    "notificationTitle_other": "{{count}} new orders"
+    "notificationTitle_other": "{{count}} new orders",
+    "label": "Alerts",
+    "blocked": "The browser blocks notifications; the sound and the notice in the portal still work.",
+    "announce_one": "New order {{numbers}}",
+    "announce_other": "{{count}} new orders: {{numbers}}",
+    "more_one": "and {{count}} more new order",
+    "more_other": "and {{count}} more new orders"
   }
 }
