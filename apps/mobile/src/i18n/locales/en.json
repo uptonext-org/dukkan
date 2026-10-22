@@ -226,7 +226,9 @@
   "marketHome": {
     "banners": "Highlights",
     "all": "All",
-    "showAll": "Show all: {{title}}"
+    "showAll": "Show all: {{title}}",
+    "categories": "Categories",
+    "categoryHint": "Shows the products of this category"
   },
   "product": {
     "organic": "Organic",
