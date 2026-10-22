@@ -1068,6 +1068,31 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
         '422': { $ref: '#/components/responses/BusinessRuleViolation' }
 
+  /orders/{orderId}/reorder:
+    post:
+      tags: [orders]
+      operationId: reorder
+      summary: Put the products of a past order into the cart again
+      description: |
+        Adds every product of the order to the user's cart in the order's market, on top of what
+        is already there and at today's prices (any status, also cancelled orders). Each product is
+        capped at its per-order maximum (`LIMITED`). Products that are currently unavailable
+        (`UNAVAILABLE`) or no longer sold (`REMOVED`) are skipped, so one sold-out product does not
+        block the rest. Load the cart afterwards to show it. 422 `MARKET_NOT_ACTIVE` when the
+        market is not taking orders.
+      parameters:
+        - { $ref: '#/components/parameters/OrderId' }
+        - { $ref: '#/components/parameters/AcceptLanguage' }
+      responses:
+        '200':
+          description: What went into the cart.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReorderResult' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/BusinessRuleViolation' }
+
   # ---------------------------------------------------------------- merchant
   /merchant/markets:
     get:
@@ -1920,6 +1945,24 @@ components:
               imageUrl: { type: [string, 'null'], format: uri }
               quantity: { type: integer, minimum: 1 }
               revenue: { $ref: '#/components/schemas/Money' }
+    ReorderResult:
+      type: object
+      required: [marketId, addedProducts, skipped]
+      properties:
+        marketId: { type: string, format: uuid }
+        addedProducts:
+          type: integer
+          minimum: 0
+          description: Number of products whose quantity in the cart went up.
+        skipped:
+          type: array
+          items:
+            type: object
+            required: [productId, name, reason]
+            properties:
+              productId: { type: string, format: uuid }
+              name: { type: string, description: 'Current name, or the name on the order when the product is gone.' }
+              reason: { type: string, enum: [REMOVED, UNAVAILABLE, LIMITED] }
     Money:
       type: object
       required: [amountCents, currency]

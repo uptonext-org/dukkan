@@ -431,7 +431,16 @@
     "cancelTitle": "إلغاء الطلب؟",
     "cancelMessage": "ستُتاح الفترة الزمنية من جديد.",
     "emptyTitle": "لا توجد طلبات بعد",
-    "emptyMessage": "ستظهر الطلبات هنا."
+    "emptyMessage": "ستظهر الطلبات هنا.",
+    "reorder": "الطلب مرة أخرى",
+    "reorderSkippedTitle": "لم تُضف جميع المنتجات إلى السلة",
+    "reorderNothing": "هذه المنتجات غير متوفرة حالياً.",
+    "toCart": "الانتقال إلى السلة",
+    "skipped": {
+      "REMOVED": "{{name}} – لم يعد متوفراً في المتجر",
+      "UNAVAILABLE": "{{name}} – غير متوفر حالياً",
+      "LIMITED": "{{name}} – تم بلوغ الحد الأقصى للكمية"
+    }
   },
   "orderStatus": {
     "PLACED": "تم الطلب",

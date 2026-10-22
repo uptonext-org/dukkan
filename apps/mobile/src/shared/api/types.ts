@@ -452,6 +452,14 @@ export interface OrderItem {
   lineTotal: Money;
 }
 
+export type ReorderSkipReason = 'REMOVED' | 'UNAVAILABLE' | 'LIMITED';
+
+export interface ReorderResult {
+  marketId: string;
+  addedProducts: number;
+  skipped: { productId: string; name: string; reason: ReorderSkipReason }[];
+}
+
 export interface Order {
   id: string;
   orderNumber: string;
