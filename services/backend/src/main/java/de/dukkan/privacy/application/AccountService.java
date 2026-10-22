@@ -101,6 +101,8 @@ public class AccountService {
   public void delete(UUID userId, @Nullable String password) {
     deletionAttempts.acquire(userId, "account deletion attempts");
     identity.confirmAccountOwner(userId, password);
+    // First: event handlers writing for this user right now finish before anything is removed.
+    identity.lockForDeletion(userId);
     if (!markets.ownedMarketIds(userId).isEmpty()) {
       throw new ConflictException(
           ErrorCodes.ACCOUNT_OWNS_MARKETS, "This account runs a market. Please contact Dukkan support to close or hand over the market first.");

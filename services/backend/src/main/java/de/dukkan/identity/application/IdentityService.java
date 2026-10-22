@@ -70,6 +70,17 @@ public interface IdentityService {
   /** True for deleted (anonymised) and unknown accounts. */
   boolean isDeleted(UUID userId);
 
+  /**
+   * For code that writes data for a user outside their request (event handlers): locks the account
+   * row until the transaction ends, so a deletion running at the same time either happens first
+   * (then this returns false) or waits and removes what was written. False for deleted and unknown
+   * accounts.
+   */
+  boolean holdActiveAccount(UUID userId);
+
+  /** Locks the account row for its deletion (first step, before personal data is removed). */
+  void lockForDeletion(UUID userId);
+
   /** Providers (APPLE, GOOGLE) linked to the account. */
   List<String> linkedProviders(UUID userId);
 

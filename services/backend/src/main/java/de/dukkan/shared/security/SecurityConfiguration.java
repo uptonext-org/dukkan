@@ -9,6 +9,7 @@ import com.nimbusds.jose.proc.SecurityContext;
 import de.dukkan.shared.config.DukkanProperties;
 import java.time.Clock;
 import java.util.Objects;
+import java.util.UUID;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import org.springframework.beans.factory.annotation.Value;
@@ -150,11 +151,22 @@ public class SecurityConfiguration {
   }
 
   @Bean
-  JwtDecoder jwtDecoder(DukkanProperties properties, Clock clock) {
+  JwtDecoder jwtDecoder(DukkanProperties properties, Clock clock, AccountStatus accounts) {
     NimbusJwtDecoder decoder =
         NimbusJwtDecoder.withSecretKey(secretKey(properties)).macAlgorithm(MacAlgorithm.HS256).build();
-    decoder.setJwtValidator(jwtValidator(properties.security().jwt().issuer(), clock));
+    decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(jwtValidator(properties.security().jwt().issuer(), clock), openAccount(accounts)));
     return decoder;
+  }
+
+  /** Rejects tokens of deleted accounts (401), checked after the signature and expiry. */
+  static OAuth2TokenValidator<Jwt> openAccount(AccountStatus accounts) {
+    return new JwtClaimValidator<String>(JwtClaimNames.SUB, subject -> {
+      try {
+        return subject != null && !accounts.isClosed(UUID.fromString(subject));
+      } catch (IllegalArgumentException notAUuid) {
+        return false;
+      }
+    });
   }
 
   /** Validates expiry/not-before against the application clock and the expected issuer. */

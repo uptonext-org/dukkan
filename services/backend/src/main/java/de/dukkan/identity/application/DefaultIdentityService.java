@@ -28,6 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -301,6 +302,18 @@ class DefaultIdentityService implements IdentityService {
   @Transactional(readOnly = true)
   public boolean isDeleted(UUID userId) {
     return users.findById(userId).map(User::isDeleted).orElse(true);
+  }
+
+  @Override
+  @Transactional(propagation = Propagation.MANDATORY)
+  public boolean holdActiveAccount(UUID userId) {
+    return users.lockActive(userId).orElse(false);
+  }
+
+  @Override
+  @Transactional(propagation = Propagation.MANDATORY)
+  public void lockForDeletion(UUID userId) {
+    users.lockForUpdate(userId);
   }
 
   @Override

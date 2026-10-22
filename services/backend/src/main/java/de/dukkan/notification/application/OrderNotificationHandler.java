@@ -66,8 +66,9 @@ class OrderNotificationHandler implements EventHandler {
   }
 
   private void notify(UUID userId, Optional<Text> text, OrderEvent order, String audience) {
-    if (text.isEmpty() || identity.isDeleted(userId)) {
-      // Deleted accounts get nothing, also from events that were still in the outbox.
+    if (text.isEmpty() || !identity.holdActiveAccount(userId)) {
+      // Deleted accounts get nothing, also from events that were still in the outbox. The row lock
+      // keeps a deletion running right now from missing the notification written here.
       return;
     }
     Text t = text.get();

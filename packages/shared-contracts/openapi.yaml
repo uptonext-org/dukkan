@@ -471,6 +471,8 @@ paths:
         notifications and settings, ends every session and anonymises the account. Past orders stay
         for the market's records without the customer's name, street, house number, delivery notes
         and coordinates. The email address can be used for a new account afterwards.
+        Access tokens issued before stop working at once: every later request with them answers
+        401, also before they expire.
 
         - Wrong password → 400 `VALIDATION_FAILED` (field `password`, code `Incorrect`); 5 attempts
           per hour → 429.
