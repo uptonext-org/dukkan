@@ -253,12 +253,12 @@
       "legalName": "2 bis 120 Zeichen.",
       "tooLong": "Zu lang.",
       "invalid": "Bitte prüfen."
-    }
+    },
+    "copyPreviousFor": "Zeiten von {{day}} wie am Vortag"
   },
   "insights": {
     "title": "Übersicht",
     "period": "Zeitraum",
-    "days": "{{n}} Tage",
     "revenue": "Umsatz",
     "orders": "Bestellungen",
     "average": "Ø Bestellwert",
@@ -268,8 +268,6 @@
     "down": "{{percent}} % weniger als im Zeitraum davor",
     "same": "gleich wie im Zeitraum davor",
     "noComparison": "Kein Vergleich möglich",
-    "pickup": "{{n}} Abholung",
-    "delivery": "{{n}} Lieferung",
     "cancelled": "{{n}} storniert",
     "rejected": "{{n}} abgelehnt",
     "discounts": "{{amount}} Rabatte gewährt",
@@ -281,6 +279,13 @@
     "quantity": "Menge",
     "date": "Tag",
     "asTable": "Als Tabelle anzeigen",
-    "empty": "In diesem Zeitraum gab es noch keine Bestellungen."
+    "empty": "In diesem Zeitraum gab es noch keine Bestellungen.",
+    "days_one": "{{count}} Tag",
+    "days_other": "{{count}} Tage",
+    "pickup_one": "{{n}} Abholung",
+    "pickup_other": "{{n}} Abholungen",
+    "delivery_one": "{{n}} Lieferung",
+    "delivery_other": "{{n}} Lieferungen",
+    "lineRevenue": "Umsatz vor Rabatten"
   }
 }

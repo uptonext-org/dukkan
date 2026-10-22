@@ -253,12 +253,12 @@
       "legalName": "2 to 120 characters.",
       "tooLong": "Too long.",
       "invalid": "Please check."
-    }
+    },
+    "copyPreviousFor": "Same hours on {{day}} as the day before"
   },
   "insights": {
     "title": "Overview",
     "period": "Period",
-    "days": "{{n}} days",
     "revenue": "Revenue",
     "orders": "Orders",
     "average": "Avg. order value",
@@ -268,8 +268,6 @@
     "down": "{{percent}}% less than the period before",
     "same": "same as the period before",
     "noComparison": "No comparison possible",
-    "pickup": "{{n}} pickup",
-    "delivery": "{{n}} delivery",
     "cancelled": "{{n}} cancelled",
     "rejected": "{{n}} rejected",
     "discounts": "{{amount}} in discounts",
@@ -281,6 +279,13 @@
     "quantity": "Quantity",
     "date": "Day",
     "asTable": "Show as table",
-    "empty": "No orders in this period yet."
+    "empty": "No orders in this period yet.",
+    "days_one": "{{count}} day",
+    "days_other": "{{count}} days",
+    "pickup_one": "{{n}} pickup",
+    "pickup_other": "{{n}} pickups",
+    "delivery_one": "{{n}} delivery",
+    "delivery_other": "{{n}} deliveries",
+    "lineRevenue": "Revenue before discounts"
   }
 }

@@ -81,8 +81,9 @@ export function parseAmount(text: string): number | null {
 }
 
 function parseKm(text: string): number | null {
+  // Any number of decimals, like the server and the app (a radius saved there must stay savable).
   const plain = text.trim().replace(',', '.');
-  if (!/^\d{1,2}(\.\d)?$/.test(plain)) {
+  if (!/^\d{1,2}(\.\d+)?$/.test(plain)) {
     return null;
   }
   const km = Number(plain);
@@ -136,7 +137,8 @@ export function toRequest(form: ProfileForm): { request: MarketProfileRequest } 
     problems.addressLine = 'profile.problem.address';
   }
   const phone = form.phone.trim();
-  if (phone.length > 30 || (phone !== '' && !/^\+?[\d\s/()-]{5,}$/.test(phone))) {
+  // Only the length, as on the server: stored numbers like "+49.40.123" or "040 123 (Laden)" stay valid.
+  if (phone.length > 30) {
     problems.phone = 'profile.problem.phone';
   }
   if (!form.delivery && !form.pickup) {

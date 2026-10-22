@@ -139,8 +139,11 @@ public class CartService {
       int current = cart.findItem(line.listingId()).map(CartItem::getQuantity).orElse(0);
       int wanted = current + line.quantity();
       int quantity = Math.min(wanted, listing.maxOrderQuantity());
-      if (quantity > current) {
+      if (quantity != current) {
+        // Also lowers a quantity above a maximum the merchant has reduced since, so checkout works.
         cart.setQuantity(line.listingId(), quantity, now);
+      }
+      if (quantity > current) {
         added++;
       }
       if (quantity < wanted) {

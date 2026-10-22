@@ -13,6 +13,9 @@ kubectl apply -n dukkan -f infrastructure/kubernetes/monitoring/
   (label `grafana_dashboard: "1"`); the source is `dashboards/dukkan-backend.json` (also importable
   in Grafana by hand). Panels: orders, status changes, API latency p50/p95/p99, requests by status,
   slowest endpoints, outbox backlog, language-model calls/latency/tokens, JVM heap, DB connections.
+  The sidecar only watches Grafana's own namespace by default: set
+  `grafana.sidecar.dashboards.searchNamespace: ALL` (or include `dukkan`) in the kube-prometheus-stack
+  values, or apply this ConfigMap into Grafana's namespace.
 - `prometheus-rules.yaml`: alerts on a stuck outbox, failing language-model calls, server errors
   and slow requests.
 

@@ -36,6 +36,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 import org.jspecify.annotations.Nullable;
@@ -252,20 +253,30 @@ public class MarketService {
     Map<UUID, MarketRow> rows = markets.findByIds(markets.findOwnedIds(userId));
     return rows.values().stream()
         .sorted((a, b) -> a.name().compareToIgnoreCase(b.name()))
-        .map(row -> new MerchantMarket(detail(row, null, locale), row.status(), Map.copyOf(row.descriptions())))
+        .map(row -> new MerchantMarket(detail(row, null, locale), row.status(), editableDescriptions(row)))
         .toList();
+  }
+
+  /**
+   * The description in every enabled language. Disabled ones are left out: a form that sends them
+   * back would be rejected with {@code SupportedLocale}, and the merchant could not remove them.
+   */
+  private Map<String, String> editableDescriptions(MarketRow row) {
+    return row.descriptions().entrySet().stream()
+        .filter(e -> locales.isEnabled(e.getKey()))
+        .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 
   public MerchantMarket merchantView(UUID marketId, ContentLocale locale) {
     MarketRow row = row(marketId);
-    return new MerchantMarket(detail(row, null, locale), row.status(), Map.copyOf(row.descriptions()));
+    return new MerchantMarket(detail(row, null, locale), row.status(), editableDescriptions(row));
   }
 
   /** Admin view: markets of a status (all when null), newest first. */
   public List<MerchantMarket> listForAdmin(@Nullable String status, ContentLocale locale) {
     List<UUID> ids = markets.findIdsByStatus(status);
     Map<UUID, MarketRow> rows = markets.findByIds(ids);
-    return ids.stream().map(rows::get).filter(Objects::nonNull).map(row -> new MerchantMarket(detail(row, null, locale), row.status(), Map.copyOf(row.descriptions()))).toList();
+    return ids.stream().map(rows::get).filter(Objects::nonNull).map(row -> new MerchantMarket(detail(row, null, locale), row.status(), editableDescriptions(row))).toList();
   }
 
   /** Admin: approve (ACTIVE), suspend (SUSPENDED) or send back to review; {@code NOT_FOUND} if missing. */

@@ -75,7 +75,7 @@ input, select, textarea {
   border-radius: 8px; padding: 8px 10px; min-height: 40px;
 }
 input[type='checkbox'] { min-height: auto; width: 20px; height: 20px; accent-color: var(--primary); }
-input[aria-invalid='true'], select[aria-invalid='true'] { border-color: var(--accent); }
+input[aria-invalid='true'], select[aria-invalid='true'], textarea[aria-invalid='true'] { border-color: var(--accent); }
 textarea { resize: vertical; }
 
 .button {

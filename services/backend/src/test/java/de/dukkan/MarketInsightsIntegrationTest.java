@@ -93,6 +93,24 @@ class MarketInsightsIntegrationTest extends IntegrationTest {
   }
 
   @Test
+  void thePeriodBeforeEndsAtTheSameTimeOfDay() throws Exception {
+    String merchant = registerMerchant();
+    UUID market = createMarket(merchant, "Vergleichsmarkt");
+    UUID ayran = addListing(merchant, market, "Ayran", 650);
+    String customer = registerUser();
+    String earlier = orderPickup(customer, market, ayran, 1);
+    String later = orderPickup(customer, market, ayran, 1);
+    // A week ago, one hour before and one hour after the current time of day.
+    movePlacedAt(earlier, Duration.ofDays(7).plusHours(1));
+    movePlacedAt(later, Duration.ofDays(7).minusHours(1));
+
+    // Today is not over, so only the order placed before this time a week ago is compared.
+    mvc.perform(auth(get("/api/v1/merchant/markets/" + market + "/insights?days=7"), merchant))
+        .andExpect(jsonPath("$.totals.orders").value(0))
+        .andExpect(jsonPath("$.previous.orders").value(1));
+  }
+
+  @Test
   void anEmptyPeriodHasNoAverageAndOnlyTheOwnerMayLook() throws Exception {
     String merchant = registerMerchant();
     UUID market = createMarket(merchant, "Leerer Auswertungsmarkt");

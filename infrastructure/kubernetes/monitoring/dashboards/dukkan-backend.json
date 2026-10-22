@@ -63,7 +63,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(increase(dukkan_orders_placed_total{application=\"dukkan-backend\"}[24h]))"
+          "expr": "sum(increase(dukkan_orders_placed_total{application=\"dukkan-backend\"}[24h])) or vector(0)"
         }
       ]
     },
@@ -165,7 +165,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(increase(http_server_requests_seconds_count{application=\"dukkan-backend\",status=~\"5..\"}[1h]))"
+          "expr": "sum(increase(http_server_requests_seconds_count{application=\"dukkan-backend\",status=~\"5..\"}[1h])) or vector(0)"
         }
       ]
     },

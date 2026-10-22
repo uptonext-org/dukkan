@@ -436,6 +436,19 @@ describe('market profile', () => {
     await user.click(screen.getByRole('button', { name: 'Profil speichern' }));
     expect(await screen.findByText('Zeiträume überschneiden sich.')).toBeInTheDocument();
   });
+
+  it('shows server errors that belong to no field', async () => {
+    const { user } = renderPortal({
+      'GET /merchant/markets': [profileMarket()],
+      'GET /merchant/markets/m1/orders': [],
+      ...lookups,
+      'PUT /merchant/markets/m1': respond(400, { status: 400, code: 'VALIDATION_FAILED', errors: [{ field: 'body', code: 'Unreadable', message: 'x' }] }),
+    });
+    await user.click(await screen.findByRole('button', { name: 'Marktprofil' }));
+    await user.click(await screen.findByRole('button', { name: 'Profil speichern' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Bitte prüfe die Eingaben.');
+    expect(screen.queryByText(/markierte Angabe/)).toBeNull();
+  });
 });
 
 describe('insights', () => {
@@ -468,7 +481,7 @@ describe('insights', () => {
     expect(screen.getByText('100 % mehr als im Zeitraum davor')).toBeInTheDocument();
     expect(screen.getByText('35 % weniger als im Zeitraum davor')).toBeInTheDocument();
     expect(screen.getByText('davon 1 wiederkehrend (33 %)')).toBeInTheDocument();
-    expect(screen.getByText(/3 Abholung · 1 Lieferung · 1 storniert · 0 abgelehnt · 1,50 € Rabatte gewährt/)).toBeInTheDocument();
+    expect(screen.getByText(/3 Abholungen · 1 Lieferung · 1 storniert · 0 abgelehnt · 1,50 € Rabatte gewährt/)).toBeInTheDocument();
     expect(screen.getByRole('rowheader', { name: /Ayran/ })).toBeInTheDocument();
 
     // The chart's values are reachable by keyboard and in the table view.
@@ -487,6 +500,9 @@ describe('insights', () => {
     expect(niceTicks(5200)).toEqual([0, 2000, 4000, 6000]);
     expect(niceTicks(3)).toEqual([0, 1, 2, 3]);
     expect(niceTicks(0)).toEqual([0, 1]);
+    // Counts and cents never get fractional or repeated ticks.
+    expect(niceTicks(1, 1)).toEqual([0, 1]);
+    expect(niceTicks(150, 100)).toEqual([0, 100, 200]);
     expect(change(150, 100)).toBe(50);
     expect(change(5, 0)).toBeNull();
   });

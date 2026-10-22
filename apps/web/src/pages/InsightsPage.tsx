@@ -42,7 +42,7 @@ export function InsightsPage({ marketId }: { marketId: string }) {
         <div className="segmented" role="group" aria-label={t('insights.period')}>
           {PERIODS.map((p) => (
             <button key={p} type="button" aria-pressed={p === days} onClick={() => setDays(p)}>
-              {t('insights.days', { n: p })}
+              {t('insights.days', { count: p })}
             </button>
           ))}
         </div>
@@ -96,8 +96,8 @@ function Overview({ data }: { data: MarketInsights }) {
       </div>
       <p className="small muted" style={{ margin: 0 }}>
         {[
-          t('insights.pickup', { n: number.format(data.pickupOrders) }),
-          t('insights.delivery', { n: number.format(data.deliveryOrders) }),
+          t('insights.pickup', { count: data.pickupOrders, n: number.format(data.pickupOrders) }),
+          t('insights.delivery', { count: data.deliveryOrders, n: number.format(data.deliveryOrders) }),
           t('insights.cancelled', { n: number.format(data.cancelledOrders) }),
           t('insights.rejected', { n: number.format(data.rejectedOrders) }),
           data.totals.discounts.amountCents > 0 ? t('insights.discounts', { amount: euro(data.totals.discounts.amountCents) }) : null,
@@ -110,7 +110,7 @@ function Overview({ data }: { data: MarketInsights }) {
         <h2 id="insights-daily" style={{ margin: 0 }}>
           {t('insights.revenueByDay')}
         </h2>
-        {counted === 0 ? <p className="muted">{t('insights.empty')}</p> : <ColumnChart columns={daily} format={compactEuro} label={t('insights.revenueByDay')} labelAnchor="end" />}
+        {counted === 0 ? <p className="muted">{t('insights.empty')}</p> : <ColumnChart columns={daily} format={compactEuro} label={t('insights.revenueByDay')} labelAnchor="end" minStep={100} />}
         <details>
           <summary className="small">{t('insights.asTable')}</summary>
           <div className="table-wrap">
@@ -148,7 +148,7 @@ function Overview({ data }: { data: MarketInsights }) {
           <p className="muted small" style={{ margin: 0 }}>
             {t('insights.byHourHint')}
           </p>
-          {counted === 0 ? <p className="muted">{t('insights.empty')}</p> : <ColumnChart columns={hours} format={(v) => number.format(v)} label={t('insights.byHour')} />}
+          {counted === 0 ? <p className="muted">{t('insights.empty')}</p> : <ColumnChart columns={hours} format={(v) => number.format(v)} label={t('insights.byHour')} minStep={1} />}
           <details>
             <summary className="small">{t('insights.asTable')}</summary>
             <div className="table-wrap">
@@ -183,7 +183,7 @@ function Overview({ data }: { data: MarketInsights }) {
                   <tr>
                     <th scope="col">{t('insights.product')}</th>
                     <th scope="col">{t('insights.quantity')}</th>
-                    <th scope="col">{t('insights.revenue')}</th>
+                    <th scope="col">{t('insights.lineRevenue')}</th>
                   </tr>
                 </thead>
                 <tbody>

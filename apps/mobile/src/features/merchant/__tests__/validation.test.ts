@@ -188,6 +188,13 @@ describe('fromMerchantMarket', () => {
     expect(toMarketProfileRequest(values).description).toEqual({ de: 'Frische Simit', en: 'Fresh simit', ar: 'سميت طازج' });
   });
 
+  it('keeps descriptions in languages the app does not edit', () => {
+    const market = { ...marketDetail(), status: 'ACTIVE' as const, descriptions: { de: 'Frische Simit', tr: 'Taze simit' } };
+    const values = fromMerchantMarket(market, 'de');
+    values.description.de = 'Simit, frisch';
+    expect(toMarketProfileRequest(values).description).toEqual({ de: 'Simit, frisch', tr: 'Taze simit' });
+  });
+
   it('falls back to the requested language for older servers', () => {
     const market = { ...marketDetail(), status: 'ACTIVE' as const, description: 'Fresh simit' };
     expect(fromMerchantMarket(market, 'en').description.en).toBe('Fresh simit');

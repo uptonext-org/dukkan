@@ -129,6 +129,14 @@ describe('market profile form', () => {
     expect(toRequest(form({ hours: same }))).toEqual({ problems: { hours: 'profile.problem.sameTime' } });
   });
 
+  it('accepts what the server and the app accept', () => {
+    // Saved from the app or older data: more decimals, free-form phone numbers.
+    const result = toRequest(form({ radiusKm: '2,25', phone: '040 123456 (Laden)' }));
+    expect('request' in result && result.request.fulfilment.deliveryRadiusKm).toBe(2.25);
+    expect('request' in result && result.request.phone).toBe('040 123456 (Laden)');
+    expect(toRequest(form({ phone: '0'.repeat(31) }))).toEqual({ problems: { phone: 'profile.problem.phone' } });
+  });
+
   it('maps server field errors to the form fields', () => {
     expect(formField('openingHours[2]')).toBe('hours');
     expect(formField('fulfilment.deliveryFee.amountCents')).toBe('fee');

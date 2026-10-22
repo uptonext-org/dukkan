@@ -64,6 +64,11 @@ class ReorderIntegrationTest extends IntegrationTest {
     assertThat(cartQuantity(customer, market, ayran)).isEqualTo(3);
     assertThat((Integer) read(reorder(customer, order), "$.addedProducts")).isZero();
 
+    // A maximum lowered below what is already in the cart brings the cart down to it.
+    mvc.perform(json(auth(put(base + ayran), merchant), toJson(Map.of("maxOrderQuantity", 2)))).andExpect(status().isOk());
+    assertThat(strings(reorder(customer, order), "$.skipped[*].reason")).contains("LIMITED");
+    assertThat(cartQuantity(customer, market, ayran)).isEqualTo(2);
+
     // Only the customer's own orders.
     mvc.perform(auth(post("/api/v1/orders/" + order + "/reorder"), registerUser())).andExpect(status().isNotFound());
     mvc.perform(post("/api/v1/orders/" + order + "/reorder")).andExpect(status().isUnauthorized());

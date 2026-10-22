@@ -1,6 +1,7 @@
 # Generated from dashboards/dukkan-backend.json for the Grafana sidecar of kube-prometheus-stack,
-# which loads every ConfigMap labelled grafana_dashboard=1. Regenerate with:
-#   kubectl create configmap dukkan-grafana-dashboards --from-file=dashboards/ --dry-run=client -o yaml
+# which loads every ConfigMap labelled grafana_dashboard=1. Regenerate with (keeps the label):
+#   kubectl create configmap dukkan-grafana-dashboards --from-file=dashboards/ --dry-run=client -o yaml \
+#     | kubectl label --local -f - grafana_dashboard=1 -o yaml > grafana-dashboard-configmap.yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -74,7 +75,7 @@ data:
           "targets": [
             {
               "refId": "A",
-              "expr": "sum(increase(dukkan_orders_placed_total{application=\"dukkan-backend\"}[24h]))"
+              "expr": "sum(increase(dukkan_orders_placed_total{application=\"dukkan-backend\"}[24h])) or vector(0)"
             }
           ]
         },
@@ -176,7 +177,7 @@ data:
           "targets": [
             {
               "refId": "A",
-              "expr": "sum(increase(http_server_requests_seconds_count{application=\"dukkan-backend\",status=~\"5..\"}[1h]))"
+              "expr": "sum(increase(http_server_requests_seconds_count{application=\"dukkan-backend\",status=~\"5..\"}[1h])) or vector(0)"
             }
           ]
         },

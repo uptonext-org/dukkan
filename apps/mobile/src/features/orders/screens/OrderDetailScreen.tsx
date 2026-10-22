@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+import { useCallback, useState } from 'react';
 import { Alert, ScrollView, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
@@ -24,6 +25,14 @@ export function OrderDetailScreen({ route, navigation }: RootStackScreenProps<'O
   const reorder = useReorder();
   // What could not go into the cart; shown until the user leaves.
   const [reordered, setReordered] = useState<ReorderResult | null>(null);
+  const resetReorder = reorder.reset;
+  // Coming back (e.g. from the cart) starts fresh: the cart may have changed in the meantime.
+  useFocusEffect(
+    useCallback(() => {
+      setReordered(null);
+      resetReorder();
+    }, [resetReorder]),
+  );
   const header = <ScreenHeader title={t('order.title')} onBack={() => navigation.goBack()} />;
   const state = queryState(query);
   if (state !== null || query.data === undefined) {
@@ -65,7 +74,9 @@ export function OrderDetailScreen({ route, navigation }: RootStackScreenProps<'O
         )}
         {reordered !== null && (
           <View style={styles.notice} accessibilityLiveRegion="polite" testID="reorder-notice">
-            <AppText variant="bodyStrong">{reordered.addedProducts > 0 ? t('order.reorderSkippedTitle') : t('order.reorderNothing')}</AppText>
+            <AppText variant="bodyStrong">
+              {reordered.addedProducts > 0 || reordered.skipped.some((s) => s.reason === 'LIMITED') ? t('order.reorderSkippedTitle') : t('order.reorderNothing')}
+            </AppText>
             {reordered.skipped.map((s) => (
               <AppText key={s.productId} variant="subhead" color="textSecondary">
                 {t(`order.skipped.${s.reason}`, { name: s.name })}

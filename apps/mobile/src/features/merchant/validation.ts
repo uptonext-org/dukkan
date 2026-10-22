@@ -260,6 +260,8 @@ export interface MarketProfileValues {
   typeCode: string | null;
   cuisineCodes: string[];
   description: Record<Language, string>;
+  /** Descriptions in languages the app does not edit; sent back unchanged so they are not lost. */
+  otherDescriptions?: LocalizedText;
   primaryLocale: Language;
   addressLine: string;
   location: { lat: number; lng: number } | null;
@@ -412,7 +414,7 @@ export function toMarketProfileRequest(values: MarketProfileValues): MarketProfi
   const openingHours: OpeningHours[] = values.hours.flatMap((day, index) =>
     day.open ? day.intervals.map((r) => ({ dayOfWeek: index + 1, opensAt: r.opensAt, closesAt: r.closesAt })) : [],
   );
-  const description = localized(values.description);
+  const description = { ...values.otherDescriptions, ...localized(values.description) };
   return {
     name: values.name.trim(),
     typeCode: values.typeCode ?? '',
@@ -456,6 +458,7 @@ export function fromMerchantMarket(market: MerchantMarket, language: Language): 
       market.descriptions !== undefined
         ? { ...base.description, ...Object.fromEntries(CONTENT_LANGUAGES.map((l) => [l, market.descriptions?.[l] ?? ''])) }
         : { ...base.description, [language]: market.description ?? '' },
+    otherDescriptions: Object.fromEntries(Object.entries(market.descriptions ?? {}).filter(([code]) => !CONTENT_LANGUAGES.includes(code as Language))),
     addressLine: market.addressLine,
     location: market.location,
     phone: market.phone ?? '',

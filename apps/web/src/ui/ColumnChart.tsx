@@ -16,14 +16,17 @@ const PAD = { top: 12, right: 16, bottom: 24, left: 48 };
 const plain = (text: string) => text.replace(/[\u200e\u200f\u061c]/g, '');
 const MAX_BAR = 24;
 
-/** 0 and up to four clean steps (1, 2, 5 × 10ⁿ) covering {@code max}. */
-export function niceTicks(max: number): number[] {
+/**
+ * 0 and up to four clean steps (1, 2, 5 × 10ⁿ) covering {@code max}, never finer than {@code minStep}
+ * (1 for counts, so there is no "0.5 orders"; 100 for cents, so there is no "1 €, 1 €, 2 €").
+ */
+export function niceTicks(max: number, minStep = 0): number[] {
   if (max <= 0) {
-    return [0, 1];
+    return [0, Math.max(1, minStep)];
   }
   const rough = max / 4;
   const power = 10 ** Math.floor(Math.log10(rough));
-  const step = [1, 2, 5, 10].map((m) => m * power).find((s) => s >= rough) ?? 10 * power;
+  const step = Math.max(minStep, [1, 2, 5, 10].map((m) => m * power).find((s) => s >= rough) ?? 10 * power);
   const ticks = [];
   for (let v = 0; v < max + step; v += step) {
     ticks.push(Math.round(v * 1e6) / 1e6);
@@ -49,12 +52,15 @@ export function ColumnChart({
   format,
   label,
   labelAnchor = 'start',
+  minStep = 0,
 }: {
   columns: Column[];
   format: (value: number) => string;
   label: string;
   /** Which end always keeps its axis label when labels are thinned out. */
   labelAnchor?: 'start' | 'end';
+  /** Smallest gap between axis ticks, in the unit of the values. */
+  minStep?: number;
 }) {
   const box = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(720);
@@ -74,7 +80,7 @@ export function ColumnChart({
     return () => observer.disconnect();
   }, []);
 
-  const ticks = niceTicks(Math.max(0, ...columns.map((c) => c.value)));
+  const ticks = niceTicks(Math.max(0, ...columns.map((c) => c.value)), minStep);
   const top = ticks[ticks.length - 1] ?? 1;
   const plotWidth = Math.max(1, width - PAD.left - PAD.right);
   const base = HEIGHT - PAD.bottom;
@@ -86,6 +92,9 @@ export function ColumnChart({
   const showLabel = (index: number) => (labelAnchor === 'start' ? index : columns.length - 1 - index) % labelStep === 0;
   const y = (v: number) => PAD.top + (1 - v / top) * (base - PAD.top);
   const current = active === null ? undefined : columns[active];
+  // Near the top the tooltip goes below the column tip, so it does not cover the heading.
+  const tipY = current === undefined ? 0 : y(current.value);
+  const below = tipY < 56;
 
   const onKey = (event: KeyboardEvent) => {
     if (columns.length === 0) {
@@ -145,7 +154,8 @@ export function ColumnChart({
           role="status"
           style={{
             left: Math.min(Math.max(PAD.left + active * band + band / 2, 70), width - 70),
-            top: Math.max(0, y(current.value) - 8),
+            top: below ? tipY + 8 : tipY - 8,
+            transform: below ? 'translate(-50%, 0)' : 'translate(-50%, -100%)',
           }}
         >
           <strong>{format(current.value)}</strong>

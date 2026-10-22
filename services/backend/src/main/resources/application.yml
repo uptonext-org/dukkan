@@ -64,6 +64,9 @@ management:
       percentiles-histogram:
         http.server.requests: true
         dukkan.ai.requests: true
+      # The Claude client times out after 30 s and retries once; keep slow calls out of +Inf.
+      maximum-expected-value:
+        dukkan.ai.requests: 90s
   endpoint:
     health:
       probes:

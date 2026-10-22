@@ -37,8 +37,8 @@ public class SalesStatistics {
   public record ProductRow(UUID listingId, String name, long quantity, long revenueCents) {}
 
   /**
-   * Totals of orders placed in {@code [from, to)}. A returning customer has another counted order
-   * in this market placed before {@code to}.
+   * Totals of orders placed in {@code [from, to)}. A returning customer had already ordered in this
+   * market before one of their orders in the period (also earlier in the same period).
    */
   public Summary summary(UUID marketId, Instant from, Instant to) {
     return jdbc.sql(
@@ -55,7 +55,7 @@ public class SalesStatistics {
                      WHERE %1$s AND EXISTS (
                        SELECT 1 FROM customer_order p
                         WHERE p.market_id = o.market_id AND p.user_id = o.user_id AND p.id <> o.id
-                          AND p.placed_at < :to AND p.status NOT IN ('CANCELLED', 'REJECTED'))) AS returning
+                          AND p.placed_at < o.placed_at AND p.status NOT IN ('CANCELLED', 'REJECTED'))) AS returning
               FROM customer_order o
              WHERE o.market_id = :marketId AND o.placed_at >= :from AND o.placed_at < :to
             """

@@ -36,6 +36,8 @@ function ProfileEditor({ market, language }: { market: MerchantMarket; language:
   const [form, setForm] = useState<ProfileForm>(() => fromMarket(market, language));
   const [problems, setProblems] = useState<ProfileProblems>({});
   const [saved, setSaved] = useState(false);
+  // A server error that belongs to no field of the form still has to be shown.
+  const [unplacedError, setUnplacedError] = useState(false);
   const types = useQuery({ queryKey: ['marketTypes', i18n.language], queryFn: () => api.marketTypes() });
   const cuisines = useQuery({ queryKey: ['cuisines', i18n.language], queryFn: () => api.cuisines() });
 
@@ -61,6 +63,7 @@ function ProfileEditor({ market, language }: { market: MerchantMarket; language:
           }
         }
         setProblems(fromServer);
+        setUnplacedError(Object.keys(fromServer).length === 0);
       }
     },
   });
@@ -74,6 +77,7 @@ function ProfileEditor({ market, language }: { market: MerchantMarket; language:
       return;
     }
     setProblems({});
+    setUnplacedError(false);
     save.mutate(result.request);
   };
 
@@ -89,9 +93,11 @@ function ProfileEditor({ market, language }: { market: MerchantMarket; language:
   const described = (key: keyof ProfileForm) => (problems[key] === undefined ? {} : { 'aria-invalid': true, 'aria-describedby': `problem-${key}` });
 
   return (
-    <form className="stack" onSubmit={submit} aria-labelledby="profile-title" noValidate>
+    <form className="stack" onSubmit={submit} aria-labelledby="profile-title" aria-busy={save.isPending} noValidate>
       <h1 id="profile-title">{t('profile.title')}</h1>
       <p className="muted small">{t('profile.hint')}</p>
+      {/* Edits during a save would be replaced by the saved profile, so the form waits. */}
+      <fieldset className="stack plain" disabled={save.isPending}>
 
       <section className="card stack" aria-labelledby="profile-basics">
         <h2 id="profile-basics">{t('profile.basics')}</h2>
@@ -119,7 +125,7 @@ function ProfileEditor({ market, language }: { market: MerchantMarket; language:
           </div>
           <label className="field" style={{ flex: '1 1 140px' }}>
             {t('profile.primaryLocale')}
-            <select value={form.primaryLocale} onChange={(e) => change('primaryLocale', e.target.value)}>
+            <select value={form.primaryLocale} onChange={(e) => change('primaryLocale', e.target.value)} {...described('primaryLocale')}>
               {LANGUAGES.map((l) => (
                 <option key={l.code} value={l.code} lang={l.code}>
                   {l.nativeName}
@@ -128,6 +134,7 @@ function ProfileEditor({ market, language }: { market: MerchantMarket; language:
             </select>
           </label>
         </div>
+        {problem('primaryLocale')}
         <fieldset className="stack plain">
           <legend className="small muted">{t('profile.cuisines', { n: form.cuisineCodes.length, max: MAX_CUISINES })}</legend>
           <div className="chips">
@@ -162,7 +169,7 @@ function ProfileEditor({ market, language }: { market: MerchantMarket; language:
             })}
           </div>
         </fieldset>
-        <Descriptions form={form} onChange={(descriptions) => change('descriptions', descriptions)} />
+        <Descriptions form={form} onChange={(descriptions) => change('descriptions', descriptions)} described={described('descriptions')} />
         {problem('descriptions')}
       </section>
 
@@ -172,6 +179,8 @@ function ProfileEditor({ market, language }: { market: MerchantMarket; language:
           <ImageField marketId={market.id} purpose="LOGO" label={t('profile.logo')} url={form.logoUrl} onChange={(url) => change('logoUrl', url)} />
           <ImageField marketId={market.id} purpose="COVER" label={t('profile.cover')} url={form.coverImageUrl} onChange={(url) => change('coverImageUrl', url)} />
         </div>
+        {problem('logoUrl')}
+        {problem('coverImageUrl')}
       </section>
 
       <section className="card stack" aria-labelledby="profile-contact">
@@ -252,12 +261,13 @@ function ProfileEditor({ market, language }: { market: MerchantMarket; language:
         </div>
       </section>
 
+      </fieldset>
       {problemCount > 0 && (
         <p className="error" role="alert">
           {t('profile.problems', { n: problemCount })}
         </p>
       )}
-      {save.isError && !(save.error instanceof ApiError && save.error.problem?.errors !== undefined) && (
+      {save.isError && (unplacedError || !(save.error instanceof ApiError && save.error.problem?.errors !== undefined)) && (
         <p className="error" role="alert">
           {errorMessage(t, save.error)}
         </p>
@@ -288,7 +298,7 @@ function AmountField({ label, value, onChange, problem, described }: { label: st
   );
 }
 
-function Descriptions({ form, onChange }: { form: ProfileForm; onChange: (descriptions: Record<string, string>) => void }) {
+function Descriptions({ form, onChange, described }: { form: ProfileForm; onChange: (descriptions: Record<string, string>) => void; described: object }) {
   const { t } = useTranslation();
   const api = useApi();
   const filled = LANGUAGES.filter((l) => (form.descriptions[l.code] ?? '').trim() !== '');
@@ -311,7 +321,7 @@ function Descriptions({ form, onChange }: { form: ProfileForm; onChange: (descri
         {LANGUAGES.map((l) => (
           <label key={l.code} className="field" style={{ flex: '1 1 240px' }}>
             {`${t('profile.description')} · ${l.nativeName}${l.code === form.primaryLocale ? ` (${t('promotions.primary')})` : ''}`}
-            <textarea rows={4} dir={l.direction} lang={l.code} maxLength={2000} value={form.descriptions[l.code] ?? ''} onChange={(e) => onChange({ ...form.descriptions, [l.code]: e.target.value })} />
+            <textarea rows={4} dir={l.direction} lang={l.code} maxLength={2000} value={form.descriptions[l.code] ?? ''} onChange={(e) => onChange({ ...form.descriptions, [l.code]: e.target.value })} {...described} />
           </label>
         ))}
       </div>
@@ -484,7 +494,12 @@ function HoursEditor({ hours, onChange }: { hours: Interval[][]; onChange: (hour
                     </button>
                   )}
                   {index > 0 && (hours[index - 1] ?? []).length > 0 && (
-                    <button className="button secondary" type="button" onClick={() => setDay(index, (hours[index - 1] ?? []).map((x) => ({ ...x })))}>
+                    <button
+                      className="button secondary"
+                      type="button"
+                      aria-label={t('profile.copyPreviousFor', { day })}
+                      onClick={() => setDay(index, (hours[index - 1] ?? []).map((x) => ({ ...x })))}
+                    >
                       {t('profile.copyPrevious')}
                     </button>
                   )}

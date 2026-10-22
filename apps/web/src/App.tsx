@@ -139,7 +139,7 @@ function Shell({ session }: { session: Session }) {
               </p>
             )}
             {selected !== undefined && current === 'orders' && <OrdersBoard marketId={selected.id} />}
-            {selected !== undefined && current === 'insights' && <InsightsPage marketId={selected.id} />}
+            {selected !== undefined && current === 'insights' && <InsightsPage key={selected.id} marketId={selected.id} />}
             {selected !== undefined && current === 'listings' && <ListingsPage marketId={selected.id} />}
             {selected !== undefined && current === 'import' && <ImportPage marketId={selected.id} />}
             {selected !== undefined && current === 'profile' && <MarketProfilePage market={selected} />}

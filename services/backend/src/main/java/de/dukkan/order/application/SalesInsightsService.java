@@ -18,7 +18,10 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** The merchant's sales overview: the last {@code days} days including today, and the days before for comparison. */
+/**
+ * The merchant's sales overview: the last {@code days} days including today, compared with the
+ * {@code days} days before up to the same time of day.
+ */
 @Service
 @Transactional(readOnly = true)
 public class SalesInsightsService {
@@ -36,14 +39,17 @@ public class SalesInsightsService {
   }
 
   public MarketInsights insights(UUID marketId, int days, ContentLocale locale) {
-    LocalDate to = LocalDate.ofInstant(clock.instant(), DukkanTime.ZONE);
+    Instant now = clock.instant();
+    LocalDate to = LocalDate.ofInstant(now, DukkanTime.ZONE);
     LocalDate from = to.minusDays(days - 1L);
     Instant start = startOf(from);
     Instant end = startOf(to.plusDays(1));
+    // Today is not over yet: compare with the period before only up to the same time of day.
     Instant previousStart = startOf(from.minusDays(days));
+    Instant previousEnd = now.atZone(DukkanTime.ZONE).minusDays(days).toInstant();
 
     SalesStatistics.Summary summary = statistics.summary(marketId, start, end);
-    SalesStatistics.Summary previous = statistics.summary(marketId, previousStart, start);
+    SalesStatistics.Summary previous = statistics.summary(marketId, previousStart, previousEnd);
 
     Map<LocalDate, SalesStatistics.DayRow> byDay =
         statistics.daily(marketId, start, end).stream().collect(Collectors.toMap(SalesStatistics.DayRow::date, Function.identity()));

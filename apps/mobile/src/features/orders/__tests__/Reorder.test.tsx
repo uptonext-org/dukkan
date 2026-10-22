@@ -60,4 +60,11 @@ describe('Nochmal bestellen', () => {
     expect(await screen.findByText('Diese Produkte gibt es gerade nicht.')).toBeOnTheScreen();
     expect(screen.queryByTestId('reorder-to-cart')).toBeNull();
   });
+
+  it('does not claim products are missing when they are only at their maximum', async () => {
+    await openOrder({ marketId: 'm1', addedProducts: 0, skipped: [{ productId: 'p2', name: 'Ayran', reason: 'LIMITED' }] });
+    expect(await screen.findByText('Nicht alles ist im Warenkorb')).toBeOnTheScreen();
+    expect(screen.getByText('Ayran – Höchstmenge erreicht')).toBeOnTheScreen();
+    expect(screen.getByTestId('reorder-to-cart')).toBeOnTheScreen();
+  });
 });
