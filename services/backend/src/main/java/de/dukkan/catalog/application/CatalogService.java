@@ -44,6 +44,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
@@ -66,11 +67,16 @@ public class CatalogService {
   private final MarketService markets;
   private final PromotionService promotions;
   private final ListingFavorites favorites;
+  private final PurchaseHistory purchases;
   private final LocaleService locales;
   private final Clock clock;
   private final DukkanProperties properties;
   private final EventOutbox outbox;
   private final AtomicReference<@Nullable List<CategoryRow>> categoryCache = new AtomicReference<>();
+  /** Best-seller ranking per market: the start page is public and hot, the ranking changes slowly. */
+  private final Map<UUID, RankedIds> bestsellerCache = new ConcurrentHashMap<>();
+
+  private record RankedIds(Instant at, List<UUID> ids) {}
 
   public CatalogService(
       ListingRepository listings,
@@ -79,6 +85,7 @@ public class CatalogService {
       MarketService markets,
       PromotionService promotions,
       ListingFavorites favorites,
+      PurchaseHistory purchases,
       LocaleService locales,
       Clock clock,
       DukkanProperties properties,
@@ -89,6 +96,7 @@ public class CatalogService {
     this.markets = markets;
     this.promotions = promotions;
     this.favorites = favorites;
+    this.purchases = purchases;
     this.locales = locales;
     this.clock = clock;
     this.properties = properties;
@@ -130,6 +138,12 @@ public class CatalogService {
   public PageResponse<ProductSummary> searchMarket(
       UUID marketId, MarketProductQuery query, ContentLocale locale, @Nullable UUID userId) {
     MarketInfo market = markets.activeInfo(marketId);
+    if (query.bestsellersOnly()) {
+      List<ProductSummary> ranked = bestsellers(marketId, BESTSELLER_LIST_SIZE, locale, userId);
+      int from = (int) Math.min(ranked.size(), (long) query.page() * query.size());
+      int to = Math.min(ranked.size(), from + query.size());
+      return PageResponse.of(ranked.subList(from, to), query.page(), query.size(), ranked.size());
+    }
     String term = normalizedTerm(query.q());
     Set<UUID> promoted = query.promotedOnly() ? promotions.activeListingIds(marketId) : null;
     Instant newSince = query.newOnly() ? newSince() : null;
@@ -149,6 +163,31 @@ public class CatalogService {
             query.page(),
             query.size());
     return PageResponse.of(summaries(page.ids(), locale, userId), query.page(), query.size(), page.total());
+  }
+
+  /** Days of orders that count for a market's best sellers. */
+  public static final int BESTSELLER_DAYS = 30;
+
+  /** Best sellers shown under "Alle". */
+  static final int BESTSELLER_LIST_SIZE = 50;
+
+  /** How long a market's best-seller ranking is reused. */
+  public static final Duration BESTSELLER_CACHE = Duration.ofMinutes(5);
+
+  /**
+   * The market's available products sold most in the last {@link #BESTSELLER_DAYS} days (units,
+   * counted orders only), most first.
+   */
+  public List<ProductSummary> bestsellers(UUID marketId, int limit, ContentLocale locale, @Nullable UUID userId) {
+    Instant now = clock.instant();
+    RankedIds cached = bestsellerCache.get(marketId);
+    if (cached == null || cached.at().plus(BESTSELLER_CACHE).isBefore(now)) {
+      // Some of the best sellers may be sold out right now; rank more than are shown.
+      cached = new RankedIds(now, purchases.bestSellingListingIds(marketId, now.minus(Duration.ofDays(BESTSELLER_DAYS)), BESTSELLER_LIST_SIZE * 2));
+      bestsellerCache.put(marketId, cached);
+    }
+    // Availability and prices are read fresh; only the ranking is reused.
+    return summaries(cached.ids(), locale, userId).stream().filter(ProductSummary::available).limit(limit).toList();
   }
 
   /** Localised product names in one active market, best match first. */
