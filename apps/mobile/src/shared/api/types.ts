@@ -490,6 +490,8 @@ export interface MarketProfileRequest {
 
 export interface MerchantMarket extends MarketDetail {
   status: MarketStatus;
+  /** The description in every language; older servers omit it. */
+  descriptions?: LocalizedText;
 }
 
 export interface CatalogProduct {

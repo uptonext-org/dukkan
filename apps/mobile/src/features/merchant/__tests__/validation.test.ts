@@ -1,3 +1,4 @@
+import { marketDetail } from '../../../test/fixtures';
 import { nextMerchantStatuses } from '../../orders/model';
 import {
   emptyMarketProfile,
@@ -6,6 +7,7 @@ import {
   endsNextDay,
   fromDraft,
   hoursOverlap,
+  fromMerchantMarket,
   toMarketProfileRequest,
   toNewProductListing,
   toPromotionRequest,
@@ -175,5 +177,19 @@ describe('merchant order transitions (contract README)', () => {
     for (const status of ['COMPLETED', 'REJECTED', 'CANCELLED'] as const) {
       expect(nextMerchantStatuses({ status, fulfilmentType: 'DELIVERY' })).toEqual([]);
     }
+  });
+});
+
+describe('fromMerchantMarket', () => {
+  it('prefills the description in every language, so saving keeps all of them', () => {
+    const market = { ...marketDetail(), status: 'ACTIVE' as const, description: 'Fresh simit', descriptions: { de: 'Frische Simit', en: 'Fresh simit', ar: 'سميت طازج' } };
+    const values = fromMerchantMarket(market, 'en');
+    expect(values.description).toEqual({ de: 'Frische Simit', en: 'Fresh simit', ar: 'سميت طازج' });
+    expect(toMarketProfileRequest(values).description).toEqual({ de: 'Frische Simit', en: 'Fresh simit', ar: 'سميت طازج' });
+  });
+
+  it('falls back to the requested language for older servers', () => {
+    const market = { ...marketDetail(), status: 'ACTIVE' as const, description: 'Fresh simit' };
+    expect(fromMerchantMarket(market, 'en').description.en).toBe('Fresh simit');
   });
 });
