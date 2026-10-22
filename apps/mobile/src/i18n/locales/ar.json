@@ -236,12 +236,15 @@
     "offers_many": "{{count}} عرضًا",
     "offers_other": "{{count}} عرض",
     "deliveryWithFee": "التوصيل ({{amount}})",
-    "deliveryFreeShort": "التوصيل (مجانًا)"
+    "deliveryFreeShort": "التوصيل (مجانًا)",
+    "openHomeHint": "يفتح الصفحة الرئيسية للمتجر"
   },
   "marketHome": {
     "banners": "أبرز العروض",
     "all": "الكل",
-    "showAll": "عرض الكل: {{title}}"
+    "showAll": "عرض الكل: {{title}}",
+    "categories": "الفئات",
+    "categoryHint": "يعرض منتجات هذه الفئة"
   },
   "product": {
     "organic": "عضوي",
