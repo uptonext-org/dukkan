@@ -36,14 +36,16 @@ export function MarketHeader() {
       <Pressable
         style={({ pressed }) => [styles.identity, pressed && styles.pressed]}
         onPress={() => navigation.navigate('MarketTabs', { screen: 'MarketHome' })}
-        accessibilityRole="button"
+        // The screen's heading that also opens the start page: a header role keeps heading navigation
+        // (VoiceOver rotor, TalkBack headings) working; the hint tells what a double tap does.
+        accessibilityRole="header"
         accessibilityLabel={forSpeech(name)}
         accessibilityHint={t('market.openHomeHint')}
         hitSlop={6}
         testID="market-header-name"
       >
         <ImageTile uri={market?.logoUrl} size={32} radius={16} tint="sand" placeholderIcon="store" />
-        <AppText variant="headline" dense numberOfLines={1} style={styles.name} accessibilityRole="header">
+        <AppText variant="headline" dense numberOfLines={1} style={styles.name}>
           {name}
         </AppText>
       </Pressable>
