@@ -5,6 +5,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import de.dukkan.catalog.application.CatalogService;
 import de.dukkan.support.IntegrationTest;
 import java.util.List;
 import java.util.Map;
@@ -98,6 +99,8 @@ class MarketHomeIntegrationTest extends IntegrationTest {
     assertThat(strings(mvc.perform(get("/api/v1/markets/" + market + "/home")).andReturn(), "$.sections[*].key")).doesNotContain("BESTSELLERS");
 
     orderPickup(customer, market, cucumber, 2);
+    // The ranking is reused for a few minutes.
+    clock.advance(CatalogService.BESTSELLER_CACHE.plusSeconds(1));
     // An old order does not count (older than 30 days).
     String old = orderPickup(customer, market, tea, 5);
     jdbc.sql("UPDATE customer_order SET placed_at = placed_at - interval '31 days' WHERE id = :id").param("id", UUID.fromString(old)).update();
