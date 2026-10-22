@@ -29,10 +29,9 @@ export function useFavoriteMarkets() {
   });
 }
 
-/** Toggle a product heart; guests sign in first. Refreshes every view that shows `favorite`. */
 /**
- * Sets `favorite` on every cached copy of the product (start page sections, lists, detail), so
- * the heart changes at once; returns whether anything changed.
+ * Sets `favorite` on every cached copy of the product (start page sections, lists, detail), so the
+ * heart changes at once. Returns the same object where nothing changed (keeps renders cheap).
  */
 export function withFavorite(value: unknown, productId: string, favorite: boolean): unknown {
   if (Array.isArray(value)) {
@@ -57,20 +56,41 @@ export function withFavorite(value: unknown, productId: string, favorite: boolea
   return changed ? next : value;
 }
 
+const PRODUCT_CACHES = ['product', 'products', 'marketHome'] as const;
+const TOGGLE_PRODUCT_FAVORITE = ['toggleProductFavorite'] as const;
+
+/**
+ * Toggle a product heart; guests sign in first. The heart changes at once in every cached view;
+ * on an error the views go back to what they showed before. Views are refreshed once the last of
+ * several quick toggles has settled, so an intermediate server state does not flash.
+ */
 export function useToggleProductFavorite() {
   const api = useApi();
   const queryClient = useQueryClient();
   const { requireAuth } = useAuthGate();
   const mutation = useMutation({
+    mutationKey: TOGGLE_PRODUCT_FAVORITE,
     mutationFn: ({ productId, favorite }: { productId: string; favorite: boolean }) =>
       favorite ? api.addFavoriteProduct(productId) : api.removeFavoriteProduct(productId),
-    onMutate: ({ productId, favorite }) => {
-      for (const key of ['product', 'products', 'marketHome']) {
+    onMutate: async ({ productId, favorite }) => {
+      // A refetch already on its way would overwrite the new heart with the old one.
+      await Promise.all(PRODUCT_CACHES.map((key) => queryClient.cancelQueries({ queryKey: [key] })));
+      const snapshots = PRODUCT_CACHES.flatMap((key) => queryClient.getQueriesData({ queryKey: [key] }));
+      for (const key of PRODUCT_CACHES) {
         queryClient.setQueriesData({ queryKey: [key] }, (data: unknown) => withFavorite(data, productId, favorite));
+      }
+      return { snapshots };
+    },
+    onError: (_error, _variables, context) => {
+      for (const [queryKey, data] of context?.snapshots ?? []) {
+        queryClient.setQueryData(queryKey, data);
       }
     },
     onSettled: () => {
-      for (const key of ['marketFavorites', 'product', 'products', 'marketHome']) {
+      if (queryClient.isMutating({ mutationKey: TOGGLE_PRODUCT_FAVORITE }) > 1) {
+        return;
+      }
+      for (const key of ['marketFavorites', ...PRODUCT_CACHES]) {
         void queryClient.invalidateQueries({ queryKey: [key] });
       }
     },

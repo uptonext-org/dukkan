@@ -91,6 +91,33 @@ describe('Market sub-app: Entdecken', () => {
     await waitFor(() => expect(fake.calls.some((c) => c.method === 'PUT' && c.path === `/favorites/products/${PRODUCT_ID}`)).toBe(true));
   });
 
+  it('puts the heart back when the server refuses the favourite', async () => {
+    let loads = 0;
+    const { dependencies } = setup('jwt', {
+      // The refresh after the error never answers (bad network): only the rollback restores the heart.
+      [`GET /markets/${MARKET_ID}/home`]: () => {
+        loads += 1;
+        return loads > 1 ? new Promise(() => undefined) : marketHome();
+      },
+      'GET /me': { id: 'u1', email: 'a@b.de', firstName: 'Ada', lastName: 'L', roles: ['CUSTOMER'] },
+      'GET /me/notifications': { ...page([]), unreadCount: 0 },
+      [`GET /markets/${MARKET_ID}/cart`]: cart({ items: [] }),
+      [`PUT /favorites/products/${PRODUCT_ID}`]: () => {
+        throw new ApiError({ kind: 'http', status: 500, code: 'INTERNAL_ERROR', detail: 'boom' });
+      },
+    });
+    await renderApp(dependencies);
+    const user = await openMarket();
+
+    const name = product().name;
+    const [tile] = screen.getAllByTestId(`product-tile-${PRODUCT_ID}`);
+    if (tile === undefined) {
+      throw new Error('no tile');
+    }
+    await user.press(within(tile).getByRole('button', { name: `${name} zu Favoriten` }));
+    await waitFor(() => expect(within(screen.getAllByTestId(`product-tile-${PRODUCT_ID}`)[0] ?? tile).getByRole('button', { name: `${name} zu Favoriten` })).toBeOnTheScreen());
+  });
+
   it('asks a guest to sign in when adding to the cart, then continues with the add', async () => {
     const afterAdd = cart({ items: [cartItem({ productId: PRODUCT_ID, name: 'Äpfel Pink Lady', quantity: 1 })], itemCount: 1, total: eur(279) });
     const { fake, dependencies } = setup(null, {
