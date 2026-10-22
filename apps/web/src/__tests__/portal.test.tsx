@@ -362,6 +362,80 @@ describe('admin catalog review', () => {
   });
 });
 
+describe('market profile', () => {
+  const profileMarket = () =>
+    market({
+      descriptions: { de: 'Frisch vom Großmarkt', ar: 'طازج' },
+      cuisines: [],
+      location: { lat: 53.5527, lng: 10.0144 },
+      tags: [],
+      fulfilment: { delivery: false, pickup: true, minimumOrderValue: { amountCents: 0, currency: 'EUR' } },
+      openingHours: [{ dayOfWeek: 1, opensAt: '08:00', closesAt: '20:00' }],
+    });
+  const lookups = {
+    'GET /market-types': [{ code: 'GROCERY', name: 'Lebensmittel' }],
+    'GET /cuisines': [{ code: 'turkish', name: 'Türkisch' }],
+  };
+
+  it('saves the edited profile with a looked-up address and keeps every description language', async () => {
+    const { user, calls } = renderPortal({
+      'GET /merchant/markets': [profileMarket()],
+      'GET /merchant/markets/m1/orders': [],
+      ...lookups,
+      'GET /geo/search': [{ label: 'Lange Reihe 12, 20099 Hamburg (St. Georg)', city: 'Hamburg', location: { lat: 53.556, lng: 10.012 } }],
+      'PUT /merchant/markets/m1': (call: { body: unknown }) => ({ ...profileMarket(), ...(call.body as object), descriptions: (call.body as { description: object }).description }),
+    });
+    await user.click(await screen.findByRole('button', { name: 'Marktprofil' }));
+    expect(await screen.findByRole('heading', { name: 'Marktprofil', level: 1 })).toBeInTheDocument();
+
+    const address = screen.getByLabelText('Adresse');
+    await user.clear(address);
+    await user.type(address, 'Lange Reihe');
+    expect(screen.getByText(/Bitte die Adresse suchen/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Adresse suchen' }));
+    await user.click(await screen.findByRole('button', { name: 'Lange Reihe 12, 20099 Hamburg (St. Georg)' }));
+    await user.click(await screen.findByRole('checkbox', { name: 'Türkisch' }));
+    await user.click(screen.getByRole('checkbox', { name: 'Lieferung' }));
+    await user.type(screen.getByLabelText('Lieferradius (km)'), '3');
+    await user.type(screen.getByLabelText('Liefergebühr (€)'), '2,90');
+    await user.click(screen.getByRole('button', { name: /Zeitraum für Dienstag hinzufügen/ }));
+    await user.click(screen.getByRole('button', { name: 'Profil speichern' }));
+
+    expect(await screen.findByRole('status')).toHaveTextContent('Profil gespeichert.');
+    const body = calls.find((c) => c.method === 'PUT')?.body as Record<string, unknown>;
+    expect(body).toMatchObject({
+      addressLine: 'Lange Reihe 12, 20099 Hamburg (St. Georg)',
+      location: { lat: 53.556, lng: 10.012 },
+      cuisineCodes: ['turkish'],
+      description: { de: 'Frisch vom Großmarkt', ar: 'طازج' },
+      fulfilment: { delivery: true, deliveryRadiusKm: 3, deliveryFee: { amountCents: 290, currency: 'EUR' } },
+      openingHours: [
+        { dayOfWeek: 1, opensAt: '08:00', closesAt: '20:00' },
+        { dayOfWeek: 2, opensAt: '09:00', closesAt: '18:00' },
+      ],
+    });
+  });
+
+  it('marks problems before sending and shows server field errors', async () => {
+    const { user, calls } = renderPortal({
+      'GET /merchant/markets': [profileMarket()],
+      'GET /merchant/markets/m1/orders': [],
+      ...lookups,
+      'PUT /merchant/markets/m1': respond(400, { status: 400, code: 'VALIDATION_FAILED', errors: [{ field: 'openingHours', code: 'Overlap', message: 'overlap' }] }),
+    });
+    await user.click(await screen.findByRole('button', { name: 'Marktprofil' }));
+    await user.clear(await screen.findByLabelText('Name des Markts'));
+    await user.click(screen.getByRole('button', { name: 'Profil speichern' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Bitte 1 markierte Angabe(n) prüfen.');
+    expect(screen.getByLabelText('Name des Markts')).toHaveAttribute('aria-invalid', 'true');
+    expect(calls.some((c) => c.method === 'PUT')).toBe(false);
+
+    await user.type(screen.getByLabelText('Name des Markts'), 'Anatolia');
+    await user.click(screen.getByRole('button', { name: 'Profil speichern' }));
+    expect(await screen.findByText('Zeiträume überschneiden sich.')).toBeInTheDocument();
+  });
+});
+
 describe('languages', () => {
   it('switches to Arabic right-to-left', async () => {
     const { user } = renderPortal({ 'GET /merchant/markets': [market()], 'GET /merchant/markets/m1/orders': [] });

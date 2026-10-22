@@ -68,12 +68,13 @@ main { padding: 20px; max-width: 1280px; width: 100%; margin: 0 auto; }
 .success { color: var(--primary); }
 
 label.field { display: flex; flex-direction: column; gap: 4px; font-size: 0.9rem; color: var(--text-secondary); }
-input, select {
+input, select, textarea {
   font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--border);
   border-radius: 8px; padding: 8px 10px; min-height: 40px;
 }
 input[type='checkbox'] { min-height: auto; width: 20px; height: 20px; accent-color: var(--primary); }
-input[aria-invalid='true'] { border-color: var(--accent); }
+input[aria-invalid='true'], select[aria-invalid='true'] { border-color: var(--accent); }
+textarea { resize: vertical; }
 
 .button {
   font: inherit; font-weight: 600; border-radius: 8px; padding: 8px 14px; min-height: 40px; cursor: pointer;
@@ -102,3 +103,21 @@ tr.ERROR td { background: color-mix(in srgb, var(--accent) 8%, transparent); }
 .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); }
 .price-input { width: 7.5em; }
 bdi { unicode-bidi: isolate; }
+
+fieldset.plain { border: 0; padding: 0; margin: 0; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border: 1px solid var(--border);
+  border-radius: 999px; background: var(--surface); cursor: pointer;
+}
+.chip:has(input:checked) { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 12%, transparent); }
+.chip:has(input:disabled:not(:checked)) { opacity: 0.55; cursor: not-allowed; }
+label.button { display: inline-flex; align-items: center; }
+label.button:focus-within { outline: 3px solid var(--focus); outline-offset: 2px; }
+.suggestions { list-style: none; margin: 0; padding: 0; border: 1px solid var(--border); border-radius: 8px; }
+.suggestions li { padding: 6px 10px; border-block-end: 1px solid var(--border); }
+.suggestions li:last-child { border-block-end: 0; }
+.link { border: 0; background: none; padding: 4px 0; font: inherit; color: var(--primary); cursor: pointer; text-align: start; }
+.logo-preview { width: 96px; height: 96px; object-fit: cover; border-radius: var(--radius); border: 1px solid var(--border); }
+.cover-preview { width: 100%; max-width: 420px; aspect-ratio: 16 / 9; object-fit: cover; border-radius: var(--radius); border: 1px solid var(--border); }
+.stack.tight { gap: 4px; }

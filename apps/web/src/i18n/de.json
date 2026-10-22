@@ -22,7 +22,8 @@
     "admin": "Marktprüfung",
     "market": "Markt",
     "catalog": "Katalogprüfung",
-    "promotions": "Aktionen"
+    "promotions": "Aktionen",
+    "profile": "Marktprofil"
   },
   "status": {
     "PENDING_REVIEW": "In Prüfung",
@@ -126,7 +127,11 @@
       "TooManyRows": "Höchstens 1000 Produkte pro Datei."
     },
     "PRODUCT_DUPLICATE": "Im gemeinsamen Katalog gibt es schon ein Produkt mit diesem Barcode.",
-    "TRANSLATION_UNAVAILABLE": "Die automatische Übersetzung ist gerade nicht verfügbar."
+    "TRANSLATION_UNAVAILABLE": "Die automatische Übersetzung ist gerade nicht verfügbar.",
+    "UNSUPPORTED_MEDIA_TYPE": "Nur JPEG, PNG oder WebP.",
+    "FILE_TOO_LARGE": "Das Bild ist größer als 5 MB.",
+    "INVALID_IMAGE": "Das Bild ist beschädigt.",
+    "IMAGE_TOO_LARGE": "Das Bild hat zu viele Pixel (max. 40 MP)."
   },
   "catalog": {
     "title": "Katalogprüfung",
@@ -179,5 +184,74 @@
     "percentInvalid": "Rabatt zwischen 1 und 90 %.",
     "bundleInvalid": "Stückzahl 2 bis 20 und einen Preis wie 4,99 eingeben.",
     "productsRequired": "Bitte mindestens ein Produkt auswählen."
+  },
+  "profile": {
+    "title": "Marktprofil",
+    "hint": "So sehen Kundinnen und Kunden euren Markt in der App. Änderungen gelten sofort.",
+    "basics": "Allgemein",
+    "name": "Name des Markts",
+    "type": "Art",
+    "primaryLocale": "Hauptsprache",
+    "cuisines": "Küchen ({{n}} von {{max}})",
+    "tags": "Merkmale",
+    "tag": {
+      "ORGANIC": "Bio",
+      "REGIONAL": "Regional",
+      "HALAL": "Halal",
+      "VEGAN_FRIENDLY": "Vegan-freundlich"
+    },
+    "description": "Beschreibung",
+    "images": "Bilder",
+    "logo": "Logo",
+    "cover": "Titelbild",
+    "upload": "Bild hochladen",
+    "removeImage": "Entfernen",
+    "noImage": "Kein Bild",
+    "contact": "Adresse & Kontakt",
+    "address": "Adresse",
+    "findAddress": "Adresse suchen",
+    "suggestions": "Gefundene Adressen",
+    "noPlaces": "Keine Adresse gefunden.",
+    "located": "✓ Position bestimmt",
+    "notLocated": "Bitte die Adresse suchen und einen Vorschlag wählen, damit die Position stimmt.",
+    "phone": "Telefon",
+    "fulfilment": "Lieferung & Abholung",
+    "pickup": "Abholung",
+    "delivery": "Lieferung",
+    "radius": "Lieferradius (km)",
+    "fee": "Liefergebühr (€)",
+    "freeFrom": "Gratis ab (€, optional)",
+    "minimum": "Mindestbestellwert (€)",
+    "hours": "Öffnungszeiten",
+    "hoursHint": "Bis zu drei Zeiträume pro Tag, z. B. mit Mittagspause. Endet ein Zeitraum vor seinem Beginn, geht er in den nächsten Tag (18:00–02:00).",
+    "closed": "Geschlossen",
+    "opensAt": "{{day}} öffnet um",
+    "closesAt": "{{day}} schließt um",
+    "addInterval": "Zeitraum für {{day}} hinzufügen",
+    "removeInterval": "Zeitraum für {{day}} entfernen",
+    "copyPrevious": "Wie Vortag",
+    "imprint": "Impressum",
+    "legalName": "Firmenname",
+    "registerInfo": "Registereintrag (optional)",
+    "save": "Profil speichern",
+    "saved": "Profil gespeichert.",
+    "problems": "Bitte {{n}} markierte Angabe(n) prüfen.",
+    "problem": {
+      "name": "2 bis 80 Zeichen.",
+      "type": "Bitte eine Art wählen.",
+      "cuisines": "Höchstens 5 Küchen.",
+      "address": "Bitte eine gefundene Adresse wählen.",
+      "phone": "Bitte eine gültige Telefonnummer angeben.",
+      "fulfilment": "Lieferung, Abholung oder beides anbieten.",
+      "radius": "0,5 bis 50 km.",
+      "amount": "Bitte einen Betrag wie 2,50 angeben.",
+      "hoursRequired": "Mindestens ein Zeitraum.",
+      "time": "Bitte alle Zeiten ausfüllen.",
+      "sameTime": "Beginn und Ende dürfen nicht gleich sein.",
+      "overlap": "Zeiträume überschneiden sich.",
+      "legalName": "2 bis 120 Zeichen.",
+      "tooLong": "Zu lang.",
+      "invalid": "Bitte prüfen."
+    }
   }
 }

@@ -1,4 +1,4 @@
-import type { AuthResponse, CatalogReviewItem, ImportResult, Promotion, PromotionRequest, TranslationResult, Listing, MarketStatus, MerchantMarket, Order, OrderStatus, PageResponse, Problem, ReviewStatus, User } from './types';
+import type { AuthResponse, CatalogReviewItem, CodeName, ImportResult, MarketProfileRequest, Place, Promotion, PromotionRequest, TranslationResult, Listing, MarketStatus, MerchantMarket, Order, OrderStatus, PageResponse, Problem, ReviewStatus, User } from './types';
 
 export class ApiError extends Error {
   readonly status: number;
@@ -165,6 +165,17 @@ export function createApi(options: { baseUrl?: string; fetch?: Fetch; store?: Se
       const form = new FormData();
       form.append('file', file);
       return send<ImportResult>(`/merchant/markets/${encodeURIComponent(marketId)}/listings/import?dryRun=${String(dryRun)}`, { method: 'POST', form });
+    },
+    marketTypes: () => send<CodeName[]>('/market-types'),
+    cuisines: () => send<CodeName[]>('/cuisines'),
+    searchPlaces: (q: string) => send<Place[]>(`/geo/search?q=${encodeURIComponent(q)}&limit=5`),
+    updateMarket: (marketId: string, request: MarketProfileRequest) =>
+      send<MerchantMarket>(`/merchant/markets/${encodeURIComponent(marketId)}`, { method: 'PUT', body: request }),
+    uploadMedia: (marketId: string, file: File, purpose: 'LOGO' | 'COVER') => {
+      const form = new FormData();
+      form.append('file', file);
+      form.append('purpose', purpose);
+      return send<{ key: string; url: string }>(`/merchant/markets/${encodeURIComponent(marketId)}/media`, { method: 'POST', form });
     },
     promotions: (marketId: string) => send<Promotion[]>(`/merchant/markets/${encodeURIComponent(marketId)}/promotions`),
     createPromotion: (marketId: string, request: PromotionRequest) =>
