@@ -18,7 +18,8 @@
   NSString *_transcript;
   NSString *_error;
   BOOL _listening;
-  RCTPromiseResolveBlock _stopResolve;
+  /** Callers waiting for the final transcript (a second stop while stopping waits as well). */
+  NSMutableArray<RCTPromiseResolveBlock> *_stopResolves;
 }
 
 RCT_EXPORT_MODULE()
@@ -33,6 +34,7 @@ RCT_EXPORT_MODULE()
   if (self = [super init]) {
     _transcript = @"";
     _error = @"";
+    _stopResolves = [NSMutableArray array];
   }
   return self;
 }
@@ -127,7 +129,8 @@ RCT_EXPORT_MODULE()
                                      BOOL done = taskError != nil || result.isFinal;
                                      dispatch_async(dispatch_get_main_queue(), ^{
                                        DukkanCapture *strongSelf = weakSelf;
-                                       if (strongSelf == nil) {
+                                       // A late answer of an earlier session must not touch this one.
+                                       if (strongSelf == nil || strongSelf->_request != request) {
                                          return;
                                        }
                                        if (text.length > 0) {
@@ -175,12 +178,15 @@ RCT_EXPORT_MODULE()
       resolve([self speechTranscript]);
       return;
     }
-    self->_stopResolve = resolve;
+    [self->_stopResolves addObject:resolve];
+    if (self->_stopResolves.count > 1) {
+      return;
+    }
     [self stopAudio];
     [self->_request endAudio];
     // The final result normally follows within a moment; do not wait for it forever.
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-      if (self->_stopResolve == resolve) {
+      if ([self->_stopResolves containsObject:resolve]) {
         [self finishWithError:nil];
       }
     });
@@ -208,6 +214,7 @@ RCT_EXPORT_MODULE()
 {
   [self stopAudio];
   [_request endAudio];
+  [_task cancel];
   _request = nil;
   _task = nil;
   _recognizer = nil;
@@ -215,15 +222,15 @@ RCT_EXPORT_MODULE()
   NSString *transcript;
   @synchronized(self) {
     // "No speech detected" and cancellations are not errors for the customer.
-    if (error != nil && _stopResolve == nil && _transcript.length == 0 && _listening) {
+    if (error != nil && _stopResolves.count == 0 && _transcript.length == 0 && _listening) {
       _error = [error.domain isEqualToString:NSURLErrorDomain] ? @"network" : @"failed";
     }
     _listening = NO;
     transcript = _transcript;
   }
-  if (_stopResolve != nil) {
-    RCTPromiseResolveBlock resolve = _stopResolve;
-    _stopResolve = nil;
+  NSArray<RCTPromiseResolveBlock> *waiting = [_stopResolves copy];
+  [_stopResolves removeAllObjects];
+  for (RCTPromiseResolveBlock resolve in waiting) {
     resolve(transcript);
   }
 }

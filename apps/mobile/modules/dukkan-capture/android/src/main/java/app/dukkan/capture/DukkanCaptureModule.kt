@@ -44,7 +44,8 @@ class DukkanCaptureModule(context: ReactApplicationContext) : NativeDukkanCaptur
   private var recognizer: SpeechRecognizer? = null
   private var language = "de-DE"
   private var startedAt = 0L
-  private var stopPromise: Promise? = null
+  /** Callers waiting for the final transcript (a second stop while stopping waits as well). */
+  private val stopPromises = mutableListOf<Promise>()
 
   @Volatile private var listening = false
   @Volatile private var committed = ""
@@ -100,18 +101,22 @@ class DukkanCaptureModule(context: ReactApplicationContext) : NativeDukkanCaptur
         promise.resolve(speechTranscript())
         return@post
       }
-      stopPromise = promise
+      stopPromises.add(promise)
+      if (stopPromises.size > 1) {
+        return@post
+      }
       active.stopListening()
       // onResults normally follows within a moment; do not wait for it forever.
-      main.postDelayed({ if (stopPromise === promise) finish() }, STOP_GRACE_MS)
+      main.postDelayed({ if (stopPromises.contains(promise)) finish() }, STOP_GRACE_MS)
     }
   }
 
   override fun cancelSpeech() {
     main.post {
       listening = false
-      stopPromise?.resolve(speechTranscript())
-      stopPromise = null
+      val transcript = speechTranscript()
+      stopPromises.forEach { it.resolve(transcript) }
+      stopPromises.clear()
       recognizer?.cancel()
       recognizer?.destroy()
       recognizer = null
@@ -216,8 +221,8 @@ class DukkanCaptureModule(context: ReactApplicationContext) : NativeDukkanCaptur
   }
 
   private fun continueOrFinish() {
-    if (listening && stopPromise == null && SystemClock.elapsedRealtime() - startedAt < MAX_LISTEN_MS) {
-      main.postDelayed({ if (listening && stopPromise == null) listen() }, 150)
+    if (listening && stopPromises.isEmpty() && SystemClock.elapsedRealtime() - startedAt < MAX_LISTEN_MS) {
+      main.postDelayed({ if (listening && stopPromises.isEmpty()) listen() }, 150)
     } else {
       finish()
     }
@@ -228,8 +233,8 @@ class DukkanCaptureModule(context: ReactApplicationContext) : NativeDukkanCaptur
     listening = false
     recognizer?.destroy()
     recognizer = null
-    stopPromise?.resolve(committed)
-    stopPromise = null
+    stopPromises.forEach { it.resolve(committed) }
+    stopPromises.clear()
   }
 
   private fun scale(bitmap: Bitmap, maxEdge: Int): Bitmap {

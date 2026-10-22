@@ -21,9 +21,10 @@ spring:
   servlet:
     multipart:
       # Uploads (POST /merchant/markets/{id}/media): 5 MB per file, matching dukkan.media.max-file-size.
+      # A shopping list may carry 4 photos (POST /markets/{id}/shopping-list), hence 21 MB per request.
       # Larger bodies answer 413 FILE_TOO_LARGE (ApiExceptionHandler).
       max-file-size: 5MB
-      max-request-size: 6MB
+      max-request-size: 21MB
       file-size-threshold: 1MB
   mvc:
     problemdetails:

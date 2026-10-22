@@ -39,6 +39,15 @@ class SimpleListParserTest {
   }
 
   @Test
+  void keepsGermanDecimalCommas() {
+    assertThat(SimpleListParser.parse("1,5 kg Tomaten, 2 Gurken"))
+        .extracting(ListItem::text, ListItem::amount)
+        .containsExactly(
+            org.assertj.core.groups.Tuple.tuple("1,5 kg Tomaten", new Amount(new BigDecimal("1500.0"), Amount.Unit.GRAM)),
+            org.assertj.core.groups.Tuple.tuple("2 Gurken", new Amount(BigDecimal.valueOf(2), Amount.Unit.PIECE)));
+  }
+
+  @Test
   void skipsEmptyPartsAndNumbersWithoutAProduct() {
     assertThat(SimpleListParser.parse(" , und 3 kg, bitte ,  ")).isEmpty();
     assertThat(SimpleListParser.parse(null)).isEmpty();

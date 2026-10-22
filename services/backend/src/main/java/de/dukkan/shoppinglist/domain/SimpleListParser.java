@@ -14,7 +14,8 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * Reads a typed or dictated shopping list without a language model: "2 Gurken, 1 kg Tomaten und
- * eine Packung Milch" becomes three items. Splits on commas, line breaks and "und"/"and", reads a
+ * eine Packung Milch" becomes three items. Splits on commas (not decimal commas: "1,5 kg"), line
+ * breaks and "und"/"and", reads a
  * leading number (digits, Arabic-Indic digits, fractions or a number word) and unit, and searches for
  * the rest in the plural and a guessed singular form.
  */
@@ -22,7 +23,7 @@ public final class SimpleListParser {
 
   public static final int MAX_ITEMS = 30;
 
-  private static final Pattern SEPARATORS = Pattern.compile("\\s*(?:[,;\\n\\r•·،؛]|\\s(?:und|sowie|and|plus|و)\\s)\\s*", Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
+  private static final Pattern SEPARATORS = Pattern.compile("\\s*(?:(?<!\\d),|,(?!\\d)|[;\\n\\r•·،؛]|\\s(?:und|sowie|and|plus|و)\\s)\\s*", Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
   private static final Pattern FILLER =
       Pattern.compile(
           "^(?:und\\s+|and\\s+|(?:ich\\s+)?(?:brauche|möchte|hätte\\s+gerne?|nehme|kaufe)\\s+|bitte\\s+|noch\\s+|auch\\s+|i\\s+(?:need|want|would\\s+like)\\s+|please\\s+|also\\s+|some\\s+|etwas\\s+|أريد\\s+|اريد\\s+)+",

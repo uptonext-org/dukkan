@@ -13,9 +13,9 @@ import { AppText, Button, Icon, IconButton, Screen, ScreenHeader } from '../../.
 import { useAuthGate } from '../../auth/AuthGate';
 import { useCart } from '../../cart/api/hooks';
 import { useMarketContext } from '../../market/MarketContext';
-import { useApplyShoppingList, useReadShoppingList, useShoppingListCapabilities } from '../api/hooks';
+import { PartialApplyError, useApplyShoppingList, useReadShoppingList, useShoppingListCapabilities } from '../api/hooks';
 import { ShoppingListLineRow } from '../components/ShoppingListLineRow';
-import { appendText, cartUpdates, initialSelections, speechLanguage, type LineSelection } from '../model';
+import { appendText, cartUpdates, chosen, initialSelections, speechLanguage, type LineSelection } from '../model';
 
 /** Video frames sent to the model: enough to see a fridge or a list, few enough to stay fast. */
 const VIDEO_FRAMES = 4;
@@ -44,11 +44,14 @@ export function ShoppingListScreen({ navigation }: MarketStackScreenProps<'Shopp
   });
   const read = useReadShoppingList(marketId);
   const apply = useApplyShoppingList(marketId);
-  const { data: cart } = useCart(marketId);
+  const cartQuery = useCart(marketId);
+  const cart = cartQuery.data;
 
   const [text, setText] = useState('');
   const [images, setImages] = useState<PickedPhoto[]>([]);
   const [listening, setListening] = useState(false);
+  // The final words may take a moment after "done"; a second tap must not stop twice.
+  const [stopping, setStopping] = useState(false);
   const [live, setLive] = useState('');
   const [problem, setProblem] = useState<string | null>(null);
   const [result, setResult] = useState<ShoppingListResult | null>(null);
@@ -92,7 +95,13 @@ export function ShoppingListScreen({ navigation }: MarketStackScreenProps<'Shopp
     [cart],
   );
   const updates = result === null ? [] : cartUpdates(result.lines, selections, inCart);
-  const selectedCount = selections.filter((s, i) => s.selected && result?.lines[i]?.match != null).length;
+  // Lines that change the cart (a product already at its limit adds nothing).
+  const changing = new Set(updates.map((u) => u.productId));
+  const selectedCount = selections.filter((s, i) => {
+    const line = result?.lines[i];
+    const choice = line === undefined ? undefined : chosen(line, s);
+    return s.selected && choice !== undefined && changing.has(choice.product.id);
+  }).length;
 
   const startListening = async () => {
     setProblem(null);
@@ -108,11 +117,19 @@ export function ShoppingListScreen({ navigation }: MarketStackScreenProps<'Shopp
   };
 
   const stopListening = async () => {
+    if (stopping) {
+      return;
+    }
     listeningRef.current = false;
-    const spoken = await speech.stop();
-    setListening(false);
-    setLive('');
-    setText((current) => appendText(current, spoken).slice(0, maxText));
+    setStopping(true);
+    try {
+      const spoken = await speech.stop();
+      setText((current) => appendText(current, spoken).slice(0, maxText));
+    } finally {
+      setStopping(false);
+      setListening(false);
+      setLive('');
+    }
   };
 
   const addPhoto = async (source: PhotoSource) => {
@@ -161,6 +178,19 @@ export function ShoppingListScreen({ navigation }: MarketStackScreenProps<'Shopp
     requireAuth('cart', () =>
       apply.mutate(updates, {
         onSuccess: () => navigation.navigate('MarketTabs', { screen: 'MarketCart' }),
+        onError: (error) => {
+          if (error instanceof PartialApplyError && result !== null) {
+            // What is in the cart already is unchecked, so trying again adds only the rest.
+            const applied = new Set(error.applied);
+            setSelections((current) =>
+              current.map((s, i) => {
+                const line = result.lines[i];
+                const choice = line === undefined ? undefined : chosen(line, s);
+                return choice !== undefined && applied.has(choice.product.id) ? { ...s, selected: false } : s;
+              }),
+            );
+          }
+        },
       }),
     );
 
@@ -176,7 +206,8 @@ export function ShoppingListScreen({ navigation }: MarketStackScreenProps<'Shopp
   const header = <ScreenHeader title={t('shoppingList.title')} onBack={() => navigation.goBack()} />;
   const canSend = (text.trim() !== '' || images.length > 0) && !listening;
   const readError = read.error !== null ? t(errorMessageKey(read.error)) : null;
-  const applyError = apply.error !== null ? t(errorMessageKey(apply.error)) : null;
+  const applyError =
+    apply.error !== null ? t(errorMessageKey(apply.error instanceof PartialApplyError ? apply.error.reason : apply.error)) : null;
 
   if (result !== null) {
     const unmatched = result.lines.filter((line) => line.match === null).length;
@@ -196,8 +227,9 @@ export function ShoppingListScreen({ navigation }: MarketStackScreenProps<'Shopp
               title={t('shoppingList.addToCart', { count: selectedCount })}
               icon="basket"
               onPress={addToCart}
-              disabled={updates.length === 0}
-              loading={apply.isPending}
+              // The quantities add to the cart: wait until it is known.
+              disabled={updates.length === 0 || !cartQuery.isSuccess}
+              loading={apply.isPending || cartQuery.fetchStatus === 'fetching'}
               testID="shopping-list-add"
             />
           </View>
@@ -270,9 +302,10 @@ export function ShoppingListScreen({ navigation }: MarketStackScreenProps<'Shopp
         {speechAvailable.data !== false && (
           <Pressable
             onPress={() => void (listening ? stopListening() : startListening())}
+            disabled={stopping}
             accessibilityRole="button"
             accessibilityLabel={listening ? t('shoppingList.stopSpeaking') : t('shoppingList.speak')}
-            accessibilityState={{ busy: listening }}
+            accessibilityState={{ busy: listening, disabled: stopping }}
             style={({ pressed }) => [styles.mic, listening && styles.micActive, pressed && styles.pressed]}
             testID="shopping-list-mic">
             <Icon name="mic" size={28} color={listening ? colors.onAccent : colors.primary} />

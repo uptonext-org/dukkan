@@ -30,9 +30,10 @@ const RESULT: ShoppingListResult = {
 };
 
 function setup(
-  options: { ai: boolean; result?: ShoppingListResult | ((request: ApiRequest) => unknown) } & TestOptions,
+  options: { ai: boolean; result?: ShoppingListResult | ((request: ApiRequest) => unknown); failTomatoesOnce?: boolean } & TestOptions,
 ) {
-  const { ai, result, ...testOptions } = options;
+  const { ai, result, failTomatoesOnce = false, ...testOptions } = options;
+  let tomatoFailures = failTomatoesOnce ? 1 : 0;
   const quantities: Record<string, number> = {};
   const fake = createFakeApiClient({
     'GET /market-types': [],
@@ -53,6 +54,10 @@ function setup(
       return cart();
     },
     [`PUT /markets/${MARKET_ID}/cart/items/${TOMATOES.id}`]: (request: ApiRequest) => {
+      if (tomatoFailures > 0) {
+        tomatoFailures -= 1;
+        throw new ApiError({ kind: 'http', status: 422, code: 'MAX_QUANTITY_EXCEEDED', detail: 'too many' });
+      }
       quantities[TOMATOES.id] = (request.body as { quantity: number }).quantity;
       return cart();
     },
@@ -137,6 +142,25 @@ describe('Einkaufsliste per Sprache, Foto oder Video', () => {
 
     await screen.findByTestId('market-cart');
     expect(quantities).toEqual({ [TOMATOES.id]: 2 });
+  });
+
+  it('does not add a line twice when the cart update fails part-way', async () => {
+    const { fake, quantities, dependencies } = setup({ ai: false, failTomatoesOnce: true });
+    await renderApp(dependencies);
+    const user = await openShoppingList();
+    await user.type(screen.getByLabelText('Deine Einkaufsliste'), '2 Gurken, 1 kg Tomaten');
+    await user.press(screen.getByTestId('shopping-list-recognise'));
+    await screen.findByTestId('shopping-list-result');
+
+    await user.press(await screen.findByRole('button', { name: '2 Artikel in den Warenkorb' }));
+    // The cucumbers made it; the tomatoes did not. Only the tomatoes are left to add.
+    expect(await screen.findByRole('checkbox', { name: 'Salatgurke in den Warenkorb legen', checked: false })).toBeOnTheScreen();
+    await user.press(await screen.findByRole('button', { name: '1 Artikel in den Warenkorb' }));
+
+    await screen.findByTestId('market-cart');
+    const cucumberWrites = fake.calls.filter((c) => c.method === 'PUT' && c.path.endsWith(CUCUMBER.id));
+    expect(cucumberWrites).toHaveLength(1);
+    expect(quantities).toEqual({ [CUCUMBER.id]: 3, [TOMATOES.id]: 2 });
   });
 
   it('dictates on the device and sends the transcript with frames of a video', async () => {

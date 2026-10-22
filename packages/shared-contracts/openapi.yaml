@@ -634,7 +634,8 @@ paths:
         images (photos, or frames of a short video). Each item comes back with the best available
         product and the number of units that covers the amount (`1 kg Tomaten` with a 500 g pack →
         2), plus up to two alternatives. Nothing is stored or added to the cart: the customer
-        confirms in the app, which then adds the chosen lines (addCartItem).
+        confirms in the app, which then sets the cart quantities of the chosen lines
+        (setCartItemQuantity, on top of what is already in the cart).
 
         `engine` is `AI` when the language model read the list, `RULES` when simple rules did
         (no model configured, or the model failed; text only). Images without a model, or images
@@ -655,7 +656,7 @@ paths:
                   type: array
                   maxItems: 4
                   items: { type: string, format: binary }
-                  description: Photos or video frames (JPEG, PNG or WebP, ≤ 5 MB each, ≤ 6 MB in total).
+                  description: Photos or video frames (JPEG, PNG or WebP, ≤ 5 MB each, ≤ 21 MB in total).
             encoding:
               images:
                 contentType: image/jpeg, image/png, image/webp

@@ -14,9 +14,9 @@ import org.jspecify.annotations.Nullable;
  */
 public final class PackCount {
 
-  /** "500 g", "1,5 l", "6 Stück", "2 x 250 g", "ca. 1 kg". */
+  /** "500 g", "1,5 l", "6 Stück", "2 x 250 g", "ca. 1 kg", "10er Packung". */
   private static final Pattern SIZE =
-      Pattern.compile("(?:(\\d+)\\s*[x×]\\s*)?(\\d+(?:[.,]\\d+)?)\\s*(kg|g|l|ml|cl|stück|stk|st\\.?|pcs|pieces?)\\b", Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
+      Pattern.compile("(?:(\\d+)\\s*[x×]\\s*)?(\\d+(?:[.,]\\d+)?)\\s*(kg|g|l|ml|cl|stück|stk|st\\.?|pcs|pieces?|er)\\b", Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
 
   private PackCount() {}
 

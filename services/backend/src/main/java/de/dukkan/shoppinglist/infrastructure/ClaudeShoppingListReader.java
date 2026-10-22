@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -48,6 +49,8 @@ final class ClaudeShoppingListReader implements ShoppingListReader {
 
   static final String FALLBACK_BETA = "server-side-fallback-2026-07-01";
   static final List<String> UNITS = List.of("piece", "pack", "g", "kg", "ml", "l");
+  /** The wrapper tag may not appear inside the customer's text (it would end the data early). */
+  private static final Pattern CUSTOMER_TAG = Pattern.compile("</?\\s*customer_message\\s*>", Pattern.CASE_INSENSITIVE);
 
   private static final Logger LOG = LoggerFactory.getLogger(ClaudeShoppingListReader.class);
   private static final Map<String, String> LANGUAGES = Map.of("de", "German", "en", "English", "ar", "Arabic", "tr", "Turkish");
@@ -132,7 +135,7 @@ final class ClaudeShoppingListReader implements ShoppingListReader {
         ContentBlockParam.ofText(
             request.text() == null
                 ? "The customer sent only the image(s) above."
-                : "<customer_message>\n" + request.text() + "\n</customer_message>"));
+                : "<customer_message>\n" + CUSTOMER_TAG.matcher(request.text()).replaceAll("") + "\n</customer_message>"));
     MessageCreateParams.Builder builder =
         MessageCreateParams.builder()
             .model(settings.model())

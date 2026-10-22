@@ -7,8 +7,13 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.Optional;
 import javax.imageio.ImageIO;
+import javax.imageio.ImageReadParam;
+import javax.imageio.ImageReader;
+import javax.imageio.stream.ImageInputStream;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Prepares a stored photo for the model: images whose long edge is above {@link #MAX_EDGE} pixels
@@ -42,18 +47,52 @@ public final class ModelImages {
   /** Base64 grows by a third; this keeps the encoded image below the API's 5 MB per image. */
   public static final int MAX_BYTES = 3_700_000;
 
+  /**
+   * Images declaring more pixels are not decoded at all: a small, highly compressed upload could
+   * otherwise claim gigabytes of memory (same limit as media uploads).
+   */
+  public static final long MAX_PIXELS = 40_000_000L;
+
   private ModelImages() {}
+
+  /**
+   * Reads the size from the header first, refuses images above {@link #MAX_PIXELS}, and decodes
+   * large ones subsampled, so memory stays near what the model needs ({@link #MAX_EDGE}).
+   */
+  static @Nullable BufferedImage decode(byte[] bytes) {
+    try (ImageInputStream in = ImageIO.createImageInputStream(new ByteArrayInputStream(bytes))) {
+      if (in == null) {
+        return null;
+      }
+      Iterator<ImageReader> readers = ImageIO.getImageReaders(in);
+      if (!readers.hasNext()) {
+        return null;
+      }
+      ImageReader reader = readers.next();
+      try {
+        reader.setInput(in, true, true);
+        long width = reader.getWidth(0);
+        long height = reader.getHeight(0);
+        if (width <= 0 || height <= 0 || width * height > MAX_PIXELS) {
+          return null;
+        }
+        ImageReadParam param = reader.getDefaultReadParam();
+        int step = (int) Math.max(1, Math.max(width, height) / (MAX_EDGE * 2L));
+        param.setSourceSubsampling(step, step, 0, 0);
+        return reader.read(0, param);
+      } finally {
+        reader.dispose();
+      }
+    } catch (IOException | RuntimeException e) {
+      return null;
+    }
+  }
 
   public static Optional<Image> prepare(Image image) {
     if ("image/webp".equals(image.contentType())) {
       return image.bytes().length <= MAX_BYTES ? Optional.of(image) : Optional.empty();
     }
-    BufferedImage decoded;
-    try {
-      decoded = ImageIO.read(new ByteArrayInputStream(image.bytes()));
-    } catch (IOException e) {
-      return Optional.empty();
-    }
+    BufferedImage decoded = decode(image.bytes());
     if (decoded == null) {
       return Optional.empty();
     }

@@ -31,6 +31,20 @@ class PackCountTest {
   }
 
   @Test
+  void readsMultipacksLikeTenEr() {
+    assertThat(PackCount.of(amount("10", "piece"), "10er Packung", 20)).isEqualTo(1);
+    assertThat(PackCount.of(amount("12", "piece"), "6er", 20)).isEqualTo(2);
+  }
+
+  @Test
+  void boundsAmountsBeforeComputingWithThem() {
+    assertThat(Amount.of(new BigDecimal("1e999999999"), "kg")).isNull();
+    assertThat(Amount.of(new BigDecimal("0.0000001"), "kg")).isNull();
+    assertThat(amount("5000", "kg").label()).isEqualTo("100 kg");
+    assertThat(PackCount.of(amount("5000", "piece"), "1 Stück", 12)).isEqualTo(12);
+  }
+
+  @Test
   void staysWithinTheOrderLimit() {
     assertThat(PackCount.of(amount("50", "piece"), "1 Stück", 12)).isEqualTo(12);
     assertThat(PackCount.of(amount("0.1", "g"), "1 kg", 12)).isEqualTo(1);

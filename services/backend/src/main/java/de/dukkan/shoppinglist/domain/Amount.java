@@ -19,17 +19,31 @@ public record Amount(BigDecimal value, Unit unit) {
     MILLILITRE
   }
 
+  /**
+   * Upper bounds per unit (in base units): more is not a household order, and unbounded values
+   * from a model answer ("1e999999999") would be expensive to compute with and to print.
+   */
+  private static final BigDecimal MAX_COUNT = BigDecimal.valueOf(999);
+
+  private static final BigDecimal MAX_BASE = BigDecimal.valueOf(100_000);
+
+  /** Declared after the bounds, which the constructor reads. */
   public static final Amount ONE = new Amount(BigDecimal.ONE, Unit.PIECE);
 
   public Amount {
     if (value.signum() <= 0) {
       throw new IllegalArgumentException("amount must be positive");
     }
+    BigDecimal max = unit == Unit.PIECE || unit == Unit.PACK ? MAX_COUNT : MAX_BASE;
+    if (value.compareTo(max) > 0) {
+      value = max;
+    }
   }
 
   /** Parses a value with a unit as people say it ({@code kg}, {@code Liter}, {@code Stück} …). */
   public static @Nullable Amount of(BigDecimal value, String unit) {
-    if (value.signum() <= 0) {
+    // Checked before any arithmetic: a huge exponent must not be expanded.
+    if (value.signum() <= 0 || value.precision() - value.scale() > 7 || value.scale() > 6) {
       return null;
     }
     return switch (unit) {

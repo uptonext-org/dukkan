@@ -20,7 +20,21 @@ export function useReadShoppingList(marketId: string) {
   });
 }
 
-/** Sets the chosen quantities one after another; the last answer is the cart. */
+/** Some lines reached the cart before one failed: those must not be added a second time. */
+export class PartialApplyError extends Error {
+  constructor(
+    readonly reason: unknown,
+    readonly applied: string[],
+  ) {
+    super('shopping list partly applied');
+    this.name = 'PartialApplyError';
+  }
+}
+
+/**
+ * Sets the chosen quantities one after another; the last answer is the cart. A failure part-way
+ * reports which products were already set (PartialApplyError).
+ */
 export function useApplyShoppingList(marketId: string) {
   const api = useApi();
   const queryClient = useQueryClient();
@@ -28,8 +42,14 @@ export function useApplyShoppingList(marketId: string) {
   return useMutation({
     mutationFn: async (updates: CartUpdate[]) => {
       let cart: Cart | undefined;
-      for (const update of updates) {
-        cart = await api.setCartItemQuantity(marketId, update.productId, update.quantity);
+      const applied: string[] = [];
+      try {
+        for (const update of updates) {
+          cart = await api.setCartItemQuantity(marketId, update.productId, update.quantity);
+          applied.push(update.productId);
+        }
+      } catch (error) {
+        throw new PartialApplyError(error, applied);
       }
       return cart;
     },
