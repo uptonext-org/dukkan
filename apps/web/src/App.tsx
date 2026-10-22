@@ -8,6 +8,7 @@ import { applyLanguage, isLanguage, LANGUAGES } from './i18n';
 import { AdminCatalogPage } from './pages/AdminCatalogPage';
 import { AdminMarketsPage } from './pages/AdminMarketsPage';
 import { ImportPage } from './pages/ImportPage';
+import { InsightsPage } from './pages/InsightsPage';
 import { ListingsPage } from './pages/ListingsPage';
 import { LoginPage } from './pages/LoginPage';
 import { MarketProfilePage } from './pages/MarketProfilePage';
@@ -15,8 +16,8 @@ import { OrdersBoard } from './pages/OrdersBoard';
 import { PromotionsPage } from './pages/PromotionsPage';
 import { errorMessage } from './ui/errors';
 
-type Route = 'orders' | 'listings' | 'promotions' | 'import' | 'profile' | 'admin' | 'catalog';
-const ROUTES: Route[] = ['orders', 'listings', 'promotions', 'import', 'profile', 'admin', 'catalog'];
+type Route = 'orders' | 'insights' | 'listings' | 'promotions' | 'import' | 'profile' | 'admin' | 'catalog';
+const ROUTES: Route[] = ['orders', 'insights', 'listings', 'promotions', 'import', 'profile', 'admin', 'catalog'];
 
 function subscribeHash(onChange: () => void) {
   window.addEventListener('hashchange', onChange);
@@ -80,7 +81,7 @@ function Shell({ session }: { session: Session }) {
   const [marketId, setMarketId] = useState<string | null>(null);
   const selected = markets.data?.find((m) => m.id === marketId) ?? markets.data?.[0];
 
-  const available: Route[] = [...(isMerchant ? (['orders', 'listings', 'promotions', 'import', 'profile'] as const) : []), ...(isAdmin ? (['admin', 'catalog'] as const) : [])];
+  const available: Route[] = [...(isMerchant ? (['orders', 'insights', 'listings', 'promotions', 'import', 'profile'] as const) : []), ...(isAdmin ? (['admin', 'catalog'] as const) : [])];
   const current = route !== null && available.includes(route) ? route : available[0];
 
   return (
@@ -138,6 +139,7 @@ function Shell({ session }: { session: Session }) {
               </p>
             )}
             {selected !== undefined && current === 'orders' && <OrdersBoard marketId={selected.id} />}
+            {selected !== undefined && current === 'insights' && <InsightsPage marketId={selected.id} />}
             {selected !== undefined && current === 'listings' && <ListingsPage marketId={selected.id} />}
             {selected !== undefined && current === 'import' && <ImportPage marketId={selected.id} />}
             {selected !== undefined && current === 'profile' && <MarketProfilePage market={selected} />}

@@ -1,4 +1,4 @@
-import type { AuthResponse, CatalogReviewItem, CodeName, ImportResult, MarketProfileRequest, Place, Promotion, PromotionRequest, TranslationResult, Listing, MarketStatus, MerchantMarket, Order, OrderStatus, PageResponse, Problem, ReviewStatus, User } from './types';
+import type { AuthResponse, CatalogReviewItem, CodeName, ImportResult, MarketInsights, MarketProfileRequest, Place, Promotion, PromotionRequest, TranslationResult, Listing, MarketStatus, MerchantMarket, Order, OrderStatus, PageResponse, Problem, ReviewStatus, User } from './types';
 
 export class ApiError extends Error {
   readonly status: number;
@@ -177,6 +177,7 @@ export function createApi(options: { baseUrl?: string; fetch?: Fetch; store?: Se
       form.append('purpose', purpose);
       return send<{ key: string; url: string }>(`/merchant/markets/${encodeURIComponent(marketId)}/media`, { method: 'POST', form });
     },
+    insights: (marketId: string, days: number) => send<MarketInsights>(`/merchant/markets/${encodeURIComponent(marketId)}/insights?days=${days}`),
     promotions: (marketId: string) => send<Promotion[]>(`/merchant/markets/${encodeURIComponent(marketId)}/promotions`),
     createPromotion: (marketId: string, request: PromotionRequest) =>
       send<Promotion>(`/merchant/markets/${encodeURIComponent(marketId)}/promotions`, { method: 'POST', body: request }),

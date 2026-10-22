@@ -10,6 +10,7 @@
   --accent: #b3402a;
   --warning: #8a5a00;
   --focus: #1f5fbf;
+  --chart: #23804d;
   --radius: 10px;
   color-scheme: light dark;
   font-family: system-ui, -apple-system, 'Segoe UI', 'Noto Sans', 'Noto Sans Arabic', sans-serif;
@@ -30,6 +31,7 @@
     --accent: #f08a73;
     --warning: #e0b45c;
     --focus: #8ab4ff;
+    --chart: #3aa86a;
   }
 }
 
@@ -121,3 +123,26 @@ label.button:focus-within { outline: 3px solid var(--focus); outline-offset: 2px
 .logo-preview { width: 96px; height: 96px; object-fit: cover; border-radius: var(--radius); border: 1px solid var(--border); }
 .cover-preview { width: 100%; max-width: 420px; aspect-ratio: 16 / 9; object-fit: cover; border-radius: var(--radius); border: 1px solid var(--border); }
 .stack.tight { gap: 4px; }
+.segmented { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.segmented button { font: inherit; border: 0; background: var(--surface); color: var(--text-secondary); padding: 8px 14px; min-height: 40px; cursor: pointer; }
+.segmented button + button { border-inline-start: 1px solid var(--border); }
+.segmented button[aria-pressed='true'] { background: var(--primary); color: var(--on-primary); font-weight: 600; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+.tile { display: flex; flex-direction: column; gap: 4px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+.tile-value { font-size: 1.6rem; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+.grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; align-items: start; }
+.chart { position: relative; width: 100%; }
+.chart svg { display: block; overflow: visible; }
+.chart svg:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
+.chart-bar { fill: var(--chart); }
+.chart-bar.active { fill: color-mix(in srgb, var(--chart) 75%, var(--text)); }
+.chart-grid { stroke: var(--border); stroke-width: 1; }
+.chart-axis { stroke: var(--text-secondary); stroke-width: 1; }
+.chart-tick { fill: var(--text-secondary); font-size: 11px; font-variant-numeric: tabular-nums; }
+.chart-tooltip {
+  position: absolute; transform: translate(-50%, -100%); pointer-events: none; display: flex; flex-direction: column;
+  background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 8px;
+  padding: 6px 10px; font-size: 0.85rem; white-space: nowrap; box-shadow: 0 4px 14px rgb(0 0 0 / 0.12);
+}
+.chart-tooltip span { color: var(--text-secondary); }
+details summary { cursor: pointer; color: var(--primary); }

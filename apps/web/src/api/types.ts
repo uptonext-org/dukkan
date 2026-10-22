@@ -203,3 +203,26 @@ export interface PromotionRequest {
 export interface TranslationResult {
   fields: { key: string; values: Record<string, string> }[];
 }
+
+export interface InsightTotals {
+  orders: number;
+  revenue: Money;
+  averageOrderValue: Money | null;
+  discounts: Money;
+}
+
+export interface MarketInsights {
+  from: string;
+  to: string;
+  totals: InsightTotals;
+  previous: InsightTotals;
+  cancelledOrders: number;
+  rejectedOrders: number;
+  pickupOrders: number;
+  deliveryOrders: number;
+  customers: number;
+  returningCustomers: number;
+  daily: { date: string; orders: number; revenue: Money }[];
+  ordersByHour: number[];
+  topProducts: { listingId: string; name: string; unitSize?: string | null; imageUrl?: string | null; quantity: number; revenue: Money }[];
+}

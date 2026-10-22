@@ -23,7 +23,8 @@
     "market": "Market",
     "catalog": "Catalog review",
     "promotions": "Promotions",
-    "profile": "Market profile"
+    "profile": "Market profile",
+    "insights": "Overview"
   },
   "status": {
     "PENDING_REVIEW": "In review",
@@ -253,5 +254,33 @@
       "tooLong": "Too long.",
       "invalid": "Please check."
     }
+  },
+  "insights": {
+    "title": "Overview",
+    "period": "Period",
+    "days": "{{n}} days",
+    "revenue": "Revenue",
+    "orders": "Orders",
+    "average": "Avg. order value",
+    "customers": "Customers",
+    "returning": "{{n}} returning ({{percent}}%)",
+    "up": "{{percent}}% more than the period before",
+    "down": "{{percent}}% less than the period before",
+    "same": "same as the period before",
+    "noComparison": "No comparison possible",
+    "pickup": "{{n}} pickup",
+    "delivery": "{{n}} delivery",
+    "cancelled": "{{n}} cancelled",
+    "rejected": "{{n}} rejected",
+    "discounts": "{{amount}} in discounts",
+    "revenueByDay": "Revenue per day",
+    "byHour": "Orders by time of day",
+    "byHourHint": "When people order – useful for staffing and preparation.",
+    "topProducts": "Best sellers",
+    "product": "Product",
+    "quantity": "Quantity",
+    "date": "Day",
+    "asTable": "Show as table",
+    "empty": "No orders in this period yet."
   }
 }
