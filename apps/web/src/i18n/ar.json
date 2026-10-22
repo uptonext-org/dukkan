@@ -21,7 +21,8 @@
     "import": "استيراد CSV",
     "admin": "مراجعة الأسواق",
     "market": "السوق",
-    "catalog": "مراجعة الكتالوج"
+    "catalog": "مراجعة الكتالوج",
+    "promotions": "العروض"
   },
   "status": {
     "PENDING_REVIEW": "قيد المراجعة",
@@ -124,7 +125,8 @@
       "Empty": "لا يحتوي الملف على أسطر منتجات.",
       "TooManyRows": "الحد الأقصى 1000 منتج لكل ملف."
     },
-    "PRODUCT_DUPLICATE": "يوجد في الكتالوج المشترك منتج بهذا الباركود."
+    "PRODUCT_DUPLICATE": "يوجد في الكتالوج المشترك منتج بهذا الباركود.",
+    "TRANSLATION_UNAVAILABLE": "الترجمة الآلية غير متاحة حالياً."
   },
   "catalog": {
     "title": "مراجعة الكتالوج",
@@ -144,5 +146,46 @@
     "promote": "نقل إلى الكتالوج المشترك",
     "keepPrivate": "إبقاؤه خاصاً",
     "saveFirst": "تُحفظ النصوص أولاً ثم يُتخذ القرار."
+  },
+  "promotions": {
+    "title": "العروض",
+    "list": "جميع العروض",
+    "empty": "لا توجد عروض بعد.",
+    "new": "عرض جديد",
+    "titleLabel": "العنوان",
+    "primary": "اللغة الأساسية",
+    "translate": "ترجمة اللغات الناقصة",
+    "type": "النوع",
+    "typePercent": "خصم بالنسبة المئوية",
+    "typeBundle": "عرض الكمية",
+    "percent": "الخصم (%)",
+    "quantity": "الكمية",
+    "bundlePrice": "السعر الإجمالي (€)",
+    "duration": "المدة",
+    "days_zero": "{{count}} يوم",
+    "days_one": "يوم واحد",
+    "days_two": "يومان",
+    "days_few": "{{count}} أيام",
+    "days_many": "{{count}} يوماً",
+    "days_other": "{{count}} يوم",
+    "pickProducts_zero": "اختيار المنتجات ({{count}} محدد)",
+    "pickProducts_one": "اختيار المنتجات ({{count}} محدد)",
+    "pickProducts_two": "اختيار المنتجات ({{count}} محدد)",
+    "pickProducts_few": "اختيار المنتجات ({{count}} محدد)",
+    "pickProducts_many": "اختيار المنتجات ({{count}} محدد)",
+    "pickProducts_other": "اختيار المنتجات ({{count}} محدد)",
+    "create": "بدء العرض",
+    "created": "تم بدء العرض.",
+    "offer": "العرض",
+    "until": "ينتهي في",
+    "products": "المنتجات",
+    "end": "إنهاء",
+    "ended": "منتهٍ",
+    "percentLabel": "−{{percent}}٪",
+    "bundleLabel": "{{quantity}} مقابل {{price}}",
+    "titleRequired": "يُرجى إدخال عنوان باللغة الأساسية.",
+    "percentInvalid": "الخصم بين 1 و90٪.",
+    "bundleInvalid": "تُدخل كمية من 2 إلى 20 وسعر مثل 4,99.",
+    "productsRequired": "يُرجى اختيار منتج واحد على الأقل."
   }
 }

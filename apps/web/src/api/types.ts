@@ -112,3 +112,33 @@ export interface CatalogReviewItem {
   texts: Record<string, { name: string; description?: string | null; machineTranslated: boolean }>;
   duplicates: { id: string; name: string; unitSize: string; barcode?: string | null }[];
 }
+
+export type PromotionType = 'PERCENT_OFF' | 'MULTI_BUY';
+
+export interface Promotion {
+  id: string;
+  title: string;
+  description?: string | null;
+  type: PromotionType;
+  percentOff?: number | null;
+  bundleQuantity?: number | null;
+  bundlePrice?: Money | null;
+  validFrom: string;
+  validUntil: string;
+  productIds: string[];
+}
+
+export interface PromotionRequest {
+  title: Record<string, string>;
+  type: PromotionType;
+  percentOff: number | null;
+  bundleQuantity: number | null;
+  bundlePrice: Money | null;
+  validFrom: string;
+  validUntil: string;
+  productIds: string[];
+}
+
+export interface TranslationResult {
+  fields: { key: string; values: Record<string, string> }[];
+}

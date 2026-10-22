@@ -1,4 +1,4 @@
-import type { AuthResponse, CatalogReviewItem, ImportResult, Listing, MarketStatus, MerchantMarket, Order, OrderStatus, PageResponse, Problem, ReviewStatus, User } from './types';
+import type { AuthResponse, CatalogReviewItem, ImportResult, Promotion, PromotionRequest, TranslationResult, Listing, MarketStatus, MerchantMarket, Order, OrderStatus, PageResponse, Problem, ReviewStatus, User } from './types';
 
 export class ApiError extends Error {
   readonly status: number;
@@ -166,6 +166,13 @@ export function createApi(options: { baseUrl?: string; fetch?: Fetch; store?: Se
       form.append('file', file);
       return send<ImportResult>(`/merchant/markets/${encodeURIComponent(marketId)}/listings/import?dryRun=${String(dryRun)}`, { method: 'POST', form });
     },
+    promotions: (marketId: string) => send<Promotion[]>(`/merchant/markets/${encodeURIComponent(marketId)}/promotions`),
+    createPromotion: (marketId: string, request: PromotionRequest) =>
+      send<Promotion>(`/merchant/markets/${encodeURIComponent(marketId)}/promotions`, { method: 'POST', body: request }),
+    endPromotion: (marketId: string, promotionId: string) =>
+      send<undefined>(`/merchant/markets/${encodeURIComponent(marketId)}/promotions/${encodeURIComponent(promotionId)}`, { method: 'DELETE' }),
+    translate: (kind: 'PROMOTION' | 'PRODUCT_NAME' | 'PRODUCT_DESCRIPTION' | 'MARKET_DESCRIPTION', values: Record<string, string>) =>
+      send<TranslationResult>('/merchant/translations', { method: 'POST', body: { kind, fields: [{ key: 'text', values }] } }),
     adminMarkets: (status: MarketStatus | null) =>
       send<MerchantMarket[]>(`/admin/markets${status === null ? '' : `?status=${status}`}`),
     catalogReviewQueue: (status: ReviewStatus, page: number) =>

@@ -245,6 +245,60 @@ describe('admin market review', () => {
   });
 });
 
+describe('promotions', () => {
+  it('translates the title, picks products and starts a promotion; ends a running one', async () => {
+    const running = {
+      id: 'pr1',
+      title: 'Teewoche',
+      type: 'PERCENT_OFF',
+      percentOff: 25,
+      validFrom: '2026-10-01T00:00:00Z',
+      validUntil: '2999-01-01T00:00:00Z',
+      productIds: ['l9'],
+    };
+    const ayran = { id: 'l1', name: 'Ayran', unitSize: '250 ml', price: { amountCents: 99, currency: 'EUR' }, available: true, maxOrderQuantity: 24, privateProduct: false };
+    const { user, calls } = renderPortal({
+      'GET /merchant/markets': [market()],
+      'GET /merchant/markets/m1/orders': [],
+      'GET /merchant/markets/m1/promotions': [running],
+      'GET /merchant/markets/m1/listings': { items: [ayran], page: 0, size: 50, totalItems: 1, totalPages: 1 },
+      'POST /merchant/translations': { fields: [{ key: 'text', values: { en: 'Ayran week', ar: 'أسبوع العيران' } }] },
+      'POST /merchant/markets/m1/promotions': (call) => ({ ...running, id: 'pr2', ...(call.body as object) }),
+      'DELETE /merchant/markets/m1/promotions/pr1': respond(204),
+    });
+    await user.click(await screen.findByRole('button', { name: 'Aktionen' }));
+    expect(await screen.findByRole('rowheader', { name: 'Teewoche' })).toBeInTheDocument();
+
+    // Validation first: no title.
+    await user.click(screen.getByRole('button', { name: 'Aktion starten' }));
+    expect(await screen.findByText('Bitte einen Titel in der Hauptsprache eingeben.')).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText('Titel · Deutsch (Hauptsprache)'), 'Ayran-Woche');
+    await user.click(screen.getByRole('button', { name: 'Fehlende Sprachen übersetzen' }));
+    await waitFor(() => expect(screen.getByLabelText('Titel · English')).toHaveValue('Ayran week'));
+    expect(screen.getByLabelText('Titel · Deutsch (Hauptsprache)')).toHaveValue('Ayran-Woche');
+    await user.selectOptions(screen.getByLabelText('Art'), 'MULTI_BUY');
+    await user.type(screen.getByLabelText('Preis zusammen (€)'), '2,49');
+    await user.click(await screen.findByRole('checkbox', { name: 'Ayran' }));
+    await user.click(screen.getByRole('button', { name: 'Aktion starten' }));
+    expect(await screen.findByRole('status')).toHaveTextContent('Aktion gestartet.');
+    const body = calls.find((c) => c.method === 'POST' && c.path.endsWith('/promotions'))?.body as Record<string, unknown>;
+    expect(body).toEqual(
+      expect.objectContaining({
+        title: { de: 'Ayran-Woche', en: 'Ayran week', ar: 'أسبوع العيران' },
+        type: 'MULTI_BUY',
+        percentOff: null,
+        bundleQuantity: 3,
+        bundlePrice: { amountCents: 249, currency: 'EUR' },
+        productIds: ['l1'],
+      }),
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Beenden' }));
+    await waitFor(() => expect(calls.some((c) => c.method === 'DELETE')).toBe(true));
+  });
+});
+
 describe('admin catalog review', () => {
   const item = {
     id: 'p1',

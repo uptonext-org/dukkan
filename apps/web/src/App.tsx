@@ -11,10 +11,11 @@ import { ImportPage } from './pages/ImportPage';
 import { ListingsPage } from './pages/ListingsPage';
 import { LoginPage } from './pages/LoginPage';
 import { OrdersBoard } from './pages/OrdersBoard';
+import { PromotionsPage } from './pages/PromotionsPage';
 import { errorMessage } from './ui/errors';
 
-type Route = 'orders' | 'listings' | 'import' | 'admin' | 'catalog';
-const ROUTES: Route[] = ['orders', 'listings', 'import', 'admin', 'catalog'];
+type Route = 'orders' | 'listings' | 'promotions' | 'import' | 'admin' | 'catalog';
+const ROUTES: Route[] = ['orders', 'listings', 'promotions', 'import', 'admin', 'catalog'];
 
 function subscribeHash(onChange: () => void) {
   window.addEventListener('hashchange', onChange);
@@ -78,7 +79,7 @@ function Shell({ session }: { session: Session }) {
   const [marketId, setMarketId] = useState<string | null>(null);
   const selected = markets.data?.find((m) => m.id === marketId) ?? markets.data?.[0];
 
-  const available: Route[] = [...(isMerchant ? (['orders', 'listings', 'import'] as const) : []), ...(isAdmin ? (['admin', 'catalog'] as const) : [])];
+  const available: Route[] = [...(isMerchant ? (['orders', 'listings', 'promotions', 'import'] as const) : []), ...(isAdmin ? (['admin', 'catalog'] as const) : [])];
   const current = route !== null && available.includes(route) ? route : available[0];
 
   return (
@@ -138,6 +139,7 @@ function Shell({ session }: { session: Session }) {
             {selected !== undefined && current === 'orders' && <OrdersBoard marketId={selected.id} />}
             {selected !== undefined && current === 'listings' && <ListingsPage marketId={selected.id} />}
             {selected !== undefined && current === 'import' && <ImportPage marketId={selected.id} />}
+            {selected !== undefined && current === 'promotions' && <PromotionsPage marketId={selected.id} primaryLocale={selected.primaryLocale} />}
           </>
         )}
       </main>

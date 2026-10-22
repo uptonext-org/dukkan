@@ -21,7 +21,8 @@
     "import": "CSV-Import",
     "admin": "Marktprüfung",
     "market": "Markt",
-    "catalog": "Katalogprüfung"
+    "catalog": "Katalogprüfung",
+    "promotions": "Aktionen"
   },
   "status": {
     "PENDING_REVIEW": "In Prüfung",
@@ -124,7 +125,8 @@
       "Empty": "Die Datei enthält keine Produktzeilen.",
       "TooManyRows": "Höchstens 1000 Produkte pro Datei."
     },
-    "PRODUCT_DUPLICATE": "Im gemeinsamen Katalog gibt es schon ein Produkt mit diesem Barcode."
+    "PRODUCT_DUPLICATE": "Im gemeinsamen Katalog gibt es schon ein Produkt mit diesem Barcode.",
+    "TRANSLATION_UNAVAILABLE": "Die automatische Übersetzung ist gerade nicht verfügbar."
   },
   "catalog": {
     "title": "Katalogprüfung",
@@ -144,5 +146,38 @@
     "promote": "In den gemeinsamen Katalog",
     "keepPrivate": "Privat lassen",
     "saveFirst": "Erst die Texte speichern, dann entscheiden."
+  },
+  "promotions": {
+    "title": "Aktionen",
+    "list": "Alle Aktionen",
+    "empty": "Noch keine Aktionen.",
+    "new": "Neue Aktion",
+    "titleLabel": "Titel",
+    "primary": "Hauptsprache",
+    "translate": "Fehlende Sprachen übersetzen",
+    "type": "Art",
+    "typePercent": "Prozent-Rabatt",
+    "typeBundle": "Mehrfachkauf",
+    "percent": "Rabatt (%)",
+    "quantity": "Stückzahl",
+    "bundlePrice": "Preis zusammen (€)",
+    "duration": "Laufzeit",
+    "days_one": "{{count}} Tag",
+    "days_other": "{{count}} Tage",
+    "pickProducts_one": "Produkte auswählen ({{count}} gewählt)",
+    "pickProducts_other": "Produkte auswählen ({{count}} gewählt)",
+    "create": "Aktion starten",
+    "created": "Aktion gestartet.",
+    "offer": "Angebot",
+    "until": "Läuft bis",
+    "products": "Produkte",
+    "end": "Beenden",
+    "ended": "beendet",
+    "percentLabel": "−{{percent}} %",
+    "bundleLabel": "{{quantity}} für {{price}}",
+    "titleRequired": "Bitte einen Titel in der Hauptsprache eingeben.",
+    "percentInvalid": "Rabatt zwischen 1 und 90 %.",
+    "bundleInvalid": "Stückzahl 2 bis 20 und einen Preis wie 4,99 eingeben.",
+    "productsRequired": "Bitte mindestens ein Produkt auswählen."
   }
 }

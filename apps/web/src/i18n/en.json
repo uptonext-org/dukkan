@@ -21,7 +21,8 @@
     "import": "CSV import",
     "admin": "Market review",
     "market": "Market",
-    "catalog": "Catalog review"
+    "catalog": "Catalog review",
+    "promotions": "Promotions"
   },
   "status": {
     "PENDING_REVIEW": "In review",
@@ -124,7 +125,8 @@
       "Empty": "The file has no product rows.",
       "TooManyRows": "At most 1000 products per file."
     },
-    "PRODUCT_DUPLICATE": "The shared catalog already has a product with this barcode."
+    "PRODUCT_DUPLICATE": "The shared catalog already has a product with this barcode.",
+    "TRANSLATION_UNAVAILABLE": "Machine translation is not available right now."
   },
   "catalog": {
     "title": "Catalog review",
@@ -144,5 +146,38 @@
     "promote": "Move to shared catalog",
     "keepPrivate": "Keep private",
     "saveFirst": "Save the texts first, then decide."
+  },
+  "promotions": {
+    "title": "Promotions",
+    "list": "All promotions",
+    "empty": "No promotions yet.",
+    "new": "New promotion",
+    "titleLabel": "Title",
+    "primary": "main language",
+    "translate": "Translate missing languages",
+    "type": "Kind",
+    "typePercent": "Percent off",
+    "typeBundle": "Multi-buy",
+    "percent": "Discount (%)",
+    "quantity": "Quantity",
+    "bundlePrice": "Price together (€)",
+    "duration": "Runs for",
+    "days_one": "{{count}} day",
+    "days_other": "{{count}} days",
+    "pickProducts_one": "Choose products ({{count}} selected)",
+    "pickProducts_other": "Choose products ({{count}} selected)",
+    "create": "Start promotion",
+    "created": "Promotion started.",
+    "offer": "Offer",
+    "until": "Runs until",
+    "products": "Products",
+    "end": "End",
+    "ended": "ended",
+    "percentLabel": "−{{percent}}%",
+    "bundleLabel": "{{quantity}} for {{price}}",
+    "titleRequired": "Please enter a title in the main language.",
+    "percentInvalid": "Discount between 1 and 90%.",
+    "bundleInvalid": "Enter a quantity of 2 to 20 and a price like 4.99.",
+    "productsRequired": "Please choose at least one product."
   }
 }

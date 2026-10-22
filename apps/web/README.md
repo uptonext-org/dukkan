@@ -6,6 +6,8 @@ actions; the portal is for work at a desk:
 - **Bestellungen**: orders board in four columns (new, accepted, ready/on the way, done), the next
   allowed status as buttons, refreshes every 30 seconds.
 - **Sortiment**: all listings with search; change price and availability inline.
+- **Aktionen**: percent-off and multi-buy promotions with a product picker, title in de/en/ar
+  ("Fehlende Sprachen übersetzen" fills the empty ones), running promotions can be ended.
 - **CSV-Import**: upload a sheet (Excel "CSV UTF-8", `;` or `,`), check every row first (dry run),
   then import all at once. Template download included. Endpoint and columns: `importListings` in
   `packages/shared-contracts/openapi.yaml`.
