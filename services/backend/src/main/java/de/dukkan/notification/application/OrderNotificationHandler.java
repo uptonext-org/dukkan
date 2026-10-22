@@ -66,7 +66,8 @@ class OrderNotificationHandler implements EventHandler {
   }
 
   private void notify(UUID userId, Optional<Text> text, OrderEvent order, String audience) {
-    if (text.isEmpty()) {
+    if (text.isEmpty() || identity.isDeleted(userId)) {
+      // Deleted accounts get nothing, also from events that were still in the outbox.
       return;
     }
     Text t = text.get();

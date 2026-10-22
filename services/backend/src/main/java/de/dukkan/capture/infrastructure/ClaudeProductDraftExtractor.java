@@ -12,9 +12,11 @@ import com.anthropic.models.messages.StopReason;
 import com.anthropic.models.messages.TextBlock;
 import de.dukkan.capture.application.ProductDraftExtractor;
 import de.dukkan.capture.domain.ExtractedProduct;
+import de.dukkan.shared.ai.AiUsageRecorder;
 import de.dukkan.shared.ai.AnthropicClients;
 import de.dukkan.shared.config.DukkanProperties;
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.LinkedHashMap;
@@ -56,16 +58,23 @@ final class ClaudeProductDraftExtractor implements ProductDraftExtractor {
   private final DukkanProperties.Anthropic settings;
   private final JsonMapper json;
   private final @Nullable AnthropicClient client;
+  private final AiUsageRecorder usage;
 
   @Autowired
-  ClaudeProductDraftExtractor(AnthropicClients clients, JsonMapper json) {
-    this(clients.settings(), json, clients.client().orElse(null));
+  ClaudeProductDraftExtractor(AnthropicClients clients, JsonMapper json, AiUsageRecorder usage) {
+    this(clients.settings(), json, clients.client().orElse(null), usage);
   }
 
   ClaudeProductDraftExtractor(DukkanProperties.Anthropic settings, JsonMapper json, @Nullable AnthropicClient client) {
+    this(settings, json, client, AiUsageRecorder.NONE);
+  }
+
+  private ClaudeProductDraftExtractor(
+      DukkanProperties.Anthropic settings, JsonMapper json, @Nullable AnthropicClient client, AiUsageRecorder usage) {
     this.settings = settings;
     this.json = json;
     this.client = client;
+    this.usage = usage;
   }
 
   @Override
@@ -91,11 +100,19 @@ final class ClaudeProductDraftExtractor implements ProductDraftExtractor {
           message.usage().inputTokens(),
           message.usage().outputTokens(),
           (System.nanoTime() - started) / 1_000_000);
-      return outcome(message, image.isPresent());
+      Outcome outcome = outcome(message, image.isPresent());
+      usage.record(
+          "capture",
+          outcome instanceof Outcome.Extracted ? "ok" : outcome instanceof Outcome.Declined ? "declined" : "incomplete",
+          message.usage().inputTokens(),
+          message.usage().outputTokens(),
+          Duration.ofNanos(System.nanoTime() - started));
+      return outcome;
     } catch (RuntimeException e) {
       // SDK errors (AnthropicException: HTTP status, timeout, I/O) and invalid JSON alike: the
       // caller falls back to the rule-based parser. The merchant's input is not logged.
       LOG.warn("Claude product draft failed: {}", e.toString());
+      usage.record("capture", "error", 0, 0, Duration.ofNanos(System.nanoTime() - started));
       return new Outcome.Failed();
     }
   }

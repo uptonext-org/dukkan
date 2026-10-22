@@ -25,6 +25,7 @@ import de.dukkan.shared.error.BusinessRuleException;
 import de.dukkan.shared.error.ConflictException;
 import de.dukkan.shared.error.ErrorCodes;
 import de.dukkan.shared.events.EventOutbox;
+import io.micrometer.core.instrument.MeterRegistry;
 import de.dukkan.shared.error.NotFoundException;
 import java.time.Clock;
 import java.time.Instant;
@@ -49,6 +50,7 @@ public class OrderService {
   private final CatalogService catalog;
   private final IdentityService identity;
   private final EventOutbox outbox;
+  private final MeterRegistry meters;
   private final Clock clock;
 
   public OrderService(
@@ -60,6 +62,7 @@ public class OrderService {
       CatalogService catalog,
       IdentityService identity,
       EventOutbox outbox,
+      MeterRegistry meters,
       Clock clock) {
     this.orders = orders;
     this.carts = carts;
@@ -69,6 +72,7 @@ public class OrderService {
     this.catalog = catalog;
     this.identity = identity;
     this.outbox = outbox;
+    this.meters = meters;
     this.clock = clock;
   }
 
@@ -146,6 +150,7 @@ public class OrderService {
     // The reservation's capacity unit now belongs to the order; only this market's cart is emptied.
     carts.completeCheckout(userId, marketId);
     outbox.append(OrderEvent.PLACED, order.getId(), event(order, null, "CUSTOMER", now));
+    meters.counter("dukkan.orders.placed", "fulfilment", order.getFulfilmentType().name()).increment();
     return view(order, locale, false);
   }
 
@@ -172,6 +177,7 @@ public class OrderService {
     order.cancel(now);
     fulfilment.releaseCapacity(order.getSlot().slotId());
     outbox.append(OrderEvent.STATUS_CHANGED, order.getId(), event(order, previous, "CUSTOMER", now));
+    meters.counter("dukkan.orders.status_changes", "status", order.getStatus().name(), "by", "customer").increment();
     return view(order, locale, false);
   }
 
@@ -207,6 +213,7 @@ public class OrderService {
       fulfilment.releaseCapacity(order.getSlot().slotId());
     }
     outbox.append(OrderEvent.STATUS_CHANGED, order.getId(), event(order, previous, "MERCHANT", clock.instant()));
+    meters.counter("dukkan.orders.status_changes", "status", order.getStatus().name(), "by", "merchant").increment();
     return view(order, locale, true);
   }
 

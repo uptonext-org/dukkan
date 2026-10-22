@@ -13,6 +13,11 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: dukkan-backend
+      annotations:
+        # Plain Prometheus discovery; with the Prometheus Operator use monitoring/ instead.
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8081"
+        prometheus.io/path: /actuator/prometheus
     spec:
       securityContext:
         runAsNonRoot: true
@@ -24,6 +29,9 @@ spec:
           ports:
             - name: http
               containerPort: 8080
+            # Actuator (health probes, Prometheus metrics); not part of the Service.
+            - name: management
+              containerPort: 8081
           envFrom:
             - configMapRef:
                 name: dukkan-backend
@@ -32,12 +40,12 @@ spec:
           readinessProbe:
             httpGet:
               path: /actuator/health/readiness
-              port: http
+              port: management
             initialDelaySeconds: 10
           livenessProbe:
             httpGet:
               path: /actuator/health/liveness
-              port: http
+              port: management
             initialDelaySeconds: 30
           resources:
             requests:

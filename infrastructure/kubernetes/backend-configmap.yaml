@@ -9,3 +9,5 @@ data:
   DUKKAN_MEDIA_DIRECTORY: /var/lib/dukkan/media
   # Public prefix of uploaded image URLs (set to the ingress host or CDN); empty = derived from the request.
   DUKKAN_MEDIA_PUBLIC_BASE_URL: ""
+  # Actuator on its own port: probes and /actuator/prometheus, never routed by the Service/Ingress.
+  MANAGEMENT_SERVER_PORT: "8081"

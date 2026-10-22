@@ -11,6 +11,7 @@ import java.time.Clock;
 import java.util.Objects;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -68,7 +69,11 @@ public class SecurityConfiguration {
 
   @Bean
   SecurityFilterChain securityFilterChain(
-      HttpSecurity http, ProblemAuthenticationEntryPoint entryPoint, DukkanProperties properties) throws Exception {
+      HttpSecurity http,
+      ProblemAuthenticationEntryPoint entryPoint,
+      DukkanProperties properties,
+      @Value("${management.server.port:-1}") int managementPort)
+      throws Exception {
     boolean loginToBrowse = properties.features().requireLoginToBrowse();
     http.csrf(AbstractHttpConfigurer::disable)
         .httpBasic(AbstractHttpConfigurer::disable)
@@ -106,6 +111,11 @@ public class SecurityConfiguration {
                       "/actuator/health/**",
                       "/actuator/info",
                       "/error")
+                  .permitAll();
+              // Metrics only for requests on the separate management port (not routed publicly);
+              // on the main port they need authentication like everything else.
+              auth.requestMatchers(
+                      request -> managementPort > 0 && request.getLocalPort() == managementPort && "/actuator/prometheus".equals(request.getRequestURI()))
                   .permitAll();
               auth.anyRequest().authenticated();
             })

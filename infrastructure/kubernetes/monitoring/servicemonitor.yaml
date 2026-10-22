@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: dukkan-backend-management
+  labels:
+    app.kubernetes.io/name: dukkan-backend
+    app.kubernetes.io/component: management
+spec:
+  clusterIP: None
+  selector:
+    app.kubernetes.io/name: dukkan-backend
+  ports:
+    - name: management
+      port: 8081
+      targetPort: management
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: dukkan-backend
+  labels:
+    app.kubernetes.io/name: dukkan-backend
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: management
+  endpoints:
+    - port: management
+      path: /actuator/prometheus
+      interval: 30s

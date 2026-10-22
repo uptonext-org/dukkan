@@ -13,6 +13,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Table;
+import java.time.Instant;
 import java.util.EnumSet;
 import java.util.Locale;
 import java.util.Set;
@@ -40,6 +41,9 @@ public class User extends AuditedEntity {
 
   @Column(name = "preferred_locale")
   private @Nullable String preferredLocale;
+
+  @Column(name = "deleted_at")
+  private @Nullable Instant deletedAt;
 
   @CollectionTable(name = "app_user_role", joinColumns = @JoinColumn(name = "user_id"))
   @Column(name = "role", nullable = false)
@@ -89,7 +93,8 @@ public class User extends AuditedEntity {
    * Account deletion (B-51): the row stays because past orders refer to it, but nothing in it
    * identifies the person any more and nobody can sign in.
    */
-  public void anonymize(String placeholderEmail, String unusablePasswordHash) {
+  public void anonymize(String placeholderEmail, String unusablePasswordHash, Instant now) {
+    this.deletedAt = now;
     this.email = placeholderEmail;
     this.passwordHash = unusablePasswordHash;
     this.firstName = "Gelöschtes";
@@ -121,6 +126,10 @@ public class User extends AuditedEntity {
 
   public String getLastName() {
     return lastName;
+  }
+
+  public boolean isDeleted() {
+    return deletedAt != null;
   }
 
   public @Nullable String getPreferredLocale() {

@@ -49,6 +49,9 @@ public interface IdentityService {
    */
   void confirmAccountOwner(UUID userId, @Nullable String password);
 
+  /** True for deleted (anonymised) and unknown accounts. */
+  boolean isDeleted(UUID userId);
+
   /** Providers (APPLE, GOOGLE) linked to the account. */
   List<String> linkedProviders(UUID userId);
 

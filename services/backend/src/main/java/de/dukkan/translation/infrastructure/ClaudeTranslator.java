@@ -8,9 +8,11 @@ import com.anthropic.models.messages.MessageCreateParams;
 import com.anthropic.models.messages.OutputConfig;
 import com.anthropic.models.messages.StopReason;
 import com.anthropic.models.messages.TextBlock;
+import de.dukkan.shared.ai.AiUsageRecorder;
 import de.dukkan.shared.ai.AnthropicClients;
 import de.dukkan.shared.config.DukkanProperties;
 import de.dukkan.translation.application.Translator;
+import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -43,16 +45,14 @@ final class ClaudeTranslator implements Translator {
   private final DukkanProperties.Anthropic settings;
   private final JsonMapper json;
   private final @Nullable AnthropicClient client;
+  private final AiUsageRecorder usage;
 
   @Autowired
-  ClaudeTranslator(AnthropicClients clients, JsonMapper json) {
-    this(clients.settings(), json, clients.client().orElse(null));
-  }
-
-  ClaudeTranslator(DukkanProperties.Anthropic settings, JsonMapper json, @Nullable AnthropicClient client) {
-    this.settings = settings;
+  ClaudeTranslator(AnthropicClients clients, JsonMapper json, AiUsageRecorder usage) {
+    this.settings = clients.settings();
     this.json = json;
-    this.client = client;
+    this.client = clients.client().orElse(null);
+    this.usage = usage;
   }
 
   @Override
@@ -75,10 +75,14 @@ final class ClaudeTranslator implements Translator {
           message.usage().inputTokens(),
           message.usage().outputTokens(),
           (System.nanoTime() - started) / 1_000_000);
-      return result(message);
+      Optional<Map<String, Map<String, String>>> result = result(message);
+      String outcome = result.isPresent() ? "ok" : StopReason.REFUSAL.equals(message.stopReason().orElse(null)) ? "declined" : "incomplete";
+      usage.record("translation", outcome, message.usage().inputTokens(), message.usage().outputTokens(), Duration.ofNanos(System.nanoTime() - started));
+      return result;
     } catch (RuntimeException e) {
       // The merchant's texts are not logged.
       LOG.warn("Claude translation failed: {}", e.toString());
+      usage.record("translation", "error", 0, 0, Duration.ofNanos(System.nanoTime() - started));
       return Optional.empty();
     }
   }

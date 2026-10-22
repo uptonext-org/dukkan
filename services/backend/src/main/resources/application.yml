@@ -50,10 +50,19 @@ server:
     include-exception: false
 
 management:
+  # In Kubernetes the actuator runs on its own port (MANAGEMENT_SERVER_PORT=8081, not routed by the
+  # Service/Ingress); Prometheus scrapes /actuator/prometheus there. On the main port only health
+  # and info are public (SecurityConfiguration).
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,prometheus
+  metrics:
+    tags:
+      application: dukkan-backend
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
   endpoint:
     health:
       probes:

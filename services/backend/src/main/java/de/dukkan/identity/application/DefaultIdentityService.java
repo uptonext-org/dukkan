@@ -253,6 +253,12 @@ class DefaultIdentityService implements IdentityService {
 
   @Override
   @Transactional(readOnly = true)
+  public boolean isDeleted(UUID userId) {
+    return users.findById(userId).map(User::isDeleted).orElse(true);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
   public List<String> linkedProviders(UUID userId) {
     return sessions.identityProviders(userId);
   }
@@ -260,7 +266,7 @@ class DefaultIdentityService implements IdentityService {
   @Override
   public void anonymize(UUID userId) {
     User user = user(userId);
-    user.anonymize("deleted-" + userId + "@deleted.invalid", passwordEncoder.encode(OpaqueTokens.generate()));
+    user.anonymize("deleted-" + userId + "@deleted.invalid", passwordEncoder.encode(OpaqueTokens.generate()), clock.instant());
     sessions.deleteAllForUser(userId);
     LOG.info("Account {} deleted (anonymised)", userId);
   }

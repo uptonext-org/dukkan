@@ -46,3 +46,9 @@ the RabbitMQ Cluster Operator; quorum queues need at least three nodes for fault
 `in-process` transport also works with several replicas (the outbox uses `SKIP LOCKED`), but each event is
 then handled by whichever pod publishes it. For push, mount the Firebase service account JSON as a secret
 file and set `DUKKAN_FCM_PROJECT_ID` and `DUKKAN_FCM_CREDENTIALS_FILE`.
+
+## Monitoring
+
+The actuator runs on port 8081 (`MANAGEMENT_SERVER_PORT`): readiness and liveness probes and
+`/actuator/prometheus`. The Service only exposes 8080, so metrics are not reachable from outside.
+For the Prometheus Operator, see `monitoring/` (ServiceMonitor and alert rules).
