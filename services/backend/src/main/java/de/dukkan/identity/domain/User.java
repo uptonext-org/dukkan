@@ -45,6 +45,9 @@ public class User extends AuditedEntity {
   @Column(name = "deleted_at")
   private @Nullable Instant deletedAt;
 
+  @Column(name = "email_verified_at")
+  private @Nullable Instant emailVerifiedAt;
+
   @CollectionTable(name = "app_user_role", joinColumns = @JoinColumn(name = "user_id"))
   @Column(name = "role", nullable = false)
   @ElementCollection(fetch = FetchType.EAGER)
@@ -126,6 +129,16 @@ public class User extends AuditedEntity {
 
   public String getLastName() {
     return lastName;
+  }
+
+  public boolean isEmailVerified() {
+    return emailVerifiedAt != null;
+  }
+
+  public void markEmailVerified(Instant now) {
+    if (emailVerifiedAt == null) {
+      emailVerifiedAt = now;
+    }
   }
 
   public boolean isDeleted() {

@@ -81,6 +81,7 @@ public class OrderService {
    * idempotency key, repeating the call returns the order created by the first call.
    */
   public OrderView placeOrder(UUID userId, UUID marketId, @Nullable String idempotencyKey, ContentLocale locale) {
+    identity.requireVerifiedEmail(userId);
     if (idempotencyKey != null) {
       Optional<CustomerOrder> existing = orders.findByUserIdAndIdempotencyKey(userId, idempotencyKey);
       if (existing.isPresent()) {

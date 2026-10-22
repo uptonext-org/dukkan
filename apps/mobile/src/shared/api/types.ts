@@ -89,6 +89,8 @@ export interface User {
   lastName: string;
   roles: Role[];
   preferredLocale?: string | null;
+  /** Whether the email address is confirmed (B-39b); older servers omit it. */
+  emailVerified?: boolean;
 }
 
 export interface AuthResponse {

@@ -54,7 +54,8 @@
       "MaxUtf8Bytes": "Das Passwort ist zu lang. Arabische Zeichen zählen doppelt.",
       "Future": "Das Enddatum muss in der Zukunft liegen.",
       "INVALID_RESET_TOKEN": "Der Link ist abgelaufen oder wurde schon benutzt. Bitte fordere einen neuen an.",
-      "Incorrect": "Das aktuelle Passwort stimmt nicht."
+      "Incorrect": "Das aktuelle Passwort stimmt nicht.",
+      "INVALID_VERIFICATION_TOKEN": "Der Bestätigungslink ist ungültig, schon benutzt oder abgelaufen. Fordere im Profil einen neuen an."
     },
     "UNSUPPORTED_MEDIA_TYPE": "Dieses Dateiformat wird nicht unterstützt. Bitte ein JPEG-, PNG- oder WebP-Foto wählen.",
     "FILE_TOO_LARGE": "Das Foto ist zu groß (höchstens 5 MB).",
@@ -67,7 +68,8 @@
     "SOCIAL_SIGN_IN_FAILED": "Die Anmeldung beim Anbieter hat nicht geklappt.",
     "TRANSLATION_UNAVAILABLE": "Die automatische Übersetzung ist gerade nicht verfügbar.",
     "ACCOUNT_HAS_OPEN_ORDERS": "Du hast noch offene Bestellungen. Warte, bis sie abgeschlossen sind, oder storniere sie.",
-    "ACCOUNT_OWNS_MARKETS": "Dieses Konto führt einen Markt. Bitte wende dich an den Dukkan-Support, um den Markt zu schließen oder zu übergeben."
+    "ACCOUNT_OWNS_MARKETS": "Dieses Konto führt einen Markt. Bitte wende dich an den Dukkan-Support, um den Markt zu schließen oder zu übergeben.",
+    "EMAIL_NOT_VERIFIED": "Bitte bestätige zuerst deine E-Mail-Adresse (Link in der Willkommens-Mail)."
   },
   "validation": {
     "required": "Bitte ausfüllen.",
@@ -664,5 +666,14 @@
     "confirmButton": "Endgültig löschen",
     "cancel": "Abbrechen",
     "deleted": "Dein Konto wurde gelöscht."
+  },
+  "verifyEmail": {
+    "title": "E-Mail bestätigen",
+    "working": "Wird bestätigt …",
+    "done": "Danke, deine E-Mail-Adresse ist bestätigt.",
+    "continue": "Weiter",
+    "banner": "Bitte bestätige deine E-Mail-Adresse über den Link in unserer Willkommens-Mail.",
+    "resend": "Mail erneut senden",
+    "sent": "Gesendet. Schau auch im Spam-Ordner nach."
   }
 }

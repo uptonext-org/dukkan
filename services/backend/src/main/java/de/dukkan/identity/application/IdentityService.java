@@ -49,6 +49,24 @@ public interface IdentityService {
    */
   void confirmAccountOwner(UUID userId, @Nullable String password);
 
+  /**
+   * Confirms the email address with the token from the verification mail (single use, valid for
+   * {@code dukkan.security.auth.email-verification-ttl}). Fails with field {@code token}, code
+   * {@code INVALID_VERIFICATION_TOKEN}.
+   */
+  void verifyEmail(String token);
+
+  /** Sends a new verification mail unless the address is already confirmed. */
+  void resendVerification(UUID userId);
+
+  boolean isEmailVerified(UUID userId);
+
+  /**
+   * With {@code dukkan.security.auth.require-verified-email}, fails with 422 {@code
+   * EMAIL_NOT_VERIFIED} for an unconfirmed address (ordering, opening a market); otherwise a no-op.
+   */
+  void requireVerifiedEmail(UUID userId);
+
   /** True for deleted (anonymised) and unknown accounts. */
   boolean isDeleted(UUID userId);
 

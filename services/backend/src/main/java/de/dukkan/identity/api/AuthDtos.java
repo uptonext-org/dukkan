@@ -66,6 +66,8 @@ final class AuthDtos {
 
   record PasswordResetRequest(@Email @NotBlank @Size(max = 254) String email) {}
 
+  record VerifyEmailRequest(@NotBlank @Size(max = 200) String token) {}
+
   record PasswordResetConfirmRequest(
       @NotBlank @Size(max = 200) String token, @NotNull @Size(min = 10, max = 128) @MaxUtf8Bytes(72) String newPassword) {
     @Override

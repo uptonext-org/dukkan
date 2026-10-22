@@ -81,6 +81,11 @@ translation (ADR 0013): the "Fehlende Sprachen übersetzen" button and the backg
 private products. With a key, merchant notes, photos and texts are sent to Anthropic; see ADR 0011 and
 0013 before enabling it in production.
 
+**Email confirmation** (B-39b): registration sends a link to `dukkan://verify-email?token=…` (valid 3 days,
+`dukkan.security.auth.email-verification-ttl`); in the `local` profile the link is logged like the password reset
+link. With `DUKKAN_REQUIRE_VERIFIED_EMAIL=true` (`dukkan.security.auth.require-verified-email`) unconfirmed accounts
+cannot place orders or open markets (422 `EMAIL_NOT_VERIFIED`); it is off by default, so decide before launch.
+
 **Sessions and accounts** (B-39): access tokens live 15 minutes (`DUKKAN_JWT_TTL`), refresh tokens 30 days and
 rotate on every use; the app renews tokens by itself.
 

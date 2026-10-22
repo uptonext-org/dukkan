@@ -85,6 +85,7 @@ class DefaultIdentityService implements IdentityService {
         users.saveAndFlush(
             new User(
                 email, passwordEncoder.encode(command.password()), command.firstName(), command.lastName(), roles, locale));
+    sendVerification(user);
     return authResult(user);
   }
 
@@ -200,6 +201,8 @@ class DefaultIdentityService implements IdentityService {
                   return users.saveAndFlush(new User(email, unusable, clip(first), clip(last), roles, validLocale(command.preferredLocale())));
                 });
     sessions.insertIdentity(provider, token.subject(), user.getId(), email, now);
+    // The provider confirmed this email address (checked above).
+    user.markEmailVerified(now);
     return authResult(user);
   }
 
@@ -249,6 +252,49 @@ class DefaultIdentityService implements IdentityService {
     if (!passwordEncoder.matches(candidate, user.getPasswordHash()) || !candidate.equals(password)) {
       throw new InvalidRequestException("password", "Incorrect", "The password is wrong.");
     }
+  }
+
+  @Override
+  public void verifyEmail(String token) {
+    Instant now = clock.instant();
+    SessionRepository.ResetRow row =
+        sessions
+            .findVerificationForUpdate(OpaqueTokens.hash(token))
+            .filter(r -> r.usedAt() == null && r.expiresAt().isAfter(now))
+            .orElseThrow(() -> new InvalidRequestException("token", ErrorCodes.INVALID_VERIFICATION_TOKEN, "The link is invalid, used or expired."));
+    user(row.userId()).markEmailVerified(now);
+    sessions.useAllVerifications(row.userId(), now);
+  }
+
+  @Override
+  public void resendVerification(UUID userId) {
+    User user = user(userId);
+    if (!user.isEmailVerified() && !user.isDeleted()) {
+      sendVerification(user);
+    }
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public boolean isEmailVerified(UUID userId) {
+    return users.findById(userId).map(User::isEmailVerified).orElse(false);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public void requireVerifiedEmail(UUID userId) {
+    if (settings.requireVerifiedEmail() && !isEmailVerified(userId)) {
+      throw new BusinessRuleException(ErrorCodes.EMAIL_NOT_VERIFIED, "Please confirm your email address first (link in the welcome email).");
+    }
+  }
+
+  private void sendVerification(User user) {
+    Instant now = clock.instant();
+    String token = OpaqueTokens.generate();
+    sessions.insertVerification(UUID.randomUUID(), user.getId(), OpaqueTokens.hash(token), now, now.plus(settings.emailVerificationTtl()));
+    String separator = settings.emailVerificationUrl().contains("?") ? "&" : "?";
+    String link = settings.emailVerificationUrl() + separator + "token=" + URLEncoder.encode(token, UTF_8);
+    mailer.sendEmailVerification(user.getEmail(), user.getFirstName(), user.getPreferredLocale(), link);
   }
 
   @Override
@@ -306,6 +352,7 @@ class DefaultIdentityService implements IdentityService {
         user.getFirstName(),
         user.getLastName(),
         user.getRoles().stream().map(Role::name).sorted().toList(),
-        user.getPreferredLocale());
+        user.getPreferredLocale(),
+        user.isEmailVerified());
   }
 }

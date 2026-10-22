@@ -90,6 +90,7 @@ public class SecurityConfiguration {
                       API + "/auth/logout",
                       API + "/auth/password-reset",
                       API + "/auth/password-reset/confirm",
+                      API + "/auth/verify-email",
                       API + "/auth/social")
                   .permitAll();
               auth.requestMatchers(GET, META).permitAll();

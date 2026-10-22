@@ -43,6 +43,7 @@ export const KNOWN_ERROR_CODES = [
   'TRANSLATION_UNAVAILABLE',
   'ACCOUNT_HAS_OPEN_ORDERS',
   'ACCOUNT_OWNS_MARKETS',
+  'EMAIL_NOT_VERIFIED',
 ] as const;
 
 export type KnownErrorCode = (typeof KNOWN_ERROR_CODES)[number];
@@ -53,7 +54,7 @@ export type KnownErrorCode = (typeof KNOWN_ERROR_CODES)[number];
  * MaxUtf8Bytes: password longer than 72 UTF-8 bytes. Future: promotion end date not in the future.
  * INVALID_RESET_TOKEN: reset link used or expired. Incorrect: wrong current password.
  */
-export const KNOWN_FIELD_CODES = ['MaxUtf8Bytes', 'Future', 'INVALID_RESET_TOKEN', 'Incorrect'] as const;
+export const KNOWN_FIELD_CODES = ['MaxUtf8Bytes', 'Future', 'INVALID_RESET_TOKEN', 'Incorrect', 'INVALID_VERIFICATION_TOKEN'] as const;
 
 export type KnownFieldCode = (typeof KNOWN_FIELD_CODES)[number];
 

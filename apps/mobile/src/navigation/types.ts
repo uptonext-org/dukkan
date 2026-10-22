@@ -55,6 +55,8 @@ export type RootStackParamList = {
   MerchantOrders: { marketId: string };
   /** Deep link from the reset mail: dukkan://reset-password?token=… */
   ResetPassword: { token: string };
+  /** Deep link from the welcome mail: dukkan://verify-email?token=… */
+  VerifyEmail: { token: string };
   ChangePassword: undefined;
   AccountData: undefined;
   Notifications: undefined;

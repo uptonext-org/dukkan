@@ -52,7 +52,9 @@ public final class AuthRateLimitFilter extends OncePerRequestFilter {
             AUTH + "register", new Rule("register", Duration.ofHours(1), limits.registrationsPerHour()),
             AUTH + "refresh", new Rule("refresh", Duration.ofMinutes(1), limits.refreshesPerMinute()),
             AUTH + "password-reset", reset,
-            AUTH + "password-reset/confirm", new Rule("password-reset-confirm", Duration.ofHours(1), limits.passwordResetsPerHour() * 4));
+            AUTH + "password-reset/confirm", new Rule("password-reset-confirm", Duration.ofHours(1), limits.passwordResetsPerHour() * 4),
+            AUTH + "verify-email", new Rule("verify-email", Duration.ofHours(1), limits.passwordResetsPerHour() * 4),
+            "/api/v1/me/email-verification", new Rule("verification-mail", Duration.ofHours(1), limits.passwordResetsPerHour()));
   }
 
   @Override

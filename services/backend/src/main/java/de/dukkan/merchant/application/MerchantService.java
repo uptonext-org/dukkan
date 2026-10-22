@@ -12,6 +12,7 @@ import de.dukkan.catalog.application.ListingUpdate;
 import de.dukkan.i18n.application.ContentLocale;
 import de.dukkan.i18n.application.LocaleService;
 import de.dukkan.i18n.application.SupportedLocale;
+import de.dukkan.identity.application.IdentityService;
 import de.dukkan.market.application.MarketInfo;
 import de.dukkan.market.application.MarketProfile;
 import de.dukkan.market.application.MarketService;
@@ -55,6 +56,7 @@ public class MerchantService {
   private final MediaService media;
   private final ProductCaptureService capture;
   private final LocaleService locales;
+  private final IdentityService identity;
 
   public MerchantService(
       MarketService markets,
@@ -63,7 +65,8 @@ public class MerchantService {
       OrderService orders,
       MediaService media,
       ProductCaptureService capture,
-      LocaleService locales) {
+      LocaleService locales,
+      IdentityService identity) {
     this.markets = markets;
     this.catalog = catalog;
     this.promotions = promotions;
@@ -71,6 +74,7 @@ public class MerchantService {
     this.media = media;
     this.capture = capture;
     this.locales = locales;
+    this.identity = identity;
   }
 
   @Transactional(readOnly = true)
@@ -79,6 +83,7 @@ public class MerchantService {
   }
 
   public MerchantMarket createMarket(UUID userId, MarketProfile profile, ContentLocale locale) {
+    identity.requireVerifiedEmail(userId);
     return markets.create(userId, profile, locale);
   }
 

@@ -83,7 +83,9 @@ public class SessionRepository {
   public int deleteExpired(Instant before) {
     int refresh = jdbc.sql("DELETE FROM refresh_token WHERE expires_at < :before").param("before", Timestamp.from(before)).update();
     int reset = jdbc.sql("DELETE FROM password_reset_token WHERE expires_at < :before").param("before", Timestamp.from(before)).update();
-    return refresh + reset;
+    int verification =
+        jdbc.sql("DELETE FROM email_verification_token WHERE expires_at < :before").param("before", Timestamp.from(before)).update();
+    return refresh + reset + verification;
   }
 
   // ------------------------------------------------------------------ password reset
@@ -152,8 +154,42 @@ public class SessionRepository {
 
   /** Sessions, reset links and linked sign-in providers of a deleted account. */
   public void deleteAllForUser(UUID userId) {
-    for (String table : List.of("refresh_token", "password_reset_token", "user_identity")) {
+    for (String table : List.of("refresh_token", "password_reset_token", "email_verification_token", "user_identity")) {
       jdbc.sql("DELETE FROM " + table + " WHERE user_id = :user").param("user", userId).update();
     }
+  }
+
+  // ------------------------------------------------------------------ email verification (B-39b)
+
+  public void insertVerification(UUID id, UUID userId, byte[] hash, Instant now, Instant expiresAt) {
+    jdbc.sql(
+            "INSERT INTO email_verification_token (id, user_id, token_hash, created_at, expires_at)"
+                + " VALUES (:id, :user, :hash, :now, :expires)")
+        .param("id", id)
+        .param("user", userId)
+        .param("hash", hash)
+        .param("now", Timestamp.from(now))
+        .param("expires", Timestamp.from(expiresAt))
+        .update();
+  }
+
+  public Optional<ResetRow> findVerificationForUpdate(byte[] hash) {
+    return jdbc.sql("SELECT id, user_id, expires_at, used_at FROM email_verification_token WHERE token_hash = :hash FOR UPDATE")
+        .param("hash", hash)
+        .query(
+            (rs, i) ->
+                new ResetRow(
+                    rs.getObject(1, UUID.class),
+                    rs.getObject(2, UUID.class),
+                    rs.getTimestamp(3).toInstant(),
+                    rs.getTimestamp(4) == null ? null : rs.getTimestamp(4).toInstant()))
+        .optional();
+  }
+
+  public void useAllVerifications(UUID userId, Instant now) {
+    jdbc.sql("UPDATE email_verification_token SET used_at = :now WHERE user_id = :user AND used_at IS NULL")
+        .param("now", Timestamp.from(now))
+        .param("user", userId)
+        .update();
   }
 }

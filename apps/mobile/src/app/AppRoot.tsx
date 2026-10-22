@@ -9,10 +9,13 @@ import { useLanguage, type LanguageStore } from '../shared/i18n';
 import { useTheme } from '../shared/theme';
 import { OfflineBanner } from '../shared/ui';
 
-/** Deep links: the password reset mail opens dukkan://reset-password?token=… (scheme in AndroidManifest and Info.plist). */
+/**
+ * Deep links (scheme in AndroidManifest and Info.plist): the password reset mail opens
+ * dukkan://reset-password?token=…, the welcome mail dukkan://verify-email?token=….
+ */
 const LINKING: LinkingOptions<RootStackParamList> = {
   prefixes: ['dukkan://'],
-  config: { screens: { ResetPassword: 'reset-password' } },
+  config: { screens: { ResetPassword: 'reset-password', VerifyEmail: 'verify-email' } },
 };
 
 /**

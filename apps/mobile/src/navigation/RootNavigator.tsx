@@ -6,6 +6,7 @@ import { useAuth } from '../features/auth/AuthProvider';
 import { ChangePasswordScreen } from '../features/auth/screens/ChangePasswordScreen';
 import { AccountDataScreen } from '../features/profile/screens/AccountDataScreen';
 import { ResetPasswordScreen } from '../features/auth/screens/ResetPasswordScreen';
+import { VerifyEmailScreen } from '../features/auth/screens/VerifyEmailScreen';
 import { MarketNavigator } from '../features/market/MarketNavigator';
 import { NotificationsScreen } from '../features/notifications/screens/NotificationsScreen';
 import { AddProductScreen } from '../features/merchant/screens/AddProductScreen';
@@ -51,6 +52,7 @@ export function RootNavigator() {
           <Stack.Screen name="WelcomeMap" component={MapPickerScreen} />
           {/* The reset link may be the first thing a new install opens. */}
           <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} options={{ presentation: 'modal' }} />
+          <Stack.Screen name="VerifyEmail" component={VerifyEmailScreen} options={{ presentation: 'modal' }} />
         </Stack.Group>
       ) : (
         <Stack.Group>
@@ -71,6 +73,7 @@ export function RootNavigator() {
           <Stack.Screen name="MerchantPromotionForm" component={PromotionFormScreen} />
           <Stack.Screen name="MerchantOrders" component={MerchantOrdersScreen} />
           <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} options={{ presentation: 'modal' }} />
+          <Stack.Screen name="VerifyEmail" component={VerifyEmailScreen} options={{ presentation: 'modal' }} />
           <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
           <Stack.Screen name="AccountData" component={AccountDataScreen} />
           <Stack.Screen name="Notifications" component={NotificationsScreen} />

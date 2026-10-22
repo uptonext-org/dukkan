@@ -132,9 +132,13 @@ public record DukkanProperties(
       @DefaultValue("Dukkan <no-reply@dukkan.app>") String mailFrom,
       @DefaultValue("false") boolean logResetLinks,
       @DefaultValue Provider google,
-      @DefaultValue Provider apple) {
+      @DefaultValue Provider apple,
+      @DefaultValue("dukkan://verify-email") String emailVerificationUrl,
+      @DefaultValue("P3D") Duration emailVerificationTtl,
+      @DefaultValue("false") boolean requireVerifiedEmail) {
     public Auth {
-      if (refreshTokenTtl.isNegative() || refreshTokenTtl.isZero() || passwordResetTtl.isNegative() || passwordResetTtl.isZero()) {
+      if (refreshTokenTtl.isNegative() || refreshTokenTtl.isZero() || passwordResetTtl.isNegative() || passwordResetTtl.isZero()
+          || emailVerificationTtl.isNegative() || emailVerificationTtl.isZero()) {
         throw new IllegalArgumentException("dukkan.security.auth TTLs must be positive");
       }
     }

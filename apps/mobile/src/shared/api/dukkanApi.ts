@@ -73,6 +73,8 @@ export interface DukkanApi {
   /** Always resolves (202), whether or not the account exists. */
   requestPasswordReset(email: string): Promise<void>;
   confirmPasswordReset(token: string, newPassword: string): Promise<void>;
+  verifyEmail(token: string): Promise<void>;
+  resendEmailVerification(): Promise<void>;
   changePassword(currentPassword: string, newPassword: string): Promise<void>;
   /** GDPR export (B-51): everything stored about the user, as returned by the server. */
   exportMyData(): Promise<unknown>;
@@ -194,6 +196,8 @@ export function createDukkanApi(client: ApiClient): DukkanApi {
     refreshSession: (refreshToken) => client.request({ method: 'POST', path: '/auth/refresh', body: { refreshToken }, anonymous: true }),
     logout: (refreshToken) => client.request({ method: 'POST', path: '/auth/logout', body: { refreshToken }, anonymous: true }),
     requestPasswordReset: (email) => client.request({ method: 'POST', path: '/auth/password-reset', body: { email }, anonymous: true }),
+    verifyEmail: (token) => client.request({ method: 'POST', path: '/auth/verify-email', body: { token }, anonymous: true }),
+    resendEmailVerification: () => client.request({ method: 'POST', path: '/me/email-verification' }),
     confirmPasswordReset: (token, newPassword) =>
       client.request({ method: 'POST', path: '/auth/password-reset/confirm', body: { token, newPassword }, anonymous: true }),
     changePassword: (currentPassword, newPassword) => client.request({ method: 'PUT', path: '/me/password', body: { currentPassword, newPassword } }),

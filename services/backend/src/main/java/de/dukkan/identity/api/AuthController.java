@@ -9,6 +9,7 @@ import de.dukkan.identity.api.AuthDtos.RefreshRequest;
 import de.dukkan.identity.api.AuthDtos.RegisterRequest;
 import de.dukkan.identity.api.AuthDtos.SocialSignInRequest;
 import de.dukkan.identity.api.AuthDtos.UpdateUserRequest;
+import de.dukkan.identity.api.AuthDtos.VerifyEmailRequest;
 import de.dukkan.identity.application.IdTokenVerifier;
 import de.dukkan.identity.application.IdentityService;
 import de.dukkan.identity.application.RegisterCommand;
@@ -73,6 +74,20 @@ final class AuthController {
   @ResponseStatus(HttpStatus.ACCEPTED)
   void requestPasswordReset(@RequestBody @Valid PasswordResetRequest request) {
     identity.requestPasswordReset(request.email());
+  }
+
+  /** Confirms the email address with the token from the verification mail (B-39b). */
+  @PostMapping("/auth/verify-email")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  void verifyEmail(@RequestBody @Valid VerifyEmailRequest request) {
+    identity.verifyEmail(request.token());
+  }
+
+  /** Sends the verification mail again (nothing happens when the address is already confirmed). */
+  @PostMapping("/me/email-verification")
+  @ResponseStatus(HttpStatus.ACCEPTED)
+  void resendVerification(@CurrentSecurityContext SecurityContext security) {
+    identity.resendVerification(CurrentUser.id(security));
   }
 
   @PostMapping("/auth/password-reset/confirm")

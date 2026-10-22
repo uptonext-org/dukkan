@@ -27,7 +27,7 @@ class JwtTokenServiceTest {
   private static final String SECRET = "test-secret-0123456789abcdef0123456789";
   private static final Instant NOW = Instant.parse("2026-10-19T08:00:00Z");
   private static final Clock FIXED = Clock.fixed(NOW, ZoneOffset.UTC);
-  private final UserView user = new UserView(UUID.randomUUID(), "anna@example.org", "Anna", "Muster", java.util.List.of("CUSTOMER", "MERCHANT"), "de");
+  private final UserView user = new UserView(UUID.randomUUID(), "anna@example.org", "Anna", "Muster", java.util.List.of("CUSTOMER", "MERCHANT"), "de", true);
 
   private static DukkanProperties properties(String secret, Duration ttl) {
     return DukkanPropertiesFixture.withJwt(secret, ttl);

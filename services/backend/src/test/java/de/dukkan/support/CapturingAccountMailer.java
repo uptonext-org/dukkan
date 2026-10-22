@@ -16,6 +16,17 @@ public final class CapturingAccountMailer implements AccountMailer {
     links.put(email, link);
   }
 
+  private final Map<String, String> verificationLinks = new ConcurrentHashMap<>();
+
+  @Override
+  public void sendEmailVerification(String email, String firstName, @Nullable String locale, String link) {
+    verificationLinks.put(email, link);
+  }
+
+  public Optional<String> lastVerificationLink(String email) {
+    return Optional.ofNullable(verificationLinks.get(email));
+  }
+
   public Optional<String> lastLink(String email) {
     return Optional.ofNullable(links.get(email));
   }

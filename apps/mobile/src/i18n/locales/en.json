@@ -54,7 +54,8 @@
       "MaxUtf8Bytes": "The password is too long. Arabic characters count double.",
       "Future": "The end date must be in the future.",
       "INVALID_RESET_TOKEN": "The link has expired or was already used. Please request a new one.",
-      "Incorrect": "The current password is wrong."
+      "Incorrect": "The current password is wrong.",
+      "INVALID_VERIFICATION_TOKEN": "The confirmation link is invalid, used or expired. Ask for a new one in your profile."
     },
     "UNSUPPORTED_MEDIA_TYPE": "This file format is not supported. Please choose a JPEG, PNG or WebP photo.",
     "FILE_TOO_LARGE": "The photo is too large (5 MB at most).",
@@ -67,7 +68,8 @@
     "SOCIAL_SIGN_IN_FAILED": "Signing in with the provider did not work.",
     "TRANSLATION_UNAVAILABLE": "Machine translation is not available right now.",
     "ACCOUNT_HAS_OPEN_ORDERS": "You still have open orders. Wait until they are completed or cancel them.",
-    "ACCOUNT_OWNS_MARKETS": "This account runs a market. Please contact Dukkan support to close or hand over the market."
+    "ACCOUNT_OWNS_MARKETS": "This account runs a market. Please contact Dukkan support to close or hand over the market.",
+    "EMAIL_NOT_VERIFIED": "Please confirm your email address first (link in the welcome email)."
   },
   "validation": {
     "required": "Please fill this in.",
@@ -664,5 +666,14 @@
     "confirmButton": "Delete for good",
     "cancel": "Cancel",
     "deleted": "Your account has been deleted."
+  },
+  "verifyEmail": {
+    "title": "Confirm email",
+    "working": "Confirming …",
+    "done": "Thank you, your email address is confirmed.",
+    "continue": "Continue",
+    "banner": "Please confirm your email address with the link in our welcome email.",
+    "resend": "Send the email again",
+    "sent": "Sent. Please also check your spam folder."
   }
 }

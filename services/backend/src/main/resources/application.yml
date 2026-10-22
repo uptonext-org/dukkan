@@ -169,6 +169,11 @@ dukkan:
       # The reset mail links here with ?token=…; the app opens dukkan://reset-password.
       password-reset-url: ${DUKKAN_PASSWORD_RESET_URL:dukkan://reset-password}
       mail-from: ${DUKKAN_MAIL_FROM:Dukkan <no-reply@dukkan.app>}
+      # The welcome mail links here with ?token=… to confirm the address (B-39b).
+      email-verification-url: ${DUKKAN_EMAIL_VERIFICATION_URL:dukkan://verify-email}
+      email-verification-ttl: P3D
+      # true: no orders and no new markets before the address is confirmed (product decision).
+      require-verified-email: ${DUKKAN_REQUIRE_VERIFIED_EMAIL:false}
       # Sign in with Google / Apple: the OAuth client IDs whose ID tokens are accepted (comma separated).
       # Empty = provider disabled (422 SOCIAL_PROVIDER_DISABLED).
       google:

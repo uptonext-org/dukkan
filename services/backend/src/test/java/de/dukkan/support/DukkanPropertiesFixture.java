@@ -40,7 +40,10 @@ public final class DukkanPropertiesFixture {
                 "Dukkan <no-reply@dukkan.app>",
                 false,
                 new DukkanProperties.Provider(List.of(), List.of(), null),
-                new DukkanProperties.Provider(List.of(), List.of(), null))),
+                new DukkanProperties.Provider(List.of(), List.of(), null),
+                "dukkan://verify-email",
+                Duration.ofDays(3),
+                false)),
         new DukkanProperties.Media(
             null, null, DataSize.ofMegabytes(5), 40_000_000, 60, "filesystem", new DukkanProperties.S3(null, "eu-central-1", null, null, null, false, false)),
         new DukkanProperties.Capture(30),
