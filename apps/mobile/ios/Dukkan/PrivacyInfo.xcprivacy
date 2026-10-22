@@ -44,9 +44,24 @@
 			</array>
 		</dict>
 		<dict>
-			<!-- Merchant photos (logo, cover, products) uploaded to the merchant's market. -->
+			<!-- Merchant photos (logo, cover, products) uploaded to the merchant's market; photos and video frames of a
+			     shopping list, sent to be read and not stored. -->
 			<key>NSPrivacyCollectedDataType</key>
 			<string>NSPrivacyCollectedDataTypePhotosorVideos</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+		<dict>
+			<!-- A shopping list the customer dictated or typed (text only; audio stays on the device), sent to be
+			     matched to products and not stored. -->
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeOtherUserContent</string>
 			<key>NSPrivacyCollectedDataTypeLinked</key>
 			<true/>
 			<key>NSPrivacyCollectedDataTypeTracking</key>

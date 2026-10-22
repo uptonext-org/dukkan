@@ -49,6 +49,7 @@ public final class DukkanPropertiesFixture {
         new DukkanProperties.Capture(30),
         new DukkanProperties.Push(fcm),
         new DukkanProperties.Ai(new DukkanProperties.Anthropic(null, "claude-opus-5-5", "low", Duration.ofSeconds(60), 8000, true, null)),
-        new DukkanProperties.Translation(60));
+        new DukkanProperties.Translation(60),
+        new DukkanProperties.ShoppingList(20));
   }
 }

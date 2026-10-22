@@ -54,9 +54,13 @@
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Dukkan nutzt deinen Standort, um Märkte in deiner Nähe und ihre Entfernung anzuzeigen.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Dukkan nutzt deine Fotos nur, wenn du für deinen Markt ein Logo, Titelfoto oder Produktfoto auswählst.</string>
+	<string>Dukkan nutzt deine Fotos und Videos nur, wenn du sie auswählst: für Fotos deines Markts oder für eine Einkaufsliste.</string>
 	<key>NSCameraUsageDescription</key>
-	<string>Dukkan nutzt die Kamera nur, wenn du für deinen Markt ein Foto aufnimmst.</string>
+	<string>Dukkan nutzt die Kamera nur, wenn du ein Foto oder Video aufnimmst: für deinen Markt oder für eine Einkaufsliste.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Dukkan nutzt das Mikrofon nur, während du eine Einkaufsliste sprichst.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Dukkan wandelt deine gesprochene Einkaufsliste in Text um, damit die passenden Produkte gefunden werden.</string>
 	<key>UIAppFonts</key>
 	<array>
 		<string>Inter-Regular.ttf</string>

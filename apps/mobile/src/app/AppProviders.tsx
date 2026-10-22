@@ -11,6 +11,7 @@ import { ApiProvider, type ApiClient } from '../shared/api';
 import { LanguageProvider, type LanguageStore } from '../shared/i18n';
 import { LocationProvider, type LocationService } from '../shared/location';
 import { PhotoPickerProvider, type PhotoPicker } from '../shared/media';
+import { ShoppingInputProvider, type ShoppingInput } from '../shared/shoppingInput';
 import type { KeyValueStorage } from '../shared/storage';
 import { ThemeProvider } from '../shared/theme';
 
@@ -26,6 +27,8 @@ export interface AppDependencies {
   storage: KeyValueStorage;
   locationService: LocationService;
   photoPicker: PhotoPicker;
+  /** Speech and video frames for the shopping list (native module dukkan-capture). */
+  shoppingInput: ShoppingInput;
   socialSignIn: SocialSignIn;
   pushRegistration: PushRegistration;
 }
@@ -50,7 +53,9 @@ export function AppProviders({
                 <LocationProvider storage={dependencies.storage} service={dependencies.locationService}>
                   <VisitedMarketsProvider storage={dependencies.storage}>
                     <PhotoPickerProvider picker={dependencies.photoPicker}>
-                      <AuthGate>{children}</AuthGate>
+                      <ShoppingInputProvider input={dependencies.shoppingInput}>
+                        <AuthGate>{children}</AuthGate>
+                      </ShoppingInputProvider>
                     </PhotoPickerProvider>
                   </VisitedMarketsProvider>
                 </LocationProvider>

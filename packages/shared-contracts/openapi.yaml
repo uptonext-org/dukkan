@@ -33,13 +33,15 @@ tags:
   - name: search
   - name: favorites
   - name: cart
+  - name: shopping-list
+    description: Shopping lists by voice, photo or video, matched to a market's products.
   - name: fulfilment
   - name: addresses
   - name: orders
   - name: merchant
   - name: media
-  - name: notifications
     description: Image upload (merchants) and public image delivery.
+  - name: notifications
   - name: admin
 security:
   - bearerAuth: []
@@ -638,6 +640,69 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/MarketHome' }
         '404': { $ref: '#/components/responses/NotFound' }
+  /shopping-list:
+    get:
+      tags: [shopping-list]
+      operationId: getShoppingListCapabilities
+      summary: Whether shopping lists can be read from photos and videos
+      description: |
+        `ai` is true when a language model is configured (`DUKKAN_ANTHROPIC_API_KEY`). Without it,
+        typed or dictated lists are still read by simple rules; photos and videos are not.
+      security: []
+      responses:
+        '200':
+          description: Current capabilities.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ShoppingListCapabilities' }
+  /markets/{marketId}/shopping-list:
+    post:
+      tags: [shopping-list]
+      operationId: readShoppingList
+      summary: Match a spoken, typed, photographed or filmed shopping list to the market's products
+      description: |
+        The app transcribes a voice message on the device and sends the text, and/or up to four
+        images (photos, or frames of a short video). Each item comes back with the best available
+        product and the number of units that covers the amount (`1 kg Tomaten` with a 500 g pack →
+        2), plus up to two alternatives. Nothing is stored or added to the cart: the customer
+        confirms in the app, which then sets the cart quantities of the chosen lines
+        (setCartItemQuantity, on top of what is already in the cart).
+
+        `engine` is `AI` when the language model read the list, `RULES` when simple rules did
+        (no model configured, or the model failed; text only). Images without a model, or images
+        the model could not read without text → 422 `SHOPPING_LIST_AI_UNAVAILABLE`.
+        20 lists per customer and hour → 429 `RATE_LIMITED`.
+      parameters:
+        - { $ref: '#/components/parameters/MarketId' }
+        - { $ref: '#/components/parameters/AcceptLanguage' }
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                text: { type: string, maxLength: 2000, description: 'What the customer said or typed, e.g. "2 Gurken, 1 kg Tomaten".' }
+                images:
+                  type: array
+                  maxItems: 4
+                  items: { type: string, format: binary }
+                  description: Photos or video frames (JPEG, PNG or WebP, ≤ 5 MB each, ≤ 21 MB in total).
+            encoding:
+              images:
+                contentType: image/jpeg, image/png, image/webp
+      responses:
+        '200':
+          description: The items, in the order given.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ShoppingListResult' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
+        '422': { $ref: '#/components/responses/BusinessRuleViolation' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
   /markets/{marketId}/categories:
     get:
       tags: [catalog]
@@ -2347,6 +2412,46 @@ components:
       properties:
         price: { $ref: '#/components/schemas/Money' }
         unit: { type: string, enum: [kg, l, piece] }
+    ShoppingListCapabilities:
+      type: object
+      required: [ai, maxImages, maxTextLength]
+      additionalProperties: false
+      properties:
+        ai: { type: boolean, description: 'Photos and videos can be read; dictated lists are read by the model too.' }
+        maxImages: { type: integer, example: 4 }
+        maxTextLength: { type: integer, example: 2000 }
+    ShoppingListResult:
+      type: object
+      required: [engine, lines]
+      additionalProperties: false
+      properties:
+        engine: { type: string, enum: [AI, RULES] }
+        lines:
+          type: array
+          items: { $ref: '#/components/schemas/ShoppingListLine' }
+    ShoppingListLine:
+      type: object
+      required: [text, amount, match, alternatives]
+      additionalProperties: false
+      properties:
+        text: { type: string, description: 'The item in the customer''s words, e.g. "1 kg Tomaten".', example: 1 kg Tomaten }
+        amount: { type: [string, 'null'], description: 'Weight or volume asked for; null for counts.', example: 1 kg }
+        match:
+          description: The best available product; null when nothing in the market fits.
+          oneOf:
+            - { $ref: '#/components/schemas/ShoppingListChoice' }
+            - { type: 'null' }
+        alternatives:
+          type: array
+          maxItems: 2
+          items: { $ref: '#/components/schemas/ShoppingListChoice' }
+    ShoppingListChoice:
+      type: object
+      required: [product, quantity]
+      additionalProperties: false
+      properties:
+        product: { $ref: '#/components/schemas/ProductSummary' }
+        quantity: { type: integer, minimum: 1, description: 'Units that cover the amount, within maxOrderQuantity.' }
     ProductSummary:
       type: object
       required: [id, marketId, name, unitSize, price, available, organic, isNew, maxOrderQuantity]

@@ -671,3 +671,37 @@ export interface PromotionRequest {
   validUntil: string;
   productIds: string[];
 }
+
+// ---------------------------------------------------------------- shopping list by voice, photo or video (F1)
+/** `GET /shopping-list`: whether photos and videos can be read (a language model is configured). */
+export interface ShoppingListCapabilities {
+  ai: boolean;
+  maxImages: number;
+  maxTextLength: number;
+}
+
+export interface ShoppingListChoice {
+  product: ProductSummary;
+  /** Units that cover the amount asked for, within `maxOrderQuantity`. */
+  quantity: number;
+}
+
+export interface ShoppingListLine {
+  /** The item in the customer's words, e.g. "1 kg Tomaten". */
+  text: string;
+  /** Weight or volume asked for ("1 kg"); null for counts. */
+  amount: string | null;
+  match: ShoppingListChoice | null;
+  alternatives: ShoppingListChoice[];
+}
+
+export interface ShoppingListResult {
+  engine: 'AI' | 'RULES';
+  lines: ShoppingListLine[];
+}
+
+/** `POST /markets/{marketId}/shopping-list`: dictated or typed text and/or photos or video frames. */
+export interface ShoppingListRequest {
+  text?: string | undefined;
+  images: UploadFile[];
+}

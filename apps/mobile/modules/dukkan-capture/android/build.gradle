@@ -1,0 +1,33 @@
+def safeExtGet(prop, fallback) {
+    rootProject.ext.has(prop) ? rootProject.ext.get(prop) : fallback
+}
+
+apply plugin: "com.android.library"
+
+// The app applies the Kotlin plugin itself (android.builtInKotlin=false); apply it here when it is missing.
+if (project.extensions.findByName("kotlin") == null) {
+    apply plugin: "org.jetbrains.kotlin.android"
+}
+apply plugin: "com.facebook.react"
+
+android {
+    namespace "app.dukkan.capture"
+    compileSdkVersion safeExtGet("compileSdkVersion", 36)
+
+    defaultConfig {
+        minSdkVersion safeExtGet("minSdkVersion", 24)
+        targetSdkVersion safeExtGet("targetSdkVersion", 36)
+    }
+    lint {
+        abortOnError false
+    }
+}
+
+repositories {
+    google()
+    mavenCentral()
+}
+
+dependencies {
+    implementation "com.facebook.react:react-android"
+}

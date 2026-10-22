@@ -150,6 +150,30 @@ rules answer with `AI_UNAVAILABLE` / `AI_DECLINED`. Field-level warnings (`NAME_
 Errors: 400 `VALIDATION_FAILED` (neither `text` nor `imageKey`, text > 1000, unknown `imageKey`),
 403/404 (not a merchant / not the owner), 429 `RATE_LIMITED` (30 per merchant and hour).
 
+### Shopping list by voice, photo or video
+`POST /markets/{id}/shopping-list` (multipart, signed-in customer) matches a dictated or typed list
+and/or up to four photos or video frames to the market's available products (ADR 0015). Nothing is
+stored or added; the app adds the confirmed lines to the cart. Captured from the local run without an
+API key (`engine: RULES`), products cut to name, size and quantity:
+```bash
+curl -s -H "Authorization: Bearer $TOKEN" -H 'Accept-Language: de' \
+  -F 'text=2 Gurken, 1 kg Tomaten und 6 Eier, Einhorn-Schokolade' localhost:8080/api/v1/markets/$MARKET/shopping-list
+```
+```json
+{"engine":"RULES","lines":[
+  {"text":"2 Gurken","amount":null,"match":{"product":{"name":"Salatgurke","unitSize":"1 Stück","…":"…"},"quantity":2},"alternatives":[]},
+  {"text":"1 kg Tomaten","amount":"1 kg","match":{"product":{"name":"Strauchtomaten","unitSize":"500 g","…":"…"},"quantity":2},
+   "alternatives":[{"product":{"name":"Tomatenmark","unitSize":"700 g","…":"…"},"quantity":2}]},
+  {"text":"6 Eier","amount":null,"match":{"product":{"name":"Eier aus Freilandhaltung","unitSize":"10 Stück","…":"…"},"quantity":1},
+   "alternatives":[{"product":{"name":"Erişte-Eiernudeln","…":"…"},"quantity":6}]},
+  {"text":"Einhorn-Schokolade","amount":null,"match":null,"alternatives":[]}]}
+```
+With `DUKKAN_ANTHROPIC_API_KEY` set, `engine` is `AI`: Claude reads the transcript and the images and
+returns search terms, amount and unit per item; matching and pack counts stay on the server. Without a
+key, images answer 422 `SHOPPING_LIST_AI_UNAVAILABLE` (`GET /shopping-list` → `"ai": false` tells the app
+beforehand). 400 `VALIDATION_FAILED` (neither text nor images, text > 2000, more than 4 images, not
+JPEG/PNG/WebP), 401 without a token, 404 unknown or inactive market, 429 `RATE_LIMITED` (20 per hour).
+
 ### Errors
 Every error is `application/problem+json` with a stable `code`. Validation
 errors carry a `code` per field, and clients show their own translation:

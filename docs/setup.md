@@ -75,11 +75,14 @@ works without any key: the rule-based parser reads price, pack size and category
 | `dukkan.ai.anthropic.server-side-fallbacks` | | `true` (`fallbacks: "default"`: a declined request is retried by the API on its recommended model) |
 | `dukkan.capture.drafts-per-hour` | | 30 per merchant and instance (429 `RATE_LIMITED`) |
 | `dukkan.translation.requests-per-hour` | | 60 translation requests per merchant and instance (B-38) |
+| `dukkan.shopping-list.requests-per-hour` | | 20 shopping lists per customer and instance (ADR 0015) |
 
 The key is read only from this setting (not from `ANTHROPIC_API_KEY`). The same key enables machine
 translation (ADR 0013): the "Fehlende Sprachen übersetzen" button and the background translation of new
-private products. With a key, merchant notes, photos and texts are sent to Anthropic; see ADR 0011 and
-0013 before enabling it in production.
+private products, and lets customers' shopping lists be read from photos and short videos (ADR 0015;
+without a key, spoken and typed lists are read by rules and the app says that photos and videos are not
+available). With a key, merchant notes, photos and texts and customers' shopping lists are sent to
+Anthropic; see ADR 0011, 0013 and 0015 before enabling it in production.
 
 **Email confirmation** (B-39b): registration sends a link to `dukkan://verify-email?token=…` (valid 3 days,
 `dukkan.security.auth.email-verification-ttl`); in the `local` profile the link is logged like the password reset

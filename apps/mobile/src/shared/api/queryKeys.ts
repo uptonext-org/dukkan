@@ -13,6 +13,7 @@ import type {
  */
 export const queryKeys = {
   me: ['me'] as const,
+  shoppingListCapabilities: ['shoppingListCapabilities'] as const,
   marketTypes: (lang: string) => ['marketTypes', lang] as const,
   cuisines: (lang: string) => ['cuisines', lang] as const,
   places: (lang: string, q: string) => ['places', lang, q] as const,

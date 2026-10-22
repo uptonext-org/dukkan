@@ -63,10 +63,16 @@ public class SecurityConfiguration {
         API + "/search/products"
       };
 
-  /** Always public: languages, filter chips and the address search used during onboarding. */
+  /** Always public: languages, filter chips, the address search used during onboarding, AI availability. */
   private static final String[] META =
       new String[] {
-        API + "/locales", API + "/market-types", API + "/cuisines", API + "/categories", API + "/geo/search", API + "/geo/reverse"
+        API + "/locales",
+        API + "/market-types",
+        API + "/cuisines",
+        API + "/categories",
+        API + "/geo/search",
+        API + "/geo/reverse",
+        API + "/shopping-list"
       };
 
   @Bean

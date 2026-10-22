@@ -14,6 +14,7 @@ import de.dukkan.capture.application.ProductDraftExtractor;
 import de.dukkan.capture.domain.ExtractedProduct;
 import de.dukkan.shared.ai.AiUsageRecorder;
 import de.dukkan.shared.ai.AnthropicClients;
+import de.dukkan.shared.ai.ModelImages;
 import de.dukkan.shared.config.DukkanProperties;
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -87,7 +88,11 @@ final class ClaudeProductDraftExtractor implements ProductDraftExtractor {
     if (client == null) {
       return new Outcome.Failed();
     }
-    Optional<Image> image = request.image() == null ? Optional.empty() : ModelImages.prepare(request.image());
+    Optional<Image> image =
+        request.image() == null
+            ? Optional.empty()
+            : ModelImages.prepare(new ModelImages.Image(request.image().bytes(), request.image().contentType()))
+                .map(prepared -> new Image(prepared.bytes(), prepared.contentType()));
     if (request.text() == null && image.isEmpty()) {
       return new Outcome.Failed();
     }
@@ -142,7 +147,7 @@ final class ClaudeProductDraftExtractor implements ProductDraftExtractor {
           ContentBlockParam.ofImage(
               Base64ImageSource.builder()
                   .data(Base64.getEncoder().encodeToString(image.bytes()))
-                  .mediaType(mediaType(image.contentType()))
+                  .mediaType(ModelImages.mediaType(image.contentType()))
                   .build()));
     }
     content.add(
@@ -168,14 +173,6 @@ final class ClaudeProductDraftExtractor implements ProductDraftExtractor {
       builder.putAdditionalHeader("anthropic-beta", FALLBACK_BETA).putAdditionalBodyProperty("fallbacks", JsonValue.from("default"));
     }
     return builder.build();
-  }
-
-  private static Base64ImageSource.MediaType mediaType(String contentType) {
-    return switch (contentType) {
-      case "image/png" -> Base64ImageSource.MediaType.IMAGE_PNG;
-      case "image/webp" -> Base64ImageSource.MediaType.IMAGE_WEBP;
-      default -> Base64ImageSource.MediaType.IMAGE_JPEG;
-    };
   }
 
   private static Map<String, JsonValue> jsonValues(Map<String, Object> schema) {

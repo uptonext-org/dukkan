@@ -27,7 +27,17 @@ public record DukkanProperties(
     @DefaultValue Capture capture,
     @DefaultValue Push push,
     @DefaultValue Ai ai,
-    @DefaultValue Translation translation) {
+    @DefaultValue Translation translation,
+    @DefaultValue ShoppingList shoppingList) {
+
+  /** Shopping list by voice, photo or video (F1): requests per customer and hour. */
+  public record ShoppingList(@DefaultValue("20") int requestsPerHour) {
+    public ShoppingList {
+      if (requestsPerHour < 1) {
+        throw new IllegalArgumentException("dukkan.shopping-list.requests-per-hour must be >= 1");
+      }
+    }
+  }
 
   /** Machine translation of merchant texts (B-38): suggestions per merchant and hour. */
   public record Translation(@DefaultValue("60") int requestsPerHour) {

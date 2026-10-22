@@ -9,6 +9,8 @@ import { createI18n, createLanguageStore } from '../shared/i18n';
 import { createGeolocationService } from '../shared/location';
 import type { PhotoPicker } from '../shared/media';
 import { createImagePickerPhotoPicker } from '../shared/media/imagePickerPhotoPicker';
+import type { ShoppingInput } from '../shared/shoppingInput';
+import { createNativeShoppingInput } from '../shared/shoppingInput/nativeShoppingInput';
 import { createAsyncKeyValueStorage, createKeychainTokenStorage, type TokenStorage } from '../shared/storage';
 import type { AppDependencies } from './AppProviders';
 
@@ -17,6 +19,7 @@ export function createDependencies(
   photoPicker: PhotoPicker = createImagePickerPhotoPicker(),
   socialSignIn: SocialSignIn = createUnavailableSocialSignIn(),
   pushRegistration: PushRegistration = createUnavailablePushRegistration(),
+  shoppingInput: ShoppingInput = createNativeShoppingInput(),
 ): AppDependencies {
   const storage = createAsyncKeyValueStorage();
   const languageStore = createLanguageStore(storage, () => getLocales().map((l) => l.languageTag));
@@ -39,6 +42,7 @@ export function createDependencies(
     storage,
     locationService: createGeolocationService(),
     photoPicker,
+    shoppingInput,
     socialSignIn,
     pushRegistration,
   };

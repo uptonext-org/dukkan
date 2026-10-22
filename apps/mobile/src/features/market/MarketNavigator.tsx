@@ -17,6 +17,7 @@ import { ProductDetailScreen } from '../catalog/screens/ProductDetailScreen';
 import { MarketFavoritesScreen } from '../favorites/screens/MarketFavoritesScreen';
 import { OrderConfirmationScreen } from '../orders/screens/OrderConfirmationScreen';
 import { MarketSearchScreen } from '../search/screens/MarketSearchScreen';
+import { ShoppingListScreen } from '../shoppingList/screens/ShoppingListScreen';
 import { MarketHeader } from './components/MarketHeader';
 import { MarketContext, useMarketContext } from './MarketContext';
 import { MarketHomeScreen } from './screens/MarketHomeScreen';
@@ -85,6 +86,7 @@ export function MarketNavigator({ route, navigation }: RootStackScreenProps<'Mar
         <Stack.Screen name="MarketTabs" component={MarketTabs} />
         <Stack.Screen name="MarketProduct" component={ProductDetailScreen} />
         <Stack.Screen name="MarketProducts" component={CategoryProductsScreen} />
+        <Stack.Screen name="ShoppingList" component={ShoppingListScreen} />
         <Stack.Screen name="OrderConfirmation" component={OrderConfirmationScreen} options={{ gestureEnabled: false }} />
       </Stack.Navigator>
     </MarketContext>

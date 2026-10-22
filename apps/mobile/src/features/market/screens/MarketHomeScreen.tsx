@@ -9,6 +9,7 @@ import { makeStyles, useTheme } from '../../../shared/theme';
 import { AppText, CardSkeletons, ErrorState, Icon, IconButton, SectionTitle } from '../../../shared/ui';
 import { ProductCarousel } from '../../catalog/components/ProductCarousel';
 import { FulfilmentLink } from '../../fulfilment/components/FulfilmentLink';
+import { ShoppingListEntry } from '../../shoppingList/components/ShoppingListEntry';
 import { useMarketHome } from '../api/hooks';
 import { BannerCarousel } from '../components/BannerCarousel';
 import { CategoryBand } from '../components/CategoryBand';
@@ -83,6 +84,9 @@ export function MarketHomeScreen({ navigation }: MarketTabScreenProps<'MarketHom
       </View>
       <CategoryBand marketId={marketId} onOpen={(category) => navigation.navigate('MarketProducts', { title: category.name, filter: { categoryId: category.id } })} />
       {banners.length > 0 && <BannerCarousel banners={banners} onPress={openBanner} label={t('marketHome.banners')} />}
+      <View style={styles.gutter}>
+        <ShoppingListEntry onPress={() => navigation.navigate('ShoppingList')} />
+      </View>
       <View style={styles.gutter}>
         <MarketInfoCard market={market} />
       </View>

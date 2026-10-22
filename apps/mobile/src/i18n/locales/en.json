@@ -69,7 +69,8 @@
     "TRANSLATION_UNAVAILABLE": "Machine translation is not available right now.",
     "ACCOUNT_HAS_OPEN_ORDERS": "You still have open orders. Wait until they are completed or cancel them.",
     "ACCOUNT_OWNS_MARKETS": "This account runs a market. Please contact Dukkan support to close or hand over the market.",
-    "EMAIL_NOT_VERIFIED": "Please confirm your email address first (link in the welcome email)."
+    "EMAIL_NOT_VERIFIED": "Please confirm your email address first (link in the welcome email).",
+    "SHOPPING_LIST_AI_UNAVAILABLE": "Photos and videos cannot be read right now because AI is not set up."
   },
   "validation": {
     "required": "Please fill this in.",
@@ -699,5 +700,50 @@
     "lastVisit": "Last viewed on {{date}}",
     "boughtHere": "Bought here",
     "lastOrderButton": "View last order"
+  },
+  "shoppingList": {
+    "title": "Shopping list",
+    "entryTitle": "Say or film your shopping list",
+    "entrySubtitle": "Say, type or show what you need – we find the products.",
+    "intro": "Say or type your list, e.g. “2 cucumbers, 1 kg tomatoes”. You can also take a photo or a short video of your note or your fridge.",
+    "introNoAi": "Say or type your list, e.g. “2 cucumbers, 1 kg tomatoes”.",
+    "speak": "Say your list",
+    "stopSpeaking": "Done speaking",
+    "listening": "Listening … tap when you are done",
+    "placeholder": "e.g. 2 cucumbers, 1 kg tomatoes and a pack of milk",
+    "textLabel": "Your shopping list",
+    "mediaTitle": "Photo or video",
+    "mediaHint": "A note, your fridge or empty packaging: we take a few stills from a video; the video itself stays on your phone.",
+    "recordVideo": "Record video",
+    "takePhoto": "Take photo",
+    "fromLibrary": "From library",
+    "images_one": "{{count}} image selected",
+    "images_other": "{{count}} images selected",
+    "removeImages": "Remove images",
+    "noAi": "AI is not set up for this service yet, so photos and videos cannot be read right now – spoken and typed lists work.",
+    "recognise": "Find products",
+    "speechError": {
+      "permission": "Please allow access to the microphone and speech recognition in Settings.",
+      "unavailable": "Speech recognition is not available on this device. You can type the list or use the keyboard's dictation.",
+      "busy": "Speech recognition is busy. Please try again in a moment.",
+      "network": "Speech recognition needs an internet connection.",
+      "failed": "That did not work. Please try again."
+    },
+    "mediaPermission": "Please allow access to the camera or photos in Settings.",
+    "mediaFailed": "The image could not be loaded.",
+    "videoFailed": "No images could be read from the video.",
+    "addToCart_one": "Add {{count}} item to cart",
+    "addToCart_other": "Add {{count}} items to cart",
+    "nothingFound": "We did not recognise any groceries in your list.",
+    "found_one": "{{count}} item found.",
+    "found_other": "{{count}} items found.",
+    "notFound_one": "{{count}} not in the range.",
+    "notFound_other": "{{count}} not in the range.",
+    "rulesFallback": "The AI was not reachable, so the list was read in a simple way. Please check the matches.",
+    "rulesOnly": "Without AI, the list is read in a simple way. Please check the matches.",
+    "again": "New list",
+    "lineNotFound": "Not found in this market's range",
+    "include": "Add {{name}} to cart",
+    "alternatives": "Other matching products"
   }
 }

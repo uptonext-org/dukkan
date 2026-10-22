@@ -46,6 +46,7 @@ import Lock from 'lucide-react-native/icons/lock';
 import LogOut from 'lucide-react-native/icons/log-out';
 import MapIcon from 'lucide-react-native/icons/map';
 import MapPin from 'lucide-react-native/icons/map-pin';
+import Mic from 'lucide-react-native/icons/mic';
 import Milk from 'lucide-react-native/icons/milk';
 import Minus from 'lucide-react-native/icons/minus';
 import Nut from 'lucide-react-native/icons/nut';
@@ -68,6 +69,7 @@ import Download from 'lucide-react-native/icons/download';
 import Trash from 'lucide-react-native/icons/trash';
 import Truck from 'lucide-react-native/icons/truck';
 import UserRound from 'lucide-react-native/icons/user-round';
+import Video from 'lucide-react-native/icons/video';
 import Wheat from 'lucide-react-native/icons/wheat';
 import WifiOff from 'lucide-react-native/icons/wifi-off';
 import X from 'lucide-react-native/icons/x';
@@ -101,6 +103,7 @@ const ICONS = {
   logout: LogOut,
   map: MapIcon,
   pin: MapPin,
+  mic: Mic,
   minus: Minus,
   package: Package,
   edit: Pencil,
@@ -117,6 +120,7 @@ const ICONS = {
   download: Download,
   truck: Truck,
   user: UserRound,
+  video: Video,
   offline: WifiOff,
   close: X,
   // Product placeholders (see productPlaceholder.ts)
