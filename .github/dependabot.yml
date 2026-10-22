@@ -48,3 +48,6 @@ updates:
   - package-ecosystem: docker
     directory: /services/backend
     schedule: { interval: monthly }
+    # The stack is pinned to Java 25 (LTS); the build toolchain requires it.
+    ignore:
+      - { dependency-name: "eclipse-temurin", update-types: ["version-update:semver-major"] }
