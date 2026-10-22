@@ -3,55 +3,46 @@ package de.dukkan.shared.ratelimit;
 import de.dukkan.shared.error.RateLimitedException;
 import java.time.Clock;
 import java.time.Duration;
-import java.util.concurrent.ConcurrentHashMap;
+import java.time.Instant;
 
 /**
- * Fixed-window counter per key, held in memory per instance (a shared store is backlog B-39).
- * Stale windows are swept once more than {@code maxTrackedKeys} keys are tracked.
+ * Fixed-window counter per key (windows aligned to the epoch, e.g. full hours), stored in a {@link
+ * RateLimitStore} shared by all instances (B-53).
  *
  * @param <K> the key type, e.g. a user id
  */
 public final class FixedWindowRateLimiter<K> {
 
-  private static final int MAX_TRACKED_KEYS = 50_000;
-
-  private record Window(long startEpochSecond, int count) {}
-
+  private final String bucket;
   private final int limit;
   private final Duration window;
   private final Clock clock;
-  private final ConcurrentHashMap<K, Window> windows = new ConcurrentHashMap<>();
+  private final RateLimitStore store;
 
-  public FixedWindowRateLimiter(int limit, Duration window, Clock clock) {
-    if (limit < 1 || window.isNegative() || window.isZero()) {
-      throw new IllegalArgumentException("limit must be >= 1 and window positive");
+  /** {@code bucket} names the limit in the store, e.g. {@code uploads}. */
+  public FixedWindowRateLimiter(String bucket, int limit, Duration window, Clock clock, RateLimitStore store) {
+    if (limit < 1 || window.isNegative() || window.isZero() || window.toSeconds() < 1) {
+      throw new IllegalArgumentException("limit must be >= 1 and window at least one second");
     }
+    this.bucket = bucket;
     this.limit = limit;
     this.window = window;
     this.clock = clock;
+    this.store = store;
   }
 
   /**
    * Counts one attempt for the key, or throws {@link RateLimitedException} once the window is full.
-   *
-   * @param what plural noun for the message, e.g. {@code uploads}
+   * {@code what} is a plural noun for the message, e.g. {@code uploads}.
    */
   public void acquire(K key, String what) {
     long now = clock.instant().getEpochSecond();
     long length = window.toSeconds();
-    if (windows.size() > MAX_TRACKED_KEYS) {
-      windows.entrySet().removeIf(e -> now - e.getValue().startEpochSecond() >= length);
-    }
-    Window current =
-        windows.compute(
-            key,
-            (k, w) ->
-                w == null || now - w.startEpochSecond() >= length
-                    ? new Window(now, 1)
-                    : new Window(w.startEpochSecond(), w.count() + 1));
-    if (current.count() > limit) {
-      long retryAfter = current.startEpochSecond() + length - now;
-      throw new RateLimitedException(retryAfter, "Too many " + what + ". Try again in " + Math.max(1, retryAfter) + " seconds.");
+    long start = now - Math.floorMod(now, length);
+    int count = store.increment(bucket, String.valueOf(key), Instant.ofEpochSecond(start), Instant.ofEpochSecond(start + length));
+    if (count > limit) {
+      long retryAfter = Math.max(1, start + length - now);
+      throw new RateLimitedException(retryAfter, "Too many " + what + ". Try again in " + retryAfter + " seconds.");
     }
   }
 }

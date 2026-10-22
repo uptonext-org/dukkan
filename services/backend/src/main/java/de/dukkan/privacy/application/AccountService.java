@@ -15,6 +15,7 @@ import de.dukkan.order.application.OrderView;
 import de.dukkan.shared.error.ConflictException;
 import de.dukkan.shared.error.ErrorCodes;
 import de.dukkan.shared.ratelimit.FixedWindowRateLimiter;
+import de.dukkan.shared.ratelimit.RateLimitStore;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -69,7 +70,8 @@ public class AccountService {
       OrderService orders,
       NotificationService notifications,
       MarketService markets,
-      Clock clock) {
+      Clock clock,
+      RateLimitStore rateLimits) {
     this.identity = identity;
     this.addresses = addresses;
     this.carts = carts;
@@ -79,7 +81,7 @@ public class AccountService {
     this.markets = markets;
     this.clock = clock;
     // The password check must not become a way to guess passwords with a stolen session.
-    this.deletionAttempts = new FixedWindowRateLimiter<>(5, Duration.ofHours(1), clock);
+    this.deletionAttempts = new FixedWindowRateLimiter<>("account-deletion", 5, Duration.ofHours(1), clock, rateLimits);
   }
 
   @Transactional(readOnly = true)

@@ -7,6 +7,7 @@ import de.dukkan.shared.error.BusinessRuleException;
 import de.dukkan.shared.error.ErrorCodes;
 import de.dukkan.shared.error.InvalidRequestException;
 import de.dukkan.shared.ratelimit.FixedWindowRateLimiter;
+import de.dukkan.shared.ratelimit.RateLimitStore;
 import de.dukkan.translation.application.Translator.Item;
 import de.dukkan.translation.application.Translator.TextKind;
 import java.time.Clock;
@@ -35,10 +36,10 @@ public class TranslationService {
   private final LocaleService locales;
   private final FixedWindowRateLimiter<UUID> rateLimiter;
 
-  public TranslationService(Translator translator, LocaleService locales, DukkanProperties properties, Clock clock) {
+  public TranslationService(Translator translator, LocaleService locales, DukkanProperties properties, Clock clock, RateLimitStore store) {
     this.translator = translator;
     this.locales = locales;
-    this.rateLimiter = new FixedWindowRateLimiter<>(properties.translation().requestsPerHour(), Duration.ofHours(1), clock);
+    this.rateLimiter = new FixedWindowRateLimiter<>("translations", properties.translation().requestsPerHour(), Duration.ofHours(1), clock, store);
   }
 
   public boolean available() {

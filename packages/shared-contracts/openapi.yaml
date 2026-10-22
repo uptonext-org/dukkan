@@ -1366,7 +1366,7 @@ paths:
           `sizeBytes` is the stored size.
         - The cleaned file is stored under a content-addressed key (SHA-256 of the bytes plus
           the extension), so uploading the same file again returns the same URL.
-        - 60 uploads per user per hour (per instance) → 429 `RATE_LIMITED` with `Retry-After`.
+        - 60 uploads per user per hour → 429 `RATE_LIMITED` with `Retry-After`.
       requestBody:
         required: true
         content:
@@ -1425,7 +1425,7 @@ paths:
           unknown values from the model are dropped (`CATEGORY_UNCERTAIN` when no category is left).
         - The draft is returned in the request's language for `name`, but the model also fills the
           other supported locales; review the translations before saving.
-        - 30 drafts per user per hour (per instance) → 429 `RATE_LIMITED` with `Retry-After`.
+        - 30 drafts per user per hour → 429 `RATE_LIMITED` with `Retry-After`.
       requestBody:
         required: true
         content:
@@ -1461,7 +1461,7 @@ paths:
           `newProduct`, so shoppers find them in every language (marked as machine translations;
           a merchant's own text is never overwritten).
         - Without a configured language model, or when it fails or declines → 422
-          `TRANSLATION_UNAVAILABLE`. 60 requests per user per hour (per instance) → 429.
+          `TRANSLATION_UNAVAILABLE`. 60 requests per user per hour → 429.
       requestBody:
         required: true
         content:

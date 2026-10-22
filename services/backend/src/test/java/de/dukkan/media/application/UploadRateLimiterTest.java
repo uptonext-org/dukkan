@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import de.dukkan.shared.config.DukkanProperties;
 import de.dukkan.shared.error.RateLimitedException;
+import de.dukkan.shared.ratelimit.RateLimitStore;
 import de.dukkan.support.MutableClock;
 import java.time.Duration;
 import java.util.UUID;
@@ -26,7 +27,7 @@ class UploadRateLimiterTest {
   @Test
   void allowsTheConfiguredNumberPerUserAndHour() {
     MutableClock clock = new MutableClock();
-    UploadRateLimiter limiter = new UploadRateLimiter(properties(3), clock);
+    UploadRateLimiter limiter = new UploadRateLimiter(properties(3), clock, RateLimitStore.inMemory());
     UUID anna = UUID.randomUUID();
     UUID ben = UUID.randomUUID();
     for (int i = 0; i < 3; i++) {

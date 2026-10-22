@@ -20,6 +20,7 @@ import de.dukkan.shared.api.CodeName;
 import de.dukkan.shared.config.DukkanProperties;
 import de.dukkan.shared.error.InvalidRequestException;
 import de.dukkan.shared.ratelimit.FixedWindowRateLimiter;
+import de.dukkan.shared.ratelimit.RateLimitStore;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.math.BigDecimal;
@@ -82,13 +83,14 @@ public class ProductCaptureService {
       LocaleService locales,
       MediaService media,
       DukkanProperties properties,
-      Clock clock) {
+      Clock clock,
+      RateLimitStore rateLimits) {
     this.ai = ai;
     this.catalog = catalog;
     this.markets = markets;
     this.locales = locales;
     this.media = media;
-    this.rateLimiter = new FixedWindowRateLimiter<>(properties.capture().draftsPerHour(), Duration.ofHours(1), clock);
+    this.rateLimiter = new FixedWindowRateLimiter<>("product-drafts", properties.capture().draftsPerHour(), Duration.ofHours(1), clock, rateLimits);
   }
 
   /**

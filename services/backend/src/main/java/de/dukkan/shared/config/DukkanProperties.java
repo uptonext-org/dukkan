@@ -158,7 +158,7 @@ public record DukkanProperties(
   }
 
   /**
-   * Per client IP, per instance limits for the unauthenticated auth endpoints (brute force and
+   * Per client IP limits for the unauthenticated auth endpoints (brute force and
    * throwaway accounts). Behind a proxy, enable {@code server.forward-headers-strategy} so that the
    * client IP is the real one.
    */
