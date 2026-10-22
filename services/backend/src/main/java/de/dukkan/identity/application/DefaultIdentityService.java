@@ -19,6 +19,7 @@ import java.net.URLEncoder;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -235,6 +236,33 @@ class DefaultIdentityService implements IdentityService {
     User user = user(userId);
     user.grantRole(Role.valueOf(role));
     return view(user);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public void confirmAccountOwner(UUID userId, @Nullable String password) {
+    User user = user(userId);
+    if (password == null && !sessions.identityProviders(userId).isEmpty()) {
+      return;
+    }
+    String candidate = password == null || password.getBytes(UTF_8).length > MAX_PASSWORD_BYTES ? "" : password;
+    if (!passwordEncoder.matches(candidate, user.getPasswordHash()) || !candidate.equals(password)) {
+      throw new InvalidRequestException("password", "Incorrect", "The password is wrong.");
+    }
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public List<String> linkedProviders(UUID userId) {
+    return sessions.identityProviders(userId);
+  }
+
+  @Override
+  public void anonymize(UUID userId) {
+    User user = user(userId);
+    user.anonymize("deleted-" + userId + "@deleted.invalid", passwordEncoder.encode(OpaqueTokens.generate()));
+    sessions.deleteAllForUser(userId);
+    LOG.info("Account {} deleted (anonymised)", userId);
   }
 
   @Override

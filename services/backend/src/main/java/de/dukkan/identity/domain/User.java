@@ -85,6 +85,19 @@ public class User extends AuditedEntity {
     this.passwordHash = passwordHash;
   }
 
+  /**
+   * Account deletion (B-51): the row stays because past orders refer to it, but nothing in it
+   * identifies the person any more and nobody can sign in.
+   */
+  public void anonymize(String placeholderEmail, String unusablePasswordHash) {
+    this.email = placeholderEmail;
+    this.passwordHash = unusablePasswordHash;
+    this.firstName = "Gelöschtes";
+    this.lastName = "Konto";
+    this.preferredLocale = null;
+    this.roles.clear();
+  }
+
   public void grantRole(Role role) {
     roles.add(role);
   }

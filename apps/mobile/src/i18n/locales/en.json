@@ -65,7 +65,9 @@
     "SOCIAL_PROVIDER_DISABLED": "This sign-in option is not available right now.",
     "SOCIAL_EMAIL_MISSING": "The provider did not share a confirmed email address.",
     "SOCIAL_SIGN_IN_FAILED": "Signing in with the provider did not work.",
-    "TRANSLATION_UNAVAILABLE": "Machine translation is not available right now."
+    "TRANSLATION_UNAVAILABLE": "Machine translation is not available right now.",
+    "ACCOUNT_HAS_OPEN_ORDERS": "You still have open orders. Wait until they are completed or cancel them.",
+    "ACCOUNT_OWNS_MARKETS": "This account runs a market. Please contact Dukkan support to close or hand over the market."
   },
   "validation": {
     "required": "Please fill this in.",
@@ -647,5 +649,20 @@
     "newCount_other": "{{count}} new",
     "push": "Push notifications",
     "pushHint": "Updates always appear here; with push, your phone shows them too."
+  },
+  "account": {
+    "title": "My data & account",
+    "exportTitle": "Export data",
+    "exportText": "Everything Dukkan stores about you (account, addresses, orders, favourites, notifications), as a file to share or keep.",
+    "exportButton": "Export data",
+    "exportShareTitle": "My Dukkan data",
+    "deleteTitle": "Delete account",
+    "deleteText": "Addresses, carts, favourites and notifications are deleted and you are signed out everywhere. Past orders stay for the markets' records – without your name and address.",
+    "passwordHint": "Leave empty if you only sign in with Apple or Google.",
+    "deleteButton": "Delete account …",
+    "confirmText": "Really delete? This cannot be undone.",
+    "confirmButton": "Delete for good",
+    "cancel": "Cancel",
+    "deleted": "Your account has been deleted."
   }
 }

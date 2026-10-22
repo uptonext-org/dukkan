@@ -64,6 +64,7 @@ import Soup from 'lucide-react-native/icons/soup';
 import Sparkles from 'lucide-react-native/icons/sparkles';
 import Store from 'lucide-react-native/icons/store';
 import Tag from 'lucide-react-native/icons/tag';
+import Download from 'lucide-react-native/icons/download';
 import Trash from 'lucide-react-native/icons/trash';
 import Truck from 'lucide-react-native/icons/truck';
 import UserRound from 'lucide-react-native/icons/user-round';
@@ -113,6 +114,7 @@ const ICONS = {
   store: Store,
   tag: Tag,
   trash: Trash,
+  download: Download,
   truck: Truck,
   user: UserRound,
   offline: WifiOff,

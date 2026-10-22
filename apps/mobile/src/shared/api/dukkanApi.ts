@@ -74,6 +74,10 @@ export interface DukkanApi {
   requestPasswordReset(email: string): Promise<void>;
   confirmPasswordReset(token: string, newPassword: string): Promise<void>;
   changePassword(currentPassword: string, newPassword: string): Promise<void>;
+  /** GDPR export (B-51): everything stored about the user, as returned by the server. */
+  exportMyData(): Promise<unknown>;
+  /** Account deletion; `password` is null for Apple/Google-only accounts. */
+  deleteMyAccount(password: string | null): Promise<void>;
   socialSignIn(request: SocialSignInRequest): Promise<AuthResponse>;
   // notifications (B-37)
   listNotifications(signal?: Signal): Promise<NotificationPage>;
@@ -193,6 +197,8 @@ export function createDukkanApi(client: ApiClient): DukkanApi {
     confirmPasswordReset: (token, newPassword) =>
       client.request({ method: 'POST', path: '/auth/password-reset/confirm', body: { token, newPassword }, anonymous: true }),
     changePassword: (currentPassword, newPassword) => client.request({ method: 'PUT', path: '/me/password', body: { currentPassword, newPassword } }),
+    exportMyData: () => client.request({ method: 'GET', path: '/me/export' }),
+    deleteMyAccount: (password) => client.request({ method: 'DELETE', path: '/me', body: password === null ? {} : { password } }),
     socialSignIn: (body) => client.request({ method: 'POST', path: '/auth/social', body, anonymous: true }),
     listNotifications: (signal) => get('/me/notifications', { size: 50 }, signal),
     markNotificationsRead: () => client.request({ method: 'POST', path: '/me/notifications/read' }),

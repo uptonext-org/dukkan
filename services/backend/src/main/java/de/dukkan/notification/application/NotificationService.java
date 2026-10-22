@@ -49,4 +49,19 @@ public class NotificationService {
   public void setPushEnabled(UUID userId, boolean enabled) {
     repository.setPushEnabled(userId, enabled, clock.instant());
   }
+
+  /** Everything notification-related of a deleted account. */
+  public void deleteAll(UUID userId) {
+    repository.deleteAllOf(userId);
+  }
+
+  /** One inbox entry for the data export (B-51). */
+  public record ExportedNotification(String kind, String title, String body, java.time.Instant createdAt, boolean read) {}
+
+  @Transactional(readOnly = true)
+  public List<ExportedNotification> export(UUID userId) {
+    return repository.page(userId, 0, 10_000).stream()
+        .map(n -> new ExportedNotification(n.kind(), n.title(), n.body(), n.createdAt(), n.readAt() != null))
+        .toList();
+  }
 }

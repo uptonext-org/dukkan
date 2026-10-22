@@ -321,6 +321,21 @@ paths:
         '204': { description: Removed (or not registered for this account). }
         '400': { $ref: '#/components/responses/ValidationError' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+  /me/export:
+    get:
+      tags: [auth]
+      operationId: exportMyData
+      summary: Everything stored about the signed-in user, as JSON (GDPR Art. 15 and 20)
+      description: Account, linked sign-ins, addresses, orders, favourites, notifications and settings, and the ids of own markets. Sent as a download (`Content-Disposition`), never cached.
+      parameters:
+        - { $ref: '#/components/parameters/AcceptLanguage' }
+      responses:
+        '200':
+          description: The export.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AccountExport' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
   /me/notification-settings:
     get:
       tags: [notifications]
@@ -410,6 +425,35 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
 
   # ---------------------------------------------------------------- geo
+    delete:
+      tags: [auth]
+      operationId: deleteMyAccount
+      summary: Delete the signed-in account (GDPR Art. 17; App Store and Google Play requirement)
+      description: |
+        Confirm with the current `password`; accounts that only sign in with Apple or Google send no
+        password. Removes addresses, carts (releasing slot reservations), favourites, devices,
+        notifications and settings, ends every session and anonymises the account. Past orders stay
+        for the market's records without the customer's name, street, house number, delivery notes
+        and coordinates. The email address can be used for a new account afterwards.
+
+        - Wrong password → 400 `VALIDATION_FAILED` (field `password`, code `Incorrect`); 5 attempts
+          per hour → 429.
+        - Unfinished orders → 409 `ACCOUNT_HAS_OPEN_ORDERS`; the account runs a market → 409
+          `ACCOUNT_OWNS_MARKETS` (support closes or hands over the market first).
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                password: { type: string, maxLength: 200 }
+      responses:
+        '204': { description: Deleted. Sign out locally. }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
   /geo/search:
     get:
       tags: [geo]
@@ -1826,6 +1870,43 @@ components:
         marketId: { type: [string, 'null'], format: uuid, description: 'For merchant notifications: the market whose order list to open.' }
         createdAt: { type: string, format: date-time }
         read: { type: boolean }
+    AccountExport:
+      type: object
+      required: [exportedAt, account, linkedSignIns, addresses, orders, favorites, notifications, pushEnabled, ownedMarketIds]
+      properties:
+        exportedAt: { type: string, format: date-time }
+        account:
+          type: object
+          required: [id, email, firstName, lastName, roles]
+          properties:
+            id: { type: string, format: uuid }
+            email: { type: string }
+            firstName: { type: string }
+            lastName: { type: string }
+            roles: { type: array, items: { type: string } }
+            preferredLocale: { type: [string, 'null'] }
+        linkedSignIns: { type: array, items: { type: string, enum: [APPLE, GOOGLE] } }
+        addresses: { type: array, items: { type: object } }
+        orders: { type: array, items: { type: object }, description: 'Orders with items, amounts in cents, slot and delivery address snapshot.' }
+        favorites:
+          type: object
+          required: [marketIds, listingIds]
+          properties:
+            marketIds: { type: array, items: { type: string, format: uuid } }
+            listingIds: { type: array, items: { type: string, format: uuid } }
+        notifications:
+          type: array
+          items:
+            type: object
+            required: [kind, title, body, createdAt, read]
+            properties:
+              kind: { type: string }
+              title: { type: string }
+              body: { type: string }
+              createdAt: { type: string, format: date-time }
+              read: { type: boolean }
+        pushEnabled: { type: boolean }
+        ownedMarketIds: { type: array, items: { type: string, format: uuid } }
     NotificationSettings:
       type: object
       required: [pushEnabled]

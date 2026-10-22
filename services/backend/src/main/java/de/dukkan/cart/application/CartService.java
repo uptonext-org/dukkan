@@ -287,4 +287,13 @@ public class CartService {
         reservation,
         cart.getUpdatedAt());
   }
+
+  /** Empties and removes every cart of a deleted account, releasing slot reservations (B-51). */
+  public void deleteAll(UUID userId) {
+    for (Cart cart : carts.findByUserIdOrderByUpdatedAtDesc(userId)) {
+      cart.removeAllItems(clock.instant());
+      releaseReservation(cart);
+      carts.delete(cart);
+    }
+  }
 }

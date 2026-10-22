@@ -34,6 +34,8 @@ public final class ErrorCodes {
   // 422
   public static final String PRODUCT_UNAVAILABLE = "PRODUCT_UNAVAILABLE";
   public static final String PRODUCT_DUPLICATE = "PRODUCT_DUPLICATE";
+  public static final String ACCOUNT_OWNS_MARKETS = "ACCOUNT_OWNS_MARKETS";
+  public static final String ACCOUNT_HAS_OPEN_ORDERS = "ACCOUNT_HAS_OPEN_ORDERS";
   public static final String MAX_QUANTITY_EXCEEDED = "MAX_QUANTITY_EXCEEDED";
   public static final String MARKET_NOT_ACTIVE = "MARKET_NOT_ACTIVE";
   public static final String FULFILMENT_NOT_OFFERED = "FULFILMENT_NOT_OFFERED";

@@ -124,4 +124,11 @@ public class NotificationRepository {
   public int deleteReadBefore(Instant cutoff) {
     return jdbc.sql("DELETE FROM notification WHERE read_at IS NOT NULL AND created_at < :cutoff").param("cutoff", Timestamp.from(cutoff)).update();
   }
+
+  /** Devices, inbox and settings of a deleted account (B-51). */
+  public void deleteAllOf(UUID userId) {
+    for (String table : List.of("device_token", "notification", "notification_setting")) {
+      jdbc.sql("DELETE FROM " + table + " WHERE user_id = :userId").param("userId", userId).update();
+    }
+  }
 }

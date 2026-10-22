@@ -65,7 +65,9 @@
     "SOCIAL_PROVIDER_DISABLED": "Diese Anmeldung ist gerade nicht verfügbar.",
     "SOCIAL_EMAIL_MISSING": "Der Anbieter hat keine bestätigte E-Mail-Adresse übermittelt.",
     "SOCIAL_SIGN_IN_FAILED": "Die Anmeldung beim Anbieter hat nicht geklappt.",
-    "TRANSLATION_UNAVAILABLE": "Die automatische Übersetzung ist gerade nicht verfügbar."
+    "TRANSLATION_UNAVAILABLE": "Die automatische Übersetzung ist gerade nicht verfügbar.",
+    "ACCOUNT_HAS_OPEN_ORDERS": "Du hast noch offene Bestellungen. Warte, bis sie abgeschlossen sind, oder storniere sie.",
+    "ACCOUNT_OWNS_MARKETS": "Dieses Konto führt einen Markt. Bitte wende dich an den Dukkan-Support, um den Markt zu schließen oder zu übergeben."
   },
   "validation": {
     "required": "Bitte ausfüllen.",
@@ -647,5 +649,20 @@
     "newCount_other": "{{count}} neu",
     "push": "Push-Mitteilungen",
     "pushHint": "Neuigkeiten erscheinen immer hier; mit Push zeigt sie auch dein Telefon an."
+  },
+  "account": {
+    "title": "Meine Daten & Konto",
+    "exportTitle": "Daten exportieren",
+    "exportText": "Alle Daten, die Dukkan über dich speichert (Konto, Adressen, Bestellungen, Favoriten, Mitteilungen), als Datei zum Teilen oder Sichern.",
+    "exportButton": "Daten exportieren",
+    "exportShareTitle": "Meine Dukkan-Daten",
+    "deleteTitle": "Konto löschen",
+    "deleteText": "Adressen, Warenkörbe, Favoriten und Mitteilungen werden gelöscht, du wirst überall abgemeldet. Vergangene Bestellungen bleiben für die Unterlagen der Märkte erhalten – ohne deinen Namen und deine Adresse.",
+    "passwordHint": "Bei Anmeldung nur mit Apple oder Google leer lassen.",
+    "deleteButton": "Konto löschen …",
+    "confirmText": "Wirklich löschen? Das kann nicht rückgängig gemacht werden.",
+    "confirmButton": "Endgültig löschen",
+    "cancel": "Abbrechen",
+    "deleted": "Dein Konto wurde gelöscht."
   }
 }

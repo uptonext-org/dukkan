@@ -19,4 +19,8 @@ public interface AddressRepository extends JpaRepository<Address, UUID> {
   @Modifying(flushAutomatically = true, clearAutomatically = true)
   @Query("update Address a set a.defaultAddress = false where a.userId = :userId and a.defaultAddress = true")
   int clearDefault(UUID userId);
+
+  @Modifying(flushAutomatically = true, clearAutomatically = true)
+  @Query("delete from Address a where a.userId = :userId")
+  int deleteAllOf(UUID userId);
 }

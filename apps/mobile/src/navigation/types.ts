@@ -56,6 +56,7 @@ export type RootStackParamList = {
   /** Deep link from the reset mail: dukkan://reset-password?token=… */
   ResetPassword: { token: string };
   ChangePassword: undefined;
+  AccountData: undefined;
   Notifications: undefined;
 };
 

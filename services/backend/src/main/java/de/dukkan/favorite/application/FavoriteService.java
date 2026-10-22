@@ -117,4 +117,17 @@ public class FavoriteService {
     }
     return groups;
   }
+
+  /** Ids of the favourite markets and products (data export, B-51). */
+  public record FavoriteIds(List<UUID> marketIds, List<UUID> listingIds) {}
+
+  @Transactional(readOnly = true)
+  public FavoriteIds ids(UUID userId) {
+    return new FavoriteIds(favorites.findMarketIds(userId), favorites.findProductIds(userId));
+  }
+
+  /** All favourites of a deleted account. */
+  public void deleteAll(UUID userId) {
+    favorites.deleteAll(userId);
+  }
 }

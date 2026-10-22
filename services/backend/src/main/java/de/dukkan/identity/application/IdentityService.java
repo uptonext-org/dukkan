@@ -1,5 +1,6 @@
 package de.dukkan.identity.application;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
@@ -40,6 +41,19 @@ public interface IdentityService {
 
   /** Adds a role (idempotent), e.g. ADMIN for operators. Takes effect with the next token. */
   UserView grantRole(UUID userId, String role);
+
+  /**
+   * Confirms that the signed-in person may delete the account: the current password, or nothing
+   * for accounts that only sign in with Apple/Google. Fails with field {@code password}, code
+   * {@code Incorrect}.
+   */
+  void confirmAccountOwner(UUID userId, @Nullable String password);
+
+  /** Providers (APPLE, GOOGLE) linked to the account. */
+  List<String> linkedProviders(UUID userId);
+
+  /** Removes everything that identifies the user and ends all sessions (B-51). */
+  void anonymize(UUID userId);
 
   /** Updates the given (non-null) fields; the locale must be an enabled content locale. */
   UserView updateProfile(UUID userId, @Nullable String firstName, @Nullable String lastName, @Nullable String preferredLocale);

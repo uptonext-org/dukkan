@@ -68,6 +68,11 @@ class DefaultAddressService implements AddressService {
   }
 
   @Override
+  public void deleteAll(UUID userId) {
+    addresses.deleteAllOf(userId);
+  }
+
+  @Override
   public void delete(UUID userId, UUID addressId) {
     addresses.delete(owned(userId, addressId));
   }

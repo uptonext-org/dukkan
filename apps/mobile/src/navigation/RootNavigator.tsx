@@ -4,6 +4,7 @@ import { AddressFormScreen } from '../features/addresses/screens/AddressFormScre
 import { AddressListScreen } from '../features/addresses/screens/AddressListScreen';
 import { useAuth } from '../features/auth/AuthProvider';
 import { ChangePasswordScreen } from '../features/auth/screens/ChangePasswordScreen';
+import { AccountDataScreen } from '../features/profile/screens/AccountDataScreen';
 import { ResetPasswordScreen } from '../features/auth/screens/ResetPasswordScreen';
 import { MarketNavigator } from '../features/market/MarketNavigator';
 import { NotificationsScreen } from '../features/notifications/screens/NotificationsScreen';
@@ -71,6 +72,7 @@ export function RootNavigator() {
           <Stack.Screen name="MerchantOrders" component={MerchantOrdersScreen} />
           <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} options={{ presentation: 'modal' }} />
           <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
+          <Stack.Screen name="AccountData" component={AccountDataScreen} />
           <Stack.Screen name="Notifications" component={NotificationsScreen} />
         </Stack.Group>
       )}

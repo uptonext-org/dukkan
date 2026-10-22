@@ -74,4 +74,10 @@ public class FavoriteRepository {
             .query(UUID.class)
             .list());
   }
+
+  /** Favourite markets and products of a deleted account (B-51). */
+  public void deleteAll(UUID userId) {
+    jdbc.sql("DELETE FROM favorite_market WHERE user_id = :userId").param("userId", userId).update();
+    jdbc.sql("DELETE FROM favorite_product WHERE user_id = :userId").param("userId", userId).update();
+  }
 }

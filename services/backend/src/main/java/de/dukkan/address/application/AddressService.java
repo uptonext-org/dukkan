@@ -19,6 +19,9 @@ public interface AddressService {
 
   void delete(UUID userId, UUID addressId);
 
+  /** All addresses of a deleted account (B-51). */
+  void deleteAll(UUID userId);
+
   /** Returns the address if it exists and belongs to the user; otherwise {@code NOT_FOUND}. */
   AddressView getOwned(UUID userId, UUID addressId);
 

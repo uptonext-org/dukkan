@@ -2,6 +2,7 @@ package de.dukkan.identity.infrastructure;
 
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
@@ -142,5 +143,17 @@ public class SessionRepository {
         .param("email", email)
         .param("now", Timestamp.from(now))
         .update();
+  }
+
+  /** Providers linked to the user (export, B-51). */
+  public List<String> identityProviders(UUID userId) {
+    return jdbc.sql("SELECT provider FROM user_identity WHERE user_id = :user ORDER BY provider").param("user", userId).query(String.class).list();
+  }
+
+  /** Sessions, reset links and linked sign-in providers of a deleted account. */
+  public void deleteAllForUser(UUID userId) {
+    for (String table : List.of("refresh_token", "password_reset_token", "user_identity")) {
+      jdbc.sql("DELETE FROM " + table + " WHERE user_id = :user").param("user", userId).update();
+    }
   }
 }

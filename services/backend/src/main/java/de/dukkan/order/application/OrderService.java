@@ -324,4 +324,16 @@ public class OrderService {
         address,
         merchantView ? order.getCustomerName() : null);
   }
+
+  /** True while an order of the user is not finished (placed, accepted, ready or on the way). */
+  @Transactional(readOnly = true)
+  public boolean hasOpenOrders(UUID userId) {
+    return orders.existsByUserIdAndStatusIn(
+        userId, List.of(OrderStatus.PLACED, OrderStatus.ACCEPTED, OrderStatus.READY_FOR_PICKUP, OrderStatus.OUT_FOR_DELIVERY));
+  }
+
+  /** Removes the customer's personal data from their orders (account deletion, B-51). */
+  public void anonymizeCustomer(UUID userId) {
+    orders.anonymizeCustomer(userId);
+  }
 }

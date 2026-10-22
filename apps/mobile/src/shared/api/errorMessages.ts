@@ -41,6 +41,8 @@ export const KNOWN_ERROR_CODES = [
   'INVALID_IMAGE',
   'IMAGE_TOO_LARGE',
   'TRANSLATION_UNAVAILABLE',
+  'ACCOUNT_HAS_OPEN_ORDERS',
+  'ACCOUNT_OWNS_MARKETS',
 ] as const;
 
 export type KnownErrorCode = (typeof KNOWN_ERROR_CODES)[number];
