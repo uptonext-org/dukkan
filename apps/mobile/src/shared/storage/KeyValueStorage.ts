@@ -14,6 +14,7 @@ export interface KeyValueStorage {
 export const STORAGE_KEYS = {
   language: 'dukkan.language',
   place: 'dukkan.place',
+  visitedMarkets: 'dukkan.visitedMarkets',
 } as const;
 
 export function createAsyncKeyValueStorage(): KeyValueStorage {

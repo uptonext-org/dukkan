@@ -225,7 +225,7 @@ export interface Banner {
 }
 
 export interface HomeSection {
-  key: 'PROMOTIONS' | 'NEW' | 'FREQUENTLY_ORDERED' | 'CATEGORY';
+  key: 'PROMOTIONS' | 'BESTSELLERS' | 'NEW' | 'FREQUENTLY_ORDERED' | 'CATEGORY';
   title: string;
   subtitle?: string | null;
   categoryId?: string | null;
@@ -304,9 +304,20 @@ export interface ListMarketProductsParams {
   promotedOnly?: boolean;
   newOnly?: boolean;
   organicOnly?: boolean;
+  /** The market's best sellers, most sold first; other filters and the sort are ignored. */
+  bestsellersOnly?: boolean;
   sort?: ProductSort;
   page?: number;
   size?: number;
+}
+
+/** A market the user ordered from or visited (start page view "Meine Märkte"). */
+export interface RecentMarket {
+  market: MarketSummary;
+  lastOrderAt: string | null;
+  lastOrderId: string | null;
+  orderCount: number;
+  recentProducts: ProductSummary[];
 }
 
 export interface MarketOffer {

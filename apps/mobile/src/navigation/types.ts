@@ -22,7 +22,7 @@ export type MarketTabParamList = {
   MarketCart: undefined;
 };
 
-export type ProductFilter = Pick<ListMarketProductsParams, 'categoryId' | 'promotedOnly' | 'newOnly' | 'organicOnly'>;
+export type ProductFilter = Pick<ListMarketProductsParams, 'categoryId' | 'promotedOnly' | 'newOnly' | 'organicOnly' | 'bestsellersOnly'>;
 
 export type MarketStackParamList = {
   MarketTabs: NavigatorScreenParams<MarketTabParamList> | undefined;

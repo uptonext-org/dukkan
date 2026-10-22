@@ -5,6 +5,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AuthGate } from '../features/auth/AuthGate';
 import { AuthProvider } from '../features/auth/AuthProvider';
+import { VisitedMarketsProvider } from '../features/marketplace/visits/VisitedMarkets';
 import type { AuthSession } from '../features/auth/session';
 import { ApiProvider, type ApiClient } from '../shared/api';
 import { LanguageProvider, type LanguageStore } from '../shared/i18n';
@@ -50,11 +51,13 @@ export function AppProviders({
             <QueryClientProvider client={dependencies.queryClient}>
               <AuthProvider session={dependencies.session} socialSignIn={dependencies.socialSignIn} pushRegistration={dependencies.pushRegistration}>
                 <LocationProvider storage={dependencies.storage} service={dependencies.locationService}>
-                  <PhotoPickerProvider picker={dependencies.photoPicker}>
-                    <ShoppingInputProvider input={dependencies.shoppingInput}>
-                      <AuthGate>{children}</AuthGate>
-                    </ShoppingInputProvider>
-                  </PhotoPickerProvider>
+                  <VisitedMarketsProvider storage={dependencies.storage}>
+                    <PhotoPickerProvider picker={dependencies.photoPicker}>
+                      <ShoppingInputProvider input={dependencies.shoppingInput}>
+                        <AuthGate>{children}</AuthGate>
+                      </ShoppingInputProvider>
+                    </PhotoPickerProvider>
+                  </VisitedMarketsProvider>
                 </LocationProvider>
               </AuthProvider>
             </QueryClientProvider>

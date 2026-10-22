@@ -29,6 +29,7 @@ export function ProductCarousel({ marketId, products, label }: { marketId: strin
             busy={actions.busyProductId === item.id}
             onPress={actions.openProduct}
             onChangeQuantity={actions.changeQuantity}
+            onToggleFavorite={actions.toggleFavorite}
           />
         </View>
       )}

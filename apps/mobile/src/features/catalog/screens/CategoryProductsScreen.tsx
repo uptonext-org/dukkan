@@ -12,7 +12,7 @@ import { ProductGrid } from '../components/ProductGrid';
 
 export const PRODUCT_SORTS: ProductSort[] = ['relevance', 'price_asc', 'price_desc', 'name'];
 
-/** Product list for a category, a banner or a quick link (offers, new, organic). */
+/** Product list for a category, a banner or a quick link (offers, new, organic, best sellers). */
 export function CategoryProductsScreen({ route, navigation }: MarketStackScreenProps<'MarketProducts'>) {
   const styles = useStyles();
   const { t } = useTranslation();
@@ -31,13 +31,16 @@ export function CategoryProductsScreen({ route, navigation }: MarketStackScreenP
           marketId={marketId}
           products={query.products}
           header={
-            <View style={styles.header}>
-              <ChipScroller accessibilityLabel={t('marketSearch.sortLabel')}>
-                {PRODUCT_SORTS.map((s) => (
-                  <Chip key={s} label={t(`marketSearch.sort.${s}`)} selected={sort === s} onPress={() => setSort(s)} />
-                ))}
-              </ChipScroller>
-            </View>
+            // Best sellers come in their rank order; sorting them would hide that.
+            route.params.filter.bestsellersOnly === true ? undefined : (
+              <View style={styles.header}>
+                <ChipScroller accessibilityLabel={t('marketSearch.sortLabel')}>
+                  {PRODUCT_SORTS.map((s) => (
+                    <Chip key={s} label={t(`marketSearch.sort.${s}`)} selected={sort === s} onPress={() => setSort(s)} />
+                  ))}
+                </ChipScroller>
+              </View>
+            )
           }
           empty={<EmptyState icon="package" title={t('marketSearch.noProductsTitle')} message={t('marketSearch.noProductsMessage')} />}
           onEndReached={() => {

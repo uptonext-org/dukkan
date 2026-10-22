@@ -113,7 +113,7 @@ public class ShoppingListService {
     for (String term : item.searchTerms()) {
       found =
           catalog
-              .searchMarket(marketId, new MarketProductQuery(term, null, false, false, false, "relevance", 0, CANDIDATES), locale, userId)
+              .searchMarket(marketId, new MarketProductQuery(term, null, false, false, false, false, "relevance", 0, CANDIDATES), locale, userId)
               .items()
               .stream()
               .filter(ProductSummary::available)

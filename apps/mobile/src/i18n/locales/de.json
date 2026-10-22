@@ -193,7 +193,8 @@
     "emptyTitle": "Keine Märkte gefunden",
     "emptyMessage": "In der Nähe passt gerade kein Markt zu deiner Auswahl. Probier andere Filter oder einen anderen Ort.",
     "mapLabel_one": "Karte mit {{count}} Markt",
-    "mapLabel_other": "Karte mit {{count}} Märkten"
+    "mapLabel_other": "Karte mit {{count}} Märkten",
+    "mine": "Meine"
   },
   "market": {
     "open": "Geöffnet",
@@ -221,12 +222,15 @@
       "cartWithTotal": "Warenkorb, {{amount}}"
     },
     "deliveryWithFee": "Lieferung ({{amount}})",
-    "deliveryFreeShort": "Lieferung (gratis)"
+    "deliveryFreeShort": "Lieferung (gratis)",
+    "openHomeHint": "Öffnet die Startseite des Markts"
   },
   "marketHome": {
     "banners": "Aktuelles",
     "all": "Alle",
-    "showAll": "Alle anzeigen: {{title}}"
+    "showAll": "Alle anzeigen: {{title}}",
+    "categories": "Kategorien",
+    "categoryHint": "Zeigt die Produkte dieser Kategorie"
   },
   "product": {
     "organic": "Bio",
@@ -685,6 +689,17 @@
     "banner": "Bitte bestätige deine E-Mail-Adresse über den Link in unserer Willkommens-Mail.",
     "resend": "Mail erneut senden",
     "sent": "Gesendet. Schau auch im Spam-Ordner nach."
+  },
+  "myMarkets": {
+    "emptyTitle": "Noch keine Märkte",
+    "emptyMessage": "Hier erscheinen die Märkte, in denen du bestellt oder gestöbert hast – mit dem, was du dort gekauft hast.",
+    "emptyGuest": "Hier erscheinen die Märkte, die du dir angesehen hast.",
+    "discover": "Märkte entdecken",
+    "lastOrder_one": "Zuletzt bestellt am {{date}} · {{count}} Bestellung",
+    "lastOrder_other": "Zuletzt bestellt am {{date}} · {{count}} Bestellungen",
+    "lastVisit": "Zuletzt angesehen am {{date}}",
+    "boughtHere": "Hier gekauft",
+    "lastOrderButton": "Letzte Bestellung ansehen"
   },
   "shoppingList": {
     "title": "Einkaufsliste",

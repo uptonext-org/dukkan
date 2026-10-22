@@ -58,6 +58,109 @@ describe('Market sub-app: Entdecken', () => {
     expect(screen.getByTestId(`product-tile-${PRODUCT_ID}`)).toBeOnTheScreen();
   });
 
+  it('puts a favourite heart on every product of the start page; it changes at once', async () => {
+    let favorite = false;
+    const home = marketHome();
+    const { fake, dependencies } = setup('jwt', {
+      'GET /me': { id: 'u1', email: 'a@b.de', firstName: 'Ada', lastName: 'L', roles: ['CUSTOMER'] },
+      'GET /me/notifications': { ...page([]), unreadCount: 0 },
+      [`GET /markets/${MARKET_ID}/home`]: () => ({
+        ...home,
+        sections: home.sections.map((section) => ({ ...section, items: section.items.map((item) => ({ ...item, favorite })) })),
+      }),
+      [`GET /markets/${MARKET_ID}/cart`]: cart({ items: [] }),
+      [`PUT /favorites/products/${PRODUCT_ID}`]: () => {
+        favorite = true;
+        return undefined;
+      },
+    });
+    await renderApp(dependencies);
+    const user = await openMarket();
+
+    const firstTile = () => {
+      const [tile] = screen.getAllByTestId(`product-tile-${PRODUCT_ID}`);
+      if (tile === undefined) {
+        throw new Error('no tile');
+      }
+      return tile;
+    };
+    const name = product().name;
+    await user.press(within(firstTile()).getByRole('button', { name: `${name} zu Favoriten` }));
+    // Optimistic: the heart is filled before the server answers and the page reloads.
+    expect(await within(firstTile()).findByRole('button', { name: `${name} aus Favoriten entfernen` })).toBeOnTheScreen();
+    await waitFor(() => expect(fake.calls.some((c) => c.method === 'PUT' && c.path === `/favorites/products/${PRODUCT_ID}`)).toBe(true));
+  });
+
+  it('puts the heart back when the server refuses the favourite', async () => {
+    let loads = 0;
+    const { dependencies } = setup('jwt', {
+      // The refresh after the error never answers (bad network): only the rollback restores the heart.
+      [`GET /markets/${MARKET_ID}/home`]: () => {
+        loads += 1;
+        return loads > 1 ? new Promise(() => undefined) : marketHome();
+      },
+      'GET /me': { id: 'u1', email: 'a@b.de', firstName: 'Ada', lastName: 'L', roles: ['CUSTOMER'] },
+      'GET /me/notifications': { ...page([]), unreadCount: 0 },
+      [`GET /markets/${MARKET_ID}/cart`]: cart({ items: [] }),
+      [`PUT /favorites/products/${PRODUCT_ID}`]: () => {
+        throw new ApiError({ kind: 'http', status: 500, code: 'INTERNAL_ERROR', detail: 'boom' });
+      },
+    });
+    await renderApp(dependencies);
+    const user = await openMarket();
+
+    const name = product().name;
+    const [tile] = screen.getAllByTestId(`product-tile-${PRODUCT_ID}`);
+    if (tile === undefined) {
+      throw new Error('no tile');
+    }
+    await user.press(within(tile).getByRole('button', { name: `${name} zu Favoriten` }));
+    await waitFor(() => expect(within(screen.getAllByTestId(`product-tile-${PRODUCT_ID}`)[0] ?? tile).getByRole('button', { name: `${name} zu Favoriten` })).toBeOnTheScreen());
+  });
+
+  it('shows a band of the market\'s categories right below the delivery time; a tap opens the category', async () => {
+    const category = (id: string, slug: string, name: string, sortOrder: number, extra: object = {}) => ({ id, slug, name, sortOrder, parentId: null, iconKey: slug, productCount: 4, ...extra });
+    const { fake, dependencies } = setup(null, {
+      [`GET /markets/${MARKET_ID}/categories`]: [
+        category('c-meat', 'meat', 'Fleisch & Geflügel', 30),
+        category('c-veg', 'fruit-veg', 'Obst & Gemüse', 10),
+        category('c-apples', 'apples', 'Äpfel', 11, { parentId: 'c-veg' }),
+        category('c-empty', 'frozen', 'Tiefkühl', 90, { productCount: 0 }),
+      ],
+      [`GET /markets/${MARKET_ID}/products`]: () => page([product()]),
+    });
+    await renderApp(dependencies);
+    const user = await openMarket();
+
+    const band = await screen.findByTestId('category-band');
+    // Top-level categories with products only, in the market's order.
+    const chips = within(band).getAllByRole('button').map((chip) => chip.props.accessibilityLabel as string);
+    expect(chips).toEqual(['Obst & Gemüse', 'Fleisch & Geflügel']);
+
+    await user.press(within(band).getByRole('button', { name: 'Fleisch & Geflügel' }));
+    await waitFor(() => expect(fake.calls.some((c) => c.path === `/markets/${MARKET_ID}/products` && c.query?.categoryId === 'c-meat')).toBe(true));
+  });
+
+  it('shows the best sellers and lists all of them in their rank order', async () => {
+    const home = marketHome();
+    const { fake, dependencies } = setup(null, {
+      [`GET /markets/${MARKET_ID}/home`]: {
+        ...home,
+        sections: [{ key: 'BESTSELLERS', title: 'Meistverkauft', subtitle: 'Das kaufen die anderen hier gerade', items: [product()] }, ...home.sections],
+      },
+      [`GET /markets/${MARKET_ID}/products`]: () => page([product()]),
+    });
+    await renderApp(dependencies);
+    const user = await openMarket();
+
+    const section = screen.getByTestId('home-section-BESTSELLERS');
+    expect(section).toHaveTextContent(/Meistverkauft.*Das kaufen die anderen hier gerade/);
+    await user.press(within(section).getByRole('button', { name: 'Alle anzeigen: Meistverkauft' }));
+    await waitFor(() => expect(fake.calls.some((c) => c.path === `/markets/${MARKET_ID}/products` && c.query?.bestsellersOnly === true)).toBe(true));
+    // No sort chips: the order is the rank.
+    expect(screen.queryByRole('button', { name: 'Preis aufsteigend' })).not.toBeOnTheScreen();
+  });
+
   it('asks a guest to sign in when adding to the cart, then continues with the add', async () => {
     const afterAdd = cart({ items: [cartItem({ productId: PRODUCT_ID, name: 'Äpfel Pink Lady', quantity: 1 })], itemCount: 1, total: eur(279) });
     const { fake, dependencies } = setup(null, {

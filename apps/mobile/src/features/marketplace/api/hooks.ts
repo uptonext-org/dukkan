@@ -1,4 +1,4 @@
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query';
 
 import { flattenPages, nextPage, queryKeys, useApi, type ListMarketsParams } from '../../../shared/api';
 import { useLang } from '../../../shared/i18n';
@@ -27,4 +27,18 @@ export function useMarkets(params: Omit<ListMarketsParams, 'page'>) {
     getNextPageParam: nextPage,
   });
   return { ...query, markets: flattenPages(query.data) };
+}
+
+/** "Meine Märkte": ordered-from markets (signed in) and the markets visited on this device. */
+export function useRecentMarkets(visited: string[], at: { lat: number; lng: number } | undefined, signedIn: boolean, enabled: boolean) {
+  const api = useApi();
+  const lang = useLang();
+  // The app orders the result by its own visit times, so a new visit order needs no new request.
+  const ids = [...visited].sort();
+  return useQuery({
+    queryKey: [...queryKeys.recentMarkets(lang, ids, signedIn), at ?? null],
+    queryFn: ({ signal }) => api.listRecentMarkets(ids, at, signal),
+    enabled,
+    placeholderData: keepPreviousData,
+  });
 }

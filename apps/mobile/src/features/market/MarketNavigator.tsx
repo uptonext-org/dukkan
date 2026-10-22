@@ -1,6 +1,6 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -11,6 +11,7 @@ import { formatAmount, formatMoneyForAccessibility, forSpeech } from '../../shar
 import { useTheme } from '../../shared/theme';
 import { useCart } from '../cart/api/hooks';
 import { MarketCartScreen } from '../cart/screens/MarketCartScreen';
+import { useVisitedMarkets } from '../marketplace/visits/VisitedMarkets';
 import { CategoryProductsScreen } from '../catalog/screens/CategoryProductsScreen';
 import { ProductDetailScreen } from '../catalog/screens/ProductDetailScreen';
 import { MarketFavoritesScreen } from '../favorites/screens/MarketFavoritesScreen';
@@ -70,6 +71,8 @@ function MarketTabs() {
 export function MarketNavigator({ route, navigation }: RootStackScreenProps<'Market'>) {
   const { marketId } = route.params;
   const theme = useTheme();
+  const { recordVisit } = useVisitedMarkets();
+  useEffect(() => recordVisit(marketId), [marketId, recordVisit]);
   const value = useMemo(
     () => ({
       marketId,

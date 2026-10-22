@@ -37,6 +37,7 @@ import type {
   ProductSummary,
   Promotion,
   PromotionRequest,
+  RecentMarket,
   RegisterRequest,
   ReorderResult,
   ReserveFulfilmentRequest,
@@ -100,6 +101,8 @@ export interface DukkanApi {
   // markets
   listMarkets(params: ListMarketsParams, signal?: Signal): Promise<Page<MarketSummary>>;
   getMarket(marketId: string, at?: { lat: number; lng: number }, signal?: Signal): Promise<MarketDetail>;
+  /** "Meine Märkte": ordered-from markets (signed in) and the given visited ones. */
+  listRecentMarkets(visited: string[], at?: { lat: number; lng: number }, signal?: Signal): Promise<RecentMarket[]>;
   getMarketHome(marketId: string, signal?: Signal): Promise<MarketHome>;
   listMarketCategories(marketId: string, signal?: Signal): Promise<Category[]>;
   listCategories(signal?: Signal): Promise<Category[]>;
@@ -242,6 +245,7 @@ export function createDukkanApi(client: ApiClient): DukkanApi {
 
     listMarkets: (params, signal) => get('/markets', { ...params }, signal),
     getMarket: (marketId, at, signal) => get(`/markets/${enc(marketId)}`, { ...at }, signal),
+    listRecentMarkets: (visited, at, signal) => get('/markets/recent', { ...(visited.length > 0 ? { visited } : {}), ...at }, signal),
     getMarketHome: (marketId, signal) => get(`/markets/${enc(marketId)}/home`, undefined, signal),
     listMarketCategories: (marketId, signal) =>
       get(`/markets/${enc(marketId)}/categories`, undefined, signal),

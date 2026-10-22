@@ -205,7 +205,8 @@
     "mapLabel_two": "خريطة تضم أسواقًا، العدد: {{count}}",
     "mapLabel_few": "خريطة تضم أسواقًا، العدد: {{count}}",
     "mapLabel_many": "خريطة تضم أسواقًا، العدد: {{count}}",
-    "mapLabel_other": "خريطة تضم أسواقًا، العدد: {{count}}"
+    "mapLabel_other": "خريطة تضم أسواقًا، العدد: {{count}}",
+    "mine": "متاجري"
   },
   "market": {
     "open": "مفتوح",
@@ -237,12 +238,15 @@
     "offers_many": "{{count}} عرضًا",
     "offers_other": "{{count}} عرض",
     "deliveryWithFee": "التوصيل ({{amount}})",
-    "deliveryFreeShort": "التوصيل (مجانًا)"
+    "deliveryFreeShort": "التوصيل (مجانًا)",
+    "openHomeHint": "يفتح الصفحة الرئيسية للمتجر"
   },
   "marketHome": {
     "banners": "أبرز العروض",
     "all": "الكل",
-    "showAll": "عرض الكل: {{title}}"
+    "showAll": "عرض الكل: {{title}}",
+    "categories": "الفئات",
+    "categoryHint": "يعرض منتجات هذه الفئة"
   },
   "product": {
     "organic": "عضوي",
@@ -749,6 +753,21 @@
     "banner": "يُرجى تأكيد البريد الإلكتروني عبر الرابط في رسالة الترحيب.",
     "resend": "إعادة إرسال الرسالة",
     "sent": "تم الإرسال. يُرجى التحقق من مجلد الرسائل غير المرغوب فيها أيضاً."
+  },
+  "myMarkets": {
+    "emptyTitle": "لا توجد متاجر بعد",
+    "emptyMessage": "تظهر هنا المتاجر التي طلبتم منها أو تصفحتموها، مع ما اشتريتموه منها.",
+    "emptyGuest": "تظهر هنا المتاجر التي تصفحتموها.",
+    "discover": "استكشاف المتاجر",
+    "lastOrder_zero": "آخر طلب في {{date}}",
+    "lastOrder_one": "آخر طلب في {{date}} · طلب واحد",
+    "lastOrder_two": "آخر طلب في {{date}} · طلبان",
+    "lastOrder_few": "آخر طلب في {{date}} · {{count}} طلبات",
+    "lastOrder_many": "آخر طلب في {{date}} · {{count}} طلباً",
+    "lastOrder_other": "آخر طلب في {{date}} · {{count}} طلب",
+    "lastVisit": "آخر زيارة في {{date}}",
+    "boughtHere": "تم شراؤه هنا",
+    "lastOrderButton": "عرض آخر طلب"
   },
   "shoppingList": {
     "title": "قائمة التسوّق",

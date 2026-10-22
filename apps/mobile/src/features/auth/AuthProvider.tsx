@@ -54,7 +54,7 @@ export function AuthProvider({
       if (token === null) {
         // Session ended (logout or 401): drop user data, keep browsing data usable.
         queryClient.removeQueries({ queryKey: queryKeys.me });
-        for (const key of ['notifications', 'carts', 'cart', 'addresses', 'orders', 'order', 'marketFavorites', 'favoriteMarkets', 'myMarkets', 'listings', 'myPromotions', 'marketOrders']) {
+        for (const key of ['notifications', 'carts', 'cart', 'addresses', 'orders', 'order', 'marketFavorites', 'favoriteMarkets', 'recentMarkets', 'myMarkets', 'listings', 'myPromotions', 'marketOrders']) {
           queryClient.removeQueries({ queryKey: [key] });
         }
         setStatus('signedOut');
