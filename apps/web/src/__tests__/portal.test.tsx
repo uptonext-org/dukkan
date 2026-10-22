@@ -8,7 +8,9 @@ import type { Session } from '../api/client';
 import type { CatalogReviewItem } from '../api/types';
 import { applyLanguage } from '../i18n';
 import { CSV_TEMPLATE } from '../pages/ImportPage';
+import { change } from '../pages/InsightsPage';
 import { nextStatuses } from '../pages/OrdersBoard';
+import { niceTicks } from '../ui/ColumnChart';
 import { adminUser, fakeBackend, market, memoryStore, merchantUser, respond } from '../test/fakeBackend';
 import { parsePrice } from '../ui/format';
 
@@ -359,6 +361,60 @@ describe('admin catalog review', () => {
     await user.click(within(saved).getByRole('button', { name: 'In den gemeinsamen Katalog' }));
     expect(await screen.findByText('Keine Produkte mit diesem Status.')).toBeInTheDocument();
     expect(calls.find((c) => c.method === 'POST')?.body).toEqual({ decision: 'PROMOTE' });
+  });
+});
+
+describe('insights', () => {
+  const eur = (amountCents: number) => ({ amountCents, currency: 'EUR' });
+  const insights = (days: number) => ({
+    from: '2026-10-16',
+    to: '2026-10-22',
+    totals: { orders: 4, revenue: eur(5200), averageOrderValue: eur(1300), discounts: eur(150) },
+    previous: { orders: 2, revenue: eur(4000), averageOrderValue: eur(2000), discounts: eur(0) },
+    cancelledOrders: 1,
+    rejectedOrders: 0,
+    pickupOrders: 3,
+    deliveryOrders: 1,
+    customers: 3,
+    returningCustomers: 1,
+    daily: Array.from({ length: days }, (_, i) => ({ date: `2026-10-${String(16 + (i % 7)).padStart(2, '0')}`, orders: i === days - 1 ? 4 : 0, revenue: eur(i === days - 1 ? 5200 : 0) })),
+    ordersByHour: Array.from({ length: 24 }, (_, h) => (h === 17 ? 3 : h === 9 ? 1 : 0)),
+    topProducts: [{ listingId: 'l1', name: 'Ayran', unitSize: '0,25 l', quantity: 6, revenue: eur(900) }],
+  });
+
+  it('shows the headline numbers against the period before and switches the period', async () => {
+    const { user, calls } = renderPortal({
+      'GET /merchant/markets': [market()],
+      'GET /merchant/markets/m1/orders': [],
+      'GET /merchant/markets/m1/insights': (call: { path: string }) => insights(Number(new URLSearchParams(call.path.split('?')[1]).get('days'))),
+    });
+    await user.click(await screen.findByRole('button', { name: 'Übersicht' }));
+    expect((await screen.findAllByText('52,00 €')).length).toBeGreaterThan(0);
+    expect(screen.getByText('30 % mehr als im Zeitraum davor')).toBeInTheDocument();
+    expect(screen.getByText('100 % mehr als im Zeitraum davor')).toBeInTheDocument();
+    expect(screen.getByText('35 % weniger als im Zeitraum davor')).toBeInTheDocument();
+    expect(screen.getByText('davon 1 wiederkehrend (33 %)')).toBeInTheDocument();
+    expect(screen.getByText(/3 Abholung · 1 Lieferung · 1 storniert · 0 abgelehnt · 1,50 € Rabatte gewährt/)).toBeInTheDocument();
+    expect(screen.getByRole('rowheader', { name: /Ayran/ })).toBeInTheDocument();
+
+    // The chart's values are reachable by keyboard and in the table view.
+    const chart = screen.getByRole('img', { name: 'Umsatz pro Tag' });
+    chart.focus();
+    expect(await screen.findByRole('status')).toHaveTextContent('52 €');
+    await user.keyboard('{ArrowLeft}');
+    expect(screen.getByRole('status')).toHaveTextContent('0 €');
+
+    await user.click(screen.getByRole('button', { name: '7 Tage' }));
+    await waitFor(() => expect(calls.some((c) => c.path === '/merchant/markets/m1/insights?days=7')).toBe(true));
+    expect(screen.getByRole('button', { name: '7 Tage' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('computes clean axis steps and changes', () => {
+    expect(niceTicks(5200)).toEqual([0, 2000, 4000, 6000]);
+    expect(niceTicks(3)).toEqual([0, 1, 2, 3]);
+    expect(niceTicks(0)).toEqual([0, 1]);
+    expect(change(150, 100)).toBe(50);
+    expect(change(5, 0)).toBeNull();
   });
 });
 

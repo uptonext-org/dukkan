@@ -22,7 +22,8 @@
     "admin": "Marktprüfung",
     "market": "Markt",
     "catalog": "Katalogprüfung",
-    "promotions": "Aktionen"
+    "promotions": "Aktionen",
+    "insights": "Übersicht"
   },
   "status": {
     "PENDING_REVIEW": "In Prüfung",
@@ -179,5 +180,33 @@
     "percentInvalid": "Rabatt zwischen 1 und 90 %.",
     "bundleInvalid": "Stückzahl 2 bis 20 und einen Preis wie 4,99 eingeben.",
     "productsRequired": "Bitte mindestens ein Produkt auswählen."
+  },
+  "insights": {
+    "title": "Übersicht",
+    "period": "Zeitraum",
+    "days": "{{n}} Tage",
+    "revenue": "Umsatz",
+    "orders": "Bestellungen",
+    "average": "Ø Bestellwert",
+    "customers": "Kundschaft",
+    "returning": "davon {{n}} wiederkehrend ({{percent}} %)",
+    "up": "{{percent}} % mehr als im Zeitraum davor",
+    "down": "{{percent}} % weniger als im Zeitraum davor",
+    "same": "gleich wie im Zeitraum davor",
+    "noComparison": "Kein Vergleich möglich",
+    "pickup": "{{n}} Abholung",
+    "delivery": "{{n}} Lieferung",
+    "cancelled": "{{n}} storniert",
+    "rejected": "{{n}} abgelehnt",
+    "discounts": "{{amount}} Rabatte gewährt",
+    "revenueByDay": "Umsatz pro Tag",
+    "byHour": "Bestellungen nach Uhrzeit",
+    "byHourHint": "Wann bestellt wird – hilfreich für Personal und Vorbereitung.",
+    "topProducts": "Meistverkaufte Produkte",
+    "product": "Produkt",
+    "quantity": "Menge",
+    "date": "Tag",
+    "asTable": "Als Tabelle anzeigen",
+    "empty": "In diesem Zeitraum gab es noch keine Bestellungen."
   }
 }

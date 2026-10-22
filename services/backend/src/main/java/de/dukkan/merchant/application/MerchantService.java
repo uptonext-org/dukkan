@@ -20,7 +20,9 @@ import de.dukkan.market.application.MerchantMarket;
 import de.dukkan.media.application.MediaPurpose;
 import de.dukkan.media.application.MediaService;
 import de.dukkan.media.application.StoredMedia;
+import de.dukkan.order.application.MarketInsights;
 import de.dukkan.order.application.OrderService;
+import de.dukkan.order.application.SalesInsightsService;
 import de.dukkan.order.application.OrderView;
 import de.dukkan.promotion.application.PromotionDraft;
 import de.dukkan.promotion.application.PromotionService;
@@ -53,6 +55,7 @@ public class MerchantService {
   private final CatalogService catalog;
   private final PromotionService promotions;
   private final OrderService orders;
+  private final SalesInsightsService insights;
   private final MediaService media;
   private final ProductCaptureService capture;
   private final LocaleService locales;
@@ -63,6 +66,7 @@ public class MerchantService {
       CatalogService catalog,
       PromotionService promotions,
       OrderService orders,
+      SalesInsightsService insights,
       MediaService media,
       ProductCaptureService capture,
       LocaleService locales,
@@ -71,6 +75,7 @@ public class MerchantService {
     this.catalog = catalog;
     this.promotions = promotions;
     this.orders = orders;
+    this.insights = insights;
     this.media = media;
     this.capture = capture;
     this.locales = locales;
@@ -168,6 +173,12 @@ public class MerchantService {
   public List<OrderView> orders(UUID userId, UUID marketId, @Nullable String status, ContentLocale locale) {
     requireOwner(userId, marketId);
     return orders.listForMarket(marketId, status, locale);
+  }
+
+  /** Sales overview of the merchant's market (aggregates only). */
+  public MarketInsights insights(UUID userId, UUID marketId, int days, ContentLocale locale) {
+    requireOwner(userId, marketId);
+    return insights.insights(marketId, days, locale);
   }
 
   public OrderView advanceOrder(UUID userId, UUID orderId, String status, ContentLocale locale) {

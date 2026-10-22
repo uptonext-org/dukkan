@@ -1352,6 +1352,31 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
+  /merchant/markets/{marketId}/insights:
+    get:
+      tags: [merchant]
+      operationId: getMarketInsights
+      summary: Sales overview of my market
+      description: |
+        Whole days in Europe/Berlin: the last `days` days including today (`from`–`to`), and the
+        same number of days before for comparison (`previous`). Orders count unless they were
+        cancelled or rejected; revenue is the order total (after discounts, with delivery fees).
+        Only aggregates — nothing identifies a customer. A returning customer has another counted
+        order in this market placed before the end of the period.
+      parameters:
+        - { $ref: '#/components/parameters/MarketId' }
+        - { name: days, in: query, schema: { type: integer, minimum: 1, maximum: 366, default: 30 } }
+        - { $ref: '#/components/parameters/AcceptLanguage' }
+      responses:
+        '200':
+          description: The overview.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MarketInsights' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
   /merchant/orders/{orderId}/status:
     post:
       tags: [merchant]
@@ -1839,6 +1864,62 @@ components:
         code: { type: string, example: BAKERY }
         name: { type: string, example: Bäckerei }
         iconKey: { type: [string, 'null'] }
+    InsightTotals:
+      type: object
+      required: [orders, revenue, averageOrderValue, discounts]
+      properties:
+        orders: { type: integer, minimum: 0 }
+        revenue: { $ref: '#/components/schemas/Money' }
+        averageOrderValue:
+          description: Revenue per order; null without orders.
+          oneOf:
+            - { type: 'null' }
+            - { $ref: '#/components/schemas/Money' }
+        discounts: { $ref: '#/components/schemas/Money' }
+    MarketInsights:
+      type: object
+      required: [from, to, totals, previous, cancelledOrders, rejectedOrders, pickupOrders, deliveryOrders, customers, returningCustomers, daily, ordersByHour, topProducts]
+      properties:
+        from: { type: string, format: date }
+        to: { type: string, format: date }
+        totals: { $ref: '#/components/schemas/InsightTotals' }
+        previous: { $ref: '#/components/schemas/InsightTotals' }
+        cancelledOrders: { type: integer, minimum: 0 }
+        rejectedOrders: { type: integer, minimum: 0 }
+        pickupOrders: { type: integer, minimum: 0 }
+        deliveryOrders: { type: integer, minimum: 0 }
+        customers: { type: integer, minimum: 0 }
+        returningCustomers: { type: integer, minimum: 0 }
+        daily:
+          description: One entry per day from `from` to `to`, days without orders included.
+          type: array
+          items:
+            type: object
+            required: [date, orders, revenue]
+            properties:
+              date: { type: string, format: date }
+              orders: { type: integer, minimum: 0 }
+              revenue: { $ref: '#/components/schemas/Money' }
+        ordersByHour:
+          description: Counted orders by local hour they were placed (index 0 = 00:00–00:59).
+          type: array
+          minItems: 24
+          maxItems: 24
+          items: { type: integer, minimum: 0 }
+        topProducts:
+          description: Up to 10 best-selling listings by quantity, then revenue. The name is the current one in the requested language (the order snapshot if the listing is gone).
+          type: array
+          maxItems: 10
+          items:
+            type: object
+            required: [listingId, name, quantity, revenue]
+            properties:
+              listingId: { type: string, format: uuid }
+              name: { type: string }
+              unitSize: { type: [string, 'null'] }
+              imageUrl: { type: [string, 'null'], format: uri }
+              quantity: { type: integer, minimum: 1 }
+              revenue: { $ref: '#/components/schemas/Money' }
     Money:
       type: object
       required: [amountCents, currency]

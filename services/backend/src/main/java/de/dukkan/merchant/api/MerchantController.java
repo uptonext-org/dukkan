@@ -19,6 +19,7 @@ import de.dukkan.merchant.api.MerchantRequests.UpdateListingRequest;
 import de.dukkan.merchant.application.ListingCsv;
 import de.dukkan.merchant.application.MerchantService;
 import de.dukkan.order.api.OrderResponse;
+import de.dukkan.order.application.MarketInsights;
 import de.dukkan.order.api.OrderResponses;
 import de.dukkan.promotion.application.PromotionView;
 import de.dukkan.shared.api.PageResponse;
@@ -213,6 +214,16 @@ final class MerchantController {
           String status,
       @RequestAttribute(ContentLocale.REQUEST_ATTRIBUTE) ContentLocale locale) {
     return orderResponses.all(merchant.orders(CurrentUser.id(security), marketId, status, locale), locale);
+  }
+
+  @GetMapping("/markets/{marketId}/insights")
+  MarketInsightsResponse insights(
+      @CurrentSecurityContext SecurityContext security,
+      @PathVariable UUID marketId,
+      @Min(1) @Max(366) @RequestParam(defaultValue = "30") int days,
+      @RequestAttribute(ContentLocale.REQUEST_ATTRIBUTE) ContentLocale locale) {
+    MarketInsights insights = merchant.insights(CurrentUser.id(security), marketId, days, locale);
+    return MarketInsightsResponse.of(insights);
   }
 
   @PostMapping("/orders/{orderId}/status")
