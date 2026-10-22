@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 class MetricsIntegrationTest extends IntegrationTest {
 
   @Autowired private MeterRegistry meters;
+  @Autowired private de.dukkan.shared.ai.AiUsageRecorder aiUsage;
 
   private double count(String name, String... tags) {
     var counter = meters.find(name).tags(tags).counter();
@@ -39,6 +40,15 @@ class MetricsIntegrationTest extends IntegrationTest {
     assertThat(pending).isNotNull();
     assertThat(pending.value()).isGreaterThanOrEqualTo(0);
     assertThat(meters.find("dukkan.outbox.oldest.pending.seconds").gauge()).isNotNull();
+  }
+
+  @Test
+  void languageModelCallsHaveLatencyBucketsForTheDashboard() {
+    aiUsage.record("translation", "ok", 120, 40, java.time.Duration.ofMillis(900));
+    var timer = meters.find("dukkan.ai.requests").tags("feature", "translation", "outcome", "ok").timer();
+    assertThat(timer).isNotNull();
+    assertThat(timer.takeSnapshot().histogramCounts()).isNotEmpty();
+    assertThat(meters.find("dukkan.ai.tokens").tags("feature", "translation", "direction", "input").counter().count()).isGreaterThanOrEqualTo(120);
   }
 
   @Test

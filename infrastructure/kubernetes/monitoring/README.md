@@ -9,6 +9,10 @@ kubectl apply -n dukkan -f infrastructure/kubernetes/monitoring/
 - `servicemonitor.yaml`: scrapes `/actuator/prometheus` on the management port (8081) through the
   headless `dukkan-backend-management` Service. Without the operator, the pod annotations
   (`prometheus.io/*`) in `backend-deployment.yaml` work with plain Prometheus discovery.
+- `grafana-dashboard-configmap.yaml`: the "Dukkan Backend" dashboard for the Grafana sidecar
+  (label `grafana_dashboard: "1"`); the source is `dashboards/dukkan-backend.json` (also importable
+  in Grafana by hand). Panels: orders, status changes, API latency p50/p95/p99, requests by status,
+  slowest endpoints, outbox backlog, language-model calls/latency/tokens, JVM heap, DB connections.
 - `prometheus-rules.yaml`: alerts on a stuck outbox, failing language-model calls, server errors
   and slow requests.
 
