@@ -64,6 +64,11 @@ class AccountPrivacyIntegrationTest extends IntegrationTest {
         .andExpect(jsonPath("$.errors[0].code").value("Incorrect"));
     mvc.perform(json(auth(delete("/api/v1/me"), customer), toJson(Map.of("password", PASSWORD)))).andExpect(status().isNoContent());
 
+    // The access token has not expired yet, but it no longer works: no new cart, no profile.
+    mvc.perform(auth(get("/api/v1/me"), customer)).andExpect(status().isUnauthorized());
+    mvc.perform(json(auth(put("/api/v1/markets/" + market + "/cart/items/" + listing), customer), "{\"quantity\":1}"))
+        .andExpect(status().isUnauthorized());
+
     // No sign-in, no session, no personal rows; the email is free again.
     mvc.perform(json(post("/api/v1/auth/login"), toJson(Map.of("email", email, "password", PASSWORD)))).andExpect(status().isUnauthorized());
     mvc.perform(json(post("/api/v1/auth/refresh"), toJson(Map.of("refreshToken", refresh)))).andExpect(status().isUnauthorized());
