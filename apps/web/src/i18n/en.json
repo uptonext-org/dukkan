@@ -20,7 +20,8 @@
     "listings": "Assortment",
     "import": "CSV import",
     "admin": "Market review",
-    "market": "Market"
+    "market": "Market",
+    "catalog": "Catalog review"
   },
   "status": {
     "PENDING_REVIEW": "In review",
@@ -122,6 +123,26 @@
       "Header": "The header needs a “price” column and “name_de” or “barcode”.",
       "Empty": "The file has no product rows.",
       "TooManyRows": "At most 1000 products per file."
-    }
+    },
+    "PRODUCT_DUPLICATE": "The shared catalog already has a product with this barcode."
+  },
+  "catalog": {
+    "title": "Catalog review",
+    "intro": "Products merchants create themselves land here. Check the texts (machine translations are marked) and move good products to the shared catalog so every market can use them.",
+    "status": {
+      "PENDING": "Open",
+      "KEPT_PRIVATE": "Kept private",
+      "PROMOTED": "In the shared catalog"
+    },
+    "count": "{{count}} products",
+    "empty": "No products with this status.",
+    "name": "Name",
+    "description": "Description",
+    "machine": "machine",
+    "duplicates": "Possible duplicates in the catalog:",
+    "saveTexts": "Save texts",
+    "promote": "Move to shared catalog",
+    "keepPrivate": "Keep private",
+    "saveFirst": "Save the texts first, then decide."
   }
 }

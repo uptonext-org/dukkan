@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { ApiProvider, useApi } from './api/ApiContext';
 import { createApi, type Session, type SessionStore } from './api/client';
 import { applyLanguage, isLanguage, LANGUAGES } from './i18n';
+import { AdminCatalogPage } from './pages/AdminCatalogPage';
 import { AdminMarketsPage } from './pages/AdminMarketsPage';
 import { ImportPage } from './pages/ImportPage';
 import { ListingsPage } from './pages/ListingsPage';
@@ -12,8 +13,8 @@ import { LoginPage } from './pages/LoginPage';
 import { OrdersBoard } from './pages/OrdersBoard';
 import { errorMessage } from './ui/errors';
 
-type Route = 'orders' | 'listings' | 'import' | 'admin';
-const ROUTES: Route[] = ['orders', 'listings', 'import', 'admin'];
+type Route = 'orders' | 'listings' | 'import' | 'admin' | 'catalog';
+const ROUTES: Route[] = ['orders', 'listings', 'import', 'admin', 'catalog'];
 
 function subscribeHash(onChange: () => void) {
   window.addEventListener('hashchange', onChange);
@@ -77,7 +78,7 @@ function Shell({ session }: { session: Session }) {
   const [marketId, setMarketId] = useState<string | null>(null);
   const selected = markets.data?.find((m) => m.id === marketId) ?? markets.data?.[0];
 
-  const available: Route[] = [...(isMerchant ? (['orders', 'listings', 'import'] as const) : []), ...(isAdmin ? (['admin'] as const) : [])];
+  const available: Route[] = [...(isMerchant ? (['orders', 'listings', 'import'] as const) : []), ...(isAdmin ? (['admin', 'catalog'] as const) : [])];
   const current = route !== null && available.includes(route) ? route : available[0];
 
   return (
@@ -125,7 +126,8 @@ function Shell({ session }: { session: Session }) {
       </nav>
       <main>
         {current === 'admin' && <AdminMarketsPage />}
-        {current !== 'admin' && current !== undefined && (
+        {current === 'catalog' && <AdminCatalogPage />}
+        {current !== 'admin' && current !== 'catalog' && current !== undefined && (
           <>
             {markets.isPending && <p>{t('app.loading')}</p>}
             {markets.isError && (

@@ -1480,6 +1480,94 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
 
+  /admin/catalog/products:
+    get:
+      tags: [admin]
+      operationId: adminCatalogReviewQueue
+      summary: Products created by merchants, for review (role ADMIN), oldest first
+      description: |
+        Every product a merchant creates (createListing with `newProduct`, CSV import) starts as
+        `PENDING`. `texts` shows every locale with its source (`machineTranslated` for texts filled by
+        machine translation). `duplicates` lists shared products with the same barcode, or the same
+        name and size, that may be the same product.
+      parameters:
+        - { name: status, in: query, schema: { type: string, enum: [PENDING, KEPT_PRIVATE, PROMOTED], default: PENDING } }
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/Size' }
+        - { $ref: '#/components/parameters/AcceptLanguage' }
+      responses:
+        '200':
+          description: The queue.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CatalogReviewPage' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /admin/catalog/products/{productId}/texts:
+    put:
+      tags: [admin]
+      operationId: adminUpdateCatalogTexts
+      summary: Correct or add the name and description of locales (role ADMIN)
+      description: Only the given locales change. Corrected texts are no longer marked as machine translations; the search text is rebuilt. An empty description removes it.
+      parameters:
+        - { name: productId, in: path, required: true, schema: { type: string, format: uuid }, description: Catalog product id. }
+        - { $ref: '#/components/parameters/AcceptLanguage' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [names]
+              properties:
+                names: { type: object, additionalProperties: { type: string, minLength: 1, maxLength: 150 } }
+                descriptions: { type: object, additionalProperties: { type: string, maxLength: 2000 } }
+      responses:
+        '200':
+          description: The updated product.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CatalogReviewItem' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /admin/catalog/products/{productId}/review:
+    post:
+      tags: [admin]
+      operationId: adminReviewCatalogProduct
+      summary: Promote a merchant's product to the shared catalog, or keep it private (role ADMIN)
+      description: |
+        `PROMOTE` moves the product to the shared catalog: the market keeps its listing and every
+        other market can list it too. A shared product with the same barcode → 409
+        `PRODUCT_DUPLICATE`. Shared products are not reviewed again → 409
+        `INVALID_STATUS_TRANSITION`.
+      parameters:
+        - { name: productId, in: path, required: true, schema: { type: string, format: uuid }, description: Catalog product id. }
+        - { $ref: '#/components/parameters/AcceptLanguage' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [decision]
+              properties:
+                decision: { type: string, enum: [PROMOTE, KEEP_PRIVATE] }
+      responses:
+        '200':
+          description: The reviewed product.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CatalogReviewItem' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
 components:
   securitySchemes:
     bearerAuth:
@@ -2262,6 +2350,55 @@ components:
               field: { type: string, description: 'CSV column, e.g. price or name_de.' }
               code: { type: string, description: 'e.g. Required, Pattern, UnknownCode, Duplicate, PrimaryLocaleRequired.' }
               message: { type: string }
+    CatalogReviewPage:
+      type: object
+      required: [items, page, size, totalItems, totalPages]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/CatalogReviewItem' } }
+        page: { type: integer }
+        size: { type: integer }
+        totalItems: { type: integer, format: int64 }
+        totalPages: { type: integer }
+    CatalogReviewItem:
+      type: object
+      required: [id, unitSize, reviewStatus, createdAt, texts, duplicates]
+      properties:
+        id: { type: string, format: uuid, description: Catalog product id. }
+        market:
+          description: The owning market; null once promoted.
+          oneOf:
+            - type: 'null'
+            - { type: object, required: [id, name], properties: { id: { type: string, format: uuid }, name: { type: string } } }
+        category:
+          oneOf:
+            - type: 'null'
+            - { type: object, required: [id, name], properties: { id: { type: string, format: uuid }, name: { type: string } } }
+        brand: { type: [string, 'null'] }
+        unitSize: { type: string }
+        barcode: { type: [string, 'null'] }
+        imageUrl: { type: [string, 'null'] }
+        reviewStatus: { type: string, enum: [PENDING, KEPT_PRIVATE, PROMOTED] }
+        createdAt: { type: string, format: date-time }
+        texts:
+          type: object
+          description: Locale code → text.
+          additionalProperties:
+            type: object
+            required: [name, machineTranslated]
+            properties:
+              name: { type: string }
+              description: { type: [string, 'null'] }
+              machineTranslated: { type: boolean }
+        duplicates:
+          type: array
+          items:
+            type: object
+            required: [id, name, unitSize]
+            properties:
+              id: { type: string, format: uuid }
+              name: { type: string }
+              unitSize: { type: string }
+              barcode: { type: [string, 'null'] }
     TranslationRequest:
       type: object
       required: [kind, fields]

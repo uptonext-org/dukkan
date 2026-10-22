@@ -1,4 +1,4 @@
-import type { AuthResponse, ImportResult, Listing, MarketStatus, MerchantMarket, Order, OrderStatus, PageResponse, Problem, User } from './types';
+import type { AuthResponse, CatalogReviewItem, ImportResult, Listing, MarketStatus, MerchantMarket, Order, OrderStatus, PageResponse, Problem, ReviewStatus, User } from './types';
 
 export class ApiError extends Error {
   readonly status: number;
@@ -168,6 +168,12 @@ export function createApi(options: { baseUrl?: string; fetch?: Fetch; store?: Se
     },
     adminMarkets: (status: MarketStatus | null) =>
       send<MerchantMarket[]>(`/admin/markets${status === null ? '' : `?status=${status}`}`),
+    catalogReviewQueue: (status: ReviewStatus, page: number) =>
+      send<PageResponse<CatalogReviewItem>>(`/admin/catalog/products?status=${status}&page=${String(page)}&size=20`),
+    updateCatalogTexts: (productId: string, names: Record<string, string>, descriptions: Record<string, string>) =>
+      send<CatalogReviewItem>(`/admin/catalog/products/${encodeURIComponent(productId)}/texts`, { method: 'PUT', body: { names, descriptions } }),
+    reviewCatalogProduct: (productId: string, decision: 'PROMOTE' | 'KEEP_PRIVATE') =>
+      send<CatalogReviewItem>(`/admin/catalog/products/${encodeURIComponent(productId)}/review`, { method: 'POST', body: { decision } }),
     adminSetMarketStatus: (marketId: string, status: MarketStatus) =>
       send<MerchantMarket>(`/admin/markets/${encodeURIComponent(marketId)}/status`, { method: 'POST', body: { status } }),
   };

@@ -96,3 +96,19 @@ export interface ImportResult {
   failed: number;
   rows: ImportRow[];
 }
+
+export type ReviewStatus = 'PENDING' | 'KEPT_PRIVATE' | 'PROMOTED';
+
+export interface CatalogReviewItem {
+  id: string;
+  market?: { id: string; name: string } | null;
+  category?: { id: string; name: string } | null;
+  brand?: string | null;
+  unitSize: string;
+  barcode?: string | null;
+  imageUrl?: string | null;
+  reviewStatus: ReviewStatus;
+  createdAt: string;
+  texts: Record<string, { name: string; description?: string | null; machineTranslated: boolean }>;
+  duplicates: { id: string; name: string; unitSize: string; barcode?: string | null }[];
+}

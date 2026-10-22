@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 
 import { App } from '../App';
 import type { Session } from '../api/client';
+import type { CatalogReviewItem } from '../api/types';
 import { applyLanguage } from '../i18n';
 import { CSV_TEMPLATE } from '../pages/ImportPage';
 import { nextStatuses } from '../pages/OrdersBoard';
@@ -241,6 +242,69 @@ describe('admin market review', () => {
     expect(calls.find((c) => c.method === 'POST')?.body).toEqual({ status: 'ACTIVE' });
     // Admins without a market see no merchant tabs.
     expect(screen.queryByRole('button', { name: 'Bestellungen' })).toBeNull();
+  });
+});
+
+describe('admin catalog review', () => {
+  const item = {
+    id: 'p1',
+    market: { id: 'm1', name: 'Anatolia Frischmarkt' },
+    category: { id: 'c1', name: 'Feinkost' },
+    brand: null,
+    unitSize: '250 g',
+    barcode: null,
+    imageUrl: null,
+    reviewStatus: 'PENDING',
+    createdAt: '2026-10-21T10:00:00Z',
+    texts: {
+      de: { name: 'Quittengelee', description: null, machineTranslated: false },
+      en: { name: 'Quince jam', description: null, machineTranslated: true },
+    },
+    duplicates: [{ id: 'p9', name: 'Quittengelee', unitSize: '250 g', barcode: '4000000000001' }],
+  };
+
+  it('corrects a machine translation, then promotes the product', async () => {
+    let current: CatalogReviewItem = item as CatalogReviewItem;
+    const { user, calls } = renderPortal(
+      {
+        'GET /admin/markets?status=PENDING_REVIEW': [],
+        'GET /admin/catalog/products?status=PENDING&page=0&size=20': () => ({
+          items: current.reviewStatus === 'PENDING' ? [current] : [],
+          page: 0,
+          size: 20,
+          totalItems: current.reviewStatus === 'PENDING' ? 1 : 0,
+          totalPages: 1,
+        }),
+        'PUT /admin/catalog/products/p1/texts': (call) => {
+          const body = call.body as { names: Record<string, string> };
+          current = { ...current, texts: { ...current.texts, en: { name: body.names.en ?? '', description: null, machineTranslated: false } } };
+          return current;
+        },
+        'POST /admin/catalog/products/p1/review': (call) => {
+          current = { ...current, reviewStatus: (call.body as { decision: string }).decision === 'PROMOTE' ? 'PROMOTED' : 'KEPT_PRIVATE', market: null };
+          return current;
+        },
+      },
+      { accessToken: 'a', refreshToken: 'r', user: adminUser },
+    );
+    await user.click(await screen.findByRole('button', { name: 'Katalogprüfung' }));
+    const card = await screen.findByRole('article', { name: 'Quittengelee' });
+    expect(within(card).getByText('maschinell')).toBeInTheDocument();
+    expect(within(card).getByRole('note')).toHaveTextContent('Mögliche Dubletten');
+
+    const english = within(card).getByLabelText('Name · English');
+    await user.clear(english);
+    await user.type(english, 'Quince jelly');
+    // Unsaved texts block the decision.
+    expect(within(card).getByRole('button', { name: 'In den gemeinsamen Katalog' })).toBeDisabled();
+    await user.click(within(card).getByRole('button', { name: 'Texte speichern' }));
+    await waitFor(() => expect(calls.find((c) => c.method === 'PUT')?.body).toEqual({ names: { en: 'Quince jelly' }, descriptions: { en: '' } }));
+    const saved = await screen.findByRole('article', { name: 'Quittengelee' });
+    await waitFor(() => expect(within(saved).queryByText('maschinell')).toBeNull());
+
+    await user.click(within(saved).getByRole('button', { name: 'In den gemeinsamen Katalog' }));
+    expect(await screen.findByText('Keine Produkte mit diesem Status.')).toBeInTheDocument();
+    expect(calls.find((c) => c.method === 'POST')?.body).toEqual({ decision: 'PROMOTE' });
   });
 });
 

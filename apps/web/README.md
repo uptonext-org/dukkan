@@ -10,6 +10,8 @@ actions; the portal is for work at a desk:
   then import all at once. Template download included. Endpoint and columns: `importListings` in
   `packages/shared-contracts/openapi.yaml`.
 - **Marktprüfung** (role ADMIN): markets by status; approve, suspend, return to review.
+- **Katalogprüfung** (role ADMIN): products merchants created; correct texts and machine
+  translations, see possible duplicates, promote to the shared catalog or keep private.
 
 German, English and Arabic (right-to-left), light and dark theme (system setting).
 

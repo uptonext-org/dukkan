@@ -171,9 +171,9 @@ public class CatalogProductRepository {
             """
             INSERT INTO catalog_product (id, owner_market_id, category_id, brand, unit_size, net_quantity, net_unit,
                                          organic, allergens, keywords, barcode, image_url, origin, search_text,
-                                         created_at, updated_at)
+                                         review_status, created_at, updated_at)
             VALUES (:id, :owner, :categoryId, :brand, :unitSize, :netQuantity, :netUnit, :organic, :allergens,
-                    :keywords, :barcode, :imageUrl, NULL, :searchText, :now, :now)
+                    :keywords, :barcode, :imageUrl, NULL, :searchText, 'PENDING', :now, :now)
             """)
         .param("id", id)
         .param("owner", ownerMarketId)

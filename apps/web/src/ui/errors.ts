@@ -2,7 +2,7 @@ import type { TFunction } from 'i18next';
 
 import { ApiError } from '../api/client';
 
-const KNOWN = new Set(['NETWORK_ERROR', 'INVALID_CREDENTIALS', 'RATE_LIMITED', 'FORBIDDEN', 'NOT_FOUND', 'VALIDATION_FAILED', 'INVALID_STATUS_TRANSITION']);
+const KNOWN = new Set(['NETWORK_ERROR', 'INVALID_CREDENTIALS', 'RATE_LIMITED', 'FORBIDDEN', 'NOT_FOUND', 'VALIDATION_FAILED', 'INVALID_STATUS_TRANSITION', 'PRODUCT_DUPLICATE']);
 const FILE_CODES = new Set(['Size', 'Encoding', 'Header', 'Empty', 'TooManyRows']);
 
 /** Translated message for any error of the API client. */

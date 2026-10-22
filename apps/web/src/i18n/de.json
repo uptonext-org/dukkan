@@ -20,7 +20,8 @@
     "listings": "Sortiment",
     "import": "CSV-Import",
     "admin": "Marktprüfung",
-    "market": "Markt"
+    "market": "Markt",
+    "catalog": "Katalogprüfung"
   },
   "status": {
     "PENDING_REVIEW": "In Prüfung",
@@ -122,6 +123,26 @@
       "Header": "Die Kopfzeile braucht eine Spalte „price“ (oder „Preis“) und „name_de“ oder „barcode“.",
       "Empty": "Die Datei enthält keine Produktzeilen.",
       "TooManyRows": "Höchstens 1000 Produkte pro Datei."
-    }
+    },
+    "PRODUCT_DUPLICATE": "Im gemeinsamen Katalog gibt es schon ein Produkt mit diesem Barcode."
+  },
+  "catalog": {
+    "title": "Katalogprüfung",
+    "intro": "Produkte, die Händler selbst anlegen, landen hier. Prüfe die Texte (maschinelle Übersetzungen sind markiert) und übernimm gute Produkte in den gemeinsamen Katalog, damit alle Märkte sie nutzen können.",
+    "status": {
+      "PENDING": "Offen",
+      "KEPT_PRIVATE": "Privat gelassen",
+      "PROMOTED": "Im gemeinsamen Katalog"
+    },
+    "count": "{{count}} Produkte",
+    "empty": "Keine Produkte mit diesem Status.",
+    "name": "Name",
+    "description": "Beschreibung",
+    "machine": "maschinell",
+    "duplicates": "Mögliche Dubletten im Katalog:",
+    "saveTexts": "Texte speichern",
+    "promote": "In den gemeinsamen Katalog",
+    "keepPrivate": "Privat lassen",
+    "saveFirst": "Erst die Texte speichern, dann entscheiden."
   }
 }
