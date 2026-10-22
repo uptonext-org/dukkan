@@ -1,8 +1,9 @@
 import { QueryClient } from '@tanstack/react-query';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
+import { newArrivals } from '../alerts/OrderAlerts';
 import { App } from '../App';
 import type { Session } from '../api/client';
 import type { CatalogReviewItem } from '../api/types';
@@ -505,6 +506,51 @@ describe('insights', () => {
     expect(niceTicks(150, 100)).toEqual([0, 100, 200]);
     expect(change(150, 100)).toBe(50);
     expect(change(5, 0)).toBeNull();
+  });
+});
+
+describe('new order alerts', () => {
+  it('names new orders, chimes, notifies and counts them in the tab title', async () => {
+    const first = { ...order, id: 'o1', orderNumber: 'DK-1' };
+    const second = { ...order, id: 'o2', orderNumber: 'DK-2', total: { amountCents: 1250, currency: 'EUR' } };
+    let polls = 0;
+    const sound = vi.fn();
+    const notify = vi.fn();
+    const backend = fakeBackend({
+      'GET /merchant/markets': [market()],
+      'GET /merchant/markets/m1/orders': [first, second],
+      'GET /merchant/markets/m1/orders?status=PLACED': () => (++polls === 1 ? [first] : [first, second]),
+    });
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <App
+        dependencies={{
+          fetch: backend.fetch,
+          store: memoryStore(merchantSession),
+          queryClient,
+          alerts: { intervalMs: 50, enabled: true, signals: { sound, notify, prepare: vi.fn() } },
+        }}
+      />,
+    );
+    const toast = await screen.findByText('Neue Bestellung');
+    expect(toast.closest('.toast')).toHaveTextContent('DK-2');
+    expect(toast.closest('.toast')).not.toHaveTextContent('DK-1');
+    expect(sound).toHaveBeenCalledTimes(1);
+    expect(notify).toHaveBeenCalledWith('Neue Bestellung', expect.stringContaining('DK-2'));
+    await waitFor(() => expect(document.title).toBe('(2) Dukkan Portal'));
+    // Further polls with the same orders stay quiet.
+    await waitFor(() => expect(polls).toBeGreaterThan(3));
+    expect(sound).toHaveBeenCalledTimes(1);
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Ansehen' }));
+    expect(screen.queryByText('Neue Bestellung')).toBeNull();
+    expect(window.location.hash).toBe('#/orders');
+  });
+
+  it('only reports orders that were not there before', () => {
+    const baseline = newArrivals(null, ['a', 'b']);
+    expect(baseline.added).toEqual([]);
+    expect(newArrivals(baseline.seen, ['b', 'c']).added).toEqual(['c']);
+    expect(newArrivals(baseline.seen, ['a']).added).toEqual([]);
   });
 });
 

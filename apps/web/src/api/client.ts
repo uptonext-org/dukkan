@@ -149,7 +149,8 @@ export function createApi(options: { baseUrl?: string; fetch?: Fetch; store?: Se
       }
     },
     myMarkets: () => send<MerchantMarket[]>('/merchant/markets'),
-    orders: (marketId: string) => send<Order[]>(`/merchant/markets/${encodeURIComponent(marketId)}/orders`),
+    orders: (marketId: string, status?: OrderStatus) =>
+      send<Order[]>(`/merchant/markets/${encodeURIComponent(marketId)}/orders${status === undefined ? '' : `?status=${status}`}`),
     advanceOrder: (orderId: string, status: OrderStatus) =>
       send<Order>(`/merchant/orders/${encodeURIComponent(orderId)}/status`, { method: 'POST', body: { status } }),
     listings: (marketId: string, q: string, page: number) => {
