@@ -311,6 +311,15 @@ export interface ListMarketProductsParams {
   size?: number;
 }
 
+/** A market the user ordered from or visited (start page view "Meine Märkte"). */
+export interface RecentMarket {
+  market: MarketSummary;
+  lastOrderAt: string | null;
+  lastOrderId: string | null;
+  orderCount: number;
+  recentProducts: ProductSummary[];
+}
+
 export interface MarketOffer {
   product: ProductSummary;
   market: MarketSummary;

@@ -2,20 +2,30 @@ import { useCallback, useMemo, useState } from 'react';
 import { FlatList, RefreshControl, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
-import { openMarket } from '../../../navigation/marketLinks';
+import { openMarket, openMarketProduct } from '../../../navigation/marketLinks';
 import type { ShellTabScreenProps } from '../../../navigation/types';
 import type { CodeName, MarketSummary } from '../../../shared/api';
 import { HAMBURG, useChosenPlace } from '../../../shared/location';
 import { makeStyles, useTheme } from '../../../shared/theme';
-import { AppText, CardSkeletons, Chip, ChipScroller, EmptyState, ErrorState, IconButton, SegmentedControl } from '../../../shared/ui';
+import {
+  AppText,
+  CardSkeletons,
+  Chip,
+  ChipScroller,
+  EmptyState,
+  ErrorState,
+  IconButton,
+  SegmentedControl,
+} from '../../../shared/ui';
 import { useCuisines, useMarkets, useMarketTypes } from '../api/hooks';
 import { FilterSheet } from '../components/FilterSheet';
 import { MarketCard } from '../components/MarketCard';
 import { MarketMap } from '../components/MarketMap';
+import { MyMarkets } from '../components/MyMarkets';
 import { ShellHeader } from '../components/ShellHeader';
 import { activeFilterCount, buildMarketQuery, DEFAULT_FILTERS, toggle, type MarketFilters } from '../model';
 
-type Mode = 'list' | 'map';
+type Mode = 'list' | 'map' | 'mine';
 
 function ChipRow({
   label,
@@ -50,7 +60,7 @@ function ChipRow({
   );
 }
 
-/** Entdecken: markets near the chosen place, as a list or on a map. */
+/** Entdecken: markets near the chosen place, as a list or on a map, and "Meine Märkte" (ordered from or visited). */
 export function DiscoverScreen({ navigation }: ShellTabScreenProps<'Discover'>) {
   const styles = useStyles();
   const { colors } = useTheme();
@@ -80,16 +90,18 @@ export function DiscoverScreen({ navigation }: ShellTabScreenProps<'Discover'>) 
 
   const header = (
     <View style={styles.controls}>
-      <ChipRow
-        label={t('discover.marketTypes')}
-        allLabel={t('discover.all')}
-        items={types.data ?? []}
-        selected={filters.types}
-        onToggle={(code) => setFilters((f) => ({ ...f, types: toggle(f.types, code) }))}
-        onClear={() => setFilters((f) => ({ ...f, types: [] }))}
-        testID="type-chips"
-      />
-      {(cuisines.data?.length ?? 0) > 0 && (
+      {mode !== 'mine' && (
+        <ChipRow
+          label={t('discover.marketTypes')}
+          allLabel={t('discover.all')}
+          items={types.data ?? []}
+          selected={filters.types}
+          onToggle={(code) => setFilters((f) => ({ ...f, types: toggle(f.types, code) }))}
+          onClear={() => setFilters((f) => ({ ...f, types: [] }))}
+          testID="type-chips"
+        />
+      )}
+      {mode !== 'mine' && (cuisines.data?.length ?? 0) > 0 && (
         <ChipRow
           label={t('discover.cuisines')}
           items={cuisines.data ?? []}
@@ -106,26 +118,49 @@ export function DiscoverScreen({ navigation }: ShellTabScreenProps<'Discover'>) 
             segments={[
               { value: 'list', label: t('discover.list'), icon: 'list' },
               { value: 'map', label: t('discover.map'), icon: 'map' },
+              { value: 'mine', label: t('discover.mine'), icon: 'clock' },
             ]}
             value={mode}
             onChange={setMode}
           />
         </View>
-        <View>
-          <IconButton
-            icon="filter"
-            label={filterCount > 0 ? t('discover.filterButtonActive', { count: filterCount }) : t('discover.filterButton')}
-            onPress={() => {
-              setSheetKey((k) => k + 1);
-              setSheetOpen(true);
-            }}
-            testID="filter-button"
-            color={filterCount > 0 ? colors.accent : colors.text}
-          />
-        </View>
+        {mode !== 'mine' && (
+          <View>
+            <IconButton
+              icon="filter"
+              label={
+                filterCount > 0
+                  ? t('discover.filterButtonActive', { count: filterCount })
+                  : t('discover.filterButton')
+              }
+              onPress={() => {
+                setSheetKey((k) => k + 1);
+                setSheetOpen(true);
+              }}
+              testID="filter-button"
+              color={filterCount > 0 ? colors.accent : colors.text}
+            />
+          </View>
+        )}
       </View>
     </View>
   );
+
+  if (mode === 'mine') {
+    return (
+      <View style={styles.root}>
+        <ShellHeader />
+        <MyMarkets
+          center={center}
+          header={header}
+          onOpenMarket={open}
+          onOpenProduct={(marketId, product) => openMarketProduct(navigation, marketId, product.id)}
+          onOpenOrder={(orderId) => navigation.navigate('OrderDetail', { orderId })}
+          onDiscover={() => setMode('list')}
+        />
+      </View>
+    );
+  }
 
   let body;
   if (query.isPending) {
@@ -209,7 +244,12 @@ const useStyles = makeStyles((t) => ({
   root: { flex: 1, backgroundColor: t.colors.bg },
   flex: { flex: 1 },
   controls: { gap: t.spacing.sm, paddingBottom: t.spacing.md },
-  modeRow: { flexDirection: 'row', alignItems: 'center', gap: t.spacing.sm, paddingHorizontal: t.layout.gutter },
+  modeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: t.spacing.sm,
+    paddingHorizontal: t.layout.gutter,
+  },
   list: { paddingBottom: t.spacing.xxxl },
   item: { paddingHorizontal: t.layout.gutter },
   footer: { padding: t.spacing.lg },
