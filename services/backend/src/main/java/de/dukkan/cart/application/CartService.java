@@ -113,6 +113,43 @@ public class CartService {
     return view(cart, market, locale);
   }
 
+  /**
+   * Adds the lines to the cart on top of what is already there, each capped at the listing's
+   * per-order maximum. Removed and unavailable listings are skipped and reported, so one sold-out
+   * product does not block the rest. Fails with {@code MARKET_NOT_ACTIVE}.
+   */
+  public CartAddition.Result addAll(UUID userId, UUID marketId, List<CartAddition.Line> lines, ContentLocale locale) {
+    activeForChanges(marketId);
+    Map<UUID, ListingInfo> listings = catalog.listingInfos(lines.stream().map(CartAddition.Line::listingId).toList(), locale);
+    Cart cart = loadForUpdate(userId, marketId);
+    releaseIfExpired(cart);
+    Instant now = clock.instant();
+    int added = 0;
+    List<CartAddition.Skipped> skipped = new ArrayList<>();
+    for (CartAddition.Line line : lines) {
+      ListingInfo listing = listings.get(line.listingId());
+      if (listing == null || listing.deleted() || !listing.marketId().equals(marketId)) {
+        skipped.add(new CartAddition.Skipped(line.listingId(), null, CartAddition.SkipReason.REMOVED));
+        continue;
+      }
+      if (!listing.available()) {
+        skipped.add(new CartAddition.Skipped(line.listingId(), listing.name(), CartAddition.SkipReason.UNAVAILABLE));
+        continue;
+      }
+      int current = cart.findItem(line.listingId()).map(CartItem::getQuantity).orElse(0);
+      int wanted = current + line.quantity();
+      int quantity = Math.min(wanted, listing.maxOrderQuantity());
+      if (quantity > current) {
+        cart.setQuantity(line.listingId(), quantity, now);
+        added++;
+      }
+      if (quantity < wanted) {
+        skipped.add(new CartAddition.Skipped(line.listingId(), listing.name(), CartAddition.SkipReason.LIMITED));
+      }
+    }
+    return new CartAddition.Result(added, skipped);
+  }
+
   public CartView removeItem(UUID userId, UUID marketId, UUID listingId, ContentLocale locale) {
     MarketInfo market = markets.info(marketId);
     Cart cart = loadForUpdate(userId, marketId);

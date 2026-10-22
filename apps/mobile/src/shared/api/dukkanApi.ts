@@ -12,9 +12,9 @@ import type {
   DevicePlatform,
   FavoriteGroup,
   FulfilmentType,
+  Listing,
   ListMarketProductsParams,
   ListMarketsParams,
-  Listing,
   Locale,
   LoginRequest,
   MarketDetail,
@@ -22,6 +22,8 @@ import type {
   MarketOffer,
   MarketProfileRequest,
   MarketSummary,
+  MediaPurpose,
+  MediaUpload,
   MerchantMarket,
   NotificationPage,
   NotificationSettings,
@@ -32,22 +34,21 @@ import type {
   ProductDetail,
   ProductDraft,
   ProductDraftRequest,
-  TranslationRequest,
-  TranslationResult,
   ProductSummary,
   Promotion,
   PromotionRequest,
   RegisterRequest,
+  ReorderResult,
   ReserveFulfilmentRequest,
   SearchCatalogParams,
   SearchProductsParams,
-  SocialSignInRequest,
   Slot,
+  SocialSignInRequest,
+  TranslationRequest,
+  TranslationResult,
   UpdateListingRequest,
-  UploadFile,
-  MediaPurpose,
-  MediaUpload,
   UpdateUserRequest,
+  UploadFile,
   User,
 } from './types';
 
@@ -133,6 +134,8 @@ export interface DukkanApi {
   listOrders(signal?: Signal): Promise<Order[]>;
   getOrder(orderId: string, signal?: Signal): Promise<Order>;
   cancelOrder(orderId: string): Promise<Order>;
+  /** Puts the products of a past order into its market's cart again (skipped ones are reported). */
+  reorder(orderId: string): Promise<ReorderResult>;
   // merchant
   listMyMarkets(signal?: Signal): Promise<MerchantMarket[]>;
   createMyMarket(request: MarketProfileRequest): Promise<MerchantMarket>;
@@ -274,6 +277,7 @@ export function createDukkanApi(client: ApiClient): DukkanApi {
     listOrders: (signal) => get('/orders', undefined, signal),
     getOrder: (orderId, signal) => get(`/orders/${enc(orderId)}`, undefined, signal),
     cancelOrder: (orderId) => client.request({ method: 'POST', path: `/orders/${enc(orderId)}/cancel` }),
+    reorder: (orderId) => client.request({ method: 'POST', path: `/orders/${enc(orderId)}/reorder` }),
 
     listMyMarkets: (signal) => get('/merchant/markets', undefined, signal),
     createMyMarket: (body) => client.request({ method: 'POST', path: '/merchant/markets', body }),

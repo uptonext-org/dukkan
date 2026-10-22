@@ -172,6 +172,12 @@ describeLive('live API (app client against the real backend)', () => {
     expect((await merchant.advanceOrderStatus(order.id, 'ACCEPTED')).status).toBe('ACCEPTED');
     expect((await customer.cancelOrder(order.id)).status).toBe('CANCELLED');
 
+    // Ordering it again fills the cart with the same products; the cart is emptied afterwards.
+    const again = await customer.reorder(order.id);
+    expect(again.marketId).toBe(shop.id);
+    expect((await customer.getCart(shop.id)).items.map((i) => i.productId).sort()).toEqual(order.items.map((i) => i.productId).sort());
+    await customer.clearCart(shop.id);
+
     // Merchant adds a private product with three languages and finds it by an Arabic search.
     const allCategories = await api('ar').listCategories();
     expect(allCategories.length).toBeGreaterThanOrEqual(12);

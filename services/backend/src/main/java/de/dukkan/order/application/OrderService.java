@@ -2,6 +2,7 @@ package de.dukkan.order.application;
 
 import de.dukkan.address.application.AddressService;
 import de.dukkan.address.application.AddressView;
+import de.dukkan.cart.application.CartAddition;
 import de.dukkan.cart.application.CartLineView;
 import de.dukkan.cart.application.CartService;
 import de.dukkan.cart.application.CartView;
@@ -29,6 +30,8 @@ import io.micrometer.core.instrument.MeterRegistry;
 import de.dukkan.shared.error.NotFoundException;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -180,6 +183,27 @@ public class OrderService {
     outbox.append(OrderEvent.STATUS_CHANGED, order.getId(), event(order, previous, "CUSTOMER", now));
     meters.counter("dukkan.orders.status_changes", "status", order.getStatus().name(), "by", "customer").increment();
     return view(order, locale, false);
+  }
+
+  /**
+   * Puts the products of one of the user's orders into the cart of its market again, on top of
+   * what is there, at today's prices. Unavailable and removed products are skipped and reported.
+   */
+  public Reorder reorder(UUID userId, UUID orderId, ContentLocale locale) {
+    CustomerOrder order = owned(userId, orderId);
+    Map<UUID, Integer> quantities = new LinkedHashMap<>();
+    Map<UUID, String> names = new HashMap<>();
+    for (OrderItem item : order.getItems()) {
+      quantities.merge(item.getListingId(), item.getQuantity(), Integer::sum);
+      names.putIfAbsent(item.getListingId(), item.getName());
+    }
+    List<CartAddition.Line> lines = quantities.entrySet().stream().map(e -> new CartAddition.Line(e.getKey(), e.getValue())).toList();
+    CartAddition.Result result = carts.addAll(userId, order.getMarketId(), lines, locale);
+    List<Reorder.Skipped> skipped =
+        result.skipped().stream()
+            .map(s -> new Reorder.Skipped(s.listingId(), s.name() != null ? s.name() : names.getOrDefault(s.listingId(), ""), s.reason()))
+            .toList();
+    return new Reorder(order.getMarketId(), result.addedProducts(), skipped);
   }
 
   // ------------------------------------------------------------------ merchant

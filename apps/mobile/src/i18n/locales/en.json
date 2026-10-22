@@ -379,7 +379,16 @@
     "cancelTitle": "Cancel the order?",
     "cancelMessage": "The time slot will be released.",
     "emptyTitle": "No orders yet",
-    "emptyMessage": "Your orders will show up here."
+    "emptyMessage": "Your orders will show up here.",
+    "reorder": "Order again",
+    "reorderSkippedTitle": "Not everything is in the cart",
+    "reorderNothing": "These products are not available right now.",
+    "toCart": "Go to cart",
+    "skipped": {
+      "REMOVED": "{{name}} – no longer sold",
+      "UNAVAILABLE": "{{name}} – currently unavailable",
+      "LIMITED": "{{name}} – maximum quantity reached"
+    }
   },
   "orderStatus": {
     "PLACED": "Placed",

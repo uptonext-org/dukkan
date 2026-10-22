@@ -379,7 +379,16 @@
     "cancelTitle": "Bestellung stornieren?",
     "cancelMessage": "Das Zeitfenster wird wieder freigegeben.",
     "emptyTitle": "Noch keine Bestellungen",
-    "emptyMessage": "Deine Bestellungen erscheinen hier."
+    "emptyMessage": "Deine Bestellungen erscheinen hier.",
+    "reorder": "Nochmal bestellen",
+    "reorderSkippedTitle": "Nicht alles ist im Warenkorb",
+    "reorderNothing": "Diese Produkte gibt es gerade nicht.",
+    "toCart": "Zum Warenkorb",
+    "skipped": {
+      "REMOVED": "{{name}} – nicht mehr im Sortiment",
+      "UNAVAILABLE": "{{name}} – gerade nicht verfügbar",
+      "LIMITED": "{{name}} – Höchstmenge erreicht"
+    }
   },
   "orderStatus": {
     "PLACED": "Bestellt",

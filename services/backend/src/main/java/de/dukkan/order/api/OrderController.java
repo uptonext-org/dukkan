@@ -2,6 +2,7 @@ package de.dukkan.order.api;
 
 import de.dukkan.i18n.application.ContentLocale;
 import de.dukkan.order.application.OrderService;
+import de.dukkan.order.application.Reorder;
 import de.dukkan.shared.security.CurrentUser;
 import jakarta.validation.constraints.Size;
 import java.util.List;
@@ -54,5 +55,10 @@ final class OrderController {
   @PostMapping("/orders/{orderId}/cancel")
   OrderResponse cancel(@CurrentSecurityContext SecurityContext security, @PathVariable UUID orderId, @RequestAttribute(ContentLocale.REQUEST_ATTRIBUTE) ContentLocale locale) {
     return responses.one(orders.cancel(CurrentUser.id(security), orderId, locale), locale);
+  }
+
+  @PostMapping("/orders/{orderId}/reorder")
+  Reorder reorder(@CurrentSecurityContext SecurityContext security, @PathVariable UUID orderId, @RequestAttribute(ContentLocale.REQUEST_ATTRIBUTE) ContentLocale locale) {
+    return orders.reorder(CurrentUser.id(security), orderId, locale);
   }
 }

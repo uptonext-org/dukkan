@@ -43,6 +43,20 @@ export function usePlaceOrder(marketId: string) {
   });
 }
 
+/** Ordering a past order again: the cart of its market changes. */
+export function useReorder() {
+  const api = useApi();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (orderId: string) => api.reorder(orderId),
+    onSuccess: () => {
+      for (const prefix of ['cart', 'carts']) {
+        void queryClient.invalidateQueries({ queryKey: [prefix] });
+      }
+    },
+  });
+}
+
 export function useCancelOrder() {
   const api = useApi();
   const lang = useLang();
