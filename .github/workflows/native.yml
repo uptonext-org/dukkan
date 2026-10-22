@@ -38,7 +38,7 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - uses: gradle/actions/setup-gradle@v5
+      - uses: gradle/actions/setup-gradle@v6
       - run: npm ci
       # compileSdk 37, build tools 37.0.0 and NDK 27.1 are installed by the Android Gradle plugin
       # on first use; the runner's SDK has the licences accepted.
