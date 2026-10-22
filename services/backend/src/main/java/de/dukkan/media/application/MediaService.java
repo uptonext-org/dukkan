@@ -1,12 +1,18 @@
 package de.dukkan.media.application;
 
+import de.dukkan.media.domain.ImageFormat;
 import de.dukkan.media.domain.ImageInfo;
 import de.dukkan.media.domain.ImageInspector;
+import de.dukkan.media.domain.ImageResizer;
 import de.dukkan.media.domain.MetadataStripper;
 import de.dukkan.shared.config.DukkanProperties;
 import de.dukkan.shared.error.ContentRejectedException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -24,6 +30,8 @@ public class MediaService {
   private final UploadRateLimiter rateLimiter;
   private final long maxBytes;
   private final long maxPixels;
+  /** Resizing decodes images: two at a time keeps CPU and memory bounded. */
+  private final Semaphore resizing = new Semaphore(2);
 
   public MediaService(MediaStorage storage, UploadRateLimiter rateLimiter, DukkanProperties properties) {
     this.storage = storage;
@@ -77,5 +85,56 @@ public class MediaService {
 
   public Optional<MediaObject> open(String key) {
     return MediaKeys.isValid(key) ? storage.open(key) : Optional.empty();
+  }
+
+  /**
+   * The image at most {@code width} pixels wide (B-32d): a stored variant, created on first use
+   * (at most two at a time; when busy, the original is served). Originals that are not wider, and
+   * WebP, are served as they are.
+   */
+  public Optional<MediaObject> openVariant(String key, int width) {
+    Optional<ImageFormat> format = MediaKeys.format(key);
+    if (!MediaKeys.isValid(key) || format.isEmpty()) {
+      return Optional.empty();
+    }
+    if (format.get() == ImageFormat.WEBP) {
+      return storage.open(key);
+    }
+    String variantKey = MediaKeys.variant(key, width, format.get());
+    Optional<MediaObject> stored = storage.open(variantKey);
+    if (stored.isPresent()) {
+      return stored;
+    }
+    Optional<MediaObject> original = storage.open(key);
+    if (original.isEmpty()) {
+      return Optional.empty();
+    }
+    boolean acquired = false;
+    try {
+      acquired = resizing.tryAcquire(5, TimeUnit.SECONDS);
+      if (!acquired) {
+        return original;
+      }
+      byte[] bytes;
+      try (InputStream in = original.get().content().getInputStream()) {
+        bytes = in.readAllBytes();
+      }
+      Optional<byte[]> resized = ImageResizer.resize(bytes, format.get(), width);
+      if (resized.isEmpty()) {
+        return original;
+      }
+      storage.put(variantKey, resized.get(), format.get().contentType());
+      return storage.open(variantKey).or(() -> original);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      return original;
+    } catch (IOException | RuntimeException e) {
+      LOG.warn("Could not create the {} px variant of {}: {}", width, key, e.toString());
+      return original;
+    } finally {
+      if (acquired) {
+        resizing.release();
+      }
+    }
   }
 }

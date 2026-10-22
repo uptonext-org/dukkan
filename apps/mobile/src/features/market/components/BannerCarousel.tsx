@@ -1,9 +1,9 @@
-import { FlatList, Image, Pressable, View, useWindowDimensions } from 'react-native';
+import { FlatList, Image, PixelRatio, Pressable, View, useWindowDimensions } from 'react-native';
 
 import type { Banner } from '../../../shared/api';
 import { forSpeech } from '../../../shared/format';
 import { makeStyles, tintColor, useTheme } from '../../../shared/theme';
-import { AppText, Icon, type IconName } from '../../../shared/ui';
+import { AppText, Icon, sizedImageUrl, type IconName } from '../../../shared/ui';
 
 /** Banners without a photo are compact: about 16:9, at most this tall. */
 const MAX_PLAIN_HEIGHT = 190;
@@ -85,7 +85,7 @@ export function BannerCarousel({ banners, onPress, label }: { banners: Banner[];
             testID={`banner-${item.id}`}>
             {hasImage ? (
               <>
-                <Image source={{ uri: item.imageUrl ?? undefined }} style={styles.image} resizeMode="cover" accessibilityIgnoresInvertColors />
+                <Image source={{ uri: item.imageUrl == null ? undefined : sizedImageUrl(item.imageUrl, Math.ceil(cardWidth * PixelRatio.get())) }} style={styles.image} resizeMode="cover" accessibilityIgnoresInvertColors />
                 <View style={[styles.textBox, styles.scrim]}>
                   {item.overline != null && (
                     <AppText variant="callout" style={styles.onPhoto} numberOfLines={2}>

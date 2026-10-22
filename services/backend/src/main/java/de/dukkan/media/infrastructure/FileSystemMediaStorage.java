@@ -87,7 +87,7 @@ public class FileSystemMediaStorage implements MediaStorage {
   }
 
   private Path path(String key) {
-    if (!MediaKeys.isValid(key)) {
+    if (!MediaKeys.isStorageKey(key)) {
       throw new IllegalArgumentException("Invalid media key");
     }
     return root.resolve(key.substring(0, 2)).resolve(key);

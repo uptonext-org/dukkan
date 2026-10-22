@@ -77,4 +77,33 @@ public final class TestImages {
       throw new UncheckedIOException(e);
     }
   }
+
+  /** A JPEG whose left half is {@code left} and right half {@code right}. */
+  public static byte[] jpegHalves(int width, int height, Color left, Color right) {
+    BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+    Graphics2D g = image.createGraphics();
+    g.setColor(left);
+    g.fillRect(0, 0, width / 2, height);
+    g.setColor(right);
+    g.fillRect(width / 2, 0, width - width / 2, height);
+    g.dispose();
+    return encode(image, "jpg");
+  }
+
+  /** Inserts a big-endian EXIF block with only an Orientation tag after the JPEG's SOI marker. */
+  public static byte[] withOrientation(byte[] jpeg, int orientation) {
+    byte[] app1 = {
+      (byte) 0xFF, (byte) 0xE1, 0, 34,
+      'E', 'x', 'i', 'f', 0, 0,
+      'M', 'M', 0, 42, 0, 0, 0, 8,
+      0, 1,
+      0x01, 0x12, 0, 3, 0, 0, 0, 1, 0, (byte) orientation, 0, 0,
+      0, 0, 0, 0
+    };
+    byte[] out = new byte[jpeg.length + app1.length];
+    System.arraycopy(jpeg, 0, out, 0, 2);
+    System.arraycopy(app1, 0, out, 2, app1.length);
+    System.arraycopy(jpeg, 2, out, 2 + app1.length, jpeg.length - 2);
+    return out;
+  }
 }

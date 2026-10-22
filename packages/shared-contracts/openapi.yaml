@@ -1524,6 +1524,12 @@ paths:
         a token. Keys are content-addressed and never change, so responses carry
         `Cache-Control: public, max-age=31536000, immutable`, plus `ETag`,
         `X-Content-Type-Options: nosniff` and a restrictive `Content-Security-Policy`.
+
+        `w` asks for a smaller copy (B-32d): JPEG and PNG originals wider than `w` are resized
+        (aspect ratio kept, EXIF orientation applied, JPEG quality 0.82) once and then served from
+        storage, with their own `ETag`. Narrower originals and WebP are served as they are. Clients
+        pick the smallest width at least as wide as the image is drawn (times the pixel density).
+        With a CDN, forward the query string to the origin.
       security: []
       parameters:
         - name: key
@@ -1531,6 +1537,11 @@ paths:
           required: true
           description: SHA-256 of the file (64 lowercase hex characters) plus extension.
           schema: { type: string, pattern: '^[0-9a-f]{64}\.(jpg|png|webp)$', example: 3a7bd3e2360a3d29eea436fcfb7e44c735d117c42d1c1835420b6b9942dd4f1b.jpg }
+        - name: w
+          in: query
+          required: false
+          description: Width of a smaller copy in pixels; other values → 400.
+          schema: { type: integer, enum: [160, 320, 640, 1080] }
       responses:
         '200':
           description: The image bytes as uploaded.

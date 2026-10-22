@@ -12,6 +12,9 @@ public final class MediaKeys {
 
   public static final Pattern KEY = Pattern.compile("^[0-9a-f]{64}\\.(jpg|png|webp)$");
 
+  /** Original keys and their resized variants ({@code <hash>-w320.jpg}, B-32d). */
+  private static final Pattern STORAGE_KEY = Pattern.compile("^[0-9a-f]{64}(-w[0-9]{2,4})?\\.(jpg|png|webp)$");
+
   private MediaKeys() {}
 
   public static String of(byte[] bytes, ImageFormat format) {
@@ -26,9 +29,19 @@ public final class MediaKeys {
     return KEY.matcher(key).matches();
   }
 
-  /** The format of a valid key. */
+  /** An original or variant key, as accepted by {@link MediaStorage} implementations. */
+  public static boolean isStorageKey(String key) {
+    return STORAGE_KEY.matcher(key).matches();
+  }
+
+  /** The key of the variant of an original at the given width, in the given format. */
+  public static String variant(String key, int width, ImageFormat format) {
+    return key.substring(0, key.indexOf('.')) + "-w" + width + "." + format.extension();
+  }
+
+  /** The format of a valid key (original or variant). */
   public static Optional<ImageFormat> format(String key) {
-    if (!isValid(key)) {
+    if (!isStorageKey(key)) {
       return Optional.empty();
     }
     return ImageFormat.forExtension(key.substring(key.indexOf('.') + 1));

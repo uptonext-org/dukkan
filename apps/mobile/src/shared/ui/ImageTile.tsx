@@ -1,7 +1,9 @@
-import { Image, View, type StyleProp, type ViewStyle } from 'react-native';
+import { useState } from 'react';
+import { Image, PixelRatio, View, type LayoutChangeEvent, type StyleProp, type ViewStyle } from 'react-native';
 
 import { makeStyles, tintColor, useTheme, type TileTint } from '../theme';
 import { Icon, type IconName } from './Icon';
+import { sizedImageUrl } from './sizedImageUrl';
 
 interface ImageTileProps {
   uri?: string | null | undefined;
@@ -21,6 +23,11 @@ export function ImageTile({ uri, tint = 'sage', size, aspectRatio = 1, radius, p
   const styles = useStyles();
   const { colors, radii } = useTheme();
   const r = radius ?? radii.tile;
+  // The photo fills 82 % of the tile; load a copy that fits it at the screen's pixel density.
+  const [measured, setMeasured] = useState<number | null>(null);
+  const width = size ?? measured;
+  const onLayout = size === undefined ? (e: LayoutChangeEvent) => setMeasured(e.nativeEvent.layout.width) : undefined;
+  const source = uri != null && uri !== '' && width !== null ? sizedImageUrl(uri, Math.ceil(width * 0.82 * PixelRatio.get())) : null;
   return (
     <View
       style={[
@@ -30,9 +37,10 @@ export function ImageTile({ uri, tint = 'sage', size, aspectRatio = 1, radius, p
         style,
       ]}
       accessibilityElementsHidden
-      importantForAccessibility="no-hide-descendants">
+      importantForAccessibility="no-hide-descendants"
+      {...(onLayout !== undefined ? { onLayout } : {})}>
       {uri != null && uri !== '' ? (
-        <Image source={{ uri }} style={styles.image} resizeMode="contain" accessibilityIgnoresInvertColors />
+        source !== null && <Image source={{ uri: source }} style={styles.image} resizeMode="contain" accessibilityIgnoresInvertColors />
       ) : (
         <Icon name={placeholderIcon} size={size !== undefined ? Math.max(16, size * 0.36) : 40} color={colors.textSecondary} strokeWidth={1.5} />
       )}

@@ -140,6 +140,33 @@ class MediaIntegrationTest extends IntegrationTest {
   }
 
   @Test
+  void smallerCopiesAreMadeOnceAndServedWithTheirOwnETag() throws Exception {
+    String merchant = registerMerchant();
+    UUID market = createMarket(merchant, "Variantenmarkt");
+    byte[] photo = TestImages.jpeg(1600, 1200, randomColor());
+    String key = read(upload(merchant, market, photo, "image/jpeg").andExpect(status().isCreated()).andReturn(), "$.key");
+
+    MvcResult small = mvc.perform(get("/api/v1/media/" + key).param("w", "320")).andExpect(status().isOk()).andReturn();
+    byte[] bytes = small.getResponse().getContentAsByteArray();
+    assertThat(javax.imageio.ImageIO.read(new java.io.ByteArrayInputStream(bytes)).getWidth()).isEqualTo(320);
+    assertThat(small.getResponse().getContentType()).isEqualTo("image/jpeg");
+    assertThat(small.getResponse().getHeader("ETag")).contains("-w320");
+    assertThat(small.getResponse().getHeader("Cache-Control")).contains("immutable");
+    // Served from storage the second time: identical bytes.
+    assertThat(mvc.perform(get("/api/v1/media/" + key).param("w", "320")).andReturn().getResponse().getContentAsByteArray()).isEqualTo(bytes);
+    byte[] large = mvc.perform(get("/api/v1/media/" + key).param("w", "1080")).andReturn().getResponse().getContentAsByteArray();
+    assertThat(javax.imageio.ImageIO.read(new java.io.ByteArrayInputStream(large)).getWidth()).isEqualTo(1080);
+    // An original narrower than the width asked for is served as it is.
+    byte[] icon = TestImages.jpeg(300, 200, randomColor());
+    String iconKey = read(upload(merchant, market, icon, "image/jpeg").andExpect(status().isCreated()).andReturn(), "$.key");
+    assertThat(mvc.perform(get("/api/v1/media/" + iconKey).param("w", "320")).andReturn().getResponse().getContentAsByteArray()).isEqualTo(icon);
+    mvc.perform(get("/api/v1/media/" + key).param("w", "333")).andExpect(status().isBadRequest());
+    mvc.perform(get("/api/v1/media/" + "0".repeat(64) + ".jpg").param("w", "320")).andExpect(status().isNotFound());
+    // Variant keys are not addressable as originals.
+    mvc.perform(get("/api/v1/media/" + key.replace(".jpg", "-w320.jpg"))).andExpect(status().isNotFound());
+  }
+
+  @Test
   void identicalBytesDeduplicateToTheSameKey() throws Exception {
     String merchant = registerMerchant();
     UUID market = createMarket(merchant, "Dedupemarkt");

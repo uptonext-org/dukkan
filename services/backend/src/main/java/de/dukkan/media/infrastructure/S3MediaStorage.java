@@ -145,7 +145,7 @@ public class S3MediaStorage implements MediaStorage, DisposableBean {
   }
 
   static String objectKey(String key) {
-    if (!MediaKeys.isValid(key)) {
+    if (!MediaKeys.isStorageKey(key)) {
       throw new IllegalArgumentException("Invalid media key");
     }
     return key.substring(0, 2) + "/" + key;

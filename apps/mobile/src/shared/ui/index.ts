@@ -4,6 +4,7 @@ export * from './Chip';
 export * from './ChipScroller';
 export * from './Icon';
 export * from './ImageTile';
+export * from './sizedImageUrl';
 export * from './ListRow';
 export * from './OfflineBanner';
 export * from './Pills';
