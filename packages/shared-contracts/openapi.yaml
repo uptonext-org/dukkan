@@ -573,6 +573,37 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/MarketPage' }
         '400': { $ref: '#/components/responses/ValidationError' }
+  /markets/recent:
+    get:
+      tags: [markets]
+      operationId: listRecentMarkets
+      summary: My markets — ordered from or visited recently
+      description: |
+        For the start page view "Meine Märkte". Signed in: the markets the user ordered from
+        (orders that were not cancelled or rejected), most recent order first, each with the
+        products bought there most recently (available ones, up to 8). Then the markets in
+        `visited` (kept by the app, most recently visited first, also for guests) that have no
+        orders, without products. Only active markets; unknown ids are skipped. With `lat`/`lng`,
+        `distanceMeters` and `deliversToLocation` are set.
+      security: [{}, { bearerAuth: [] }]
+      parameters:
+        - name: visited
+          in: query
+          style: form
+          explode: false
+          schema: { type: array, maxItems: 20, items: { type: string, format: uuid } }
+        - { name: lat, in: query, schema: { type: number, minimum: -90, maximum: 90 } }
+        - { name: lng, in: query, schema: { type: number, minimum: -180, maximum: 180 } }
+        - { $ref: '#/components/parameters/AcceptLanguage' }
+      responses:
+        '200':
+          description: Up to 20 markets.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/RecentMarket' }
+        '400': { $ref: '#/components/responses/ValidationError' }
   /markets/{marketId}:
     get:
       tags: [markets]
@@ -2189,6 +2220,18 @@ components:
             - type: 'null'
             - $ref: '#/components/schemas/Money'
         minimumOrderValue: { $ref: '#/components/schemas/Money' }
+    RecentMarket:
+      type: object
+      required: [market, lastOrderAt, lastOrderId, orderCount, recentProducts]
+      properties:
+        market: { $ref: '#/components/schemas/MarketSummary' }
+        lastOrderAt: { type: [string, 'null'], format: date-time }
+        lastOrderId: { type: [string, 'null'], format: uuid }
+        orderCount: { type: integer, minimum: 0 }
+        recentProducts:
+          type: array
+          maxItems: 8
+          items: { $ref: '#/components/schemas/ProductSummary' }
     MarketSummary:
       type: object
       required: [id, slug, name, type, cuisines, location, addressLine, openNow, fulfilment, activePromotionCount, tags]

@@ -18,6 +18,7 @@ export const queryKeys = {
   places: (lang: string, q: string) => ['places', lang, q] as const,
   reverse: (lang: string, lat: number, lng: number) => ['reverse', lang, lat, lng] as const,
   markets: (lang: string, params: Omit<ListMarketsParams, 'page'>) => ['markets', lang, params] as const,
+  recentMarkets: (lang: string, visited: readonly string[], signedIn: boolean) => ['recentMarkets', lang, visited, signedIn] as const,
   market: (lang: string, marketId: string) => ['market', lang, marketId] as const,
   marketHome: (lang: string, marketId: string) => ['marketHome', lang, marketId] as const,
   categories: (lang: string, marketId: string) => ['categories', lang, marketId] as const,

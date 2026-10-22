@@ -192,7 +192,8 @@
     "emptyTitle": "No markets found",
     "emptyMessage": "No market nearby matches your selection right now. Try other filters or another place.",
     "mapLabel_one": "Map with {{count}} market",
-    "mapLabel_other": "Map with {{count}} markets"
+    "mapLabel_other": "Map with {{count}} markets",
+    "mine": "Mine"
   },
   "market": {
     "open": "Open",
@@ -684,5 +685,16 @@
     "banner": "Please confirm your email address with the link in our welcome email.",
     "resend": "Send the email again",
     "sent": "Sent. Please also check your spam folder."
+  },
+  "myMarkets": {
+    "emptyTitle": "No markets yet",
+    "emptyMessage": "Markets you ordered from or browsed appear here – with what you bought there.",
+    "emptyGuest": "Markets you looked at appear here.",
+    "discover": "Discover markets",
+    "lastOrder_one": "Last ordered on {{date}} · {{count}} order",
+    "lastOrder_other": "Last ordered on {{date}} · {{count}} orders",
+    "lastVisit": "Last viewed on {{date}}",
+    "boughtHere": "Bought here",
+    "lastOrderButton": "View last order"
   }
 }

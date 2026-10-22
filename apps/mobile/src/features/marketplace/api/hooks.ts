@@ -28,3 +28,14 @@ export function useMarkets(params: Omit<ListMarketsParams, 'page'>) {
   });
   return { ...query, markets: flattenPages(query.data) };
 }
+
+/** "Meine Märkte": ordered-from markets (signed in) and the markets visited on this device. */
+export function useRecentMarkets(visited: string[], at: { lat: number; lng: number } | undefined, signedIn: boolean, enabled: boolean) {
+  const api = useApi();
+  const lang = useLang();
+  return useQuery({
+    queryKey: [...queryKeys.recentMarkets(lang, visited, signedIn), at ?? null],
+    queryFn: ({ signal }) => api.listRecentMarkets(visited, at, signal),
+    enabled,
+  });
+}
