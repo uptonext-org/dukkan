@@ -11,10 +11,11 @@ import { ProductCarousel } from '../../catalog/components/ProductCarousel';
 import { FulfilmentLink } from '../../fulfilment/components/FulfilmentLink';
 import { useMarketHome } from '../api/hooks';
 import { BannerCarousel } from '../components/BannerCarousel';
+import { CategoryBand } from '../components/CategoryBand';
 import { MarketInfoCard } from '../components/MarketInfoCard';
 import { useMarketContext } from '../MarketContext';
 
-/** Market start page: fulfilment link, banner carousel, info card, product sections. */
+/** Market start page: fulfilment link, category band, banner carousel, info card, product sections. */
 export function MarketHomeScreen({ navigation }: MarketTabScreenProps<'MarketHome'>) {
   const styles = useStyles();
   const { colors } = useTheme();
@@ -80,6 +81,7 @@ export function MarketHomeScreen({ navigation }: MarketTabScreenProps<'MarketHom
         <FulfilmentLink market={market} />
         <IconButton icon="user" label={t('shell.account')} onPress={() => rootNavigation.navigate('Shell', { screen: 'Profile' })} />
       </View>
+      <CategoryBand marketId={marketId} onOpen={(category) => navigation.navigate('MarketProducts', { title: category.name, filter: { categoryId: category.id } })} />
       {banners.length > 0 && <BannerCarousel banners={banners} onPress={openBanner} label={t('marketHome.banners')} />}
       <View style={styles.gutter}>
         <MarketInfoCard market={market} />
