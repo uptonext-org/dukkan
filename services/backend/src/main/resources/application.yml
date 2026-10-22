@@ -63,6 +63,7 @@ management:
     distribution:
       percentiles-histogram:
         http.server.requests: true
+        dukkan.ai.requests: true
   endpoint:
     health:
       probes:
