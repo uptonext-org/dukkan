@@ -15,8 +15,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Composes a market's start page: banners, then PROMOTIONS, NEW, FREQUENTLY_ORDERED (signed-in
- * users) and the market's largest categories. Empty sections are left out. Lives in catalog because
+ * Composes a market's start page: banners, then PROMOTIONS, BESTSELLERS (when at least {@link
+ * #MIN_BESTSELLERS} products sold in the last 30 days), NEW, FREQUENTLY_ORDERED (signed-in users)
+ * and the market's largest categories. Empty sections are left out. Lives in catalog because
  * every section is a list of products.
  */
 @Service
@@ -25,6 +26,8 @@ public class MarketHomeService {
 
   static final int SECTION_SIZE = 10;
   static final int CATEGORY_SECTIONS = 3;
+  /** Fewer best sellers say little about a market (one order would fill the section). */
+  static final int MIN_BESTSELLERS = 3;
 
   private final MarketService markets;
   private final CatalogService catalog;
@@ -53,6 +56,10 @@ public class MarketHomeService {
             .limit(SECTION_SIZE)
             .toList();
     add(sections, "PROMOTIONS", locale, promotedItems);
+    List<ProductSummary> bestsellers = catalog.bestsellers(marketId, SECTION_SIZE, locale, userId);
+    if (bestsellers.size() >= MIN_BESTSELLERS) {
+      add(sections, "BESTSELLERS", locale, bestsellers);
+    }
     add(sections, "NEW", locale, catalog.summaries(catalog.newListingIds(marketId, SECTION_SIZE), locale, userId));
     if (userId != null) {
       List<UUID> frequent = purchases.frequentlyOrderedListingIds(userId, marketId);

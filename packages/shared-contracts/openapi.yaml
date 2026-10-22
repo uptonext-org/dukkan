@@ -669,6 +669,10 @@ paths:
         - { name: promotedOnly, in: query, schema: { type: boolean, default: false } }
         - { name: newOnly, in: query, schema: { type: boolean, default: false } }
         - { name: organicOnly, in: query, schema: { type: boolean, default: false } }
+        - name: bestsellersOnly
+          in: query
+          description: The market's best sellers (last 30 days, up to 50), most sold first; the other filters and the sort are ignored.
+          schema: { type: boolean, default: false }
         - name: sort
           in: query
           schema: { type: string, enum: [relevance, price_asc, price_desc, name], default: relevance }
@@ -2298,7 +2302,10 @@ components:
       type: object
       required: [key, title, items]
       properties:
-        key: { type: string, enum: [PROMOTIONS, NEW, FREQUENTLY_ORDERED, CATEGORY] }
+        key:
+          type: string
+          enum: [PROMOTIONS, BESTSELLERS, NEW, FREQUENTLY_ORDERED, CATEGORY]
+          description: BESTSELLERS are the available products sold most in the last 30 days (shown from 3 products on).
         title: { type: string }
         subtitle: { type: [string, 'null'] }
         categoryId: { type: [string, 'null'], format: uuid }

@@ -10,7 +10,7 @@ import { useProductActions } from '../useProductActions';
 interface ProductGridProps {
   marketId: string;
   products: ProductSummary[];
-  header?: ReactElement;
+  header?: ReactElement | undefined;
   empty?: ReactElement;
   onEndReached?: () => void;
   loadingMore?: boolean;

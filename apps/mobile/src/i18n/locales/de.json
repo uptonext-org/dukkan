@@ -221,12 +221,15 @@
       "cartWithTotal": "Warenkorb, {{amount}}"
     },
     "deliveryWithFee": "Lieferung ({{amount}})",
-    "deliveryFreeShort": "Lieferung (gratis)"
+    "deliveryFreeShort": "Lieferung (gratis)",
+    "openHomeHint": "Öffnet die Startseite des Markts"
   },
   "marketHome": {
     "banners": "Aktuelles",
     "all": "Alle",
-    "showAll": "Alle anzeigen: {{title}}"
+    "showAll": "Alle anzeigen: {{title}}",
+    "categories": "Kategorien",
+    "categoryHint": "Zeigt die Produkte dieser Kategorie"
   },
   "product": {
     "organic": "Bio",

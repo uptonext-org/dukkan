@@ -5,6 +5,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import de.dukkan.catalog.application.CatalogService;
 import de.dukkan.support.IntegrationTest;
 import java.util.List;
 import java.util.Map;
@@ -32,7 +33,11 @@ class MarketHomeIntegrationTest extends IntegrationTest {
     assertThat((String) read(home, "$.banners[0].title")).isEqualTo("Our offers of the week");
 
     List<String> keys = read(home, "$.sections[*].key");
-    assertThat(keys).startsWith("PROMOTIONS", "NEW").contains("CATEGORY").doesNotContain("FREQUENTLY_ORDERED");
+    // Best sellers depend on what other tests ordered here; the rest of the order is fixed.
+    assertThat(keys.stream().filter(k -> !k.equals("BESTSELLERS")).toList())
+        .startsWith("PROMOTIONS", "NEW")
+        .contains("CATEGORY")
+        .doesNotContain("FREQUENTLY_ORDERED");
     assertThat((String) read(home, "$.sections[0].title")).isEqualTo("Offers");
     List<Map<String, Object>> promoted = read(home, "$.sections[0].items");
     assertThat(promoted).isNotEmpty().allSatisfy(p -> assertThat(p.get("promotion")).isNotNull());
@@ -77,5 +82,38 @@ class MarketHomeIntegrationTest extends IntegrationTest {
     assertThat(promotional).isLessThan(price);
     assertThat((String) read(product, "$.promotion.label")).matches("\\d+ % Rabatt");
     assertThat((String) read(product, "$.market.slug")).isEqualTo(ANATOLIA);
+  }
+
+  @Test
+  void bestSellersAreTheProductsSoldMostRecentlyFromThreeProductsOn() throws Exception {
+    String merchant = registerMerchant();
+    UUID market = createMarket(merchant, "Bestsellermarkt");
+    UUID ayran = addListing(merchant, market, "Ayran", 650);
+    UUID tea = addListing(merchant, market, "Schwarzer Tee Rize", 800);
+    UUID cucumber = addListing(merchant, market, "Salatgurke", 600);
+    String customer = registerUser();
+
+    orderPickup(customer, market, ayran, 3);
+    orderPickup(customer, market, tea, 1);
+    // Two products sold: not enough for a section, but the full list already works.
+    assertThat(strings(mvc.perform(get("/api/v1/markets/" + market + "/home")).andReturn(), "$.sections[*].key")).doesNotContain("BESTSELLERS");
+
+    orderPickup(customer, market, cucumber, 2);
+    // The ranking is reused for a few minutes.
+    clock.advance(CatalogService.BESTSELLER_CACHE.plusSeconds(1));
+    // An old order does not count (older than 30 days).
+    String old = orderPickup(customer, market, tea, 5);
+    jdbc.sql("UPDATE customer_order SET placed_at = placed_at - interval '31 days' WHERE id = :id").param("id", UUID.fromString(old)).update();
+
+    MvcResult home = mvc.perform(get("/api/v1/markets/" + market + "/home").header(HttpHeaders.ACCEPT_LANGUAGE, "de")).andReturn();
+    List<String> keys = read(home, "$.sections[*].key");
+    assertThat(keys.indexOf("BESTSELLERS")).isEqualTo(keys.indexOf("PROMOTIONS") + 1);
+    int index = keys.indexOf("BESTSELLERS");
+    assertThat((String) read(home, "$.sections[" + index + "].title")).isEqualTo("Meistverkauft");
+    assertThat(strings(home, "$.sections[" + index + "].items[*].id")).containsExactly(ayran.toString(), cucumber.toString(), tea.toString());
+
+    MvcResult all = mvc.perform(get("/api/v1/markets/" + market + "/products?bestsellersOnly=true&size=2&page=0")).andExpect(status().isOk()).andReturn();
+    assertThat(strings(all, "$.items[*].id")).containsExactly(ayran.toString(), cucumber.toString());
+    assertThat((Integer) read(all, "$.totalItems")).isEqualTo(3);
   }
 }

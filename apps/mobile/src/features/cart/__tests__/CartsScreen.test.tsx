@@ -33,5 +33,12 @@ describe('Warenkörbe tab', () => {
 
     await user.press(screen.getByTestId(`cart-summary-${MARKET_ID}`));
     expect(await screen.findByTestId('market-cart')).toBeOnTheScreen();
+
+    // Before paying: the market's name at the top leads to its start page.
+    const name = screen.getByTestId('market-header-name');
+    expect(name).toHaveAccessibleName('Anatolia Markt');
+    await user.press(name);
+    expect(await screen.findByTestId('market-home')).toBeOnTheScreen();
+    expect(screen.queryByTestId('market-cart')).not.toBeOnTheScreen();
   });
 });
