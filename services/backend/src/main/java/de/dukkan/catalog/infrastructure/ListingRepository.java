@@ -74,7 +74,8 @@ public class ListingRepository {
       boolean organicOnly,
       boolean availableOnly,
       String sort,
-      List<String> locales) {}
+      List<String> locales,
+      Instant now) {}
 
   /** A cross-market search hit with its ranking keys. */
   public record Hit(UUID listingId, UUID marketId, long priceCents, int tier, int nameLength, String name) {}
@@ -104,6 +105,17 @@ public class ListingRepository {
           ORDER BY CASE t.locale WHEN :l0 THEN 0 WHEN :l1 THEN 1 WHEN :l2 THEN 2 ELSE 3 END, t.locale
           LIMIT 1) loc ON true
       """;
+
+  /**
+   * The unit price a shopper pays now: the newest active promotion wins (as in
+   * PromotionService.winningRules); PERCENT_OFF lowers the price with half-up rounding like
+   * PricingEngine, MULTI_BUY leaves the unit price alone. Needs {@code :now}.
+   */
+  private static final String EFFECTIVE_PRICE =
+      "(mp.price_cents - COALESCE((SELECT (mp.price_cents * p.percent_off + 50) / 100"
+          + " FROM promotion p JOIN promotion_product pp ON pp.promotion_id = p.id"
+          + " WHERE pp.market_product_id = mp.id AND p.valid_from <= :now AND p.valid_until > :now"
+          + " ORDER BY p.created_at DESC, p.id LIMIT 1), 0))";
 
   private static final String ANY_NAME_FIRST_WORD =
       "EXISTS (SELECT 1 FROM catalog_product_translation t3 WHERE t3.catalog_product_id = cp.id"
@@ -170,7 +182,7 @@ public class ListingRepository {
 
   /** Localised names of matching listings in one market, best match first. */
   public List<String> suggest(UUID marketId, String term, List<String> locales, int limit) {
-    MarketSearch search = new MarketSearch(marketId, term, null, null, null, false, false, "relevance", locales);
+    MarketSearch search = new MarketSearch(marketId, term, null, null, null, false, false, "relevance", locales, Instant.EPOCH);
     StringBuilder sql =
         new StringBuilder("SELECT loc.name, min(")
             .append(rankExpression())
@@ -183,12 +195,14 @@ public class ListingRepository {
   }
 
   /** Available listings matching the term in the given markets (capped), with ranking keys. */
-  public List<Hit> searchMarkets(Collection<UUID> marketIds, String term, List<String> locales, int cap) {
+  public List<Hit> searchMarkets(Collection<UUID> marketIds, String term, List<String> locales, int cap, Instant now) {
     if (marketIds.isEmpty()) {
       return List.of();
     }
     String sql =
-        "SELECT mp.id, mp.market_id, mp.price_cents, "
+        "SELECT mp.id, mp.market_id, "
+            + EFFECTIVE_PRICE
+            + ", "
             + rankExpression()
             + " AS tier, length(loc.name) AS len, loc.name"
             + " FROM market_product mp JOIN catalog_product cp ON cp.id = mp.catalog_product_id"
@@ -197,10 +211,11 @@ public class ListingRepository {
             + " AND cp.search_text ILIKE :pattern ESCAPE '\\'"
             + " ORDER BY tier, len, loc.name, mp.id LIMIT :cap";
     MarketSearch search =
-        new MarketSearch(new UUID(0, 0), term, null, null, null, false, true, "relevance", locales);
+        new MarketSearch(new UUID(0, 0), term, null, null, null, false, true, "relevance", locales, now);
     return bind(jdbc.sql(sql), search)
         .param("marketIds", List.copyOf(marketIds))
         .param("cap", cap)
+        .param("now", Timestamp.from(now))
         .query(
             (rs, i) ->
                 new Hit(
@@ -228,7 +243,7 @@ public class ListingRepository {
 
   /** Merchant view: all non-deleted listings (available or not), optionally filtered by a term. */
   public IdPage merchantListings(UUID marketId, @Nullable String term, List<String> locales, int page, int size) {
-    return search(new MarketSearch(marketId, term, null, null, null, false, false, "name", locales), page, size);
+    return search(new MarketSearch(marketId, term, null, null, null, false, false, "name", locales, Instant.EPOCH), page, size);
   }
 
   public Optional<UUID> findActiveListingId(UUID marketId, UUID catalogProductId) {
@@ -354,8 +369,8 @@ public class ListingRepository {
 
   private static String orderBy(MarketSearch search) {
     return switch (search.sort()) {
-      case "price_asc" -> "mp.price_cents ASC, lower(loc.name), mp.id";
-      case "price_desc" -> "mp.price_cents DESC, lower(loc.name), mp.id";
+      case "price_asc" -> EFFECTIVE_PRICE + " ASC, lower(loc.name), mp.id";
+      case "price_desc" -> EFFECTIVE_PRICE + " DESC, lower(loc.name), mp.id";
       case "name" -> "lower(loc.name), mp.id";
       case "newest" -> "mp.created_at DESC, mp.id";
       default ->
@@ -385,6 +400,9 @@ public class ListingRepository {
     }
     if (search.categoryId() != null) {
       bound = bound.param("categoryId", search.categoryId());
+    }
+    if (search.sort().startsWith("price_")) {
+      bound = bound.param("now", Timestamp.from(search.now()));
     }
     if (search.onlyListingIds() != null) {
       bound = bound.param("onlyIds", List.copyOf(search.onlyListingIds()));

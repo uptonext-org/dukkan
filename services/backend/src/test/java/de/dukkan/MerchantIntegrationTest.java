@@ -23,6 +23,30 @@ import org.springframework.test.web.servlet.MvcResult;
 class MerchantIntegrationTest extends IntegrationTest {
 
   @Test
+  void priceSortingUsesThePromotionalPrice() throws Exception {
+    String merchant = registerMerchant();
+    UUID market = createMarket(merchant, "Preismarkt");
+    UUID dear = addListing(merchant, market, "Schwarzer Tee Rize", 300);
+    UUID cheap = addListing(merchant, market, "Ayran", 250);
+    OffsetDateTime from = OffsetDateTime.ofInstant(clock.instant().minus(Duration.ofHours(1)), ZoneOffset.UTC);
+    Map<String, Object> half = new HashMap<>();
+    half.put("title", Map.of("de", "Halber Preis"));
+    half.put("type", "PERCENT_OFF");
+    half.put("percentOff", 50);
+    half.put("validFrom", from.toString());
+    half.put("validUntil", from.plusDays(7).toString());
+    half.put("productIds", List.of(dear));
+    mvc.perform(json(auth(post("/api/v1/merchant/markets/" + market + "/promotions"), merchant), toJson(half))).andExpect(status().isCreated());
+
+    // 300 → 150 with the promotion, so it is cheaper than 250.
+    MvcResult ascending = mvc.perform(get("/api/v1/markets/" + market + "/products").param("sort", "price_asc")).andReturn();
+    assertThat(strings(ascending, "$.items[*].id")).containsExactly(dear.toString(), cheap.toString());
+    assertThat(ints(ascending, "$.items[*].promotionalPrice.amountCents")).containsExactly(150);
+    MvcResult descending = mvc.perform(get("/api/v1/markets/" + market + "/products").param("sort", "price_desc")).andReturn();
+    assertThat(strings(descending, "$.items[*].id")).containsExactly(cheap.toString(), dear.toString());
+  }
+
+  @Test
   void machineTranslationWithoutLanguageModelIsUnavailable() throws Exception {
     mvc.perform(
             json(

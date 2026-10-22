@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import de.dukkan.support.IntegrationTest;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -92,8 +93,14 @@ class CrossLanguageSearchIntegrationTest extends IntegrationTest {
             .andReturn();
     List<String> markets = read(result, "$.items[*].market.slug");
     assertThat(markets).contains(ANATOLIA, "elbe-frische-supermarkt", "gruenkorb-bioladen");
-    List<Integer> prices = read(result, "$.items[*].product.price.amountCents");
-    assertThat(prices).isSorted();
+    // Sorted by what the shopper pays: the promotional price where a percent promotion runs.
+    List<Map<String, Object>> products = read(result, "$.items[*].product");
+    List<Integer> paid =
+        products.stream()
+            .map(p -> (Map<?, ?>) (p.get("promotionalPrice") != null ? p.get("promotionalPrice") : p.get("price")))
+            .map(m -> (Integer) m.get("amountCents"))
+            .toList();
+    assertThat(paid).isSorted();
     // Every hit has "تفاح" in its Arabic name; German names: Äpfel Elstar, Bio-Äpfel Braeburn, Apfelschorle.
     assertThat(strings(result, "$.items[*].product.name"))
         .allSatisfy(n -> assertThat(de.dukkan.i18n.application.TextNormalizer.normalize(n)).contains("apfel"));

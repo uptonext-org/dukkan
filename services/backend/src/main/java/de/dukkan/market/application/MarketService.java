@@ -21,6 +21,7 @@ import java.time.Clock;
 import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalTime;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
@@ -83,7 +84,10 @@ public class MarketService {
   /** Active markets near a location with filters, sort and paging. */
   public PageResponse<MarketSummary> search(MarketQuery query, ContentLocale locale) {
     Set<UUID> withOffers = query.hasOffers() ? promotions.marketsWithActivePromotions() : null;
-    List<Map.Entry<UUID, Double>> candidates =
+    Instant now = clock.instant();
+    String name = query.q() == null || query.q().isBlank() ? null : TextNormalizer.normalize(query.q());
+    ZonedDateTime local = now.atZone(DukkanTime.ZONE);
+    MarketRepository.SearchPage found =
         markets.searchActive(
             new MarketRepository.Search(
                 query.lat(),
@@ -93,21 +97,14 @@ public class MarketService {
                 query.cuisines(),
                 query.fulfilment(),
                 withOffers,
-                query.sort()));
-    Map<UUID, MarketRow> rows = markets.findByIds(candidates.stream().map(Map.Entry::getKey).toList());
-    Instant now = clock.instant();
-    String name = query.q() == null || query.q().isBlank() ? null : TextNormalizer.normalize(query.q());
-    List<MarketRow> matching = new ArrayList<>();
-    for (Map.Entry<UUID, Double> candidate : candidates) {
-      MarketRow row = rows.get(candidate.getKey());
-      if (row == null
-          || (query.openNow() && !schedule(row).isOpen(now))
-          || (name != null && !TextNormalizer.normalize(row.name()).contains(name))) {
-        continue;
-      }
-      matching.add(row);
-    }
-    PageResponse<MarketRow> page = PageResponse.slice(matching, query.page(), query.size());
+                query.sort(),
+                name == null || name.isEmpty() ? null : name,
+                query.openNow() ? new MarketRepository.OpenAt(local.getDayOfWeek().getValue(), local.toLocalTime()) : null,
+                query.size(),
+                query.page() * query.size()));
+    Map<UUID, MarketRow> rows = markets.findByIds(found.hits().stream().map(Map.Entry::getKey).toList());
+    List<MarketRow> items = found.hits().stream().map(hit -> rows.get(hit.getKey())).filter(Objects::nonNull).toList();
+    PageResponse<MarketRow> page = PageResponse.of(items, query.page(), query.size(), found.total());
     Map<UUID, Integer> counts = promotions.activeCounts(page.items().stream().map(MarketRow::id).toList());
     GeoPoint ref = GeoPoint.of(query.lat(), query.lng());
     return page.map(row -> summary(row, ref, counts.getOrDefault(row.id(), 0), locale, now));
@@ -118,7 +115,8 @@ public class MarketService {
     return markets
         .searchActive(
             new MarketRepository.Search(
-                location.lat(), location.lng(), radiusKm * 1000, List.of(), List.of(), null, null, "distance"))
+                location.lat(), location.lng(), radiusKm * 1000, List.of(), List.of(), null, null, "distance", null, null, null, 0))
+        .hits()
         .stream()
         .map(e -> new MarketDistance(e.getKey(), e.getValue()))
         .toList();

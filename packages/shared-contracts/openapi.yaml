@@ -529,6 +529,7 @@ paths:
         - name: sort
           in: query
           schema: { type: string, enum: [relevance, price_asc, price_desc, name], default: relevance }
+          description: Price sorts use the price paid now (promotionalPrice under a PERCENT_OFF promotion, else price).
         - { $ref: '#/components/parameters/Page' }
         - { $ref: '#/components/parameters/Size' }
         - { $ref: '#/components/parameters/AcceptLanguage' }
@@ -609,6 +610,7 @@ paths:
         - name: sort
           in: query
           schema: { type: string, enum: [relevance, price_asc, distance], default: relevance }
+          description: price_asc uses the price paid now (promotionalPrice under a PERCENT_OFF promotion, else price).
         - { $ref: '#/components/parameters/Page' }
         - { $ref: '#/components/parameters/Size' }
         - { $ref: '#/components/parameters/AcceptLanguage' }

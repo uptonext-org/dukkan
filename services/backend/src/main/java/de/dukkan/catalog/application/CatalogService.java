@@ -144,7 +144,8 @@ public class CatalogService {
                 query.organicOnly(),
                 false,
                 query.sort(),
-                locale.chain(market.primaryLocale())),
+                locale.chain(market.primaryLocale()),
+                clock.instant()),
             query.page(),
             query.size());
     return PageResponse.of(summaries(page.ids(), locale, userId), query.page(), query.size(), page.total());
@@ -192,7 +193,7 @@ public class CatalogService {
     }
     Map<UUID, Double> distance = new HashMap<>();
     nearby.forEach(m -> distance.put(m.marketId(), m.distanceMeters()));
-    List<Hit> hits = new ArrayList<>(listings.searchMarkets(distance.keySet(), term, locale.chain(null), NEARBY_CAP));
+    List<Hit> hits = new ArrayList<>(listings.searchMarkets(distance.keySet(), term, locale.chain(null), NEARBY_CAP, clock.instant()));
     Comparator<Hit> relevance =
         Comparator.comparingInt(Hit::tier).thenComparingInt(Hit::nameLength).thenComparing(Hit::name);
     Comparator<Hit> byDistance = Comparator.comparing(h -> distance.get(h.marketId()));
@@ -254,7 +255,7 @@ public class CatalogService {
     return listings
         .search(
             new ListingRepository.MarketSearch(
-                marketId, null, null, null, newSince(), false, true, "newest", List.of(ContentLocale.DEFAULT)),
+                marketId, null, null, null, newSince(), false, true, "newest", List.of(ContentLocale.DEFAULT), clock.instant()),
             0,
             limit)
         .ids();
@@ -265,7 +266,7 @@ public class CatalogService {
     return listings
         .search(
             new ListingRepository.MarketSearch(
-                marketId, null, categoryId, null, null, false, true, "name", localeChain),
+                marketId, null, categoryId, null, null, false, true, "name", localeChain, clock.instant()),
             0,
             limit)
         .ids();

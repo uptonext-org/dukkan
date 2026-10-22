@@ -2,6 +2,7 @@ package de.dukkan;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -105,6 +106,34 @@ class MarketDiscoveryIntegrationTest extends IntegrationTest {
   }
 
   @Test
+  void openNowAndNameFiltersRunInSqlWithOvernightHoursAndNormalisedNames() throws Exception {
+    String merchant = registerMerchant();
+    Map<String, Object> profile = marketProfile("Gece Büfesi Ömer");
+    profile.put("openingHours", List.of(Map.of("dayOfWeek", 1, "opensAt", "18:00", "closesAt", "02:00")));
+    // A place of its own, so markets of other tests do not show up in the counts.
+    profile.put("location", Map.of("lat", 52.1205, "lng", 11.6276));
+    mvc.perform(json(auth(post("/api/v1/merchant/markets"), merchant), toJson(profile))).andExpect(status().isCreated());
+
+    // Monday 10:00: not open yet; the name matches without umlauts and in any case.
+    assertThat(slugs(mvc.perform(nearGeceBufesi().param("q", "GECE bufesi omer")).andReturn())).hasSize(1);
+    assertThat((Integer) read(mvc.perform(nearGeceBufesi().param("openNow", "true")).andReturn(), "$.totalItems")).isZero();
+    // Tuesday 01:00: still open from Monday evening.
+    clock.advance(java.time.Duration.ofHours(15));
+    MvcResult late = mvc.perform(nearGeceBufesi().param("openNow", "true")).andReturn();
+    assertThat((Integer) read(late, "$.totalItems")).isEqualTo(1);
+    assertThat((Boolean) read(late, "$.items[0].openNow")).isTrue();
+    // Tuesday 03:00: closed.
+    clock.advance(java.time.Duration.ofHours(2));
+    assertThat((Integer) read(mvc.perform(nearGeceBufesi().param("openNow", "true")).andReturn(), "$.totalItems")).isZero();
+    // LIKE wildcards in the search term are literal characters.
+    assertThat((Integer) read(mvc.perform(nearGeceBufesi().param("q", "%")).andReturn(), "$.totalItems")).isZero();
+  }
+
+  private static MockHttpServletRequestBuilder nearGeceBufesi() {
+    return get("/api/v1/markets").param("lat", "52.1205").param("lng", "11.6276").param("radiusKm", "1");
+  }
+
+  @Test
   void sortsByNameMinimumOrderAndDeliveryFee() throws Exception {
     List<String> names = read(mvc.perform(nearStGeorg().param("radiusKm", "15").param("sort", "name")).andReturn(), "$.items[*].name");
     assertThat(names).isSortedAccordingTo(String.CASE_INSENSITIVE_ORDER);
@@ -128,6 +157,9 @@ class MarketDiscoveryIntegrationTest extends IntegrationTest {
     assertThat((Integer) read(page, "$.totalItems")).isEqualTo(12);
     assertThat((Integer) read(page, "$.totalPages")).isEqualTo(3);
     assertThat(objects(page, "$.items")).hasSize(2);
+    MvcResult beyond = mvc.perform(nearStGeorg().param("radiusKm", "15").param("size", "5").param("page", "9")).andReturn();
+    assertThat((Integer) read(beyond, "$.totalItems")).isEqualTo(12);
+    assertThat(objects(beyond, "$.items")).isEmpty();
 
     mvc.perform(nearStGeorg().param("radiusKm", "1").header(HttpHeaders.ACCEPT_LANGUAGE, "ar"))
         .andExpect(header().string(HttpHeaders.CONTENT_LANGUAGE, "ar"))

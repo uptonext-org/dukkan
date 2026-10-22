@@ -1,6 +1,7 @@
 package de.dukkan.market.infrastructure;
 
 import de.dukkan.geo.application.GeoMath;
+import de.dukkan.i18n.application.TextNormalizer;
 import de.dukkan.market.application.MarketProfile;
 import de.dukkan.market.application.OpeningHours;
 import de.dukkan.market.application.OpeningInterval;
@@ -56,7 +57,11 @@ public class MarketRepository {
       List<OpeningInterval> hours,
       Map<String, String> descriptions) {}
 
-  /** Radius search filters (openNow and name search are applied in Java). */
+  /**
+   * Radius search filters. {@code nameTerm} is already normalised (matched against {@code
+   * search_name}); {@code openAt} is the local Berlin time to check opening hours against; {@code
+   * limit} {@code null} returns every match.
+   */
   public record Search(
       double lat,
       double lng,
@@ -65,7 +70,17 @@ public class MarketRepository {
       List<String> cuisines,
       @Nullable FulfilmentType fulfilment,
       @Nullable Collection<UUID> onlyMarketIds,
-      String sort) {}
+      String sort,
+      @Nullable String nameTerm,
+      @Nullable OpenAt openAt,
+      @Nullable Integer limit,
+      int offset) {}
+
+  /** A local time: ISO day of week (1 = Monday) and time of day. */
+  public record OpenAt(int dayOfWeek, LocalTime time) {}
+
+  /** One page of search hits (id and distance in metres) and the number of all hits. */
+  public record SearchPage(List<Map.Entry<UUID, Double>> hits, long total) {}
 
   /** A banner row with all translations. */
   public record BannerRow(
@@ -93,11 +108,11 @@ public class MarketRepository {
    * Active markets within the radius, ordered by the requested sort. A bounding box on the
    * indexed (lat, lng) columns prefilters before the exact distance is computed.
    */
-  public List<Map.Entry<UUID, Double>> searchActive(Search search) {
+  public SearchPage searchActive(Search search) {
     GeoMath.BoundingBox box = GeoMath.boundingBox(search.lat(), search.lng(), search.radiusMeters());
     StringBuilder sql =
         new StringBuilder(
-            "SELECT m.id, d.distance FROM market m CROSS JOIN LATERAL (SELECT "
+            "SELECT m.id, d.distance, count(*) OVER () AS total FROM market m CROSS JOIN LATERAL (SELECT "
                 + DISTANCE
                 + " AS distance) d WHERE m.status = 'ACTIVE'"
                 + " AND m.lat BETWEEN :minLat AND :maxLat AND m.lng BETWEEN :minLng AND :maxLng"
@@ -115,9 +130,20 @@ public class MarketRepository {
     }
     if (search.onlyMarketIds() != null) {
       if (search.onlyMarketIds().isEmpty()) {
-        return List.of();
+        return new SearchPage(List.of(), 0);
       }
       sql.append(" AND m.id IN (:only)");
+    }
+    if (search.nameTerm() != null) {
+      sql.append(" AND m.search_name LIKE :nameLike ESCAPE '\\'");
+    }
+    if (search.openAt() != null) {
+      // Same rule as OpeningSchedule.isOpen: an interval of today that has started and not ended
+      // (overnight ones run to midnight), or an overnight interval of yesterday not yet closed.
+      sql.append(
+          " AND EXISTS (SELECT 1 FROM market_opening_hours h WHERE h.market_id = m.id AND ("
+              + "(h.day_of_week = :openDay AND h.opens_at <= :openTime AND (h.closes_at < h.opens_at OR :openTime < h.closes_at))"
+              + " OR (h.day_of_week = :openPrevDay AND h.closes_at < h.opens_at AND :openTime < h.closes_at)))");
     }
     sql.append(" ORDER BY ")
         .append(
@@ -128,6 +154,9 @@ public class MarketRepository {
               default -> "d.distance, lower(m.name)";
             })
         .append(", m.id");
+    if (search.limit() != null) {
+      sql.append(" LIMIT :limit OFFSET :offset");
+    }
     JdbcClient.StatementSpec spec =
         jdbc.sql(sql.toString())
             .param("lat", search.lat())
@@ -146,7 +175,31 @@ public class MarketRepository {
     if (search.onlyMarketIds() != null) {
       spec = spec.param("only", List.copyOf(search.onlyMarketIds()));
     }
-    return spec.query((rs, i) -> Map.entry(rs.getObject(1, UUID.class), rs.getDouble(2))).list();
+    if (search.nameTerm() != null) {
+      spec = spec.param("nameLike", "%" + search.nameTerm().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%");
+    }
+    if (search.openAt() != null) {
+      spec =
+          spec.param("openDay", search.openAt().dayOfWeek())
+              .param("openPrevDay", search.openAt().dayOfWeek() == 1 ? 7 : search.openAt().dayOfWeek() - 1)
+              .param("openTime", search.openAt().time());
+    }
+    if (search.limit() != null) {
+      spec = spec.param("limit", search.limit()).param("offset", search.offset());
+    }
+    long[] total = {0};
+    List<Map.Entry<UUID, Double>> hits =
+        spec.query(
+                (rs, i) -> {
+                  total[0] = rs.getLong(3);
+                  return Map.entry(rs.getObject(1, UUID.class), rs.getDouble(2));
+                })
+            .list();
+    if (hits.isEmpty() && search.offset() > 0) {
+      // Past the last page: count without paging.
+      return new SearchPage(List.of(), searchActive(new Search(search.lat(), search.lng(), search.radiusMeters(), search.types(), search.cuisines(), search.fulfilment(), search.onlyMarketIds(), search.sort(), search.nameTerm(), search.openAt(), null, 0)).total());
+    }
+    return new SearchPage(hits, hits.isEmpty() ? 0 : total[0]);
   }
 
   /** Markets by id (any status), keyed by id; unknown ids are absent. */
@@ -323,10 +376,10 @@ public class MarketRepository {
             INSERT INTO market (id, slug, name, type_code, status, primary_locale, address_line, lat, lng, phone,
                                 logo_url, cover_image_url, tags, delivery, pickup, delivery_radius_km,
                                 delivery_fee_cents, free_delivery_from_cents, minimum_order_cents, legal_name,
-                                register_info, created_at, updated_at)
+                                register_info, search_name, created_at, updated_at)
             VALUES (:id, :slug, :name, :typeCode, :status, :primaryLocale, :addressLine, :lat, :lng, :phone,
                     :logoUrl, :coverImageUrl, :tags, :delivery, :pickup, :radius, :fee, :freeFrom, :minimum,
-                    :legalName, :registerInfo, :now, :now)
+                    :legalName, :registerInfo, :searchName, :now, :now)
             """)
         .paramSource(params(id, slug, status, p, now))
         .update();
@@ -341,7 +394,7 @@ public class MarketRepository {
                    cover_image_url = :coverImageUrl, tags = :tags, delivery = :delivery, pickup = :pickup,
                    delivery_radius_km = :radius, delivery_fee_cents = :fee, free_delivery_from_cents = :freeFrom,
                    minimum_order_cents = :minimum, legal_name = :legalName, register_info = :registerInfo,
-                   updated_at = :now
+                   search_name = :searchName, updated_at = :now
              WHERE id = :id
             """)
         .paramSource(params(id, "", "", p, now))
@@ -413,6 +466,7 @@ public class MarketRepository {
         p.fulfilment().freeDeliveryFrom() == null ? null : p.fulfilment().freeDeliveryFrom().amountCents(),
         Types.BIGINT);
     source.addValue("registerInfo", p.registerInfo(), Types.VARCHAR);
+    source.addValue("searchName", TextNormalizer.normalize(p.name()));
     return source;
   }
 
@@ -442,5 +496,18 @@ public class MarketRepository {
         new ArrayList<>(),
         new ArrayList<>(),
         new HashMap<>());
+  }
+
+  /** Markets without {@code search_name} (seed data, rows from before V10): id → name. */
+  public Map<UUID, String> findWithoutSearchName() {
+    Map<UUID, String> names = new LinkedHashMap<>();
+    jdbc.sql("SELECT id, name FROM market WHERE search_name IS NULL").query(rs -> {
+      names.put(rs.getObject(1, UUID.class), rs.getString(2));
+    });
+    return names;
+  }
+
+  public void updateSearchName(UUID id, String searchName) {
+    jdbc.sql("UPDATE market SET search_name = :searchName WHERE id = :id").param("id", id).param("searchName", searchName).update();
   }
 }
