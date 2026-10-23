@@ -35,7 +35,8 @@ Die Prüfung im App Store dauert erfahrungsgemäß Tage, die Freischaltung neuer
 | Impressum, Datenschutz, AGB und Kontakt in App und Web verlinkt (`GET /platform`) | `features/legal` |
 | AGB-Zustimmung bei der Registrierung (Version und Zeitpunkt gespeichert, 422 `TERMS_NOT_ACCEPTED` ohne Zustimmung) | V18, `TermsPolicy` |
 | Bestellknopf „Zahlungspflichtig bestellen“ (§ 312j BGB) und Hinweis „Du bezahlst direkt beim Markt“, sobald `DUKKAN_PAYMENT=ON_SITE` gesetzt ist | Warenkorb, Bestellbestätigung |
-| Server-Setup: Caddy mit automatischem HTTPS, Backend, Web, Portal, PostgreSQL, nächtliches Backup | `infrastructure/production` |
+| Server-Setup: Caddy mit automatischem HTTPS, Backend, Web, Portal, PostgreSQL | `infrastructure/production` |
+| Datensicherung: nächtlicher Dump, wöchentlicher automatischer Restore-Test, verschlüsselte Offsite-Kopie (restic), `restore.sh`; Lösch-Journal, damit ein Restore gelöschte Konten nicht zurückbringt; optionale Frist für Lieferadressen in alten Bestellungen | `BACKUP.md`, `docs/operations/datensicherung.md` |
 | Docker-Images für Web und Portal (nginx, ohne Root, CSP und Security-Header) | `apps/customer-web/Dockerfile`, `apps/web/Dockerfile` |
 | Release-Workflow: Tag `v1.0.0` testet, baut und veröffentlicht alle Images in der GitHub Container Registry | `.github/workflows/release.yml` |
 | Signiertes Android-App-Bundle per Knopfdruck (sobald die Secrets gesetzt sind) | `.github/workflows/mobile-release.yml` |
@@ -92,8 +93,9 @@ Die Prüfung im App Store dauert erfahrungsgemäß Tage, die Freischaltung neuer
 - [ ] **Domain** (z. B. `dukkan.de`) und eine Subdomain fürs Portal; DNS-Einträge auf den Server.
 - [ ] **Server in der EU** (z. B. Hetzner, IONOS, OVH): Ubuntu 24.04, Docker, Firewall nur 22/80/443,
       SSH nur mit Schlüssel, automatische Sicherheitsupdates.
-- [ ] **Backup außerhalb des Servers** einrichten (Snapshots des Anbieters oder Object Storage) und
-      **eine Wiederherstellung einmal üben** (`infrastructure/production/README.md`).
+- [ ] **Backup-Speicher (S3) in der EU** bei einem anderen Anbieter oder Standort, `RESTIC_*` in der
+      `.env`, Schlüssel sicher verwahren, Healthcheck einrichten und **eine Wiederherstellung üben**
+      (`infrastructure/production/BACKUP.md`, Konzept und Fristen: `docs/operations/datensicherung.md`).
 - [ ] **E-Mail-Versand** (z. B. Brevo, Mailjet, Postmark, Amazon SES EU) mit SPF, DKIM und DMARC für
       deine Domain; `SPRING_MAIL_*` und `DUKKAN_MAIL_FROM` setzen.
 - [ ] **Kartenkacheln** für die Web-App: ein Anbieter mit Vertrag (z. B. MapTiler, Stadia Maps),
@@ -150,7 +152,7 @@ KI-Erfassung an. Admins können gute Produkte in den gemeinsamen Katalog überne
 - [ ] Testbestellung im Pilotmarkt: Knopf „Zahlungspflichtig bestellen“, Händler sieht sie im Portal, Statuswechsel kommen beim Kunden an
 - [ ] Impressum, Datenschutz und AGB sind im Profil verlinkt und erreichbar
 - [ ] Datenexport und Kontolöschung einmal mit einem Testkonto ausprobiert
-- [ ] Nächtliches Backup vorhanden (`docker compose exec backup ls /backups`), Kopie außerhalb des Servers
+- [ ] Nächtliches Backup und Offsite-Snapshot vorhanden (`docker compose logs backup offsite`, `docker compose exec offsite restic snapshots`), Healthcheck meldet „up“
 - [ ] Uptime-Alarm getestet (Backend kurz stoppen)
 
 ## 6. Bekannte Grenzen und nach dem Launch

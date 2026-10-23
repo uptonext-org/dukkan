@@ -67,6 +67,9 @@ final class ProductionReadinessCheck {
     if (!properties.security().rateLimit().enabled()) {
       problems.add("dukkan.security.rate-limit.enabled is false");
     }
+    if (environment.getProperty("dukkan.privacy.erasure-journal", "").isBlank()) {
+      problems.add("DUKKAN_ERASURE_JOURNAL is empty: a restored backup would bring deleted accounts back");
+    }
     String rabbit = environment.getProperty("dukkan.events.rabbitmq-uri", "");
     if ("rabbitmq".equals(environment.getProperty("dukkan.events.transport")) && rabbit.contains("dukkan:dukkan@")) {
       problems.add("DUKKAN_RABBITMQ_URI uses the default credentials");

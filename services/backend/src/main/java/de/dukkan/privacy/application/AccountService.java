@@ -61,6 +61,7 @@ public class AccountService {
   private final MarketService markets;
   private final Clock clock;
   private final FixedWindowRateLimiter<UUID> deletionAttempts;
+  private final ErasureJournal journal;
 
   public AccountService(
       IdentityService identity,
@@ -71,7 +72,8 @@ public class AccountService {
       NotificationService notifications,
       MarketService markets,
       Clock clock,
-      RateLimitStore rateLimits) {
+      RateLimitStore rateLimits,
+      ErasureJournal journal) {
     this.identity = identity;
     this.addresses = addresses;
     this.carts = carts;
@@ -80,6 +82,7 @@ public class AccountService {
     this.notifications = notifications;
     this.markets = markets;
     this.clock = clock;
+    this.journal = journal;
     // The password check must not become a way to guess passwords with a stolen session.
     this.deletionAttempts = new FixedWindowRateLimiter<>("account-deletion", 5, Duration.ofHours(1), clock, rateLimits);
   }
@@ -111,6 +114,21 @@ public class AccountService {
     if (orders.hasOpenOrders(userId)) {
       throw new ConflictException(ErrorCodes.ACCOUNT_HAS_OPEN_ORDERS, "Please wait until your open orders are completed or cancel them first.");
     }
+    erase(userId);
+    // Last: a failed write rolls the deletion back, so every erasure the user sees is recorded.
+    journal.record(userId, clock.instant());
+  }
+
+  /**
+   * Erases an account again after a database restore ({@link ErasureReplay}). No password and no
+   * checks: the user asked for the deletion before the backup was restored.
+   */
+  public void reapplyErasure(UUID userId) {
+    identity.lockForDeletion(userId);
+    erase(userId);
+  }
+
+  private void erase(UUID userId) {
     carts.deleteAll(userId);
     favorites.deleteAll(userId);
     addresses.deleteAll(userId);

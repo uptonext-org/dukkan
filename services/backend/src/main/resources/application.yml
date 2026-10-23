@@ -99,6 +99,12 @@ dukkan:
     support-email: ${DUKKAN_SUPPORT_EMAIL:}
     # SIMULATED (no payment, the apps say so) or ON_SITE (pay the market at pickup or delivery).
     payment: ${DUKKAN_PAYMENT:SIMULATED}
+  privacy:
+    # Append-only list of erased accounts, on a volume a database restore does not touch; erasures
+    # are re-applied after a restore (privacy.application.ErasureReplay). Empty: none kept.
+    erasure-journal: ${DUKKAN_ERASURE_JOURNAL:}
+    # ISO period (e.g. P3Y): delivery addresses leave finished orders after this. Empty: kept.
+    order-address-retention: ${DUKKAN_ORDER_ADDRESS_RETENTION:}
   features:
     # Phase 1: browsing is public; set to true to require a login for the catalog GET endpoints.
     require-login-to-browse: ${DUKKAN_REQUIRE_LOGIN_TO_BROWSE:false}
