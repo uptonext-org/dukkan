@@ -87,6 +87,55 @@ jobs:
       - run: npm run build
       - run: npm audit --omit=dev --audit-level=high
 
+  customer-web:
+    name: Customer web app typecheck, lint, tests, build and audit
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: |
+            apps/mobile/package-lock.json
+            apps/customer-web/package-lock.json
+      # The app code and its libraries come from apps/mobile.
+      - run: npm ci --ignore-scripts
+        working-directory: apps/mobile
+      - run: npm ci
+        working-directory: apps/customer-web
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+      - working-directory: apps/customer-web
+        run: |
+          npm run typecheck
+          npm run lint
+          npm test
+          npm run build
+          npm audit --omit=dev --audit-level=high
+
+  images:
+    name: Web images build and serve
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - run: docker build -f apps/customer-web/Dockerfile -t dukkan-customer-web:ci .
+      - run: docker build -t dukkan-portal:ci apps/web
+      - name: Serve the customer app with a read-only root file system and check routes and headers
+        run: |
+          docker run -d --name web --read-only --tmpfs /tmp --tmpfs /etc/nginx/conf.d \
+            -e DUKKAN_MAP_TILE_URL='https://tiles.example/{z}/{x}/{y}.png' -p 8090:8080 dukkan-customer-web:ci
+          for i in $(seq 1 30); do curl -sf localhost:8090/healthz && break; sleep 1; done
+          curl -sf localhost:8090/markets/abc/products/def | grep -q '<div id="root">'
+          curl -sf localhost:8090/config.js | grep -q 'tiles.example'
+          curl -sfI localhost:8090/ | grep -qi "content-security-policy: default-src 'self'"
+          test "$(curl -s -o /dev/null -w '%{http_code}' localhost:8090/api/v1/markets)" = 404
+          docker run -d --name portal --read-only --tmpfs /tmp -p 8091:8080 dukkan-portal:ci
+          for i in $(seq 1 30); do curl -sf localhost:8091/healthz && break; sleep 1; done
+          curl -sf localhost:8091/orders | grep -q '<div id="root">'
+      - if: failure()
+        run: docker logs web; docker logs portal
+
   e2e-api:
     name: End-to-end API (app client against the real backend)
     runs-on: ubuntu-24.04
@@ -112,7 +161,9 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: npm
-          cache-dependency-path: apps/mobile/package-lock.json
+          cache-dependency-path: |
+            apps/mobile/package-lock.json
+            apps/customer-web/package-lock.json
       - name: Build and start the backend (local profile with seed data and demo accounts)
         working-directory: services/backend
         run: |
@@ -126,6 +177,13 @@ jobs:
         run: |
           npm ci
           npx jest --ci live.api system.api
+      - name: Run the web app's browser smoke test (Chromium)
+        working-directory: apps/customer-web
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+          npm run build
+          npm run smoke
       - if: failure()
         run: tail -n 200 services/backend/backend.log
 

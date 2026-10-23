@@ -178,16 +178,26 @@ export const UPLOAD_TIMEOUT_MS = 60_000;
 /** The server may wait for a language model (30 s per attempt, one retry) before answering. */
 export const DRAFT_TIMEOUT_MS = 75_000;
 
+/** The FormData methods both runtimes have; React Native's and the DOM's typings each declare only one. */
+interface MultipartForm {
+  append(name: string, value: Blob, fileName: string): void;
+  append(name: string, value: { uri: string; type: string; name: string }): void;
+}
+
+function appendFile(form: FormData, field: string, file: UploadFile): void {
+  const multipart = form as unknown as MultipartForm;
+  if ('blob' in file) {
+    multipart.append(field, file.blob, file.name);
+  } else {
+    // React Native's FormData sends { uri, type, name } as a file part read from the device.
+    multipart.append(field, { uri: file.uri, type: file.type, name: file.name });
+  }
+}
+
 export function mediaForm(file: UploadFile, purpose: MediaPurpose): FormData {
   const form = new FormData();
   form.append('purpose', purpose);
-  if ('blob' in file) {
-    // The three-argument form (file name) exists at runtime; React Native's typings only declare two.
-    (form as unknown as { append(name: string, value: Blob, fileName: string): void }).append('file', file.blob, file.name);
-  } else {
-    // React Native's FormData sends { uri, type, name } as a file part read from the device.
-    form.append('file', { uri: file.uri, type: file.type, name: file.name });
-  }
+  appendFile(form, 'file', file);
   return form;
 }
 
@@ -197,11 +207,7 @@ export function shoppingListForm(request: ShoppingListRequest): FormData {
     form.append('text', request.text.trim());
   }
   for (const file of request.images) {
-    if ('blob' in file) {
-      (form as unknown as { append(name: string, value: Blob, fileName: string): void }).append('images', file.blob, file.name);
-    } else {
-      form.append('images', { uri: file.uri, type: file.type, name: file.name });
-    }
+    appendFile(form, 'images', file);
   }
   return form;
 }

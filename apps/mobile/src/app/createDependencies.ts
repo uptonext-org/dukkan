@@ -1,11 +1,8 @@
 import { getLocales } from 'react-native-localize';
 
-import { createAuthSession } from '../features/auth/session';
 import { createUnavailableSocialSignIn, type SocialSignIn } from '../shared/auth';
 import { createUnavailablePushRegistration, type PushRegistration } from '../shared/push';
-import { createDukkanApi, createFetchApiClient, createQueryClient } from '../shared/api';
 import { env } from '../shared/config/env';
-import { createI18n, createLanguageStore } from '../shared/i18n';
 import { createGeolocationService } from '../shared/location';
 import type { PhotoPicker } from '../shared/media';
 import { createImagePickerPhotoPicker } from '../shared/media/imagePickerPhotoPicker';
@@ -13,7 +10,9 @@ import type { ShoppingInput } from '../shared/shoppingInput';
 import { createNativeShoppingInput } from '../shared/shoppingInput/nativeShoppingInput';
 import { createAsyncKeyValueStorage, createKeychainTokenStorage, type TokenStorage } from '../shared/storage';
 import type { AppDependencies } from './AppProviders';
+import { assembleDependencies } from './assembleDependencies';
 
+/** The iOS/Android services; the web app (apps/customer-web) supplies its own. */
 export function createDependencies(
   tokenStorage: TokenStorage = createKeychainTokenStorage(),
   photoPicker: PhotoPicker = createImagePickerPhotoPicker(),
@@ -21,29 +20,16 @@ export function createDependencies(
   pushRegistration: PushRegistration = createUnavailablePushRegistration(),
   shoppingInput: ShoppingInput = createNativeShoppingInput(),
 ): AppDependencies {
-  const storage = createAsyncKeyValueStorage();
-  const languageStore = createLanguageStore(storage, () => getLocales().map((l) => l.languageTag));
-  const session = createAuthSession(tokenStorage);
-  const apiClient = createFetchApiClient({
-    baseUrl: env.apiBaseUrl,
-    timeoutMs: env.requestTimeoutMs,
-    getToken: () => session.getToken(),
-    getLanguage: () => languageStore.get(),
-    refreshSession: () => session.refresh(),
-    onUnauthorized: () => session.expire(),
-  });
-  session.setRefresher((refreshToken) => createDukkanApi(apiClient).refreshSession(refreshToken));
-  return {
-    apiClient,
-    queryClient: createQueryClient(),
-    session,
-    languageStore,
-    i18n: createI18n(languageStore.get()),
-    storage,
+  return assembleDependencies({
+    apiBaseUrl: env.apiBaseUrl,
+    requestTimeoutMs: env.requestTimeoutMs,
+    tokenStorage,
+    storage: createAsyncKeyValueStorage(),
+    preferredLocales: () => getLocales().map((l) => l.languageTag),
     locationService: createGeolocationService(),
     photoPicker,
     shoppingInput,
     socialSignIn,
     pushRegistration,
-  };
+  });
 }

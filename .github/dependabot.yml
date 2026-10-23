@@ -36,6 +36,21 @@ updates:
     ignore:
       - { dependency-name: "typescript", update-types: ["version-update:semver-major"] }
   - package-ecosystem: npm
+    directory: /apps/customer-web
+    schedule: { interval: weekly, day: monday }
+    open-pull-requests-limit: 5
+    groups:
+      vite: { patterns: ["vite", "vitest"] }
+    # Same TypeScript line as the app; react-native-web and react-dom follow apps/mobile's React.
+    ignore:
+      - { dependency-name: "typescript", update-types: ["version-update:semver-major"] }
+  - package-ecosystem: docker
+    directory: /apps/customer-web
+    schedule: { interval: monthly }
+  - package-ecosystem: docker
+    directory: /apps/web
+    schedule: { interval: monthly }
+  - package-ecosystem: npm
     directory: /tools/web-preview
     schedule: { interval: monthly }
     open-pull-requests-limit: 2

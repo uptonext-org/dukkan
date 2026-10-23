@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { StatusBar, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { buildLinking } from '../navigation/linking';
 import { RootNavigator } from '../navigation/RootNavigator';
 import type { RootStackParamList } from '../navigation/types';
 import { useLanguage, type LanguageStore } from '../shared/i18n';
@@ -13,16 +14,20 @@ import { OfflineBanner } from '../shared/ui';
  * Deep links (scheme in AndroidManifest and Info.plist): the password reset mail opens
  * dukkan://reset-password?token=…, the welcome mail dukkan://verify-email?token=….
  */
-const LINKING: LinkingOptions<RootStackParamList> = {
-  prefixes: ['dukkan://'],
-  config: { screens: { ResetPassword: 'reset-password', VerifyEmail: 'verify-email' } },
-};
+const APP_LINKING = buildLinking();
 
 /**
  * Root view. `direction` mirrors the whole JS UI instantly when Arabic is chosen: Fabric resolves
  * start/end, natural text alignment and horizontal ScrollView order from the Yoga direction.
  */
-export function AppRoot({ children }: { children?: ReactNode }) {
+export function AppRoot({
+  children,
+  linking = APP_LINKING,
+}: {
+  children?: ReactNode;
+  /** The web app passes its own origin as a prefix, so the address bar follows the screens. */
+  linking?: LinkingOptions<RootStackParamList>;
+}) {
   const { direction } = useLanguage();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
@@ -44,7 +49,7 @@ export function AppRoot({ children }: { children?: ReactNode }) {
   return (
     <View style={{ flex: 1, direction, backgroundColor: theme.colors.bg }}>
       <StatusBar barStyle={theme.dark ? 'light-content' : 'dark-content'} />
-      <NavigationContainer theme={navigationTheme} linking={LINKING}>
+      <NavigationContainer theme={navigationTheme} linking={linking}>
         {children ?? <RootNavigator />}
       </NavigationContainer>
       {/* Floats over the header area so screens keep their own safe-area layout. */}
