@@ -1,0 +1,10 @@
+{
+  "name": "Dukkan",
+  "short_name": "Dukkan",
+  "description": "Lebensmittel aus Märkten in deiner Nähe",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFFFFF",
+  "theme_color": "#3F7A24",
+  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

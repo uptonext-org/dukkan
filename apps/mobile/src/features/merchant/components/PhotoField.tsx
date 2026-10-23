@@ -3,7 +3,7 @@ import { ActivityIndicator, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { errorMessageKey, type MediaPurpose } from '../../../shared/api';
-import { usePhotoPicker, type PhotoPickFailure, type PhotoSource } from '../../../shared/media';
+import { toUploadFile, usePhotoPicker, type PhotoPickFailure, type PhotoSource } from '../../../shared/media';
 import { makeStyles, useTheme } from '../../../shared/theme';
 import { AppText, Button, ImageTile, type IconName } from '../../../shared/ui';
 import { useUploadMedia } from '../api/hooks';
@@ -54,7 +54,7 @@ export function PhotoField({ label, marketId, purpose, value, onChange, saving =
       return;
     }
     const { photo } = result;
-    upload.mutate({ file: { uri: photo.uri, type: photo.type, name: photo.fileName }, purpose }, { onSuccess: (media) => onChange(media.url) });
+    upload.mutate({ file: toUploadFile(photo), purpose }, { onSuccess: (media) => onChange(media.url) });
   };
 
   const error = pickFailure !== null ? t(PICK_FAILURE_KEY[pickFailure]) : upload.isError ? t(errorMessageKey(upload.error)) : undefined;

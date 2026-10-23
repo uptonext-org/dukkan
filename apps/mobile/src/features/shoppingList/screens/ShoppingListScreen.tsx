@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import type { MarketStackScreenProps } from '../../../navigation/types';
 import { errorMessageKey, isApiError, type ShoppingListResult } from '../../../shared/api';
 import { useLang } from '../../../shared/i18n';
-import { usePhotoPicker, type PhotoSource, type PickedPhoto } from '../../../shared/media';
+import { toUploadFile, usePhotoPicker, type PhotoSource, type PickedPhoto } from '../../../shared/media';
 import { SpeechInputError, useShoppingInput, type SpeechFailure } from '../../../shared/shoppingInput';
 import { makeStyles, useTheme } from '../../../shared/theme';
 import { AppText, Button, Icon, IconButton, Screen, ScreenHeader } from '../../../shared/ui';
@@ -163,7 +163,7 @@ export function ShoppingListScreen({ navigation }: MarketStackScreenProps<'Shopp
       read.mutate(
         {
           text: text.trim() === '' ? undefined : text,
-          images: images.map((image) => ({ uri: image.uri, type: image.type, name: image.fileName })),
+          images: images.map(toUploadFile),
         },
         {
           onSuccess: (answer) => {
