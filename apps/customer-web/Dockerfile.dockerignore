@@ -1,0 +1,14 @@
+# Context is the repository root; only the two apps are needed.
+**
+!apps/mobile/package.json
+!apps/mobile/package-lock.json
+!apps/mobile/modules/**
+!apps/mobile/app.json
+!apps/mobile/index.js
+!apps/mobile/assets/**
+!apps/mobile/src/**
+!apps/customer-web/**
+apps/**/node_modules
+apps/customer-web/dist
+apps/mobile/modules/*/android/build
+**/__tests__

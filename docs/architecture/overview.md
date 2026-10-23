@@ -37,8 +37,13 @@ flowchart LR
   api[Backend API<br/>Java 25 · Spring Boot 4.1 · Spring MVC<br/>services/backend]
   db[(PostgreSQL 18.6<br/>Flyway · pg_trgm)]
   contract[[OpenAPI 0.2 contract<br/>packages/shared-contracts]]
+  web[Customer web app<br/>the app via react-native-web · Leaflet<br/>apps/customer-web]
+  portal[Web portal<br/>merchants and admins · React<br/>apps/web]
   preview[Web preview<br/>react-native-web, visual QA only<br/>tools/web-preview]
   app -- HTTPS JSON, Bearer JWT, Accept-Language --> api
+  web -- same origin /api --> api
+  portal -- same origin /api --> api
+  web -. bundles the app code .- app
   api -- JDBC / JPA --> db
   contract -. contract + schema tests .- api
   contract -. typed client + live API test .- app

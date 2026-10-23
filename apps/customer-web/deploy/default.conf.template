@@ -1,0 +1,59 @@
+# Dukkan web app. TLS, HSTS and the /api route to the backend belong to the proxy in front
+# (Caddy, ingress); this server only serves the files. ${VAR}s are filled from the environment
+# by the nginx image at start; nginx's own $variables are left alone.
+server {
+    listen 8080;
+    server_name _;
+    root /usr/share/nginx/html;
+    server_tokens off;
+
+    # React Native Web adds its styles at run time (inline <style>), hence 'unsafe-inline' for
+    # styles only. Product photos come from the media CDN and map tiles from the tile server,
+    # so images may load from any https origin.
+    set $csp "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; media-src 'self' blob:; font-src 'self'; connect-src ${DUKKAN_CSP_CONNECT_SRC}; manifest-src 'self'; worker-src 'none'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'";
+    add_header Content-Security-Policy $csp always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header Permissions-Policy "camera=(self), microphone=(self), geolocation=(self), payment=(), usb=()" always;
+    add_header Cross-Origin-Opener-Policy "same-origin" always;
+
+    gzip on;
+    gzip_types text/css application/javascript application/json image/svg+xml application/manifest+json;
+
+    # Hashed file names: cache for a year.
+    location /assets/ {
+        add_header Cache-Control "public, max-age=31536000, immutable";
+        add_header Content-Security-Policy $csp always;
+        add_header X-Content-Type-Options "nosniff" always;
+        try_files $uri =404;
+    }
+
+    location = /config.js {
+        alias /tmp/dukkan-config.js;
+        default_type application/javascript;
+        add_header Cache-Control "no-cache";
+        add_header X-Content-Type-Options "nosniff" always;
+    }
+
+    # The API is routed to the backend by the proxy; a request that reaches us is a misroute.
+    location /api/ {
+        return 404;
+    }
+
+    location = /healthz {
+        access_log off;
+        default_type text/plain;
+        return 200 "ok\n";
+    }
+
+    # Client-side routes (/markets/…, /orders/…, /reset-password?token=…) all load the app.
+    location / {
+        add_header Cache-Control "no-cache";
+        add_header Content-Security-Policy $csp always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(self), microphone=(self), geolocation=(self), payment=(), usb=()" always;
+        add_header Cross-Origin-Opener-Policy "same-origin" always;
+        try_files $uri /index.html;
+    }
+}
