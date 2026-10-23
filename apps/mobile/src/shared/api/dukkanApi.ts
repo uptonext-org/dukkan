@@ -160,6 +160,8 @@ export interface DukkanApi {
   deletePromotion(marketId: string, promotionId: string): Promise<void>;
   listMarketOrders(marketId: string, status?: OrderStatus, signal?: Signal): Promise<Order[]>;
   advanceOrderStatus(orderId: string, status: OrderStatus): Promise<Order>;
+  /** Missing items while packing: units handed over per order line (0 = missing). */
+  adjustOrderItems(orderId: string, items: { lineNo: number; fulfilledQuantity: number }[]): Promise<Order>;
   /** Multipart upload of a JPEG, PNG or WebP photo (≤ 5 MB) for one of my markets. */
   uploadMedia(marketId: string, file: UploadFile, purpose: MediaPurpose): Promise<MediaUpload>;
   /** AI product capture: a draft from text and/or an uploaded photo (nothing is saved). */
@@ -337,6 +339,8 @@ export function createDukkanApi(client: ApiClient): DukkanApi {
       get(`/merchant/markets/${enc(marketId)}/orders`, { status }, signal),
     advanceOrderStatus: (orderId, status) =>
       client.request({ method: 'POST', path: `/merchant/orders/${enc(orderId)}/status`, body: { status } }),
+    adjustOrderItems: (orderId, items) =>
+      client.request({ method: 'PUT', path: `/merchant/orders/${enc(orderId)}/items`, body: { items } }),
     uploadMedia: (marketId, file, purpose) =>
       client.request({
         method: 'POST',

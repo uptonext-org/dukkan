@@ -202,6 +202,7 @@ compiles them to Hermes bytecode without an SDK.
 | Mobile tests | `npm test` | Pass: 20 suites, 88 tests (live test skipped). Jest prints a worker-exit warning (open handle not yet found) |
 | Visual QA (web preview) | `cd tools/web-preview && npm ci && npm run build && npm run screenshots` (backend running) | 59 screenshots in de/ar, light/dark; reviewed after each design change. Known preview artefacts: Latin text alignment and start/end paddings in Arabic, map placeholder |
 | **Live API test (app client ↔ real backend)** | backend running, then `DUKKAN_LIVE_API_URL=http://localhost:8080/api/v1 npx jest live.api` | Pass: 3 tests covering discovery in 3 languages, cart, slot, order, merchant accept, cancel, a new 3-language product found via Arabic search, and a photo upload (PNG generated in the test) set as a listing image and served by `GET /media/{key}` |
+| **System test (a market's life cycle, black box)** | backend running (`local` profile), then `DUKKAN_LIVE_API_URL=http://localhost:8080/api/v1 npx jest system.api` | Pass: 7 steps on fresh data per run (new merchant, market in Munich, new customer): admin hides and approves the market, shared-catalog listings with a "3 for 5 €" offer, a dictated shopping list matched with pack counts (1 kg → 2 × 500 g) and put into the cart, favourite, pickup order, missing items while packing (multi-buy re-priced, customer notified "statt 13,40 €"), no changes after handover, "Meine Märkte", best sellers and insights counting what was handed over, and ownership (404 for another merchant, 401 without a token) |
 | Metro release bundles | `npx react-native bundle --platform android\|ios --dev false …` | Built |
 | Contract lint | `npx -y @redocly/cli@2.64.1 lint packages/shared-contracts/openapi.yaml` | Valid, 0 errors (warnings only) |
 | Mermaid diagrams | `@mermaid-js/mermaid-cli@11.12.0` on every block | All render |
@@ -214,7 +215,7 @@ CI (`.github/workflows/ci.yml`) runs:
 - the contract lint;
 - the backend build and image build;
 - the mobile type check, lint, tests and audit;
-- **`e2e-api`**, which starts the backend against a PostgreSQL 18.6 service and runs the live API test;
+- **`e2e-api`**, which starts the backend against a PostgreSQL 18.6 service and runs the live API test and the system test;
 - the manifest render.
 
 The audit step fails only on **critical** advisories.
