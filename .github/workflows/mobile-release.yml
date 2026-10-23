@@ -1,0 +1,68 @@
+name: Mobile store build
+
+# A signed Android App Bundle for Google Play, run by hand (Actions → Mobile store build).
+# Needs these repository secrets (docs/launch/go-live.md, "Android"):
+#   DUKKAN_UPLOAD_KEYSTORE_BASE64   base64 of the upload keystore (.jks)
+#   DUKKAN_UPLOAD_STORE_PASSWORD, DUKKAN_UPLOAD_KEY_ALIAS, DUKKAN_UPLOAD_KEY_PASSWORD
+#   DUKKAN_MAPS_API_KEY             Google Maps SDK for Android key (restricted to the app)
+# iOS store builds need an Apple Developer account and are archived in Xcode (see the same doc).
+on:
+  workflow_dispatch:
+    inputs:
+      api_url:
+        description: Production API (https://<domain>/api/v1)
+        required: true
+      version_name:
+        description: Version shown in the store (e.g. 1.0.0)
+        required: true
+      version_code:
+        description: Build number, higher than every earlier upload (e.g. 1)
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  android:
+    name: Signed Android App Bundle
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: apps/mobile/package-lock.json
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v6
+      - run: npm ci
+      - name: Point the app at the production API
+        run: npm run release:api -- "${{ inputs.api_url }}" && npm run release:check
+      - name: Build the bundle
+        working-directory: apps/mobile/android
+        env:
+          KEYSTORE_BASE64: ${{ secrets.DUKKAN_UPLOAD_KEYSTORE_BASE64 }}
+          DUKKAN_UPLOAD_STORE_PASSWORD: ${{ secrets.DUKKAN_UPLOAD_STORE_PASSWORD }}
+          DUKKAN_UPLOAD_KEY_ALIAS: ${{ secrets.DUKKAN_UPLOAD_KEY_ALIAS }}
+          DUKKAN_UPLOAD_KEY_PASSWORD: ${{ secrets.DUKKAN_UPLOAD_KEY_PASSWORD }}
+          DUKKAN_MAPS_API_KEY: ${{ secrets.DUKKAN_MAPS_API_KEY }}
+          DUKKAN_VERSION_NAME: ${{ inputs.version_name }}
+          DUKKAN_VERSION_CODE: ${{ inputs.version_code }}
+        run: |
+          test -n "$KEYSTORE_BASE64" || { echo "DUKKAN_UPLOAD_KEYSTORE_BASE64 is not set"; exit 1; }
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/upload.jks"
+          export DUKKAN_UPLOAD_STORE_FILE="$RUNNER_TEMP/upload.jks"
+          ./gradlew bundleRelease --no-daemon
+          rm -f "$RUNNER_TEMP/upload.jks"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dukkan-${{ inputs.version_name }}-${{ inputs.version_code }}-aab
+          path: apps/mobile/android/app/build/outputs/bundle/release/*.aab
+          retention-days: 30

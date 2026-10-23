@@ -198,6 +198,14 @@ location, photos, dictation, video frames and the map (Leaflet). Every screen ha
 Details, runtime settings and the nginx image: `apps/customer-web/README.md`. Checks:
 `npm run typecheck`, `npm run lint`, `npm test`, `npm run smoke` (Chromium against the backend).
 
+## 3c. Production
+
+Production runs the `prod` profile (no demo data, review of new markets, https mail links,
+startup check of the settings) on one server with `infrastructure/production` (Caddy with
+automatic HTTPS, backend, web app, portal, PostgreSQL, nightly backup). Images come from the
+release workflow (`git tag vX.Y.Z`). The whole plan, including what the operator has to provide:
+`docs/launch/go-live.md`.
+
 ## 4. Quality checks
 
 Native builds (B-28) run in `.github/workflows/native.yml` when `apps/mobile` changes, or by hand

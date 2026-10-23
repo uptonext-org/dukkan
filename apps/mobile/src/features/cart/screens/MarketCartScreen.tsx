@@ -14,6 +14,7 @@ import { reservationLabel } from '../../fulfilment/format';
 import { useMarketContext } from '../../market/MarketContext';
 import { usePlaceOrder } from '../../orders/api/hooks';
 import { useCart, useClearCart, useSetCartQuantity } from '../api/hooks';
+import { usePlatform } from '../../legal/usePlatform';
 import { CartRow } from '../components/CartRow';
 import { CartSummary } from '../components/CartSummary';
 import { cartCta } from '../model';
@@ -32,6 +33,8 @@ export function MarketCartScreen({ navigation }: MarketTabScreenProps<'MarketCar
   const clear = useClearCart(marketId);
   const placeOrder = usePlaceOrder(marketId);
   const [sheetOpen, setSheetOpen] = useState(false);
+  // In Germany the order button must say that ordering obliges to pay (§ 312j BGB).
+  const payOnSite = usePlatform().data?.payment === 'ON_SITE';
 
   if (status !== 'signedIn') {
     return (
@@ -91,7 +94,7 @@ export function MarketCartScreen({ navigation }: MarketTabScreenProps<'MarketCar
       ? cta.fulfilment === 'DELIVERY'
         ? t('fulfilment.chooseDeliveryCta')
         : t('fulfilment.choosePickupCta')
-      : t('cart.orderCta', { total: formatMoney(cta.total) });
+      : t(payOnSite ? 'cart.orderCtaPayable' : 'cart.orderCta', { total: formatMoney(cta.total) });
 
   return (
     <Screen

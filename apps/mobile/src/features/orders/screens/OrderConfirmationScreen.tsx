@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import type { MarketStackScreenProps } from '../../../navigation/types';
 import { makeStyles, useTheme } from '../../../shared/theme';
 import { AppText, Button, Icon, Screen, queryState } from '../../../shared/ui';
+import { usePlatform } from '../../legal/usePlatform';
 import { useMarketContext } from '../../market/MarketContext';
 import { useOrder } from '../api/hooks';
 import { OrderSummary } from '../components/OrderSummary';
@@ -15,6 +16,7 @@ export function OrderConfirmationScreen({ route, navigation }: MarketStackScreen
   const styles = useStyles();
   const { colors } = useTheme();
   const { t } = useTranslation();
+  const payOnSite = usePlatform().data?.payment === 'ON_SITE';
   const { exit } = useMarketContext();
   const query = useOrder(route.params.orderId);
   const state = queryState(query);
@@ -40,7 +42,7 @@ export function OrderConfirmationScreen({ route, navigation }: MarketStackScreen
           {t('order.thanks')}
         </AppText>
         <AppText variant="body" color="textSecondary" center>
-          {t('order.simulated')}
+          {t(payOnSite ? 'order.payOnSite' : 'order.simulated')}
         </AppText>
         <View style={styles.card}>
           <AppText variant="subhead" color="textSecondary">

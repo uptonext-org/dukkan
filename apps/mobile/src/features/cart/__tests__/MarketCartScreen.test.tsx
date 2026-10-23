@@ -155,6 +155,24 @@ describe('Market cart', () => {
     expect(within(summary).getByLabelText('Total (inkl. MwSt.): 10,79 Euro')).toBeOnTheScreen();
   });
 
+  it('says "Zahlungspflichtig bestellen" when customers pay the market on site', async () => {
+    const { dependencies } = setup(
+      cart({ fulfilment: { type: 'PICKUP', slot: { ...reservedSlot, type: 'PICKUP' }, addressId: null, expiresAt: reservedSlot.orderCutoffAt } }),
+      {
+        'GET /platform': {
+          legal: { imprintUrl: null, privacyUrl: null, termsUrl: null, termsVersion: null },
+          supportEmail: null,
+          payment: 'ON_SITE',
+        },
+      },
+    );
+    await renderApp(dependencies);
+    await openCart();
+    await waitFor(() =>
+      expect(normalize(screen.getByTestId('cart-cta').props.accessibilityLabel as string)).toBe('Zahlungspflichtig bestellen · 10,79 €'),
+    );
+  });
+
   it('offers only the fulfilment types the market has (pickup-only market)', async () => {
     const pickupOnly = market({ fulfilment: { delivery: false, pickup: true, minimumOrderValue: eur(0) } });
     const { fake, dependencies } = setup(cart({ market: pickupOnly }), {

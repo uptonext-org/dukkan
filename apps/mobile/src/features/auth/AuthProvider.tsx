@@ -15,7 +15,12 @@ interface AuthContextValue {
   /** Providers the device offers (empty until Apple/Google sign-in is configured). */
   socialProviders: SocialProvider[];
   /** `false` when the user cancelled the native sheet. Throws ApiError on server errors. */
-  socialSignIn: (provider: SocialProvider, accountType: AccountType, preferredLocale: string) => Promise<boolean>;
+  socialSignIn: (
+    provider: SocialProvider,
+    accountType: AccountType,
+    preferredLocale: string,
+    acceptedTermsVersion?: string | null,
+  ) => Promise<boolean>;
   logout: () => Promise<void>;
 }
 
@@ -99,7 +104,7 @@ export function AuthProvider({
 
   const socialProviders = useMemo(() => social.providers(), [social]);
   const socialSignIn = useCallback(
-    async (provider: SocialProvider, accountType: AccountType, preferredLocale: string) => {
+    async (provider: SocialProvider, accountType: AccountType, preferredLocale: string, acceptedTermsVersion: string | null = null) => {
       const result = await social.signIn(provider);
       if (result.status === 'cancelled') {
         return false;
@@ -116,6 +121,7 @@ export function AuthProvider({
           lastName: result.lastName ?? null,
           accountType,
           preferredLocale,
+          acceptedTermsVersion,
         }),
       );
       return true;

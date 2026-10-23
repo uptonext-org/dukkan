@@ -20,7 +20,8 @@ final class AuthDtos {
       @NotBlank @Size(min = 1, max = 100) String firstName,
       @NotBlank @Size(min = 1, max = 100) String lastName,
       @Nullable @Pattern(regexp = "CUSTOMER|MERCHANT", message = "must be CUSTOMER or MERCHANT") String accountType,
-      @Nullable String preferredLocale) {
+      @Nullable String preferredLocale,
+      @Nullable @Size(max = 40) String acceptedTermsVersion) {
 
     boolean merchant() {
       return "MERCHANT".equals(accountType);
@@ -92,7 +93,8 @@ final class AuthDtos {
       @Nullable @Size(min = 1, max = 100) String firstName,
       @Nullable @Size(min = 1, max = 100) String lastName,
       @Nullable @Pattern(regexp = "CUSTOMER|MERCHANT", message = "must be CUSTOMER or MERCHANT") String accountType,
-      @Nullable String preferredLocale) {
+      @Nullable String preferredLocale,
+      @Nullable @Size(max = 40) String acceptedTermsVersion) {
     @Override
     public String toString() {
       return "SocialSignInRequest[provider=" + provider + ", idToken=***]";

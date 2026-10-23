@@ -70,7 +70,8 @@
     "ACCOUNT_HAS_OPEN_ORDERS": "Du hast noch offene Bestellungen. Warte, bis sie abgeschlossen sind, oder storniere sie.",
     "ACCOUNT_OWNS_MARKETS": "Dieses Konto führt einen Markt. Bitte wende dich an den Dukkan-Support, um den Markt zu schließen oder zu übergeben.",
     "EMAIL_NOT_VERIFIED": "Bitte bestätige zuerst deine E-Mail-Adresse (Link in der Willkommens-Mail).",
-    "SHOPPING_LIST_AI_UNAVAILABLE": "Fotos und Videos können gerade nicht gelesen werden, weil die KI nicht eingerichtet ist."
+    "SHOPPING_LIST_AI_UNAVAILABLE": "Fotos und Videos können gerade nicht gelesen werden, weil die KI nicht eingerichtet ist.",
+    "TERMS_NOT_ACCEPTED": "Bitte akzeptiere die AGB und die Datenschutzerklärung."
   },
   "validation": {
     "required": "Bitte ausfüllen.",
@@ -336,7 +337,8 @@
     "feeFrom": "ab {{amount}}",
     "freeDeliveryFrom": "Gratis ab {{amount}}",
     "pickupFree": "kostenlos",
-    "inclVatPlusDelivery": "(inkl. MwSt., zzgl. Lieferung)"
+    "inclVatPlusDelivery": "(inkl. MwSt., zzgl. Lieferung)",
+    "orderCtaPayable": "Zahlungspflichtig bestellen · {{total}}"
   },
   "carts": {
     "title": "Warenkörbe",
@@ -400,7 +402,8 @@
     "missing": "nicht verfügbar",
     "ofOrdered_one": "von {{count}} bestellt",
     "ofOrdered_other": "von {{count}} bestellt",
-    "insteadOf": "statt {{amount}}"
+    "insteadOf": "statt {{amount}}",
+    "payOnSite": "Du bezahlst direkt beim Markt, bei der Abholung oder Lieferung."
   },
   "orderStatus": {
     "PLACED": "Bestellt",
@@ -752,5 +755,16 @@
     "lineNotFound": "Nicht im Sortiment dieses Markts gefunden",
     "include": "{{name}} in den Warenkorb legen",
     "alternatives": "Andere passende Produkte"
+  },
+  "legal": {
+    "title": "Rechtliches",
+    "support": "Hilfe & Kontakt",
+    "terms": "AGB",
+    "privacy": "Datenschutz",
+    "imprint": "Impressum",
+    "consent": "Ich akzeptiere die AGB und habe die Datenschutzerklärung gelesen.",
+    "readTerms": "AGB lesen",
+    "readPrivacy": "Datenschutzerklärung lesen",
+    "acceptRequired": "Bitte akzeptiere die AGB und die Datenschutzerklärung."
   }
 }

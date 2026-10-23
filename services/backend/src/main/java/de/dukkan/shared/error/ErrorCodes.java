@@ -25,6 +25,7 @@ public final class ErrorCodes {
   public static final String CONFLICT = "CONFLICT";
   public static final String CONCURRENT_MODIFICATION = "CONCURRENT_MODIFICATION";
   public static final String EMAIL_TAKEN = "EMAIL_TAKEN";
+  public static final String TERMS_NOT_ACCEPTED = "TERMS_NOT_ACCEPTED";
   public static final String SLOT_FULL = "SLOT_FULL";
   public static final String LISTING_EXISTS = "LISTING_EXISTS";
   public static final String IDEMPOTENCY_KEY_REUSED = "IDEMPOTENCY_KEY_REUSED";

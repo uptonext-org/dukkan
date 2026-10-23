@@ -70,7 +70,8 @@
     "ACCOUNT_HAS_OPEN_ORDERS": "You still have open orders. Wait until they are completed or cancel them.",
     "ACCOUNT_OWNS_MARKETS": "This account runs a market. Please contact Dukkan support to close or hand over the market.",
     "EMAIL_NOT_VERIFIED": "Please confirm your email address first (link in the welcome email).",
-    "SHOPPING_LIST_AI_UNAVAILABLE": "Photos and videos cannot be read right now because AI is not set up."
+    "SHOPPING_LIST_AI_UNAVAILABLE": "Photos and videos cannot be read right now because AI is not set up.",
+    "TERMS_NOT_ACCEPTED": "Please accept the terms and the privacy notice."
   },
   "validation": {
     "required": "Please fill this in.",
@@ -336,7 +337,8 @@
     "feeFrom": "from {{amount}}",
     "freeDeliveryFrom": "Free from {{amount}}",
     "pickupFree": "free",
-    "inclVatPlusDelivery": "(incl. VAT, plus delivery)"
+    "inclVatPlusDelivery": "(incl. VAT, plus delivery)",
+    "orderCtaPayable": "Order and pay · {{total}}"
   },
   "carts": {
     "title": "Carts",
@@ -400,7 +402,8 @@
     "missing": "not available",
     "ofOrdered_one": "of {{count}} ordered",
     "ofOrdered_other": "of {{count}} ordered",
-    "insteadOf": "instead of {{amount}}"
+    "insteadOf": "instead of {{amount}}",
+    "payOnSite": "You pay the market directly, at pickup or delivery."
   },
   "orderStatus": {
     "PLACED": "Placed",
@@ -752,5 +755,16 @@
     "lineNotFound": "Not found in this market's range",
     "include": "Add {{name}} to cart",
     "alternatives": "Other matching products"
+  },
+  "legal": {
+    "title": "Legal",
+    "support": "Help & contact",
+    "terms": "Terms",
+    "privacy": "Privacy",
+    "imprint": "Imprint",
+    "consent": "I accept the terms and have read the privacy notice.",
+    "readTerms": "Read the terms",
+    "readPrivacy": "Read the privacy notice",
+    "acceptRequired": "Please accept the terms and the privacy notice."
   }
 }

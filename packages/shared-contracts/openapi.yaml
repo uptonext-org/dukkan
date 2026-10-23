@@ -62,6 +62,23 @@ paths:
               schema:
                 type: array
                 items: { $ref: '#/components/schemas/Locale' }
+  /platform:
+    get:
+      tags: [meta]
+      operationId: getPlatform
+      summary: Legal links, the terms version to accept and how customers pay
+      description: |
+        Set by the operator (`dukkan.platform.*`). The apps link to the imprint, privacy notice and
+        terms, ask new accounts to accept `legal.termsVersion` when it is set, and word the order
+        button by `payment`: `ON_SITE` = the customer pays the market at pickup or delivery
+        ("zahlungspflichtig bestellen"), `SIMULATED` = no payment (demo).
+      security: []
+      responses:
+        '200':
+          description: Platform facts (cacheable for 5 minutes).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Platform' }
   /market-types:
     get:
       tags: [meta]
@@ -132,6 +149,11 @@ paths:
               schema: { $ref: '#/components/schemas/AuthResponse' }
         '400': { $ref: '#/components/responses/ValidationError' }
         '409': { $ref: '#/components/responses/Conflict' }
+        '422':
+          description: '`TERMS_NOT_ACCEPTED`: the platform requires accepting its terms (`GET /platform`, `legal.termsVersion`) and `acceptedTermsVersion` is missing or another version.'
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
         '429': { $ref: '#/components/responses/TooManyRequests' }
   /auth/login:
     post:
@@ -271,7 +293,7 @@ paths:
             application/problem+json:
               schema: { $ref: '#/components/schemas/Problem' }
         '422':
-          description: '`SOCIAL_PROVIDER_DISABLED` (no client ID configured) or `SOCIAL_EMAIL_MISSING` (new account without a verified email).'
+          description: '`SOCIAL_PROVIDER_DISABLED` (no client ID configured), `SOCIAL_EMAIL_MISSING` (new account without a verified email) or `TERMS_NOT_ACCEPTED` (new account, terms required, see register).'
           content:
             application/problem+json:
               schema: { $ref: '#/components/schemas/Problem' }
@@ -2147,6 +2169,7 @@ components:
         lastName: { type: string, minLength: 1, maxLength: 100 }
         accountType: { type: string, enum: [CUSTOMER, MERCHANT], default: CUSTOMER }
         preferredLocale: { type: [string, 'null'], example: de }
+        acceptedTermsVersion: { type: [string, 'null'], maxLength: 40, description: 'The `legal.termsVersion` of `GET /platform` the user accepted (terms and privacy notice). Required when the platform sets one.' }
     LoginRequest:
       type: object
       required: [email, password]
@@ -2277,6 +2300,21 @@ components:
         lastName: { type: [string, 'null'], minLength: 1, maxLength: 100 }
         accountType: { type: [string, 'null'], enum: [CUSTOMER, MERCHANT, null] }
         preferredLocale: { type: [string, 'null'] }
+        acceptedTermsVersion: { type: [string, 'null'], maxLength: 40, description: As for register; needed only when the sign-in creates an account. }
+    Platform:
+      type: object
+      required: [legal, supportEmail, payment]
+      properties:
+        legal:
+          type: object
+          required: [imprintUrl, privacyUrl, termsUrl, termsVersion]
+          properties:
+            imprintUrl: { type: [string, 'null'], format: uri }
+            privacyUrl: { type: [string, 'null'], format: uri }
+            termsUrl: { type: [string, 'null'], format: uri }
+            termsVersion: { type: [string, 'null'], maxLength: 40, description: 'Version new accounts accept; null = no acceptance required.' }
+        supportEmail: { type: [string, 'null'], format: email }
+        payment: { type: string, enum: [SIMULATED, ON_SITE] }
     User:
       type: object
       required: [id, email, firstName, lastName, roles, emailVerified]

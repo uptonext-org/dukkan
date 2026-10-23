@@ -69,6 +69,8 @@ export interface RegisterRequest {
   lastName: string;
   accountType?: AccountType;
   preferredLocale?: string | null;
+  /** The `legal.termsVersion` of `GET /platform` the user accepted; required when it is set. */
+  acceptedTermsVersion?: string | null;
 }
 
 export interface LoginRequest {
@@ -146,6 +148,21 @@ export interface SocialSignInRequest {
   lastName?: string | null;
   accountType?: AccountType | null;
   preferredLocale?: string | null;
+  acceptedTermsVersion?: string | null;
+}
+
+/** `GET /platform`: the operator's legal links and how customers pay. */
+export interface Platform {
+  legal: {
+    imprintUrl: string | null;
+    privacyUrl: string | null;
+    termsUrl: string | null;
+    /** Version new accounts accept; null = no acceptance required. */
+    termsVersion: string | null;
+  };
+  supportEmail: string | null;
+  /** ON_SITE: the customer pays the market at pickup or delivery. SIMULATED: no payment (demo). */
+  payment: 'SIMULATED' | 'ON_SITE';
 }
 
 // ---------------------------------------------------------------- markets

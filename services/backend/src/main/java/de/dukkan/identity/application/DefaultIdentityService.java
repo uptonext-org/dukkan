@@ -7,6 +7,7 @@ import de.dukkan.identity.domain.Role;
 import de.dukkan.identity.domain.User;
 import de.dukkan.identity.infrastructure.SessionRepository;
 import de.dukkan.identity.infrastructure.UserRepository;
+import de.dukkan.legal.application.TermsPolicy;
 import de.dukkan.shared.config.DukkanProperties;
 import de.dukkan.shared.error.BusinessRuleException;
 import de.dukkan.shared.error.ConflictException;
@@ -47,6 +48,7 @@ class DefaultIdentityService implements IdentityService {
   private final LocaleService locales;
   private final IdTokenVerifier idTokens;
   private final AccountMailer mailer;
+  private final TermsPolicy terms;
   private final DukkanProperties.Auth settings;
   private final Clock clock;
   /** Hash compared against when the email is unknown, so both paths cost the same. */
@@ -60,6 +62,7 @@ class DefaultIdentityService implements IdentityService {
       LocaleService locales,
       IdTokenVerifier idTokens,
       AccountMailer mailer,
+      TermsPolicy terms,
       DukkanProperties properties,
       Clock clock) {
     this.users = users;
@@ -69,6 +72,7 @@ class DefaultIdentityService implements IdentityService {
     this.locales = locales;
     this.idTokens = idTokens;
     this.mailer = mailer;
+    this.terms = terms;
     this.settings = properties.security().auth();
     this.clock = clock;
     this.dummyHash = passwordEncoder.encode("dummy-password-for-timing");
@@ -80,12 +84,12 @@ class DefaultIdentityService implements IdentityService {
     if (users.existsByEmail(email)) {
       throw new ConflictException(ErrorCodes.EMAIL_TAKEN, "An account with this email already exists.");
     }
+    Optional<String> termsVersion = terms.requireAccepted(command.acceptedTermsVersion());
     String locale = validLocale(command.preferredLocale());
     Set<Role> roles = command.merchant() ? EnumSet.of(Role.CUSTOMER, Role.MERCHANT) : EnumSet.of(Role.CUSTOMER);
-    User user =
-        users.saveAndFlush(
-            new User(
-                email, passwordEncoder.encode(command.password()), command.firstName(), command.lastName(), roles, locale));
+    User created = new User(email, passwordEncoder.encode(command.password()), command.firstName(), command.lastName(), roles, locale);
+    termsVersion.ifPresent(version -> created.acceptTerms(version, clock.instant()));
+    User user = users.saveAndFlush(created);
     sendVerification(user);
     return authResult(user);
   }
@@ -194,12 +198,15 @@ class DefaultIdentityService implements IdentityService {
             .findByEmail(email)
             .orElseGet(
                 () -> {
+                  Optional<String> termsVersion = terms.requireAccepted(command.acceptedTermsVersion());
                   Set<Role> roles = command.merchant() ? EnumSet.of(Role.CUSTOMER, Role.MERCHANT) : EnumSet.of(Role.CUSTOMER);
                   String first = firstNonBlank(command.firstName(), token.givenName(), email.substring(0, email.indexOf('@')));
                   String last = firstNonBlank(command.lastName(), token.familyName(), "");
                   // No password: a random one nobody knows; "forgot password" can set a real one later.
                   String unusable = passwordEncoder.encode(OpaqueTokens.generate());
-                  return users.saveAndFlush(new User(email, unusable, clip(first), clip(last), roles, validLocale(command.preferredLocale())));
+                  User created = new User(email, unusable, clip(first), clip(last), roles, validLocale(command.preferredLocale()));
+                  termsVersion.ifPresent(version -> created.acceptTerms(version, now));
+                  return users.saveAndFlush(created);
                 });
     sessions.insertIdentity(provider, token.subject(), user.getId(), email, now);
     // The provider confirmed this email address (checked above).

@@ -16,6 +16,7 @@ import type {
   ListMarketProductsParams,
   ListMarketsParams,
   Locale,
+  Platform,
   LoginRequest,
   MarketDetail,
   MarketHome,
@@ -67,6 +68,7 @@ const enc = encodeURIComponent;
 export interface DukkanApi {
   // meta
   listLocales(signal?: Signal): Promise<Locale[]>;
+  getPlatform(signal?: Signal): Promise<Platform>;
   listMarketTypes(signal?: Signal): Promise<CodeName[]>;
   listCuisines(signal?: Signal): Promise<CodeName[]>;
   // auth
@@ -223,6 +225,7 @@ export function createDukkanApi(client: ApiClient): DukkanApi {
 
   return {
     listLocales: (signal) => get('/locales', undefined, signal),
+    getPlatform: (signal) => get('/platform', undefined, signal),
     listMarketTypes: (signal) => get('/market-types', undefined, signal),
     listCuisines: (signal) => get('/cuisines', undefined, signal),
 

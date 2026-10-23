@@ -31,6 +31,7 @@ import Droplet from 'lucide-react-native/icons/droplet';
 import Drumstick from 'lucide-react-native/icons/drumstick';
 import Egg from 'lucide-react-native/icons/egg';
 import Ellipsis from 'lucide-react-native/icons/ellipsis';
+import FileText from 'lucide-react-native/icons/file-text';
 import FishIcon from 'lucide-react-native/icons/fish';
 import Flame from 'lucide-react-native/icons/flame';
 import Globe from 'lucide-react-native/icons/globe';
@@ -43,6 +44,7 @@ import LeafyGreen from 'lucide-react-native/icons/leafy-green';
 import List from 'lucide-react-native/icons/list';
 import LocateFixed from 'lucide-react-native/icons/locate-fixed';
 import Lock from 'lucide-react-native/icons/lock';
+import Mail from 'lucide-react-native/icons/mail';
 import LogOut from 'lucide-react-native/icons/log-out';
 import MapIcon from 'lucide-react-native/icons/map';
 import MapPin from 'lucide-react-native/icons/map-pin';
@@ -58,6 +60,7 @@ import ReceiptText from 'lucide-react-native/icons/receipt-text';
 import Salad from 'lucide-react-native/icons/salad';
 import Sandwich from 'lucide-react-native/icons/sandwich';
 import Search from 'lucide-react-native/icons/search';
+import ShieldCheck from 'lucide-react-native/icons/shield-check';
 import ShoppingBasket from 'lucide-react-native/icons/shopping-basket';
 import SlidersHorizontal from 'lucide-react-native/icons/sliders-horizontal';
 import Snowflake from 'lucide-react-native/icons/snowflake';
@@ -91,6 +94,9 @@ const ICONS = {
   orders: ClipboardList,
   clock: Clock,
   more: Ellipsis,
+  document: FileText,
+  mail: Mail,
+  shield: ShieldCheck,
   globe: Globe,
   heart: Heart,
   home: House,
