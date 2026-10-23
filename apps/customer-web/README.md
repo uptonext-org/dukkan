@@ -58,5 +58,5 @@ proxy in front (`infrastructure/production`). Runtime settings, one image for al
 | `DUKKAN_MAP_ATTRIBUTION` | OpenStreetMap credit | Credit line required by the tile provider |
 | `DUKKAN_CSP_CONNECT_SRC` | `'self'` | |
 
-The container runs with a read-only root file system if `/tmp` and `/etc/nginx/conf.d` are
-writable (tmpfs/emptyDir); CI checks that.
+The container runs with a read-only root file system if `/tmp` is writable (tmpfs/emptyDir);
+CI checks that.

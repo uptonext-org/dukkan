@@ -123,7 +123,7 @@ jobs:
       - run: docker build -t dukkan-portal:ci apps/web
       - name: Serve the customer app with a read-only root file system and check routes and headers
         run: |
-          docker run -d --name web --read-only --tmpfs /tmp --tmpfs /etc/nginx/conf.d \
+          docker run -d --name web --read-only --tmpfs /tmp \
             -e DUKKAN_MAP_TILE_URL='https://tiles.example/{z}/{x}/{y}.png' -p 8090:8080 dukkan-customer-web:ci
           for i in $(seq 1 30); do curl -sf localhost:8090/healthz && break; sleep 1; done
           curl -sf localhost:8090/markets/abc/products/def | grep -q '<div id="root">'
@@ -133,6 +133,7 @@ jobs:
           docker run -d --name portal --read-only --tmpfs /tmp -p 8091:8080 dukkan-portal:ci
           for i in $(seq 1 30); do curl -sf localhost:8091/healthz && break; sleep 1; done
           curl -sf localhost:8091/orders | grep -q '<div id="root">'
+          curl -sfI localhost:8090/manifest.webmanifest | grep -qi 'content-type: application/manifest+json'
       - if: failure()
         run: docker logs web; docker logs portal
 

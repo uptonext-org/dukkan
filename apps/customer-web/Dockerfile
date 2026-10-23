@@ -22,7 +22,9 @@ FROM nginxinc/nginx-unprivileged:1.30.6-alpine@sha256:f5116ed4606f3eb015dd4a8e28
 ENV DUKKAN_API_BASE_URL="" \
     DUKKAN_MAP_TILE_URL="" \
     DUKKAN_MAP_ATTRIBUTION="" \
-    DUKKAN_CSP_CONNECT_SRC="'self'"
+    DUKKAN_CSP_CONNECT_SRC="'self'" \
+    NGINX_ENVSUBST_OUTPUT_DIR=/tmp
+COPY apps/customer-web/deploy/nginx.conf /etc/nginx/nginx.conf
 COPY apps/customer-web/deploy/default.conf.template /etc/nginx/templates/default.conf.template
 COPY --chmod=0755 apps/customer-web/deploy/40-dukkan-config.sh /docker-entrypoint.d/40-dukkan-config.sh
 COPY --from=build /repo/apps/customer-web/dist /usr/share/nginx/html
