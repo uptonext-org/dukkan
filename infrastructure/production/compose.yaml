@@ -60,7 +60,7 @@ services:
     <<: *restart
     image: ${DUKKAN_IMAGE_PREFIX}/dukkan-web:${DUKKAN_VERSION}
     read_only: true
-    tmpfs: [/tmp, /etc/nginx/conf.d]
+    tmpfs: [/tmp]
     environment:
       DUKKAN_MAP_TILE_URL: ${DUKKAN_MAP_TILE_URL:-}
       DUKKAN_MAP_ATTRIBUTION: ${DUKKAN_MAP_ATTRIBUTION:-}
