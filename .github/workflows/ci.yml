@@ -119,13 +119,13 @@ jobs:
           ./gradlew bootJar --no-daemon
           nohup java -jar build/libs/dukkan-backend.jar --spring.profiles.active=local > backend.log 2>&1 &
           for i in $(seq 1 60); do curl -sf localhost:8080/actuator/health && break; sleep 2; done
-      - name: Run the app's live API tests
+      - name: Run the app's live API and system tests
         working-directory: apps/mobile
         env:
           DUKKAN_LIVE_API_URL: http://localhost:8080/api/v1
         run: |
           npm ci
-          npx jest --ci live.api
+          npx jest --ci live.api system.api
       - if: failure()
         run: tail -n 200 services/backend/backend.log
 
