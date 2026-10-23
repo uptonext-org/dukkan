@@ -122,11 +122,12 @@ public class SalesStatistics {
             """
             SELECT oi.market_product_id AS listing_id,
                    (array_agg(oi.name ORDER BY o.placed_at DESC))[1] AS name,
-                   sum(oi.quantity) AS quantity,
-                   sum(oi.line_total_cents) AS revenue
+                   sum(coalesce(oi.fulfilled_quantity, oi.quantity)) AS quantity,
+                   sum(coalesce(oi.charged_total_cents, oi.line_total_cents)) AS revenue
               FROM order_item oi JOIN customer_order o ON o.id = oi.order_id
              WHERE o.market_id = :marketId AND o.placed_at >= :from AND o.placed_at < :to AND %s
              GROUP BY oi.market_product_id
+            HAVING sum(coalesce(oi.fulfilled_quantity, oi.quantity)) > 0
              ORDER BY quantity DESC, revenue DESC, listing_id
              LIMIT :limit
             """

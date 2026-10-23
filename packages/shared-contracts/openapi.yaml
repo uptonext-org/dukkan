@@ -413,7 +413,8 @@ paths:
         Order notifications (B-37), written in the recipient's language when the event happened:
         merchants get `NEW_ORDER` and `ORDER_CANCELLED` (by the customer); customers get
         `ORDER_ACCEPTED`, `ORDER_REJECTED`, `ORDER_READY_FOR_PICKUP`, `ORDER_OUT_FOR_DELIVERY` and
-        `ORDER_COMPLETED`. The same texts are pushed to registered devices when push is configured.
+        `ORDER_COMPLETED`, and `ORDER_ADJUSTED` when the market entered missing items (adjustOrderItems).
+        The same texts are pushed to registered devices when push is configured.
       parameters:
         - { $ref: '#/components/parameters/Page' }
         - { name: size, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 30 } }
@@ -1533,6 +1534,41 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
         '422': { $ref: '#/components/responses/BusinessRuleViolation' }
 
+  /merchant/orders/{orderId}/items:
+    put:
+      tags: [merchant]
+      operationId: adjustOrderItems
+      summary: Missing items while packing (units handed over per line)
+      description: |
+        While an order is PLACED or ACCEPTED, the market sets how many units of a line it can hand
+        over (0 = missing; the ordered quantity = as ordered again). Lines not mentioned stay as they
+        are. The line is charged the cheaper of its ordered total scaled down to the units handed
+        over (rounded down) and those units re-priced with the promotion that applied when ordering
+        ("3 for 5 €": 4 ordered, 3 handed over → 5 €). The order totals are recomputed and
+        `originalTotal` keeps the total at ordering. In the customer's favour, the delivery fee and
+        the minimum order value are not checked again. The customer is notified (`order.items_adjusted`).
+        Errors: 400 `VALIDATION_FAILED` (unknown line, quantity above the ordered one, a line twice),
+        422 `ORDER_NOT_ADJUSTABLE` (ready, on its way or finished) or `ORDER_ADJUSTMENT_EMPTY`
+        (nothing would be left: reject the order instead).
+      parameters:
+        - { $ref: '#/components/parameters/OrderId' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/OrderItemsRequest' }
+      responses:
+        '200':
+          description: Updated order (merchant view).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Order' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/BusinessRuleViolation' }
+
   /merchant/markets/{marketId}/media:
     parameters:
       - { $ref: '#/components/parameters/MarketId' }
@@ -2139,7 +2175,7 @@ components:
       required: [id, kind, title, body, createdAt, read]
       properties:
         id: { type: string, format: uuid }
-        kind: { type: string, enum: [NEW_ORDER, ORDER_CANCELLED, ORDER_ACCEPTED, ORDER_REJECTED, ORDER_READY_FOR_PICKUP, ORDER_OUT_FOR_DELIVERY, ORDER_COMPLETED] }
+        kind: { type: string, enum: [NEW_ORDER, ORDER_CANCELLED, ORDER_ACCEPTED, ORDER_REJECTED, ORDER_READY_FOR_PICKUP, ORDER_OUT_FOR_DELIVERY, ORDER_COMPLETED, ORDER_ADJUSTED] }
         title: { type: string }
         body: { type: string }
         orderId: { type: [string, 'null'], format: uuid }
@@ -2672,15 +2708,33 @@ components:
       required: [status]
       properties:
         status: { $ref: '#/components/schemas/OrderStatus' }
+    OrderItemsRequest:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          minItems: 1
+          maxItems: 200
+          items:
+            type: object
+            required: [lineNo, fulfilledQuantity]
+            properties:
+              lineNo: { type: integer, minimum: 1 }
+              fulfilledQuantity: { type: integer, minimum: 0, maximum: 99, description: 'Units handed over; 0 = missing.' }
     OrderItem:
       type: object
-      required: [productId, name, unitPrice, quantity, lineTotal]
+      required: [lineNo, productId, name, unitPrice, quantity, fulfilledQuantity, lineTotal]
       properties:
+        lineNo: { type: integer, minimum: 1 }
         productId: { type: string, format: uuid }
         name: { type: string }
         unitPrice: { $ref: '#/components/schemas/Money' }
-        quantity: { type: integer }
-        lineTotal: { $ref: '#/components/schemas/Money' }
+        quantity: { type: integer, description: Units ordered. }
+        fulfilledQuantity:
+          type: [integer, 'null']
+          description: Units handed over when fewer than ordered (missing items); null = as ordered.
+        lineTotal: { $ref: '#/components/schemas/Money', description: 'Charged amount of the line (after missing items).' }
     Order:
       type: object
       required: [id, orderNumber, status, placedAt, market, fulfilmentType, items, subtotal, discountTotal, deliveryFee, total, slot]
@@ -2703,6 +2757,11 @@ components:
             - type: 'null'
             - $ref: '#/components/schemas/Address'
         customerName: { type: [string, 'null'], description: Only in merchant views. }
+        originalTotal:
+          description: The total when ordered, set once the market adjusted items (missing items); null otherwise.
+          oneOf:
+            - type: 'null'
+            - $ref: '#/components/schemas/Money'
 
     # ---- merchant
     MarketProfileRequest:

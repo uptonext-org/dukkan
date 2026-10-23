@@ -185,7 +185,7 @@ export function order(overrides: Partial<Order> = {}): Order {
     placedAt: '2026-10-20T18:00:00+02:00',
     market: market(),
     fulfilmentType: 'DELIVERY',
-    items: [{ productId: cartItem().productId, name: 'Salatgurke', unitPrice: eur(119), quantity: 2, lineTotal: eur(214) }],
+    items: [{ lineNo: 1, productId: cartItem().productId, name: 'Salatgurke', unitPrice: eur(119), quantity: 2, fulfilledQuantity: null, lineTotal: eur(214) }],
     subtotal: eur(1700),
     discountTotal: eur(0),
     deliveryFee: eur(0),

@@ -18,7 +18,9 @@ import jakarta.persistence.Version;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.function.ToLongBiFunction;
 import org.jspecify.annotations.Nullable;
 
 /** A placed order in one market. Names, prices, slot and address are snapshots taken at placement. */
@@ -82,6 +84,13 @@ public class CustomerOrder extends AuditedEntity {
 
   @Embedded private @Nullable AddressSnapshot address;
 
+  /** The total when ordered, kept once items were adjusted (missing items); null otherwise. */
+  @Column(name = "original_total_cents")
+  private @Nullable Long originalTotalCents;
+
+  @Column(name = "adjusted_at")
+  private @Nullable Instant adjustedAt;
+
   @Version private long version;
 
   @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -118,9 +127,16 @@ public class CustomerOrder extends AuditedEntity {
     this.address = address;
   }
 
-  public void addItem(UUID listingId, UUID catalogProductId, String name, long unitPriceCents, int quantity, long lineTotalCents) {
+  public void addItem(
+      UUID listingId,
+      UUID catalogProductId,
+      String name,
+      long unitPriceCents,
+      int quantity,
+      long lineTotalCents,
+      OrderItem.AppliedPromotion promotion) {
     items.add(
-        new OrderItem(this, items.size() + 1, listingId, catalogProductId, name, unitPriceCents, quantity, lineTotalCents));
+        new OrderItem(this, items.size() + 1, listingId, catalogProductId, name, unitPriceCents, quantity, lineTotalCents, promotion));
   }
 
   /** Customers may cancel PLACED or ACCEPTED orders before the slot's order cutoff. */
@@ -133,6 +149,78 @@ public class CustomerOrder extends AuditedEntity {
       throw new IllegalStateException("Order " + orderNumber + " cannot be cancelled");
     }
     status = OrderStatus.CANCELLED;
+  }
+
+  /** Items can be adjusted while the market packs: before it hands the order over. */
+  public boolean isAdjustable() {
+    return status == OrderStatus.PLACED || status == OrderStatus.ACCEPTED;
+  }
+
+  /**
+   * Sets the units handed over per line number (missing items) and recomputes the totals from the
+   * lines; the delivery fee stays. {@code price} gives the charged amount of a line for fewer units.
+   * Returns the number of lines whose quantity changed.
+   *
+   * @throws IllegalStateException when the order is no longer adjustable or nothing would be left
+   * @throws IllegalArgumentException for unknown lines or quantities outside 0..ordered
+   */
+  public int adjustItems(Map<Integer, Integer> unitsByLine, ToLongBiFunction<OrderItem, Integer> price, Instant now) {
+    if (!isAdjustable()) {
+      throw new IllegalStateException("Order " + orderNumber + " can no longer be adjusted");
+    }
+    for (Integer lineNo : unitsByLine.keySet()) {
+      if (items.stream().noneMatch(i -> i.getLineNo() == lineNo)) {
+        throw new IllegalArgumentException("unknown line " + lineNo);
+      }
+    }
+    int remaining = 0;
+    for (OrderItem item : items) {
+      Integer units = unitsByLine.get(item.getLineNo());
+      remaining += units == null ? item.getChargedQuantity() : units;
+    }
+    if (remaining == 0) {
+      throw new IllegalStateException("Nothing of order " + orderNumber + " would be left; reject it instead");
+    }
+    long before = totalCents;
+    int changed = 0;
+    for (OrderItem item : items) {
+      Integer units = unitsByLine.get(item.getLineNo());
+      if (units != null && units != item.getChargedQuantity()) {
+        item.setFulfilled(units, units == item.getQuantity() ? item.getLineTotalCents() : price.applyAsLong(item, units));
+        changed++;
+      }
+    }
+    if (changed == 0) {
+      return 0;
+    }
+    long subtotal = 0;
+    long merchandise = 0;
+    boolean anyShort = false;
+    for (OrderItem item : items) {
+      subtotal += item.getUnitPriceCents() * item.getChargedQuantity();
+      merchandise += item.getChargedTotalCents();
+      anyShort |= item.getFulfilledQuantity() != null;
+    }
+    if (originalTotalCents == null) {
+      originalTotalCents = before;
+    }
+    subtotalCents = subtotal;
+    discountTotalCents = subtotal - merchandise;
+    totalCents = merchandise + deliveryFeeCents;
+    if (!anyShort) {
+      // Everything handed over again as ordered.
+      originalTotalCents = null;
+    }
+    adjustedAt = now;
+    return changed;
+  }
+
+  public @Nullable Long getOriginalTotalCents() {
+    return originalTotalCents;
+  }
+
+  public @Nullable Instant getAdjustedAt() {
+    return adjustedAt;
   }
 
   /** Merchant transition; returns false (and changes nothing) if it is not allowed. */

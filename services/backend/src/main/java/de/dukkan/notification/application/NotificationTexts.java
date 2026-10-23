@@ -43,10 +43,13 @@ final class NotificationTexts {
 
   /** For the customer: what the merchant did with the order. */
   static Optional<Text> forCustomer(String type, OrderEvent event, @Nullable String locale) {
+    String lang = lang(locale);
+    if (OrderEvent.ITEMS_ADJUSTED.equals(type)) {
+      return Optional.of(itemsAdjusted(event, lang));
+    }
     if (!"MERCHANT".equals(event.actor()) || !OrderEvent.STATUS_CHANGED.equals(type)) {
       return Optional.empty();
     }
-    String lang = lang(locale);
     String title =
         switch (event.status()) {
           case "ACCEPTED" -> pick(lang, "Bestellung angenommen", "Order accepted", "تم قبول الطلب");
@@ -57,6 +60,33 @@ final class NotificationTexts {
           default -> null;
         };
     return title == null ? Optional.empty() : Optional.of(new Text("ORDER_" + event.status(), title, event.marketName() + " · " + event.orderNumber()));
+  }
+
+  /**
+   * "2 Artikel nicht (ganz) verfügbar · neuer Betrag 12,40 € statt 15,30 €", or, when the market
+   * found everything after all, "Alle Artikel wieder verfügbar · Betrag 15,30 €".
+   */
+  private static Text itemsAdjusted(OrderEvent event, String lang) {
+    int shortItems = event.shortItems() == null ? 0 : event.shortItems();
+    String title = pick(lang, "Bestellung angepasst", "Order updated", "تم تعديل الطلب");
+    String amount = euro(event.totalCents());
+    String before = event.previousTotalCents() == null ? null : euro(event.previousTotalCents());
+    String body;
+    if (shortItems == 0) {
+      body = pick(lang, "Alle Artikel wieder verfügbar · Betrag " + amount, "All items available again · total " + amount, "جميع المنتجات متوفرة مجددًا · المبلغ " + amount);
+    } else {
+      body =
+          switch (lang) {
+            case "en" ->
+                (shortItems == 1 ? "1 item is" : shortItems + " items are") + " not (fully) available · new total " + amount
+                    + (before == null ? "" : " instead of " + before);
+            case "ar" ->
+                "بعض المنتجات غير متوفرة (" + shortItems + ") · المبلغ الجديد " + amount + (before == null ? "" : " بدلًا من " + before);
+            default ->
+                shortItems + " Artikel nicht (ganz) verfügbar · neuer Betrag " + amount + (before == null ? "" : " statt " + before);
+          };
+    }
+    return new Text("ORDER_ADJUSTED", title, event.marketName() + " · " + event.orderNumber() + " · " + body);
   }
 
   private static String fulfilment(String type, String lang) {

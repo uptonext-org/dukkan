@@ -19,18 +19,41 @@ export function OrderSummary({ order }: { order: Order }) {
       ? [[t('cart.delivery'), order.deliveryFee.amountCents === 0 ? t('fulfilment.free') : formatMoney(order.deliveryFee), formatMoneyForAccessibility(order.deliveryFee)] as [string, string, string]]
       : []),
   ];
+  const short = order.items.filter((item) => item.fulfilledQuantity != null);
   return (
     <View style={styles.box}>
-      {order.items.map((item) => (
-        <View key={item.productId} style={styles.row} accessible accessibilityLabel={forSpeech(`${item.quantity} × ${item.name}, ${formatMoneyForAccessibility(item.lineTotal)}`)}>
-          <AppText variant="body" style={styles.flex}>
-            {`${item.quantity} × ${item.name}`}
-          </AppText>
-          <AppText variant="body" dense>
-            {formatMoney(item.lineTotal)}
+      {short.length > 0 && (
+        <View style={styles.notice} testID="order-adjusted" accessibilityRole="summary">
+          <AppText variant="bodyStrong">{t('order.adjustedTitle')}</AppText>
+          <AppText variant="subhead" color="textSecondary">
+            {t('order.adjustedMessage', { count: short.length })}
           </AppText>
         </View>
-      ))}
+      )}
+      {order.items.map((item) => {
+        const missing = item.fulfilledQuantity === 0;
+        const label =
+          item.fulfilledQuantity == null
+            ? `${item.quantity} × ${item.name}`
+            : missing
+              ? `${item.quantity} × ${item.name} · ${t('order.missing')}`
+              : `${item.fulfilledQuantity} × ${item.name} · ${t('order.ofOrdered', { count: item.quantity })}`;
+        return (
+          <View
+            key={item.lineNo}
+            style={styles.row}
+            accessible
+            accessibilityLabel={forSpeech(`${label}, ${formatMoneyForAccessibility(item.lineTotal)}`)}
+            testID={`order-line-${item.lineNo}`}>
+            <AppText variant="body" color={missing ? 'textSecondary' : 'text'} style={[styles.flex, missing && styles.struck]}>
+              {label}
+            </AppText>
+            <AppText variant="body" dense color={missing ? 'textSecondary' : 'text'}>
+              {formatMoney(item.lineTotal)}
+            </AppText>
+          </View>
+        );
+      })}
       <View style={styles.divider} />
       {rows.map(([label, value, spoken]) => (
         <View key={label} style={styles.row} accessible accessibilityLabel={forSpeech(`${label}: ${spoken}`)}>
@@ -50,6 +73,11 @@ export function OrderSummary({ order }: { order: Order }) {
           {formatMoney(order.total)}
         </AppText>
       </View>
+      {order.originalTotal != null && (
+        <AppText variant="subhead" color="textSecondary" style={styles.end}>
+          {t('order.insteadOf', { amount: formatMoney(order.originalTotal) })}
+        </AppText>
+      )}
     </View>
   );
 }
@@ -59,4 +87,7 @@ const useStyles = makeStyles((t) => ({
   row: { flexDirection: 'row', gap: t.spacing.md, alignItems: 'baseline' },
   flex: { flex: 1 },
   divider: { height: 1, backgroundColor: t.colors.separator, marginVertical: t.spacing.xs },
+  struck: { textDecorationLine: 'line-through' },
+  end: { textAlign: 'right' },
+  notice: { gap: 2, padding: t.spacing.md, borderRadius: 12, backgroundColor: t.colors.surfaceMuted, marginBottom: t.spacing.xs },
 }));

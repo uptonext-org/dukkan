@@ -153,6 +153,9 @@ export function createApi(options: { baseUrl?: string; fetch?: Fetch; store?: Se
       send<Order[]>(`/merchant/markets/${encodeURIComponent(marketId)}/orders${status === undefined ? '' : `?status=${status}`}`),
     advanceOrder: (orderId: string, status: OrderStatus) =>
       send<Order>(`/merchant/orders/${encodeURIComponent(orderId)}/status`, { method: 'POST', body: { status } }),
+    /** Missing items while packing: units handed over per line (0 = missing). */
+    adjustOrderItems: (orderId: string, items: { lineNo: number; fulfilledQuantity: number }[]) =>
+      send<Order>(`/merchant/orders/${encodeURIComponent(orderId)}/items`, { method: 'PUT', body: { items } }),
     listings: (marketId: string, q: string, page: number) => {
       const query = new URLSearchParams({ page: String(page), size: '50' });
       if (q.trim() !== '') {

@@ -60,7 +60,17 @@
       "COMPLETED": "مكتمل",
       "CANCELLED": "ملغى"
     },
-    "autoRefresh": "يتم التحديث كل 30 ثانية."
+    "autoRefresh": "يتم التحديث كل 30 ثانية.",
+    "adjust": {
+      "missing": "تسجيل المنتجات الناقصة",
+      "missingHint": "كم قطعة ستُسلَّم؟ 0 = غير متوفر.",
+      "handedOver": "{{name}}: الكمية المسلّمة",
+      "save": "حفظ",
+      "cancel": "إلغاء",
+      "of": "{{fulfilled}} من {{quantity}}",
+      "instead": "بدلًا من {{amount}}",
+      "adjustedNote": "تم إبلاغ الزبون بالتغيير."
+    }
   },
   "listings": {
     "title": "التشكيلة",
@@ -132,7 +142,9 @@
     "UNSUPPORTED_MEDIA_TYPE": "يُقبل JPEG أو PNG أو WebP فقط.",
     "FILE_TOO_LARGE": "حجم الصورة أكبر من 5 ميغابايت.",
     "INVALID_IMAGE": "الصورة تالفة.",
-    "IMAGE_TOO_LARGE": "عدد بكسلات الصورة كبير جداً (40 ميغابكسل كحد أقصى)."
+    "IMAGE_TOO_LARGE": "عدد بكسلات الصورة كبير جداً (40 ميغابكسل كحد أقصى).",
+    "ORDER_NOT_ADJUSTABLE": "الطلب جاهز أو في الطريق ولا يمكن تعديله.",
+    "ORDER_ADJUSTMENT_EMPTY": "لن يتبقى شيء – يُرجى رفض الطلب بدلًا من ذلك."
   },
   "catalog": {
     "title": "مراجعة الكتالوج",

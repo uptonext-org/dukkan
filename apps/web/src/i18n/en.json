@@ -60,7 +60,17 @@
       "COMPLETED": "Completed",
       "CANCELLED": "Cancelled"
     },
-    "autoRefresh": "Refreshes every 30 seconds."
+    "autoRefresh": "Refreshes every 30 seconds.",
+    "adjust": {
+      "missing": "Enter missing items",
+      "missingHint": "How many units do you hand over? 0 = missing.",
+      "handedOver": "{{name}}: handed over",
+      "save": "Save",
+      "cancel": "Cancel",
+      "of": "{{fulfilled}} of {{quantity}}",
+      "instead": "instead of {{amount}}",
+      "adjustedNote": "The customer was told about the change."
+    }
   },
   "listings": {
     "title": "Assortment",
@@ -132,7 +142,9 @@
     "UNSUPPORTED_MEDIA_TYPE": "Only JPEG, PNG or WebP.",
     "FILE_TOO_LARGE": "The image is larger than 5 MB.",
     "INVALID_IMAGE": "The image is damaged.",
-    "IMAGE_TOO_LARGE": "The image has too many pixels (max. 40 MP)."
+    "IMAGE_TOO_LARGE": "The image has too many pixels (max. 40 MP).",
+    "ORDER_NOT_ADJUSTABLE": "The order is ready or on its way and can no longer be changed.",
+    "ORDER_ADJUSTMENT_EMPTY": "Nothing would be left – decline the order instead."
   },
   "catalog": {
     "title": "Catalog review",

@@ -60,7 +60,17 @@
       "COMPLETED": "Abgeschlossen",
       "CANCELLED": "Storniert"
     },
-    "autoRefresh": "Aktualisiert sich alle 30 Sekunden."
+    "autoRefresh": "Aktualisiert sich alle 30 Sekunden.",
+    "adjust": {
+      "missing": "Fehlmengen eintragen",
+      "missingHint": "Wie viele Stück gibst du heraus? 0 = fehlt.",
+      "handedOver": "{{name}}: herausgegeben",
+      "save": "Speichern",
+      "cancel": "Abbrechen",
+      "of": "{{fulfilled}} von {{quantity}}",
+      "instead": "statt {{amount}}",
+      "adjustedNote": "Kundschaft wurde über die Änderung informiert."
+    }
   },
   "listings": {
     "title": "Sortiment",
@@ -132,7 +142,9 @@
     "UNSUPPORTED_MEDIA_TYPE": "Nur JPEG, PNG oder WebP.",
     "FILE_TOO_LARGE": "Das Bild ist größer als 5 MB.",
     "INVALID_IMAGE": "Das Bild ist beschädigt.",
-    "IMAGE_TOO_LARGE": "Das Bild hat zu viele Pixel (max. 40 MP)."
+    "IMAGE_TOO_LARGE": "Das Bild hat zu viele Pixel (max. 40 MP).",
+    "ORDER_NOT_ADJUSTABLE": "Die Bestellung ist schon fertig oder unterwegs und kann nicht mehr geändert werden.",
+    "ORDER_ADJUSTMENT_EMPTY": "Es bliebe nichts übrig – lehne die Bestellung stattdessen ab."
   },
   "catalog": {
     "title": "Katalogprüfung",

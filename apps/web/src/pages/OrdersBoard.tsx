@@ -1,8 +1,9 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useApi } from '../api/ApiContext';
-import type { Order, OrderStatus } from '../api/types';
+import type { Order, OrderItem, OrderStatus } from '../api/types';
 import { errorMessage } from '../ui/errors';
 import { formatMoney, formatSlot } from '../ui/format';
 
@@ -31,11 +32,94 @@ export function nextStatuses(order: Order): OrderStatus[] {
   }
 }
 
+/** Units handed over (the ordered quantity unless the market entered fewer). */
+export function handedOver(item: OrderItem): number {
+  return item.fulfilledQuantity ?? item.quantity;
+}
+
+/**
+ * Missing items while packing: one number per line (0 = missing), saved together. Only the lines
+ * the merchant changed are sent, so a newer change by someone else to another line (the board
+ * refreshes every 30 s) is not overwritten.
+ */
+function MissingItemsEditor({ order, onDone }: { order: Order; onDone: () => void }) {
+  const { t } = useTranslation();
+  const api = useApi();
+  const queryClient = useQueryClient();
+  // Typed text per touched line; untouched lines follow the order as it is now.
+  const [edits, setEdits] = useState<Record<number, string>>({});
+  const parsed = order.items.flatMap((item) => {
+    const raw = edits[item.lineNo];
+    if (raw === undefined || raw.trim() === '') {
+      return [];
+    }
+    const value = Number(raw);
+    return [{ item, value, valid: Number.isInteger(value) && value >= 0 && value <= item.quantity }];
+  });
+  const changes = parsed.filter((p) => p.valid && p.value !== handedOver(p.item));
+  const invalid = parsed.some((p) => !p.valid);
+  const save = useMutation({
+    mutationFn: () => api.adjustOrderItems(order.id, changes.map((c) => ({ lineNo: c.item.lineNo, fulfilledQuantity: c.value }))),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['orders'] });
+      onDone();
+    },
+  });
+  return (
+    <form
+      className="stack small"
+      onSubmit={(event) => {
+        event.preventDefault();
+        save.mutate();
+      }}>
+      <p className="muted">{t('orders.adjust.missingHint')}</p>
+      {order.items.map((item) => (
+        <label key={item.lineNo} className="row">
+          <span>
+            <bdi>{item.quantity}×</bdi> {item.name}
+          </span>
+          <input
+            type="number"
+            min={0}
+            max={item.quantity}
+            value={edits[item.lineNo] ?? String(handedOver(item))}
+            aria-label={t('orders.adjust.handedOver', { name: item.name })}
+            onChange={(event) => {
+              const raw = event.target.value;
+              setEdits((current) => ({ ...current, [item.lineNo]: raw }));
+            }}
+            style={{ inlineSize: 64 }}
+          />
+        </label>
+      ))}
+      {save.isError && (
+        <p className="error" role="alert">
+          {errorMessage(t, save.error)}
+        </p>
+      )}
+      <div className="row">
+        <button type="submit" className="button" disabled={changes.length === 0 || invalid || save.isPending}>
+          {t('orders.adjust.save')}
+        </button>
+        <button type="button" className="button secondary" onClick={onDone}>
+          {t('orders.adjust.cancel')}
+        </button>
+      </div>
+    </form>
+  );
+}
+
+/** Missing items can be entered while the market packs (the server's rule). */
+function isAdjustable(order: Order): boolean {
+  return order.status === 'PLACED' || order.status === 'ACCEPTED';
+}
+
 export function OrdersBoard({ marketId }: { marketId: string }) {
   const { t, i18n } = useTranslation();
   const api = useApi();
   const queryClient = useQueryClient();
   const orders = useQuery({ queryKey: ['orders', marketId, i18n.language], queryFn: () => api.orders(marketId), refetchInterval: 30_000, placeholderData: keepPreviousData });
+  const [editing, setEditing] = useState<string | null>(null);
   const advance = useMutation({
     mutationFn: ({ order, status }: { order: Order; status: OrderStatus }) => api.advanceOrder(order.id, status),
     onSettled: () => {
@@ -89,20 +173,45 @@ export function OrdersBoard({ marketId }: { marketId: string }) {
                       {order.fulfilmentType === 'PICKUP' ? t('orders.pickup') : t('orders.delivery')} · <bdi>{formatSlot(order.slot.startsAt, order.slot.endsAt, i18n.language)}</bdi>
                     </div>
                     {order.customerName != null && <div className="small">{order.customerName}</div>}
-                    <ul className="small">
-                      {order.items.map((item) => (
-                        <li key={item.productId}>
-                          <bdi>{item.quantity}×</bdi> {item.name}
-                        </li>
-                      ))}
-                    </ul>
+                    {editing === order.id && isAdjustable(order) ? (
+                      <MissingItemsEditor order={order} onDone={() => setEditing(null)} />
+                    ) : (
+                      <ul className="small">
+                        {order.items.map((item) => (
+                          <li key={item.lineNo}>
+                            {item.fulfilledQuantity != null ? (
+                              <>
+                                <bdi>{t('orders.adjust.of', { fulfilled: item.fulfilledQuantity, quantity: item.quantity })}</bdi> ·{' '}
+                                {item.fulfilledQuantity === 0 ? <s>{item.name}</s> : item.name}
+                              </>
+                            ) : (
+                              <>
+                                <bdi>{item.quantity}×</bdi> {item.name}
+                              </>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                     <div className="row">
                       <strong>
                         <bdi>{formatMoney(order.total, i18n.language)}</bdi>
                       </strong>
-                      <span className="muted small">{t('orders.items', { count: order.items.reduce((n, i) => n + i.quantity, 0) })}</span>
+                      {order.originalTotal != null && (
+                        <span className="muted small">
+                          <s>
+                            <bdi>{t('orders.adjust.instead', { amount: formatMoney(order.originalTotal, i18n.language) })}</bdi>
+                          </s>
+                        </span>
+                      )}
+                      <span className="muted small">{t('orders.items', { count: order.items.reduce((n, i) => n + handedOver(i), 0) })}</span>
                     </div>
                     <div className="row" style={{ marginBlockStart: 8 }}>
+                      {isAdjustable(order) && editing !== order.id && (
+                        <button type="button" className="button secondary" onClick={() => setEditing(order.id)}>
+                          {t('orders.adjust.missing')}
+                        </button>
+                      )}
                       {nextStatuses(order).map((status) => (
                         <button
                           key={status}

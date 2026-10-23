@@ -55,7 +55,7 @@ class OrderNotificationHandler implements EventHandler {
 
   @Override
   public Set<String> types() {
-    return Set.of(OrderEvent.PLACED, OrderEvent.STATUS_CHANGED);
+    return Set.of(OrderEvent.PLACED, OrderEvent.STATUS_CHANGED, OrderEvent.ITEMS_ADJUSTED);
   }
 
   @Override

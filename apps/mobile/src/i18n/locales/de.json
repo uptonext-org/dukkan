@@ -393,7 +393,14 @@
       "REMOVED": "{{name}} – nicht mehr im Sortiment",
       "UNAVAILABLE": "{{name}} – gerade nicht verfügbar",
       "LIMITED": "{{name}} – Höchstmenge erreicht"
-    }
+    },
+    "adjustedTitle": "Der Markt hat deine Bestellung angepasst",
+    "adjustedMessage_one": "{{count}} Artikel war nicht (ganz) vorrätig. Du zahlst nur, was du bekommst.",
+    "adjustedMessage_other": "{{count}} Artikel waren nicht (ganz) vorrätig. Du zahlst nur, was du bekommst.",
+    "missing": "nicht verfügbar",
+    "ofOrdered_one": "von {{count}} bestellt",
+    "ofOrdered_other": "von {{count}} bestellt",
+    "insteadOf": "statt {{amount}}"
   },
   "orderStatus": {
     "PLACED": "Bestellt",

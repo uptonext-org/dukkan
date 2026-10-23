@@ -10,6 +10,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 
 /** A line of a placed order with its price and name snapshot. */
 @Entity
@@ -44,6 +45,28 @@ public class OrderItem {
   @Column(name = "line_total_cents", nullable = false)
   private long lineTotalCents;
 
+  /** Units the market hands over when fewer than ordered (missing items); null = as ordered. */
+  @Column(name = "fulfilled_quantity")
+  private @Nullable Integer fulfilledQuantity;
+
+  /** Charged amount when fewer units are handed over; null = {@link #lineTotalCents}. */
+  @Column(name = "charged_total_cents")
+  private @Nullable Long chargedTotalCents;
+
+  @Column(name = "promo_percent_off")
+  private @Nullable Integer promoPercentOff;
+
+  @Column(name = "promo_bundle_quantity")
+  private @Nullable Integer promoBundleQuantity;
+
+  @Column(name = "promo_bundle_price_cents")
+  private @Nullable Long promoBundlePriceCents;
+
+  /** The promotion that applied when ordering (one of both kinds), kept to re-price fewer units. */
+  public record AppliedPromotion(@Nullable Integer percentOff, @Nullable Integer bundleQuantity, @Nullable Long bundlePriceCents) {
+    public static final AppliedPromotion NONE = new AppliedPromotion(null, null, null);
+  }
+
   protected OrderItem() {}
 
   OrderItem(
@@ -54,7 +77,8 @@ public class OrderItem {
       String name,
       long unitPriceCents,
       int quantity,
-      long lineTotalCents) {
+      long lineTotalCents,
+      AppliedPromotion promotion) {
     this.id = randomUUID();
     this.order = order;
     this.lineNo = lineNo;
@@ -64,6 +88,9 @@ public class OrderItem {
     this.unitPriceCents = unitPriceCents;
     this.quantity = quantity;
     this.lineTotalCents = lineTotalCents;
+    this.promoPercentOff = promotion.percentOff();
+    this.promoBundleQuantity = promotion.bundleQuantity();
+    this.promoBundlePriceCents = promotion.bundlePriceCents();
   }
 
   public int getLineNo() {
@@ -90,7 +117,40 @@ public class OrderItem {
     return quantity;
   }
 
+  /** The line total when ordered. */
   public long getLineTotalCents() {
     return lineTotalCents;
+  }
+
+  public @Nullable Integer getFulfilledQuantity() {
+    return fulfilledQuantity;
+  }
+
+  /** Units charged and handed over. */
+  public int getChargedQuantity() {
+    return fulfilledQuantity == null ? quantity : fulfilledQuantity;
+  }
+
+  /** The amount charged for the line (lower when fewer units are handed over). */
+  public long getChargedTotalCents() {
+    return chargedTotalCents == null ? lineTotalCents : chargedTotalCents;
+  }
+
+  public AppliedPromotion getPromotion() {
+    return new AppliedPromotion(promoPercentOff, promoBundleQuantity, promoBundlePriceCents);
+  }
+
+  /** Units handed over and their price (computed by the application, see {@code ChargedPrice}). */
+  void setFulfilled(int units, long chargedCents) {
+    if (units < 0 || units > quantity) {
+      throw new IllegalArgumentException("fulfilled quantity must be between 0 and " + quantity);
+    }
+    if (units == quantity) {
+      this.fulfilledQuantity = null;
+      this.chargedTotalCents = null;
+    } else {
+      this.fulfilledQuantity = units;
+      this.chargedTotalCents = Math.clamp(chargedCents, 0, lineTotalCents);
+    }
   }
 }
