@@ -39,22 +39,10 @@ older backend runs on a newer schema; if a release says otherwise, restore the d
 
 ## Backups
 
-The `backup` service writes `dukkan-YYYY-MM-DD.dump` (pg_dump custom format) every night at 03:15
-into the `backups` volume and keeps 14 days. **Copy them off the server** too, for example with the
-hosting provider's snapshot/backup feature or `rclone`/`restic` to an object store in another
-location, together with the `media` volume (uploaded photos, unless S3 is used).
-
-Restore into a fresh database:
-
-```bash
-docker compose stop backend
-docker compose exec -T postgres dropdb -U dukkan dukkan
-docker compose exec -T postgres createdb -U dukkan dukkan
-docker compose exec -T postgres pg_restore -U dukkan -d dukkan < /path/to/dukkan-2026-11-02.dump
-docker compose start backend
-```
-
-Practise this once before launch and write down how long it took.
+Nightly dump with a weekly automatic restore test, and an encrypted offsite copy (restic) of the
+database, the photos and the erasure journal; `./restore.sh` for restores and a new server.
+Setup and commands: [BACKUP.md](BACKUP.md). Retention periods and the legal side (German):
+`docs/operations/datensicherung.md`.
 
 ## Monitoring
 

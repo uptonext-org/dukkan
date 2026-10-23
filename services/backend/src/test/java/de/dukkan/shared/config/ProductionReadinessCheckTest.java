@@ -44,7 +44,8 @@ class ProductionReadinessCheckTest {
   private static MockEnvironment ready() {
     MockEnvironment environment = new MockEnvironment()
         .withProperty("spring.datasource.password", "s3cret-from-the-vault")
-        .withProperty("spring.mail.host", "smtp.example.org");
+        .withProperty("spring.mail.host", "smtp.example.org")
+        .withProperty("dukkan.privacy.erasure-journal", "/var/lib/dukkan/erasures/erasures.log");
     environment.setActiveProfiles("prod");
     return environment;
   }
@@ -65,13 +66,14 @@ class ProductionReadinessCheckTest {
     List<String> problems = ProductionReadinessCheck.problems(environment, properties);
 
     assertThat(problems)
-        .hasSize(6)
+        .hasSize(7)
         .anySatisfy(p -> assertThat(p).contains("profile 'demo'"))
         .anySatisfy(p -> assertThat(p).contains("DUKKAN_DB_PASSWORD"))
         .anySatisfy(p -> assertThat(p).contains("DUKKAN_JWT_SECRET"))
         .anySatisfy(p -> assertThat(p).contains("SPRING_MAIL_HOST"))
         .anySatisfy(p -> assertThat(p).contains("DUKKAN_PASSWORD_RESET_URL").contains("dukkan://reset-password"))
-        .anySatisfy(p -> assertThat(p).contains("DUKKAN_EMAIL_VERIFICATION_URL"));
+        .anySatisfy(p -> assertThat(p).contains("DUKKAN_EMAIL_VERIFICATION_URL"))
+        .anySatisfy(p -> assertThat(p).contains("DUKKAN_ERASURE_JOURNAL"));
     assertThatThrownBy(() -> new ProductionReadinessCheck(environment, properties))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("Production profile refused to start");

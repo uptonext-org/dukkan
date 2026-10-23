@@ -42,6 +42,9 @@ dukkan:
     merchant-auto-approve: ${DUKKAN_MERCHANT_AUTO_APPROVE:false}
   media:
     directory: ${DUKKAN_MEDIA_DIRECTORY:/var/lib/dukkan/media}
+  privacy:
+    # Own volume (infrastructure/production): never restored together with the database.
+    erasure-journal: ${DUKKAN_ERASURE_JOURNAL:/var/lib/dukkan/erasures/erasures.log}
   security:
     auth:
       # https links (the web app opens them; the app via App Links / Universal Links), e.g.

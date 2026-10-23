@@ -137,6 +137,48 @@ jobs:
       - if: failure()
         run: docker logs web; docker logs portal
 
+  backup-drill:
+    name: Backup and restore drill (production scripts)
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: infrastructure/production
+    steps:
+      - uses: actions/checkout@v7
+      - name: Lint the scripts
+        run: shellcheck -s sh backup.sh offsite-backup.sh restore.sh
+      - name: Dump, restore test, encrypted offsite snapshot, restore from it
+        run: |
+          set -eu
+          curl -sSL https://github.com/restic/restic/releases/download/v0.19.1/restic_0.19.1_linux_amd64.bz2 | bunzip2 > "$RUNNER_TEMP/restic"
+          chmod +x "$RUNNER_TEMP/restic"
+          docker network create drill
+          docker run -d --name postgres --network drill -e POSTGRES_DB=dukkan -e POSTGRES_USER=dukkan -e POSTGRES_PASSWORD=drill postgres:18.6
+          until docker exec postgres pg_isready -U dukkan -d dukkan; do sleep 1; done
+          docker exec postgres psql -U dukkan -d dukkan -c "create table app_user(id int); insert into app_user select generate_series(1, 42); create table market(id int); create table customer_order(id int); create table flyway_schema_history(version text); insert into flyway_schema_history values ('18');"
+          pg="-e PGHOST=postgres -e PGUSER=dukkan -e PGPASSWORD=drill -e PGDATABASE=dukkan"
+          docker volume create backups
+          docker run --rm --network drill $pg -e RESTORE_TEST_WEEKDAY="$(date +%u)" -v "$PWD/backup.sh:/b.sh:ro" -v backups:/backups postgres:18.6 \
+            sh -c 'timeout 60 sh /b.sh --now || true' | tee backup.log
+          grep -q "restore test ok: 42 accounts" backup.log
+          mkdir -p "$RUNNER_TEMP/repo" "$RUNNER_TEMP/media" "$RUNNER_TEMP/erasures"
+          echo photo > "$RUNNER_TEMP/media/a.jpg"
+          docker run --rm -e RESTIC_REPOSITORY=/repo -e RESTIC_PASSWORD=drill-key -e RESTORE_TEST_WEEKDAY="$(date +%u)" \
+            -v "$RUNNER_TEMP/restic:/usr/bin/restic:ro" -v "$PWD/offsite-backup.sh:/o.sh:ro" -v backups:/backups \
+            -v "$RUNNER_TEMP/media:/data/media" -v "$RUNNER_TEMP/erasures:/data/erasures" -v "$RUNNER_TEMP/repo:/repo" alpine:3.20 \
+            sh -c 'timeout 60 sh /o.sh --now || true' | tee offsite.log
+          grep -q "offsite ok" offsite.log
+          grep -q "no errors were found" offsite.log
+          # The repository holds no readable copy of the data.
+          if grep -rq "photo" "$RUNNER_TEMP/repo"; then echo "plaintext found in the repository"; exit 1; fi
+          # Restore the snapshot into a fresh database.
+          docker exec postgres psql -U dukkan -d postgres -c "create database drill_restore"
+          docker run --rm -e RESTIC_REPOSITORY=/repo -e RESTIC_PASSWORD=drill-key -v "$RUNNER_TEMP/restic:/usr/bin/restic:ro" \
+            -v "$RUNNER_TEMP/repo:/repo" -v "$RUNNER_TEMP/out:/out" alpine:3.20 restic restore latest --target /out
+          docker run --rm --network drill $pg -v "$RUNNER_TEMP/out:/out:ro" postgres:18.6 pg_restore --no-owner -d drill_restore /out/backups/latest.dump
+          test "$(docker exec postgres psql -U dukkan -d drill_restore -tAc 'select count(*) from app_user')" = 42
+          test -f "$RUNNER_TEMP/out/data/media/a.jpg"
+
   e2e-api:
     name: End-to-end API (app client against the real backend)
     runs-on: ubuntu-24.04
