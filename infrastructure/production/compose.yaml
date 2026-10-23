@@ -1,0 +1,114 @@
+# Production on one server (docs/launch/go-live.md): Caddy (automatic HTTPS), the backend, the
+# customer web app, the merchant portal, PostgreSQL and a nightly database dump.
+#
+#   cp .env.example .env    # fill in every value, keep the file on the server only
+#   docker compose up -d
+#
+# Images come from the release workflow (.github/workflows/release.yml) as
+# ghcr.io/<owner>/dukkan-{backend,web,portal}:<version>.
+name: dukkan-prod
+
+x-restart: &restart
+  restart: unless-stopped
+  logging:
+    driver: json-file
+    options: { max-size: "20m", max-file: "5" }
+
+services:
+  caddy:
+    <<: *restart
+    image: caddy:2.11.6-alpine@sha256:d44355d3c2149dc580ce2cac735955d1c08d3d00882c30489c241aa51a5c10d9
+    ports: ["80:80", "443:443", "443:443/udp"]
+    environment:
+      DUKKAN_DOMAIN: ${DUKKAN_DOMAIN:?set DUKKAN_DOMAIN}
+      DUKKAN_PORTAL_DOMAIN: ${DUKKAN_PORTAL_DOMAIN:?set DUKKAN_PORTAL_DOMAIN}
+      DUKKAN_ACME_EMAIL: ${DUKKAN_ACME_EMAIL:?set DUKKAN_ACME_EMAIL}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on: [backend, web, portal]
+
+  backend:
+    <<: *restart
+    image: ${DUKKAN_IMAGE_PREFIX:?set DUKKAN_IMAGE_PREFIX}/dukkan-backend:${DUKKAN_VERSION:?set DUKKAN_VERSION}
+    env_file: .env
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DUKKAN_DB_URL: jdbc:postgresql://postgres:5432/dukkan
+      DUKKAN_DB_USER: dukkan
+      DUKKAN_DB_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      # Actuator (health, Prometheus) on its own port, never routed by Caddy.
+      MANAGEMENT_SERVER_PORT: "8081"
+      DUKKAN_MEDIA_PUBLIC_BASE_URL: https://${DUKKAN_DOMAIN}/api/v1/media
+      DUKKAN_PASSWORD_RESET_URL: https://${DUKKAN_DOMAIN}/reset-password
+      DUKKAN_EMAIL_VERIFICATION_URL: https://${DUKKAN_DOMAIN}/verify-email
+    volumes:
+      - media:/var/lib/dukkan/media
+    healthcheck:
+      # bash's /dev/tcp: the runtime image has no curl.
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8081 && printf 'GET /actuator/health/readiness HTTP/1.0\\r\\n\\r\\n' >&3 && grep -q UP <&3"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  web:
+    <<: *restart
+    image: ${DUKKAN_IMAGE_PREFIX}/dukkan-web:${DUKKAN_VERSION}
+    read_only: true
+    tmpfs: [/tmp, /etc/nginx/conf.d]
+    environment:
+      DUKKAN_MAP_TILE_URL: ${DUKKAN_MAP_TILE_URL:-}
+      DUKKAN_MAP_ATTRIBUTION: ${DUKKAN_MAP_ATTRIBUTION:-}
+
+  portal:
+    <<: *restart
+    image: ${DUKKAN_IMAGE_PREFIX}/dukkan-portal:${DUKKAN_VERSION}
+    read_only: true
+    tmpfs: [/tmp]
+
+  postgres:
+    <<: *restart
+    image: postgres:18.6
+    environment:
+      POSTGRES_DB: dukkan
+      POSTGRES_USER: dukkan
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dukkan -d dukkan"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # Nightly pg_dump at 03:15 (server time) into the backups volume, 14 days kept. Copy the volume
+  # off the server as well (BACKUP.md); a backup on the same disk does not survive losing the disk.
+  backup:
+    <<: *restart
+    image: postgres:18.6
+    environment:
+      PGHOST: postgres
+      PGUSER: dukkan
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: dukkan
+      BACKUP_KEEP_DAYS: ${BACKUP_KEEP_DAYS:-14}
+    volumes:
+      - ./backup.sh:/usr/local/bin/dukkan-backup.sh:ro
+      - backups:/backups
+      - media:/media:ro
+    entrypoint: ["sh", "/usr/local/bin/dukkan-backup.sh"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  caddy-data:
+  caddy-config:
+  postgres-data:
+  media:
+  backups:

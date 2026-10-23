@@ -185,6 +185,14 @@ Sign in with `haendler@dukkan.local` (orders board, assortment, CSV import) or `
 (market review). For the CSV import, "Vorlage herunterladen" gives a template that Excel opens with
 the right columns; save as "CSV UTF-8". Checks: `npm run lint`, `npm test`, `npm run build`.
 
+## 3c. Production
+
+Production runs the `prod` profile (no demo data, review of new markets, https mail links,
+startup check of the settings) on one server with `infrastructure/production` (Caddy with
+automatic HTTPS, backend, web app, portal, PostgreSQL, nightly backup). Images come from the
+release workflow (`git tag vX.Y.Z`). The whole plan, including what the operator has to provide:
+`docs/launch/go-live.md`.
+
 ## 4. Quality checks
 
 Native builds (B-28) run in `.github/workflows/native.yml` when `apps/mobile` changes, or by hand

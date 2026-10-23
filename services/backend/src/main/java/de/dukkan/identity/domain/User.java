@@ -48,6 +48,12 @@ public class User extends AuditedEntity {
   @Column(name = "email_verified_at")
   private @Nullable Instant emailVerifiedAt;
 
+  @Column(name = "terms_version")
+  private @Nullable String termsVersion;
+
+  @Column(name = "terms_accepted_at")
+  private @Nullable Instant termsAcceptedAt;
+
   @CollectionTable(name = "app_user_role", joinColumns = @JoinColumn(name = "user_id"))
   @Column(name = "role", nullable = false)
   @ElementCollection(fetch = FetchType.EAGER)
@@ -139,6 +145,20 @@ public class User extends AuditedEntity {
     if (emailVerifiedAt == null) {
       emailVerifiedAt = now;
     }
+  }
+
+  /** Records that the user accepted this version of the platform terms and privacy notice. */
+  public void acceptTerms(String version, Instant now) {
+    termsVersion = version;
+    termsAcceptedAt = now;
+  }
+
+  public @Nullable String getTermsVersion() {
+    return termsVersion;
+  }
+
+  public @Nullable Instant getTermsAcceptedAt() {
+    return termsAcceptedAt;
   }
 
   public boolean isDeleted() {

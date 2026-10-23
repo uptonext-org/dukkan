@@ -50,7 +50,8 @@ final class AuthController {
                 request.firstName(),
                 request.lastName(),
                 request.merchant(),
-                request.preferredLocale())));
+                request.preferredLocale(),
+                request.acceptedTermsVersion())));
   }
 
   @PostMapping("/auth/login")
@@ -107,7 +108,8 @@ final class AuthController {
                 request.firstName(),
                 request.lastName(),
                 "MERCHANT".equals(request.accountType()),
-                request.preferredLocale())));
+                request.preferredLocale(),
+                request.acceptedTermsVersion())));
   }
 
   @PutMapping("/me/password")

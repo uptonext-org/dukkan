@@ -6,6 +6,8 @@ import { errorMessageKey, isApiError, knownFieldError, type AccountType, type So
 import { useLanguage } from '../../../shared/i18n';
 import { makeStyles } from '../../../shared/theme';
 import { AppText, Button, SegmentedControl, TextField } from '../../../shared/ui';
+import { TermsConsent } from '../../legal/TermsConsent';
+import { usePlatform } from '../../legal/usePlatform';
 import { useAuth } from '../AuthProvider';
 import { ForgotPasswordPanel } from './ForgotPasswordPanel';
 import { hasErrors, validateLogin, validateRegister, type FieldErrors, type RegisterValues } from '../validation';
@@ -25,6 +27,10 @@ export function AuthForm({ initialMode = 'login', onDone }: { initialMode?: Mode
   const [errors, setErrors] = useState<FieldErrors<keyof RegisterValues>>({});
   const [serverError, setServerError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const legal = usePlatform().data?.legal;
+  const termsVersion = legal?.termsVersion ?? null;
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [termsMissing, setTermsMissing] = useState(false);
 
   const update = (field: keyof RegisterValues) => (text: string) => {
     setValues((v) => ({ ...v, [field]: text }));
@@ -39,7 +45,9 @@ export function AuthForm({ initialMode = 'login', onDone }: { initialMode?: Mode
     const found = mode === 'login' ? validateLogin(values) : validateRegister(values);
     setErrors(found);
     setServerError(null);
-    if (hasErrors(found)) {
+    const needsTerms = mode === 'register' && termsVersion !== null && !acceptedTerms;
+    setTermsMissing(needsTerms);
+    if (hasErrors(found) || needsTerms) {
       return;
     }
     setSubmitting(true);
@@ -54,11 +62,16 @@ export function AuthForm({ initialMode = 'login', onDone }: { initialMode?: Mode
           lastName: values.lastName.trim(),
           accountType,
           preferredLocale: language,
+          acceptedTermsVersion: acceptedTerms ? termsVersion : null,
         });
       }
       onDone?.();
     } catch (error) {
       setServerError(t(errorMessageKey(error)));
+      if (isApiError(error) && error.code === 'TERMS_NOT_ACCEPTED') {
+        setAcceptedTerms(false);
+        setTermsMissing(true);
+      }
       if (isApiError(error) && error.code === 'EMAIL_TAKEN') {
         setErrors((e) => ({ ...e, email: 'emailTaken' }));
       }
@@ -74,7 +87,7 @@ export function AuthForm({ initialMode = 'login', onDone }: { initialMode?: Mode
     setServerError(null);
     setSubmitting(true);
     try {
-      if (await socialSignIn(provider, accountType, language)) {
+      if (await socialSignIn(provider, accountType, language, acceptedTerms ? termsVersion : null)) {
         onDone?.();
       }
     } catch (error) {
@@ -143,6 +156,18 @@ export function AuthForm({ initialMode = 'login', onDone }: { initialMode?: Mode
           textContentType={mode === 'login' ? 'password' : 'newPassword'}
           {...(mode === 'register' ? { hint: t('auth.passwordHint') } : {})}
         />
+        {mode === 'register' && termsVersion !== null && (
+          <TermsConsent
+            accepted={acceptedTerms}
+            onChange={(next) => {
+              setAcceptedTerms(next);
+              setTermsMissing(false);
+            }}
+            termsUrl={legal?.termsUrl ?? null}
+            privacyUrl={legal?.privacyUrl ?? null}
+            error={termsMissing}
+          />
+        )}
         {serverError !== null && (
           <AppText variant="subhead" color="accent" accessibilityRole="alert" accessibilityLiveRegion="polite" style={styles.serverError}>
             {serverError}

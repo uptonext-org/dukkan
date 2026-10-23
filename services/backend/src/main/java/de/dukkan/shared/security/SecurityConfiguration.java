@@ -63,10 +63,11 @@ public class SecurityConfiguration {
         API + "/search/products"
       };
 
-  /** Always public: languages, filter chips, the address search used during onboarding, AI availability. */
+  /** Always public: languages, legal links, filter chips, the address search used during onboarding, AI availability. */
   private static final String[] META =
       new String[] {
         API + "/locales",
+        API + "/platform",
         API + "/market-types",
         API + "/cuisines",
         API + "/categories",

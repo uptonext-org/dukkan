@@ -18,6 +18,9 @@ spring:
           time_zone: UTC
   flyway:
     enabled: true
+    # db/demo holds the invented Hamburg markets and catalog (V3) for development, tests and demos.
+    # The prod profile migrates db/migration only, so a production database never gets them.
+    locations: classpath:db/migration,classpath:db/demo
   servlet:
     multipart:
       # Uploads (POST /merchant/markets/{id}/media): 5 MB per file, matching dukkan.media.max-file-size.
@@ -86,6 +89,16 @@ logging:
       console: ecs
 
 dukkan:
+  platform:
+    # The operator's legal pages (https URLs; the texts are theirs). The apps link to them.
+    imprint-url: ${DUKKAN_IMPRINT_URL:}
+    privacy-url: ${DUKKAN_PRIVACY_URL:}
+    terms-url: ${DUKKAN_TERMS_URL:}
+    # Set (e.g. 2026-11) to make new accounts accept this version of terms and privacy notice.
+    terms-version: ${DUKKAN_TERMS_VERSION:}
+    support-email: ${DUKKAN_SUPPORT_EMAIL:}
+    # SIMULATED (no payment, the apps say so) or ON_SITE (pay the market at pickup or delivery).
+    payment: ${DUKKAN_PAYMENT:SIMULATED}
   features:
     # Phase 1: browsing is public; set to true to require a login for the catalog GET endpoints.
     require-login-to-browse: ${DUKKAN_REQUIRE_LOGIN_TO_BROWSE:false}
@@ -166,6 +179,8 @@ dukkan:
       # by the API on the model it recommends for that case.
       server-side-fallbacks: true
   security:
+    # Grants ADMIN to this registered account at startup (first admin of a fresh installation).
+    bootstrap-admin-email: ${DUKKAN_BOOTSTRAP_ADMIN_EMAIL:}
     jwt:
       # No default: must be provided via DUKKAN_JWT_SECRET (>= 32 bytes). Startup fails otherwise.
       secret: ${DUKKAN_JWT_SECRET:}

@@ -45,12 +45,14 @@
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
         </intent-filter>
-        <!-- dukkan://reset-password?token=… from the password reset mail (B-39). -->
+        <!-- dukkan://reset-password?token=… (password reset mail, B-39) and
+             dukkan://verify-email?token=… (welcome mail, B-39b). -->
         <intent-filter>
             <action android:name="android.intent.action.VIEW" />
             <category android:name="android.intent.category.DEFAULT" />
             <category android:name="android.intent.category.BROWSABLE" />
             <data android:scheme="dukkan" android:host="reset-password" />
+            <data android:scheme="dukkan" android:host="verify-email" />
         </intent-filter>
       </activity>
     </application>

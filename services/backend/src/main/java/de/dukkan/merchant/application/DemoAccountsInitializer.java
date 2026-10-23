@@ -5,6 +5,7 @@ import de.dukkan.address.application.AddressDetails;
 import de.dukkan.identity.application.IdentityService;
 import de.dukkan.identity.application.RegisterCommand;
 import de.dukkan.identity.application.UserView;
+import de.dukkan.legal.application.TermsPolicy;
 import de.dukkan.market.application.MarketService;
 import java.util.List;
 import org.slf4j.Logger;
@@ -37,11 +38,13 @@ public class DemoAccountsInitializer implements ApplicationRunner {
   private final IdentityService identity;
   private final MarketService markets;
   private final AddressService addresses;
+  private final TermsPolicy terms;
 
-  public DemoAccountsInitializer(IdentityService identity, MarketService markets, AddressService addresses) {
+  public DemoAccountsInitializer(IdentityService identity, MarketService markets, AddressService addresses, TermsPolicy terms) {
     this.identity = identity;
     this.markets = markets;
     this.addresses = addresses;
+    this.terms = terms;
   }
 
   @Override
@@ -68,6 +71,11 @@ public class DemoAccountsInitializer implements ApplicationRunner {
     return identity
         .findByEmail(email)
         .orElseGet(
-            () -> identity.register(new RegisterCommand(email, DEMO_PASSWORD, firstName, lastName, merchant, locale)).user());
+            () ->
+                identity
+                    .register(
+                        new RegisterCommand(
+                            email, DEMO_PASSWORD, firstName, lastName, merchant, locale, terms.currentVersion().orElse(null)))
+                    .user());
   }
 }

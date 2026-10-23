@@ -12,6 +12,7 @@ import { AppText, Button, ListRow, LoadingState } from '../../../shared/ui';
 import { useIsMerchant, useMe } from '../../auth/api/useMe';
 import { useAuth } from '../../auth/AuthProvider';
 import { AuthForm } from '../../auth/components/AuthForm';
+import { LegalLinks } from '../../legal/LegalLinks';
 import { useNotifications } from '../../notifications/api/hooks';
 import { ShellHeader } from '../../marketplace/components/ShellHeader';
 import { LanguageSheet } from '../components/LanguageSheet';
@@ -52,6 +53,7 @@ export function ProfileScreen({ navigation }: ShellTabScreenProps<'Profile'>) {
             </AppText>
             <AuthForm />
             <View style={styles.section}>{common}</View>
+            <LegalLinks />
           </>
         ) : me.isPending ? (
           <LoadingState />
@@ -84,6 +86,7 @@ export function ProfileScreen({ navigation }: ShellTabScreenProps<'Profile'>) {
               <ListRow title={t('account.title')} icon="user" onPress={() => navigation.navigate('AccountData')} testID="profile-account-data" />
               {merchant && <ListRow title={t('profile.myMarket')} icon="store" onPress={() => navigation.navigate('MerchantMarkets')} testID="profile-my-market" />}
             </View>
+            <LegalLinks />
             <Button title={t('profile.logout')} variant="danger" icon="logout" onPress={() => void logout()} style={styles.logout} />
           </>
         )}

@@ -13,7 +13,9 @@
     "audit:prod": "npm audit --omit=dev",
     "format": "prettier --write \"src/**/*.{ts,tsx}\" jest.setup.ts",
     "format:check": "prettier --check \"src/**/*.{ts,tsx}\" jest.setup.ts",
-    "bundle:check": "node scripts/bundle-check.mjs"
+    "bundle:check": "node scripts/bundle-check.mjs",
+    "release:api": "node scripts/release-config.mjs",
+    "release:check": "node scripts/release-config.mjs --check"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "3.1.1",

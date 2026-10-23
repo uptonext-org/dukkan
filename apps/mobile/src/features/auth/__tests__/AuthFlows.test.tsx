@@ -53,7 +53,7 @@ describe('Anmeldung: Passwort vergessen, Apple/Google, Abmelden (B-39)', () => {
       expect(fake.calls).toContainEqual(
         expect.objectContaining({
           path: '/auth/social',
-          body: { provider: 'APPLE', idToken: 'id-token', nonce: 'n-1', firstName: 'Ada', lastName: 'L', accountType: 'CUSTOMER', preferredLocale: 'de' },
+          body: { provider: 'APPLE', idToken: 'id-token', nonce: 'n-1', firstName: 'Ada', lastName: 'L', accountType: 'CUSTOMER', preferredLocale: 'de', acceptedTermsVersion: null },
         }),
       ),
     );

@@ -72,6 +72,15 @@ def enableProguardInReleaseBuilds = false
  */
 def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
 
+/** A Gradle property (-P, ~/.gradle/gradle.properties) or the environment variable of the same name. */
+def setting = { String name -> project.findProperty(name) ?: System.getenv(name) }
+
+/**
+ * Store builds are signed with the upload key from these settings (never committed; in CI from
+ * secrets). Without them the release build falls back to the debug keystore (CI test APKs only).
+ */
+def uploadStoreFile = setting("DUKKAN_UPLOAD_STORE_FILE")
+
 android {
     ndkVersion rootProject.ext.ndkVersion
     buildToolsVersion rootProject.ext.buildToolsVersion
@@ -82,12 +91,12 @@ android {
         applicationId "app.dukkan.mobile"
         // Google Maps key: `-PDUKKAN_MAPS_API_KEY=...`, ~/.gradle/gradle.properties or the env var.
         // Empty by default; the map then shows a blank grid on Android (see README).
-        manifestPlaceholders["dukkanMapsApiKey"] =
-            project.findProperty("DUKKAN_MAPS_API_KEY") ?: System.getenv("DUKKAN_MAPS_API_KEY") ?: ""
+        manifestPlaceholders["dukkanMapsApiKey"] = setting("DUKKAN_MAPS_API_KEY") ?: ""
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        // Store releases pass a higher DUKKAN_VERSION_CODE each time (docs/launch/go-live.md).
+        versionCode((setting("DUKKAN_VERSION_CODE") ?: "1") as Integer)
+        versionName setting("DUKKAN_VERSION_NAME") ?: "1.0"
     }
     signingConfigs {
         debug {
@@ -95,6 +104,14 @@ android {
             storePassword 'android'
             keyAlias 'androiddebugkey'
             keyPassword 'android'
+        }
+        if (uploadStoreFile) {
+            release {
+                storeFile file(uploadStoreFile)
+                storePassword setting("DUKKAN_UPLOAD_STORE_PASSWORD")
+                keyAlias setting("DUKKAN_UPLOAD_KEY_ALIAS")
+                keyPassword setting("DUKKAN_UPLOAD_KEY_PASSWORD")
+            }
         }
     }
     sourceSets {
@@ -106,9 +123,7 @@ android {
             signingConfig signingConfigs.debug
         }
         release {
-            // Caution! In production, you need to generate your own keystore file.
-            // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.debug
+            signingConfig uploadStoreFile ? signingConfigs.release : signingConfigs.debug
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
         }
