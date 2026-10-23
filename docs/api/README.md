@@ -176,9 +176,10 @@ JPEG/PNG/WebP), 401 without a token, 404 unknown or inactive market, 429 `RATE_L
 
 ### Missing items while packing (merchant)
 `PUT /merchant/orders/{id}/items` with `{"items":[{"lineNo":2,"fulfilledQuantity":1}]}` while the order is
-`PLACED` or `ACCEPTED`: line 2 is handed over with one unit (0 = missing). The line is charged its ordered
-total scaled down (rounded down, so a multi-buy never makes the rest dearer), `subtotal`, `discountTotal`
-and `total` are recomputed, `originalTotal` keeps the ordered total, and the customer gets an inbox entry
+`PLACED` or `ACCEPTED`: line 2 is handed over with one unit (0 = missing). The line is charged the cheaper
+of its ordered total scaled down (rounded down) and the units re-priced with the promotion that applied
+when ordering (so a multi-buy never makes the rest dearer); `subtotal`, `discountTotal` and `total` are
+recomputed, the delivery fee and minimum order are not checked again (in the customer's favour), `originalTotal` keeps the ordered total, and the customer gets an inbox entry
 "Bestellung angepasst". Sending the ordered quantity again restores a line. Errors: 400 (unknown line,
 more than ordered, a line twice), 422 `ORDER_NOT_ADJUSTABLE` (ready, on its way or finished),
 422 `ORDER_ADJUSTMENT_EMPTY` (nothing left: reject the order instead), 404 for other merchants.

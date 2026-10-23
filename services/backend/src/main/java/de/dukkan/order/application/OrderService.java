@@ -149,7 +149,13 @@ public class OrderService {
             address);
     for (CartLineView line : cart.lines()) {
       order.addItem(
-          line.listingId(), line.catalogProductId(), line.name(), line.unitPriceCents(), line.quantity(), line.totalCents());
+          line.listingId(),
+          line.catalogProductId(),
+          line.name(),
+          line.unitPriceCents(),
+          line.quantity(),
+          line.totalCents(),
+          ChargedPrice.snapshot(line.appliedRule()));
     }
     orders.save(order);
     // The reservation's capacity unit now belongs to the order; only this market's cart is emptied.
@@ -268,7 +274,7 @@ public class OrderService {
     Instant now = clock.instant();
     int changed;
     try {
-      changed = order.adjustItems(unitsByLine, now);
+      changed = order.adjustItems(unitsByLine, ChargedPrice::of, now);
     } catch (IllegalStateException e) {
       throw new BusinessRuleException(ErrorCodes.ORDER_ADJUSTMENT_EMPTY, "Nothing would be left; reject the order instead.");
     }

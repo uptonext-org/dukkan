@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.ToLongBiFunction;
 import org.jspecify.annotations.Nullable;
 
 /** A placed order in one market. Names, prices, slot and address are snapshots taken at placement. */
@@ -126,9 +127,16 @@ public class CustomerOrder extends AuditedEntity {
     this.address = address;
   }
 
-  public void addItem(UUID listingId, UUID catalogProductId, String name, long unitPriceCents, int quantity, long lineTotalCents) {
+  public void addItem(
+      UUID listingId,
+      UUID catalogProductId,
+      String name,
+      long unitPriceCents,
+      int quantity,
+      long lineTotalCents,
+      OrderItem.AppliedPromotion promotion) {
     items.add(
-        new OrderItem(this, items.size() + 1, listingId, catalogProductId, name, unitPriceCents, quantity, lineTotalCents));
+        new OrderItem(this, items.size() + 1, listingId, catalogProductId, name, unitPriceCents, quantity, lineTotalCents, promotion));
   }
 
   /** Customers may cancel PLACED or ACCEPTED orders before the slot's order cutoff. */
@@ -150,12 +158,13 @@ public class CustomerOrder extends AuditedEntity {
 
   /**
    * Sets the units handed over per line number (missing items) and recomputes the totals from the
-   * lines; the delivery fee stays. Returns the number of lines whose quantity changed.
+   * lines; the delivery fee stays. {@code price} gives the charged amount of a line for fewer units.
+   * Returns the number of lines whose quantity changed.
    *
    * @throws IllegalStateException when the order is no longer adjustable or nothing would be left
    * @throws IllegalArgumentException for unknown lines or quantities outside 0..ordered
    */
-  public int adjustItems(Map<Integer, Integer> unitsByLine, Instant now) {
+  public int adjustItems(Map<Integer, Integer> unitsByLine, ToLongBiFunction<OrderItem, Integer> price, Instant now) {
     if (!isAdjustable()) {
       throw new IllegalStateException("Order " + orderNumber + " can no longer be adjusted");
     }
@@ -177,7 +186,7 @@ public class CustomerOrder extends AuditedEntity {
     for (OrderItem item : items) {
       Integer units = unitsByLine.get(item.getLineNo());
       if (units != null && units != item.getChargedQuantity()) {
-        item.setFulfilledQuantity(units);
+        item.setFulfilled(units, units == item.getQuantity() ? item.getLineTotalCents() : price.applyAsLong(item, units));
         changed++;
       }
     }

@@ -9,6 +9,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import de.dukkan.shared.events.OutboxPublisher;
 import de.dukkan.support.IntegrationTest;
+import java.time.Duration;
+import java.time.ZoneOffset;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -72,6 +75,36 @@ class OrderAdjustmentIntegrationTest extends IntegrationTest {
     assertThat((Integer) read(back, "$.total.amountCents")).isEqualTo(2750);
     assertThat(object(back, "$.originalTotal")).isNull();
     assertThat(objects(back, "$.items[?(@.fulfilledQuantity != null)]")).isEmpty();
+    MvcResult restored = awaitInbox(customer, 2);
+    assertThat((String) read(restored, "$.items[0].body")).contains("Alle Artikel wieder verfügbar", "27,50 €").doesNotContain("0 Artikel");
+  }
+
+  @Test
+  void aMultiBuyIsRepricedWithTheOfferThatAppliedWhenOrdering() throws Exception {
+    String merchant = registerMerchant();
+    UUID market = createMarket(merchant, "Angebotsmarkt");
+    UUID ayran = addListing(merchant, market, "Ayran", 200);
+    Map<String, Object> offer = new HashMap<>();
+    offer.put("title", Map.of("de", "3 für 5"));
+    offer.put("type", "MULTI_BUY");
+    offer.put("bundleQuantity", 3);
+    offer.put("bundlePrice", Map.of("amountCents", 500, "currency", "EUR"));
+    offer.put("validFrom", clock.instant().minus(Duration.ofDays(1)).atOffset(ZoneOffset.UTC).toString());
+    offer.put("validUntil", clock.instant().plus(Duration.ofDays(30)).atOffset(ZoneOffset.UTC).toString());
+    offer.put("productIds", List.of(ayran));
+    mvc.perform(json(auth(post("/api/v1/merchant/markets/" + market + "/promotions"), merchant), toJson(offer)))
+        .andExpect(status().isCreated());
+    String customer = registerUser();
+    // 4 ordered: one bundle (5,00 €) and one single (2,00 €).
+    String order = orderPickup(customer, market, ayran, 4);
+    mvc.perform(auth(get("/api/v1/orders/" + order), customer)).andExpect(jsonPath("$.total.amountCents").value(700));
+
+    // 3 on the shelf: exactly one bundle, not three quarters of 7,00 €.
+    adjust(merchant, order, Map.of(1, 3))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.items[0].lineTotal.amountCents").value(500))
+        .andExpect(jsonPath("$.total.amountCents").value(500))
+        .andExpect(jsonPath("$.originalTotal.amountCents").value(700));
   }
 
   @Test

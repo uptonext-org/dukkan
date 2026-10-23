@@ -413,7 +413,8 @@ paths:
         Order notifications (B-37), written in the recipient's language when the event happened:
         merchants get `NEW_ORDER` and `ORDER_CANCELLED` (by the customer); customers get
         `ORDER_ACCEPTED`, `ORDER_REJECTED`, `ORDER_READY_FOR_PICKUP`, `ORDER_OUT_FOR_DELIVERY` and
-        `ORDER_COMPLETED`. The same texts are pushed to registered devices when push is configured.
+        `ORDER_COMPLETED`, and `ORDER_ADJUSTED` when the market entered missing items (adjustOrderItems).
+        The same texts are pushed to registered devices when push is configured.
       parameters:
         - { $ref: '#/components/parameters/Page' }
         - { name: size, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 30 } }
@@ -1541,9 +1542,11 @@ paths:
       description: |
         While an order is PLACED or ACCEPTED, the market sets how many units of a line it can hand
         over (0 = missing; the ordered quantity = as ordered again). Lines not mentioned stay as they
-        are. The line is charged its ordered total scaled down to the units handed over (rounded
-        down), the order totals are recomputed (the delivery fee stays) and `originalTotal` keeps the
-        total at ordering. The customer is notified (`order.items_adjusted`).
+        are. The line is charged the cheaper of its ordered total scaled down to the units handed
+        over (rounded down) and those units re-priced with the promotion that applied when ordering
+        ("3 for 5 €": 4 ordered, 3 handed over → 5 €). The order totals are recomputed and
+        `originalTotal` keeps the total at ordering. In the customer's favour, the delivery fee and
+        the minimum order value are not checked again. The customer is notified (`order.items_adjusted`).
         Errors: 400 `VALIDATION_FAILED` (unknown line, quantity above the ordered one, a line twice),
         422 `ORDER_NOT_ADJUSTABLE` (ready, on its way or finished) or `ORDER_ADJUSTMENT_EMPTY`
         (nothing would be left: reject the order instead).
@@ -2172,7 +2175,7 @@ components:
       required: [id, kind, title, body, createdAt, read]
       properties:
         id: { type: string, format: uuid }
-        kind: { type: string, enum: [NEW_ORDER, ORDER_CANCELLED, ORDER_ACCEPTED, ORDER_REJECTED, ORDER_READY_FOR_PICKUP, ORDER_OUT_FOR_DELIVERY, ORDER_COMPLETED] }
+        kind: { type: string, enum: [NEW_ORDER, ORDER_CANCELLED, ORDER_ACCEPTED, ORDER_REJECTED, ORDER_READY_FOR_PICKUP, ORDER_OUT_FOR_DELIVERY, ORDER_COMPLETED, ORDER_ADJUSTED] }
         title: { type: string }
         body: { type: string }
         orderId: { type: [string, 'null'], format: uuid }

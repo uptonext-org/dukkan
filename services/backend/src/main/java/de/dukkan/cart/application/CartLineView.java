@@ -1,10 +1,11 @@
 package de.dukkan.cart.application;
 
 import de.dukkan.catalog.application.PromotionBadge;
+import de.dukkan.promotion.application.PromotionRule;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 
-/** A priced cart line. */
+/** A priced cart line; {@code appliedRule} is the promotion that lowered its price, if any. */
 public record CartLineView(
     UUID listingId,
     UUID catalogProductId,
@@ -19,4 +20,5 @@ public record CartLineView(
     long totalCents,
     @Nullable PromotionBadge promotion,
     boolean available,
-    int maxOrderQuantity) {}
+    int maxOrderQuantity,
+    @Nullable PromotionRule appliedRule) {}

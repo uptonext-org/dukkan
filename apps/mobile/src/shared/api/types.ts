@@ -114,7 +114,8 @@ export type NotificationKind =
   | 'ORDER_REJECTED'
   | 'ORDER_READY_FOR_PICKUP'
   | 'ORDER_OUT_FOR_DELIVERY'
-  | 'ORDER_COMPLETED';
+  | 'ORDER_COMPLETED'
+  | 'ORDER_ADJUSTED';
 
 /** Inbox entry, written in the recipient's language by the server. */
 export interface AppNotification {

@@ -49,6 +49,24 @@ public class OrderItem {
   @Column(name = "fulfilled_quantity")
   private @Nullable Integer fulfilledQuantity;
 
+  /** Charged amount when fewer units are handed over; null = {@link #lineTotalCents}. */
+  @Column(name = "charged_total_cents")
+  private @Nullable Long chargedTotalCents;
+
+  @Column(name = "promo_percent_off")
+  private @Nullable Integer promoPercentOff;
+
+  @Column(name = "promo_bundle_quantity")
+  private @Nullable Integer promoBundleQuantity;
+
+  @Column(name = "promo_bundle_price_cents")
+  private @Nullable Long promoBundlePriceCents;
+
+  /** The promotion that applied when ordering (one of both kinds), kept to re-price fewer units. */
+  public record AppliedPromotion(@Nullable Integer percentOff, @Nullable Integer bundleQuantity, @Nullable Long bundlePriceCents) {
+    public static final AppliedPromotion NONE = new AppliedPromotion(null, null, null);
+  }
+
   protected OrderItem() {}
 
   OrderItem(
@@ -59,7 +77,8 @@ public class OrderItem {
       String name,
       long unitPriceCents,
       int quantity,
-      long lineTotalCents) {
+      long lineTotalCents,
+      AppliedPromotion promotion) {
     this.id = randomUUID();
     this.order = order;
     this.lineNo = lineNo;
@@ -69,6 +88,9 @@ public class OrderItem {
     this.unitPriceCents = unitPriceCents;
     this.quantity = quantity;
     this.lineTotalCents = lineTotalCents;
+    this.promoPercentOff = promotion.percentOff();
+    this.promoBundleQuantity = promotion.bundleQuantity();
+    this.promoBundlePriceCents = promotion.bundlePriceCents();
   }
 
   public int getLineNo() {
@@ -109,19 +131,26 @@ public class OrderItem {
     return fulfilledQuantity == null ? quantity : fulfilledQuantity;
   }
 
-  /**
-   * The amount charged for the line: the ordered total scaled down to the units handed over,
-   * rounded down, so a missing item never makes another one dearer (also with multi-buy offers).
-   */
+  /** The amount charged for the line (lower when fewer units are handed over). */
   public long getChargedTotalCents() {
-    int charged = getChargedQuantity();
-    return charged == quantity ? lineTotalCents : Math.floorDiv(lineTotalCents * charged, quantity);
+    return chargedTotalCents == null ? lineTotalCents : chargedTotalCents;
   }
 
-  void setFulfilledQuantity(int units) {
+  public AppliedPromotion getPromotion() {
+    return new AppliedPromotion(promoPercentOff, promoBundleQuantity, promoBundlePriceCents);
+  }
+
+  /** Units handed over and their price (computed by the application, see {@code ChargedPrice}). */
+  void setFulfilled(int units, long chargedCents) {
     if (units < 0 || units > quantity) {
       throw new IllegalArgumentException("fulfilled quantity must be between 0 and " + quantity);
     }
-    this.fulfilledQuantity = units == quantity ? null : units;
+    if (units == quantity) {
+      this.fulfilledQuantity = null;
+      this.chargedTotalCents = null;
+    } else {
+      this.fulfilledQuantity = units;
+      this.chargedTotalCents = Math.clamp(chargedCents, 0, lineTotalCents);
+    }
   }
 }

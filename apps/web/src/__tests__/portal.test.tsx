@@ -145,6 +145,7 @@ describe('orders board', () => {
     await user.type(simit, '1');
     await user.click(within(card).getByRole('button', { name: 'Speichern' }));
 
+    // Only the line that was changed is sent; clearing a field on the way does not mean "missing".
     await waitFor(() => expect(calls.filter((c) => c.method === 'PUT').map((c) => c.body)).toEqual([{ items: [{ lineNo: 2, fulfilledQuantity: 1 }] }]));
     expect(await within(card).findByText('1 von 3')).toBeInTheDocument();
     expect(within(card).getByText(/statt 4,98/)).toBeInTheDocument();

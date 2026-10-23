@@ -38,26 +38,33 @@ export function handedOver(item: OrderItem): number {
 }
 
 /**
- * Missing items while packing: one number per line (0 = missing), saved together. Only lines that
- * differ from what is stored are sent.
+ * Missing items while packing: one number per line (0 = missing), saved together. Only the lines
+ * the merchant changed are sent, so a newer change by someone else to another line (the board
+ * refreshes every 30 s) is not overwritten.
  */
 function MissingItemsEditor({ order, onDone }: { order: Order; onDone: () => void }) {
   const { t } = useTranslation();
   const api = useApi();
   const queryClient = useQueryClient();
-  const [units, setUnits] = useState<Record<number, number>>(() => Object.fromEntries(order.items.map((i) => [i.lineNo, handedOver(i)])));
+  // Typed text per touched line; untouched lines follow the order as it is now.
+  const [edits, setEdits] = useState<Record<number, string>>({});
+  const parsed = order.items.flatMap((item) => {
+    const raw = edits[item.lineNo];
+    if (raw === undefined || raw.trim() === '') {
+      return [];
+    }
+    const value = Number(raw);
+    return [{ item, value, valid: Number.isInteger(value) && value >= 0 && value <= item.quantity }];
+  });
+  const changes = parsed.filter((p) => p.valid && p.value !== handedOver(p.item));
+  const invalid = parsed.some((p) => !p.valid);
   const save = useMutation({
-    mutationFn: () =>
-      api.adjustOrderItems(
-        order.id,
-        order.items.filter((i) => units[i.lineNo] !== handedOver(i)).map((i) => ({ lineNo: i.lineNo, fulfilledQuantity: units[i.lineNo] ?? handedOver(i) })),
-      ),
+    mutationFn: () => api.adjustOrderItems(order.id, changes.map((c) => ({ lineNo: c.item.lineNo, fulfilledQuantity: c.value }))),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['orders'] });
       onDone();
     },
   });
-  const changed = order.items.some((i) => units[i.lineNo] !== handedOver(i));
   return (
     <form
       className="stack small"
@@ -75,11 +82,11 @@ function MissingItemsEditor({ order, onDone }: { order: Order; onDone: () => voi
             type="number"
             min={0}
             max={item.quantity}
-            value={units[item.lineNo] ?? handedOver(item)}
+            value={edits[item.lineNo] ?? String(handedOver(item))}
             aria-label={t('orders.adjust.handedOver', { name: item.name })}
             onChange={(event) => {
-              const value = Math.max(0, Math.min(item.quantity, Number.parseInt(event.target.value, 10) || 0));
-              setUnits((current) => ({ ...current, [item.lineNo]: value }));
+              const raw = event.target.value;
+              setEdits((current) => ({ ...current, [item.lineNo]: raw }));
             }}
             style={{ inlineSize: 64 }}
           />
@@ -91,7 +98,7 @@ function MissingItemsEditor({ order, onDone }: { order: Order; onDone: () => voi
         </p>
       )}
       <div className="row">
-        <button type="submit" className="button" disabled={!changed || save.isPending}>
+        <button type="submit" className="button" disabled={changes.length === 0 || invalid || save.isPending}>
           {t('orders.adjust.save')}
         </button>
         <button type="button" className="button secondary" onClick={onDone}>
@@ -100,6 +107,11 @@ function MissingItemsEditor({ order, onDone }: { order: Order; onDone: () => voi
       </div>
     </form>
   );
+}
+
+/** Missing items can be entered while the market packs (the server's rule). */
+function isAdjustable(order: Order): boolean {
+  return order.status === 'PLACED' || order.status === 'ACCEPTED';
 }
 
 export function OrdersBoard({ marketId }: { marketId: string }) {
@@ -161,7 +173,7 @@ export function OrdersBoard({ marketId }: { marketId: string }) {
                       {order.fulfilmentType === 'PICKUP' ? t('orders.pickup') : t('orders.delivery')} · <bdi>{formatSlot(order.slot.startsAt, order.slot.endsAt, i18n.language)}</bdi>
                     </div>
                     {order.customerName != null && <div className="small">{order.customerName}</div>}
-                    {editing === order.id ? (
+                    {editing === order.id && isAdjustable(order) ? (
                       <MissingItemsEditor order={order} onDone={() => setEditing(null)} />
                     ) : (
                       <ul className="small">
@@ -195,7 +207,7 @@ export function OrdersBoard({ marketId }: { marketId: string }) {
                       <span className="muted small">{t('orders.items', { count: order.items.reduce((n, i) => n + handedOver(i), 0) })}</span>
                     </div>
                     <div className="row" style={{ marginBlockStart: 8 }}>
-                      {(order.status === 'PLACED' || order.status === 'ACCEPTED') && editing !== order.id && (
+                      {isAdjustable(order) && editing !== order.id && (
                         <button type="button" className="button secondary" onClick={() => setEditing(order.id)}>
                           {t('orders.adjust.missing')}
                         </button>
