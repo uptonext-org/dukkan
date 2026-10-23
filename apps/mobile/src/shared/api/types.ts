@@ -456,10 +456,15 @@ export type OrderStatus =
   | 'CANCELLED';
 
 export interface OrderItem {
+  lineNo: number;
   productId: string;
   name: string;
   unitPrice: Money;
+  /** Units ordered. */
   quantity: number;
+  /** Units handed over when the market had fewer (missing items); null = as ordered. */
+  fulfilledQuantity: number | null;
+  /** Charged amount of the line. */
   lineTotal: Money;
 }
 
@@ -486,6 +491,8 @@ export interface Order {
   slot: Slot;
   deliveryAddress?: Address | null;
   customerName?: string | null;
+  /** The total when ordered, once the market entered missing items; null otherwise. */
+  originalTotal?: Money | null;
 }
 
 // ---------------------------------------------------------------- merchant

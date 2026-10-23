@@ -27,6 +27,7 @@ import de.dukkan.shared.error.ConflictException;
 import de.dukkan.shared.error.ErrorCodes;
 import de.dukkan.shared.events.EventOutbox;
 import io.micrometer.core.instrument.MeterRegistry;
+import de.dukkan.shared.error.InvalidRequestException;
 import de.dukkan.shared.error.NotFoundException;
 import java.time.Clock;
 import java.time.Instant;
@@ -242,6 +243,43 @@ public class OrderService {
     return view(order, locale, true);
   }
 
+  /**
+   * Missing items while packing: sets the units handed over per line (0 = missing) while the order
+   * is placed or accepted; totals are recomputed and the customer is told (event {@code
+   * order.items_adjusted}). Lines not mentioned stay as they are.
+   */
+  public OrderView adjustItems(UUID orderId, Map<Integer, Integer> unitsByLine, ContentLocale locale) {
+    CustomerOrder order = orders.findById(orderId).orElseThrow(OrderService::orderNotFound);
+    if (!order.isAdjustable()) {
+      throw new BusinessRuleException(
+          ErrorCodes.ORDER_NOT_ADJUSTABLE, "Items can only be changed before the order is ready or on its way.");
+    }
+    for (Map.Entry<Integer, Integer> entry : unitsByLine.entrySet()) {
+      OrderItem item =
+          order.getItems().stream()
+              .filter(i -> i.getLineNo() == entry.getKey())
+              .findFirst()
+              .orElseThrow(() -> new InvalidRequestException("items", "UnknownLine", "line " + entry.getKey() + " is not part of the order"));
+      if (entry.getValue() < 0 || entry.getValue() > item.getQuantity()) {
+        throw new InvalidRequestException("items", "Range", "line " + entry.getKey() + ": between 0 and " + item.getQuantity());
+      }
+    }
+    long before = order.getTotals().totalCents();
+    Instant now = clock.instant();
+    int changed;
+    try {
+      changed = order.adjustItems(unitsByLine, now);
+    } catch (IllegalStateException e) {
+      throw new BusinessRuleException(ErrorCodes.ORDER_ADJUSTMENT_EMPTY, "Nothing would be left; reject the order instead.");
+    }
+    if (changed > 0) {
+      int shortItems = (int) order.getItems().stream().filter(i -> i.getFulfilledQuantity() != null).count();
+      outbox.append(OrderEvent.ITEMS_ADJUSTED, order.getId(), event(order, null, "MERCHANT", now, before, shortItems));
+      meters.counter("dukkan.orders.items_adjusted").increment();
+    }
+    return view(order, locale, true);
+  }
+
   // ------------------------------------------------------------------ mapping
 
   private CustomerOrder owned(UUID userId, UUID orderId) {
@@ -249,6 +287,16 @@ public class OrderService {
   }
 
   private static OrderEvent event(CustomerOrder order, @Nullable OrderStatus previous, String actor, Instant now) {
+    return event(order, previous, actor, now, null, null);
+  }
+
+  private static OrderEvent event(
+      CustomerOrder order,
+      @Nullable OrderStatus previous,
+      String actor,
+      Instant now,
+      @Nullable Long previousTotalCents,
+      @Nullable Integer shortItems) {
     return new OrderEvent(
         order.getId(),
         order.getOrderNumber(),
@@ -260,7 +308,9 @@ public class OrderService {
         order.getFulfilmentType().name(),
         order.getTotals().totalCents(),
         actor,
-        now);
+        now,
+        previousTotalCents,
+        shortItems);
   }
 
   private static NotFoundException orderNotFound() {
@@ -337,7 +387,13 @@ public class OrderService {
                   ListingInfo listing = listings.get(i.getListingId());
                   String name = listing == null || listing.name().isEmpty() ? i.getName() : listing.name();
                   return new OrderView.Item(
-                      i.getListingId(), name, i.getUnitPriceCents(), i.getQuantity(), i.getLineTotalCents());
+                      i.getLineNo(),
+                      i.getListingId(),
+                      name,
+                      i.getUnitPriceCents(),
+                      i.getQuantity(),
+                      i.getChargedTotalCents(),
+                      i.getFulfilledQuantity());
                 })
             .toList();
     return new OrderView(
@@ -354,7 +410,8 @@ public class OrderService {
         totals.totalCents(),
         slot,
         address,
-        merchantView ? order.getCustomerName() : null);
+        merchantView ? order.getCustomerName() : null,
+        order.getOriginalTotalCents());
   }
 
   /** True while an order of the user is not finished (placed, accepted, ready or on the way). */

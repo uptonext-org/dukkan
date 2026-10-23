@@ -126,14 +126,27 @@ export interface PageResponse<T> {
 export type OrderStatus = 'PLACED' | 'ACCEPTED' | 'REJECTED' | 'READY_FOR_PICKUP' | 'OUT_FOR_DELIVERY' | 'COMPLETED' | 'CANCELLED';
 export type FulfilmentType = 'DELIVERY' | 'PICKUP';
 
+export interface OrderItem {
+  lineNo: number;
+  productId: string;
+  name: string;
+  quantity: number;
+  /** Units handed over when fewer than ordered (missing items); null = as ordered. */
+  fulfilledQuantity?: number | null;
+  /** Charged amount of the line. */
+  lineTotal: Money;
+}
+
 export interface Order {
   id: string;
   orderNumber: string;
   status: OrderStatus;
   placedAt: string;
   fulfilmentType: FulfilmentType;
-  items: { productId: string; name: string; quantity: number; lineTotal: Money }[];
+  items: OrderItem[];
   total: Money;
+  /** The total when ordered, once missing items were entered; null otherwise. */
+  originalTotal?: Money | null;
   slot: { startsAt: string; endsAt: string };
   customerName?: string | null;
 }

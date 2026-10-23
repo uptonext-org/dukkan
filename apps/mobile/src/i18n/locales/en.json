@@ -393,7 +393,14 @@
       "REMOVED": "{{name}} – no longer sold",
       "UNAVAILABLE": "{{name}} – currently unavailable",
       "LIMITED": "{{name}} – maximum quantity reached"
-    }
+    },
+    "adjustedTitle": "The market updated your order",
+    "adjustedMessage_one": "{{count}} item was not (fully) in stock. You only pay for what you get.",
+    "adjustedMessage_other": "{{count}} items were not (fully) in stock. You only pay for what you get.",
+    "missing": "not available",
+    "ofOrdered_one": "of {{count}} ordered",
+    "ofOrdered_other": "of {{count}} ordered",
+    "insteadOf": "instead of {{amount}}"
   },
   "orderStatus": {
     "PLACED": "Placed",

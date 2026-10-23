@@ -174,6 +174,15 @@ key, images answer 422 `SHOPPING_LIST_AI_UNAVAILABLE` (`GET /shopping-list` → 
 beforehand). 400 `VALIDATION_FAILED` (neither text nor images, text > 2000, more than 4 images, not
 JPEG/PNG/WebP), 401 without a token, 404 unknown or inactive market, 429 `RATE_LIMITED` (20 per hour).
 
+### Missing items while packing (merchant)
+`PUT /merchant/orders/{id}/items` with `{"items":[{"lineNo":2,"fulfilledQuantity":1}]}` while the order is
+`PLACED` or `ACCEPTED`: line 2 is handed over with one unit (0 = missing). The line is charged its ordered
+total scaled down (rounded down, so a multi-buy never makes the rest dearer), `subtotal`, `discountTotal`
+and `total` are recomputed, `originalTotal` keeps the ordered total, and the customer gets an inbox entry
+"Bestellung angepasst". Sending the ordered quantity again restores a line. Errors: 400 (unknown line,
+more than ordered, a line twice), 422 `ORDER_NOT_ADJUSTABLE` (ready, on its way or finished),
+422 `ORDER_ADJUSTMENT_EMPTY` (nothing left: reject the order instead), 404 for other merchants.
+
 ### Errors
 Every error is `application/problem+json` with a stable `code`. Validation
 errors carry a `code` per field, and clients show their own translation:

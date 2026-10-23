@@ -26,10 +26,12 @@ public record OrderResponse(
     Money total,
     SlotResponse slot,
     @Nullable AddressResponse deliveryAddress,
-    @Nullable String customerName) {
+    @Nullable String customerName,
+    @Nullable Money originalTotal) {
 
-  /** Contract schema {@code OrderItem}. */
-  public record Item(UUID productId, String name, Money unitPrice, int quantity, Money lineTotal) {}
+  /** Contract schema {@code OrderItem}; {@code fulfilledQuantity} is set for missing items. */
+  public record Item(
+      int lineNo, UUID productId, String name, Money unitPrice, int quantity, @Nullable Integer fulfilledQuantity, Money lineTotal) {}
 
   public static OrderResponse from(OrderView o, MarketSummary market) {
     return new OrderResponse(
@@ -40,7 +42,16 @@ public record OrderResponse(
         market,
         o.fulfilmentType().name(),
         o.items().stream()
-            .map(i -> new Item(i.productId(), i.name(), Money.eur(i.unitPriceCents()), i.quantity(), Money.eur(i.lineTotalCents())))
+            .map(
+                i ->
+                    new Item(
+                        i.lineNo(),
+                        i.productId(),
+                        i.name(),
+                        Money.eur(i.unitPriceCents()),
+                        i.quantity(),
+                        i.fulfilledQuantity(),
+                        Money.eur(i.lineTotalCents())))
             .toList(),
         Money.eur(o.subtotalCents()),
         Money.eur(o.discountTotalCents()),
@@ -48,6 +59,7 @@ public record OrderResponse(
         Money.eur(o.totalCents()),
         SlotResponse.from(o.slot()),
         o.deliveryAddress() == null ? null : AddressResponse.from(o.deliveryAddress()),
-        o.customerName());
+        o.customerName(),
+        o.originalTotalCents() == null ? null : Money.eur(o.originalTotalCents()));
   }
 }

@@ -1,8 +1,9 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useApi } from '../api/ApiContext';
-import type { Order, OrderStatus } from '../api/types';
+import type { Order, OrderItem, OrderStatus } from '../api/types';
 import { errorMessage } from '../ui/errors';
 import { formatMoney, formatSlot } from '../ui/format';
 
@@ -31,11 +32,82 @@ export function nextStatuses(order: Order): OrderStatus[] {
   }
 }
 
+/** Units handed over (the ordered quantity unless the market entered fewer). */
+export function handedOver(item: OrderItem): number {
+  return item.fulfilledQuantity ?? item.quantity;
+}
+
+/**
+ * Missing items while packing: one number per line (0 = missing), saved together. Only lines that
+ * differ from what is stored are sent.
+ */
+function MissingItemsEditor({ order, onDone }: { order: Order; onDone: () => void }) {
+  const { t } = useTranslation();
+  const api = useApi();
+  const queryClient = useQueryClient();
+  const [units, setUnits] = useState<Record<number, number>>(() => Object.fromEntries(order.items.map((i) => [i.lineNo, handedOver(i)])));
+  const save = useMutation({
+    mutationFn: () =>
+      api.adjustOrderItems(
+        order.id,
+        order.items.filter((i) => units[i.lineNo] !== handedOver(i)).map((i) => ({ lineNo: i.lineNo, fulfilledQuantity: units[i.lineNo] ?? handedOver(i) })),
+      ),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['orders'] });
+      onDone();
+    },
+  });
+  const changed = order.items.some((i) => units[i.lineNo] !== handedOver(i));
+  return (
+    <form
+      className="stack small"
+      onSubmit={(event) => {
+        event.preventDefault();
+        save.mutate();
+      }}>
+      <p className="muted">{t('orders.adjust.missingHint')}</p>
+      {order.items.map((item) => (
+        <label key={item.lineNo} className="row">
+          <span>
+            <bdi>{item.quantity}×</bdi> {item.name}
+          </span>
+          <input
+            type="number"
+            min={0}
+            max={item.quantity}
+            value={units[item.lineNo] ?? handedOver(item)}
+            aria-label={t('orders.adjust.handedOver', { name: item.name })}
+            onChange={(event) => {
+              const value = Math.max(0, Math.min(item.quantity, Number.parseInt(event.target.value, 10) || 0));
+              setUnits((current) => ({ ...current, [item.lineNo]: value }));
+            }}
+            style={{ inlineSize: 64 }}
+          />
+        </label>
+      ))}
+      {save.isError && (
+        <p className="error" role="alert">
+          {errorMessage(t, save.error)}
+        </p>
+      )}
+      <div className="row">
+        <button type="submit" className="button" disabled={!changed || save.isPending}>
+          {t('orders.adjust.save')}
+        </button>
+        <button type="button" className="button secondary" onClick={onDone}>
+          {t('orders.adjust.cancel')}
+        </button>
+      </div>
+    </form>
+  );
+}
+
 export function OrdersBoard({ marketId }: { marketId: string }) {
   const { t, i18n } = useTranslation();
   const api = useApi();
   const queryClient = useQueryClient();
   const orders = useQuery({ queryKey: ['orders', marketId, i18n.language], queryFn: () => api.orders(marketId), refetchInterval: 30_000, placeholderData: keepPreviousData });
+  const [editing, setEditing] = useState<string | null>(null);
   const advance = useMutation({
     mutationFn: ({ order, status }: { order: Order; status: OrderStatus }) => api.advanceOrder(order.id, status),
     onSettled: () => {
@@ -89,20 +161,45 @@ export function OrdersBoard({ marketId }: { marketId: string }) {
                       {order.fulfilmentType === 'PICKUP' ? t('orders.pickup') : t('orders.delivery')} · <bdi>{formatSlot(order.slot.startsAt, order.slot.endsAt, i18n.language)}</bdi>
                     </div>
                     {order.customerName != null && <div className="small">{order.customerName}</div>}
-                    <ul className="small">
-                      {order.items.map((item) => (
-                        <li key={item.productId}>
-                          <bdi>{item.quantity}×</bdi> {item.name}
-                        </li>
-                      ))}
-                    </ul>
+                    {editing === order.id ? (
+                      <MissingItemsEditor order={order} onDone={() => setEditing(null)} />
+                    ) : (
+                      <ul className="small">
+                        {order.items.map((item) => (
+                          <li key={item.lineNo}>
+                            {item.fulfilledQuantity != null ? (
+                              <>
+                                <bdi>{t('orders.adjust.of', { fulfilled: item.fulfilledQuantity, quantity: item.quantity })}</bdi> ·{' '}
+                                {item.fulfilledQuantity === 0 ? <s>{item.name}</s> : item.name}
+                              </>
+                            ) : (
+                              <>
+                                <bdi>{item.quantity}×</bdi> {item.name}
+                              </>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                     <div className="row">
                       <strong>
                         <bdi>{formatMoney(order.total, i18n.language)}</bdi>
                       </strong>
-                      <span className="muted small">{t('orders.items', { count: order.items.reduce((n, i) => n + i.quantity, 0) })}</span>
+                      {order.originalTotal != null && (
+                        <span className="muted small">
+                          <s>
+                            <bdi>{t('orders.adjust.instead', { amount: formatMoney(order.originalTotal, i18n.language) })}</bdi>
+                          </s>
+                        </span>
+                      )}
+                      <span className="muted small">{t('orders.items', { count: order.items.reduce((n, i) => n + handedOver(i), 0) })}</span>
                     </div>
                     <div className="row" style={{ marginBlockStart: 8 }}>
+                      {(order.status === 'PLACED' || order.status === 'ACCEPTED') && editing !== order.id && (
+                        <button type="button" className="button secondary" onClick={() => setEditing(order.id)}>
+                          {t('orders.adjust.missing')}
+                        </button>
+                      )}
                       {nextStatuses(order).map((status) => (
                         <button
                           key={status}

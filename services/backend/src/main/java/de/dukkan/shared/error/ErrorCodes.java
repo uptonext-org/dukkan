@@ -49,6 +49,8 @@ public final class ErrorCodes {
   public static final String CART_EMPTY = "CART_EMPTY";
   public static final String MINIMUM_ORDER_NOT_MET = "MINIMUM_ORDER_NOT_MET";
   public static final String ORDER_NOT_CANCELLABLE = "ORDER_NOT_CANCELLABLE";
+  public static final String ORDER_NOT_ADJUSTABLE = "ORDER_NOT_ADJUSTABLE";
+  public static final String ORDER_ADJUSTMENT_EMPTY = "ORDER_ADJUSTMENT_EMPTY";
   public static final String INVALID_STATUS_TRANSITION = "INVALID_STATUS_TRANSITION";
   public static final String SOCIAL_PROVIDER_DISABLED = "SOCIAL_PROVIDER_DISABLED";
   public static final String SOCIAL_EMAIL_MISSING = "SOCIAL_EMAIL_MISSING";

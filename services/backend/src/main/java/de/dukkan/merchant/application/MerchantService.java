@@ -34,6 +34,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
@@ -187,6 +188,15 @@ public class MerchantService {
       throw new NotFoundException("Order not found.");
     }
     return orders.advanceStatus(orderId, status, locale);
+  }
+
+  /** Missing items while packing (see {@code OrderService.adjustItems}); owners of the order's market only. */
+  public OrderView adjustOrderItems(UUID userId, UUID orderId, Map<Integer, Integer> unitsByLine, ContentLocale locale) {
+    UUID marketId = orders.marketOf(orderId).orElseThrow(() -> new NotFoundException("Order not found."));
+    if (!markets.isOwner(marketId, userId)) {
+      throw new NotFoundException("Order not found.");
+    }
+    return orders.adjustItems(orderId, unitsByLine, locale);
   }
 
   /**

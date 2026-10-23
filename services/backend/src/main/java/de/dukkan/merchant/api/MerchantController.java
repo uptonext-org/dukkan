@@ -12,6 +12,7 @@ import de.dukkan.media.application.MediaPurpose;
 import de.dukkan.media.application.StoredMedia;
 import de.dukkan.merchant.api.MerchantRequests.CreateListingRequest;
 import de.dukkan.merchant.api.MerchantRequests.MarketProfileRequest;
+import de.dukkan.merchant.api.MerchantRequests.OrderItemsRequest;
 import de.dukkan.merchant.api.MerchantRequests.OrderStatusRequest;
 import de.dukkan.merchant.api.MerchantRequests.ProductDraftRequest;
 import de.dukkan.merchant.api.MerchantRequests.PromotionRequest;
@@ -224,6 +225,16 @@ final class MerchantController {
       @RequestAttribute(ContentLocale.REQUEST_ATTRIBUTE) ContentLocale locale) {
     MarketInsights insights = merchant.insights(CurrentUser.id(security), marketId, days, locale);
     return MarketInsightsResponse.of(insights);
+  }
+
+  /** Missing items while packing: units handed over per line (0 = missing). */
+  @PutMapping("/orders/{orderId}/items")
+  OrderResponse adjustOrderItems(
+      @CurrentSecurityContext SecurityContext security,
+      @PathVariable UUID orderId,
+      @RequestBody @Valid OrderItemsRequest request,
+      @RequestAttribute(ContentLocale.REQUEST_ATTRIBUTE) ContentLocale locale) {
+    return orderResponses.one(merchant.adjustOrderItems(CurrentUser.id(security), orderId, request.unitsByLine(), locale), locale);
   }
 
   @PostMapping("/orders/{orderId}/status")

@@ -445,7 +445,22 @@
       "REMOVED": "{{name}} – لم يعد متوفراً في المتجر",
       "UNAVAILABLE": "{{name}} – غير متوفر حالياً",
       "LIMITED": "{{name}} – تم بلوغ الحد الأقصى للكمية"
-    }
+    },
+    "adjustedTitle": "قام السوق بتعديل طلبكم",
+    "adjustedMessage_zero": "جميع المنتجات متوفرة.",
+    "adjustedMessage_one": "منتج واحد لم يكن متوفرًا بالكامل. الدفع فقط مقابل ما يُستلم.",
+    "adjustedMessage_two": "منتجان لم يكونا متوفرين بالكامل. الدفع فقط مقابل ما يُستلم.",
+    "adjustedMessage_few": "{{count}} منتجات لم تكن متوفرة بالكامل. الدفع فقط مقابل ما يُستلم.",
+    "adjustedMessage_many": "{{count}} منتجًا لم يكن متوفرًا بالكامل. الدفع فقط مقابل ما يُستلم.",
+    "adjustedMessage_other": "{{count}} منتج لم يكن متوفرًا بالكامل. الدفع فقط مقابل ما يُستلم.",
+    "missing": "غير متوفر",
+    "ofOrdered_zero": "من {{count}} مطلوب",
+    "ofOrdered_one": "من قطعة واحدة مطلوبة",
+    "ofOrdered_two": "من قطعتين مطلوبتين",
+    "ofOrdered_few": "من {{count}} قطع مطلوبة",
+    "ofOrdered_many": "من {{count}} قطعة مطلوبة",
+    "ofOrdered_other": "من {{count}} قطعة مطلوبة",
+    "insteadOf": "بدلًا من {{amount}}"
   },
   "orderStatus": {
     "PLACED": "تم الطلب",

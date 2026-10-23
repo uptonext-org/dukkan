@@ -28,6 +28,7 @@ public class PurchaseStatistics {
             SELECT oi.market_product_id
               FROM order_item oi JOIN customer_order o ON o.id = oi.order_id
              WHERE o.user_id = :userId AND o.market_id = :marketId AND o.status <> 'CANCELLED'
+               AND coalesce(oi.fulfilled_quantity, oi.quantity) > 0
              GROUP BY oi.market_product_id
             HAVING count(DISTINCT o.id) >= :minOrders
              ORDER BY count(DISTINCT o.id) DESC, max(o.placed_at) DESC, oi.market_product_id
@@ -46,8 +47,9 @@ public class PurchaseStatistics {
             SELECT oi.market_product_id
               FROM order_item oi JOIN customer_order o ON o.id = oi.order_id
              WHERE o.market_id = :marketId AND o.placed_at >= :since AND o.status NOT IN ('CANCELLED', 'REJECTED')
+               AND coalesce(oi.fulfilled_quantity, oi.quantity) > 0
              GROUP BY oi.market_product_id
-             ORDER BY sum(oi.quantity) DESC, count(DISTINCT o.id) DESC, oi.market_product_id
+             ORDER BY sum(coalesce(oi.fulfilled_quantity, oi.quantity)) DESC, count(DISTINCT o.id) DESC, oi.market_product_id
              LIMIT :limit
             """)
         .param("marketId", marketId)
@@ -92,9 +94,10 @@ public class PurchaseStatistics {
             SELECT market_id, market_product_id FROM (
               SELECT o.market_id, oi.market_product_id,
                      row_number() OVER (PARTITION BY o.market_id
-                                        ORDER BY max(o.placed_at) DESC, sum(oi.quantity) DESC, oi.market_product_id) AS rank
+                                        ORDER BY max(o.placed_at) DESC, sum(coalesce(oi.fulfilled_quantity, oi.quantity)) DESC, oi.market_product_id) AS rank
                 FROM order_item oi JOIN customer_order o ON o.id = oi.order_id
                WHERE o.user_id = :userId AND o.market_id IN (:marketIds) AND o.status NOT IN ('CANCELLED', 'REJECTED')
+                 AND coalesce(oi.fulfilled_quantity, oi.quantity) > 0
                GROUP BY o.market_id, oi.market_product_id
             ) ranked
              WHERE rank <= :perMarket

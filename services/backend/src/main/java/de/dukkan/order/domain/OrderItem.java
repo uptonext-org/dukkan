@@ -10,6 +10,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 
 /** A line of a placed order with its price and name snapshot. */
 @Entity
@@ -43,6 +44,10 @@ public class OrderItem {
 
   @Column(name = "line_total_cents", nullable = false)
   private long lineTotalCents;
+
+  /** Units the market hands over when fewer than ordered (missing items); null = as ordered. */
+  @Column(name = "fulfilled_quantity")
+  private @Nullable Integer fulfilledQuantity;
 
   protected OrderItem() {}
 
@@ -90,7 +95,33 @@ public class OrderItem {
     return quantity;
   }
 
+  /** The line total when ordered. */
   public long getLineTotalCents() {
     return lineTotalCents;
+  }
+
+  public @Nullable Integer getFulfilledQuantity() {
+    return fulfilledQuantity;
+  }
+
+  /** Units charged and handed over. */
+  public int getChargedQuantity() {
+    return fulfilledQuantity == null ? quantity : fulfilledQuantity;
+  }
+
+  /**
+   * The amount charged for the line: the ordered total scaled down to the units handed over,
+   * rounded down, so a missing item never makes another one dearer (also with multi-buy offers).
+   */
+  public long getChargedTotalCents() {
+    int charged = getChargedQuantity();
+    return charged == quantity ? lineTotalCents : Math.floorDiv(lineTotalCents * charged, quantity);
+  }
+
+  void setFulfilledQuantity(int units) {
+    if (units < 0 || units > quantity) {
+      throw new IllegalArgumentException("fulfilled quantity must be between 0 and " + quantity);
+    }
+    this.fulfilledQuantity = units == quantity ? null : units;
   }
 }

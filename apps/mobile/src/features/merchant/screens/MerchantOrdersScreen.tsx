@@ -35,7 +35,7 @@ function OrderCard({ order }: { order: Order }) {
       <AppText variant="body">{orderSlotLabel(t, order)}</AppText>
       {order.deliveryAddress != null && <AppText variant="subhead">{formatAddressLine(order.deliveryAddress)}</AppText>}
       <AppText variant="subhead" color="textSecondary">
-        {order.items.map((i) => `${i.quantity} × ${i.name}`).join(', ')}
+        {order.items.map((i) => `${i.fulfilledQuantity ?? i.quantity} × ${i.name}`).join(', ')}
       </AppText>
       {next.length > 0 && (
         <View style={styles.actions}>

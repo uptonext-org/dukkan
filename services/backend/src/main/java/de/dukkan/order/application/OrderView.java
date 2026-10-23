@@ -23,8 +23,14 @@ public record OrderView(
     long totalCents,
     SlotView slot,
     @Nullable AddressView deliveryAddress,
-    @Nullable String customerName) {
+    @Nullable String customerName,
+    @Nullable Long originalTotalCents) {
 
-  /** An order line; the name is localised when the catalog still knows the product. */
-  public record Item(UUID productId, String name, long unitPriceCents, int quantity, long lineTotalCents) {}
+  /**
+   * An order line; the name is localised when the catalog still knows the product. {@code
+   * lineTotalCents} is what is charged; {@code fulfilledQuantity} is set when fewer units are handed
+   * over than ordered (missing items).
+   */
+  public record Item(
+      int lineNo, UUID productId, String name, long unitPriceCents, int quantity, long lineTotalCents, @Nullable Integer fulfilledQuantity) {}
 }

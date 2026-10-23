@@ -31,7 +31,7 @@ const order = {
   status: 'PLACED',
   placedAt: '2026-10-21T08:00:00Z',
   fulfilmentType: 'PICKUP',
-  items: [{ productId: 'p1', name: 'Ayran', quantity: 2, lineTotal: { amountCents: 198, currency: 'EUR' } }],
+  items: [{ lineNo: 1, productId: 'p1', name: 'Ayran', quantity: 2, fulfilledQuantity: null, lineTotal: { amountCents: 198, currency: 'EUR' } }],
   total: { amountCents: 198, currency: 'EUR' },
   slot: { startsAt: '2026-10-21T14:00:00Z', endsAt: '2026-10-21T15:00:00Z' },
   customerName: 'Leyla A.',
@@ -116,6 +116,38 @@ describe('orders board', () => {
     await waitFor(() => expect(within(screen.getByRole('region', { name: /Angenommen/ })).getByRole('article')).toBeInTheDocument());
     await user.click(screen.getByRole('button', { name: 'Bereit zur Abholung' }));
     await waitFor(() => expect(calls.filter((c) => c.method === 'POST').map((c) => c.body)).toEqual([{ status: 'ACCEPTED' }, { status: 'READY_FOR_PICKUP' }]));
+  });
+
+  it('enters a missing item while packing; the card shows the new total', async () => {
+    let current: Record<string, unknown> = {
+      ...order,
+      status: 'ACCEPTED',
+      items: [...order.items, { lineNo: 2, productId: 'p2', name: 'Simit', quantity: 3, fulfilledQuantity: null, lineTotal: { amountCents: 300, currency: 'EUR' } }],
+      total: { amountCents: 498, currency: 'EUR' },
+    };
+    const { user, calls } = renderPortal({
+      'GET /merchant/markets': [market()],
+      'GET /merchant/markets/m1/orders': () => [current],
+      'PUT /merchant/orders/o1/items': () => {
+        current = {
+          ...current,
+          items: [order.items[0], { lineNo: 2, productId: 'p2', name: 'Simit', quantity: 3, fulfilledQuantity: 1, lineTotal: { amountCents: 100, currency: 'EUR' } }],
+          total: { amountCents: 298, currency: 'EUR' },
+          originalTotal: { amountCents: 498, currency: 'EUR' },
+        };
+        return current;
+      },
+    });
+    const card = await screen.findByRole('article', { name: 'DK-20261021-000007' });
+    await user.click(within(card).getByRole('button', { name: 'Fehlmengen eintragen' }));
+    const simit = within(card).getByRole('spinbutton', { name: 'Simit: herausgegeben' });
+    await user.clear(simit);
+    await user.type(simit, '1');
+    await user.click(within(card).getByRole('button', { name: 'Speichern' }));
+
+    await waitFor(() => expect(calls.filter((c) => c.method === 'PUT').map((c) => c.body)).toEqual([{ items: [{ lineNo: 2, fulfilledQuantity: 1 }] }]));
+    expect(await within(card).findByText('1 von 3')).toBeInTheDocument();
+    expect(within(card).getByText(/statt 4,98/)).toBeInTheDocument();
   });
 
   it('knows the next statuses per fulfilment type', () => {
