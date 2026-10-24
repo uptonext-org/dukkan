@@ -9,6 +9,7 @@ import org.springframework.boot.context.properties.bind.DefaultValue;
  * themselves are the operator's (published on the web site); the apps link to them.
  *
  * @param termsVersion version of the terms (AGB) and privacy notice a new account must accept; empty = none required
+ * @param webUrl the customer web app (https://dukkan.de), for links in e-mails; empty = no links
  * @param payment {@code SIMULATED} (no money changes hands, the apps say so) or {@code ON_SITE} (the customer
  *     pays the market at pickup or delivery; the order button reads "zahlungspflichtig bestellen")
  */
@@ -19,7 +20,8 @@ public record PlatformSettings(
     @Nullable String termsUrl,
     @Nullable String termsVersion,
     @Nullable String supportEmail,
-    @DefaultValue("SIMULATED") PaymentMode payment) {
+    @DefaultValue("SIMULATED") PaymentMode payment,
+    @Nullable String webUrl) {
 
   public enum PaymentMode {
     SIMULATED,
@@ -32,6 +34,10 @@ public record PlatformSettings(
     termsUrl = blankToNull(termsUrl);
     termsVersion = blankToNull(termsVersion);
     supportEmail = blankToNull(supportEmail);
+    webUrl = blankToNull(webUrl);
+    if (webUrl != null) {
+      webUrl = webUrl.replaceAll("/+$", "");
+    }
     if (termsVersion != null && termsVersion.length() > 40) {
       throw new IllegalArgumentException("dukkan.platform.terms-version must be at most 40 characters");
     }

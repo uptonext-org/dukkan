@@ -97,6 +97,8 @@ dukkan:
     # Set (e.g. 2026-11) to make new accounts accept this version of terms and privacy notice.
     terms-version: ${DUKKAN_TERMS_VERSION:}
     support-email: ${DUKKAN_SUPPORT_EMAIL:}
+    # The customer web app, for "view order" links in e-mails (e.g. https://dukkan.de).
+    web-url: ${DUKKAN_WEB_URL:}
     # SIMULATED (no payment, the apps say so) or ON_SITE (pay the market at pickup or delivery).
     payment: ${DUKKAN_PAYMENT:SIMULATED}
   privacy:
