@@ -34,6 +34,7 @@ Die Prüfung im App Store dauert erfahrungsgemäß Tage, die Freischaltung neuer
 | Swagger-UI in `prod` aus | `application-prod.yml` |
 | Impressum, Datenschutz, AGB und Kontakt in App und Web verlinkt (`GET /platform`) | `features/legal` |
 | AGB-Zustimmung bei der Registrierung (Version und Zeitpunkt gespeichert, 422 `TERMS_NOT_ACCEPTED` ohne Zustimmung) | V18, `TermsPolicy` |
+| Bestell-E-Mails an Kundinnen und Kunden (de/en/ar): Eingangsbestätigung mit allen Bestelldaten und Verkäufer-Impressum (§ 312i, § 312f BGB), geänderte Bestellung nach Fehlartikeln, Absage durch den Markt, Stornierung | `notification/application/OrderMails.java` |
 | Bestellknopf „Zahlungspflichtig bestellen“ (§ 312j BGB) und Hinweis „Du bezahlst direkt beim Markt“, sobald `DUKKAN_PAYMENT=ON_SITE` gesetzt ist | Warenkorb, Bestellbestätigung |
 | Server-Setup: Caddy mit automatischem HTTPS, Backend, Web, Portal, PostgreSQL | `infrastructure/production` |
 | Datensicherung: nächtlicher Dump, wöchentlicher automatischer Restore-Test, verschlüsselte Offsite-Kopie (restic), `restore.sh`; Lösch-Journal, damit ein Restore gelöschte Konten nicht zurückbringt; optionale Frist für Lieferadressen in alten Bestellungen | `BACKUP.md`, `docs/operations/datensicherung.md` |
@@ -150,6 +151,7 @@ KI-Erfassung an. Admins können gute Produkte in den gemeinsamen Katalog überne
 - [ ] `docker compose logs backend`: Start ohne „Production profile refused to start“
 - [ ] `https://<domain>` lädt, Zertifikat gültig, `https://<domain>/actuator/health` antwortet 404
 - [ ] Registrieren mit AGB-Haken, Bestätigungsmail kommt an (auch nicht im Spam-Ordner), Link öffnet die Web-App
+- [ ] Testbestellung: Eingangsbestätigung per E-Mail kommt an, mit Artikeln, Betrag, Zeitfenster und Impressum des Markts
 - [ ] „Passwort vergessen“: die Mail kommt an, der Link funktioniert
 - [ ] Testbestellung im Pilotmarkt: Knopf „Zahlungspflichtig bestellen“, Händler sieht sie im Portal, Statuswechsel kommen beim Kunden an
 - [ ] Impressum, Datenschutz und AGB sind im Profil verlinkt und erreichbar

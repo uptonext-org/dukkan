@@ -6,7 +6,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
-/** PostgreSQL 18.6 via Testcontainers, a controllable clock and a mailer that captures reset links. */
+/** PostgreSQL 18.6 via Testcontainers, a controllable clock and mailers that capture reset links and order e-mails. */
 @TestConfiguration(proxyBeanMethods = false)
 public class TestInfrastructure {
 
@@ -26,5 +26,11 @@ public class TestInfrastructure {
   @Primary
   CapturingAccountMailer capturingAccountMailer() {
     return new CapturingAccountMailer();
+  }
+
+  @Bean
+  @Primary
+  CapturingMailer capturingMailer() {
+    return new CapturingMailer();
   }
 }

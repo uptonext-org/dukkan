@@ -44,6 +44,7 @@ services:
       DUKKAN_MEDIA_PUBLIC_BASE_URL: https://${DUKKAN_DOMAIN}/api/v1/media
       DUKKAN_PASSWORD_RESET_URL: https://${DUKKAN_DOMAIN}/reset-password
       DUKKAN_EMAIL_VERIFICATION_URL: https://${DUKKAN_DOMAIN}/verify-email
+      DUKKAN_WEB_URL: https://${DUKKAN_DOMAIN}
     volumes:
       - media:/var/lib/dukkan/media
       # The erasure journal (GDPR Art. 17 after a restore); never restored together with the database.

@@ -47,9 +47,15 @@ updates:
   - package-ecosystem: docker
     directory: /apps/customer-web
     schedule: { interval: monthly }
+    # The build stage follows the Node LTS line of .nvmrc and CI; majors come together with it.
+    ignore:
+      - { dependency-name: "node", update-types: ["version-update:semver-major"] }
   - package-ecosystem: docker
     directory: /apps/web
     schedule: { interval: monthly }
+    # The build stage follows the Node LTS line of .nvmrc and CI; majors come together with it.
+    ignore:
+      - { dependency-name: "node", update-types: ["version-update:semver-major"] }
   - package-ecosystem: npm
     directory: /tools/web-preview
     schedule: { interval: monthly }
