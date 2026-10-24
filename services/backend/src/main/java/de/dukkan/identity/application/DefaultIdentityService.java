@@ -15,9 +15,13 @@ import de.dukkan.shared.error.ErrorCodes;
 import de.dukkan.shared.error.InvalidCredentialsException;
 import de.dukkan.shared.error.InvalidRequestException;
 import de.dukkan.shared.error.NotFoundException;
+import de.dukkan.shared.error.RateLimitedException;
 import de.dukkan.shared.error.UnauthorizedException;
+import de.dukkan.shared.ratelimit.FixedWindowRateLimiter;
+import de.dukkan.shared.ratelimit.RateLimitStore;
 import java.net.URLEncoder;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.EnumSet;
 import java.util.List;
@@ -53,6 +57,10 @@ class DefaultIdentityService implements IdentityService {
   private final Clock clock;
   /** Hash compared against when the email is unknown, so both paths cost the same. */
   private final String dummyHash;
+  /** Per account, across all client IPs (a botnet trying one account, or mailing one address). */
+  private final FixedWindowRateLimiter<String> loginsPerAccount;
+  private final FixedWindowRateLimiter<UUID> resetMailsPerAccount;
+  private final boolean accountLimits;
 
   DefaultIdentityService(
       UserRepository users,
@@ -64,7 +72,8 @@ class DefaultIdentityService implements IdentityService {
       AccountMailer mailer,
       TermsPolicy terms,
       DukkanProperties properties,
-      Clock clock) {
+      Clock clock,
+      RateLimitStore rateLimits) {
     this.users = users;
     this.sessions = sessions;
     this.passwordEncoder = passwordEncoder;
@@ -76,6 +85,13 @@ class DefaultIdentityService implements IdentityService {
     this.settings = properties.security().auth();
     this.clock = clock;
     this.dummyHash = passwordEncoder.encode("dummy-password-for-timing");
+    DukkanProperties.RateLimit limits = properties.security().rateLimit();
+    this.accountLimits = limits.enabled();
+    // 10 per 15 minutes with the production defaults; the local profile's raised limits raise it too.
+    this.loginsPerAccount =
+        new FixedWindowRateLimiter<>("login-account", Math.max(10, limits.loginsPerMinute() / 2), Duration.ofMinutes(15), clock, rateLimits);
+    this.resetMailsPerAccount =
+        new FixedWindowRateLimiter<>("reset-mail-account", Math.max(3, limits.passwordResetsPerHour() / 2), Duration.ofHours(1), clock, rateLimits);
   }
 
   @Override
@@ -96,6 +112,10 @@ class DefaultIdentityService implements IdentityService {
 
   @Override
   public AuthResult login(String email, String password) {
+    // Counted for every address, existing or not, so the limit reveals nothing about accounts.
+    if (accountLimits) {
+      loginsPerAccount.acquire(User.normalizeEmail(email), "sign-in attempts for this account");
+    }
     Optional<User> user = users.findByEmail(User.normalizeEmail(email));
     String hash = user.map(User::getPasswordHash).orElse(dummyHash);
     // bcrypt rejects inputs over 72 bytes; no stored password can be that long, so it is simply wrong.
@@ -144,6 +164,15 @@ class DefaultIdentityService implements IdentityService {
       return;
     }
     User user = found.get();
+    try {
+      if (accountLimits) {
+        resetMailsPerAccount.acquire(user.getId(), "reset mails");
+      }
+    } catch (RateLimitedException e) {
+      // Same answer as always; the address just gets no further mail this hour.
+      LOG.info("Password reset mail for user {} suppressed (limit per hour reached)", user.getId());
+      return;
+    }
     Instant now = clock.instant();
     String token = OpaqueTokens.generate();
     sessions.insertReset(UUID.randomUUID(), user.getId(), OpaqueTokens.hash(token), now, now.plus(settings.passwordResetTtl()));
@@ -208,6 +237,13 @@ class DefaultIdentityService implements IdentityService {
                   termsVersion.ifPresent(version -> created.acceptTerms(version, now));
                   return users.saveAndFlush(created);
                 });
+    if (!user.isEmailVerified()) {
+      // Someone registered this address with a password but never confirmed it. The provider has now
+      // proven who owns the address: end that password and every session of it, so an account
+      // created in advance by someone else cannot be taken over this way (pre-hijacking).
+      user.changePasswordHash(passwordEncoder.encode(OpaqueTokens.generate()));
+      sessions.revokeAllForUser(user.getId(), now);
+    }
     sessions.insertIdentity(provider, token.subject(), user.getId(), email, now);
     // The provider confirmed this email address (checked above).
     user.markEmailVerified(now);
@@ -240,6 +276,12 @@ class DefaultIdentityService implements IdentityService {
   @Transactional(readOnly = true)
   public Optional<UserView> findByEmail(String email) {
     return users.findByEmail(User.normalizeEmail(email)).map(DefaultIdentityService::view);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public boolean anyActiveWithRole(String role) {
+    return users.countActiveWithRole(role) > 0;
   }
 
   @Override

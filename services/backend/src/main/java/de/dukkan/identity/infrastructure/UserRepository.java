@@ -9,6 +9,12 @@ import org.springframework.data.repository.query.Param;
 
 public interface UserRepository extends JpaRepository<User, UUID> {
 
+  /** Active accounts with the role (e.g. ADMIN). */
+  @Query(
+      value = "SELECT count(*) FROM app_user_role r JOIN app_user u ON u.id = r.user_id WHERE r.role = :role AND u.deleted_at IS NULL",
+      nativeQuery = true)
+  long countActiveWithRole(@Param("role") String role);
+
   Optional<User> findByEmail(String email);
 
   boolean existsByEmail(String email);

@@ -4,7 +4,9 @@ import de.dukkan.catalog.application.CatalogService;
 import de.dukkan.catalog.application.MarketProductQuery;
 import de.dukkan.catalog.application.ProductSummary;
 import de.dukkan.i18n.application.ContentLocale;
+import de.dukkan.identity.application.IdentityService;
 import de.dukkan.market.application.MarketService;
+import de.dukkan.shared.ai.AiBudget;
 import de.dukkan.shared.ai.ModelImages;
 import de.dukkan.shared.config.DukkanProperties;
 import de.dukkan.shared.error.BusinessRuleException;
@@ -61,12 +63,23 @@ public class ShoppingListService {
   private final MarketService markets;
   private final CatalogService catalog;
   private final FixedWindowRateLimiter<UUID> rateLimiter;
+  private final IdentityService identity;
+  private final AiBudget budget;
 
   public ShoppingListService(
-      ShoppingListReader reader, MarketService markets, CatalogService catalog, DukkanProperties properties, Clock clock, RateLimitStore store) {
+      ShoppingListReader reader,
+      MarketService markets,
+      CatalogService catalog,
+      IdentityService identity,
+      AiBudget budget,
+      DukkanProperties properties,
+      Clock clock,
+      RateLimitStore store) {
     this.reader = reader;
     this.markets = markets;
     this.catalog = catalog;
+    this.identity = identity;
+    this.budget = budget;
     this.rateLimiter = new FixedWindowRateLimiter<>("shopping-lists", properties.shoppingList().requestsPerHour(), Duration.ofHours(1), clock, store);
   }
 
@@ -90,10 +103,20 @@ public class ShoppingListService {
     }
     markets.activeInfo(marketId);
     rateLimiter.acquire(userId, "shopping-lists");
+    // The language model only for confirmed addresses (throwaway accounts would make it a free proxy)
+    // and within the platform's hourly budget; typed and spoken lists then use the simple reader.
+    boolean verified = identity.isEmailVerified(userId);
+    if (!images.isEmpty() && !verified) {
+      throw new BusinessRuleException(ErrorCodes.EMAIL_NOT_VERIFIED, "Please confirm your email address first (link in the welcome email).");
+    }
+    boolean useModel = reader.enabled() && verified && budget.tryAcquire();
+    if (!images.isEmpty() && !useModel) {
+      throw new BusinessRuleException(ErrorCodes.SHOPPING_LIST_AI_UNAVAILABLE, "Photos cannot be read right now. Please try again later.");
+    }
 
     List<ModelImages.Image> prepared = images.stream().map(ModelImages::prepare).flatMap(Optional::stream).toList();
     Optional<List<ListItem>> read =
-        reader.enabled() && (spoken != null || !prepared.isEmpty())
+        useModel && (spoken != null || !prepared.isEmpty())
             ? reader.read(new ShoppingListReader.Request(spoken, prepared, locale.effective()))
             : Optional.empty();
     if (read.isEmpty() && spoken == null) {

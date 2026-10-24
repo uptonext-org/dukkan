@@ -146,6 +146,11 @@ public abstract class IntegrationTest {
     return read(result, "$.accessToken");
   }
 
+  /** Marks the account's e-mail address as confirmed (as the link in the welcome mail does). */
+  protected void confirmEmail(String token) throws Exception {
+    jdbc.sql("UPDATE app_user SET email_verified_at = now() WHERE id = ?").param(userId(token)).update();
+  }
+
   protected String login(String email) throws Exception {
     MvcResult result =
         mvc.perform(json(post("/api/v1/auth/login"), toJson(Map.of("email", email, "password", PASSWORD))))

@@ -10,6 +10,7 @@ import de.dukkan.support.IntegrationTest;
 import de.dukkan.support.TestImages;
 import java.awt.Color;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -44,6 +45,17 @@ class RateLimitIntegrationTest extends IntegrationTest {
     mvc.perform(json(post("/api/v1/auth/login"), body).with(r -> ip(r, "203.0.113.8"))).andExpect(status().isUnauthorized());
     clock.advance(Duration.ofMinutes(1));
     mvc.perform(json(post("/api/v1/auth/login"), body).with(r -> ip(r, "203.0.113.7"))).andExpect(status().isUnauthorized());
+  }
+
+  @Test
+  void anEncodedOrDecoratedPathCountsAgainstTheSameLimit() throws Exception {
+    String body = toJson(Map.of("email", "nobody@example.com", "password", "wrong-password-123"));
+    // Spring decodes these to /api/v1/auth/login; the limit must see them as the same endpoint.
+    for (String path : List.of("/api/v1/auth/%6Cogin", "/api/v1/auth/login;x=1", "/api/v1/auth//login")) {
+      mvc.perform(json(post(java.net.URI.create(path)), body).with(r -> ip(r, "203.0.113.9")));
+    }
+    mvc.perform(json(post(java.net.URI.create("/api/v1/auth/%6C%6Fgin")), body).with(r -> ip(r, "203.0.113.9")))
+        .andExpect(status().isTooManyRequests());
   }
 
   @Test
