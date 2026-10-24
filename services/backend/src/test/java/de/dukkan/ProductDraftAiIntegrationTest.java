@@ -99,6 +99,7 @@ class ProductDraftAiIntegrationTest extends ProductDraftIntegrationTest {
   @Test
   void parsesAGermanNoteAndFindsTheSharedCatalogProduct() throws Exception {
     String merchant = registerMerchant();
+    confirmEmail(merchant);
     UUID market = createMarket(merchant, "KI-Markt");
 
     MvcResult result =
@@ -132,6 +133,7 @@ class ProductDraftAiIntegrationTest extends ProductDraftIntegrationTest {
   @Test
   void aPhotoWithoutLanguageModelIsKeptButNotAnalysed() throws Exception {
     String merchant = registerMerchant();
+    confirmEmail(merchant);
     UUID market = createMarket(merchant, "KI-Fotomarkt");
     String key = uploadPhoto(merchant, market, TestImages.png(48, 32, new Color(0x7b2d26)));
 
@@ -153,6 +155,7 @@ class ProductDraftAiIntegrationTest extends ProductDraftIntegrationTest {
   @Test
   void arabicTextYieldsAnArabicNameAndArabicMatches() throws Exception {
     String merchant = registerMerchant();
+    confirmEmail(merchant);
     UUID market = createMarket(merchant, "سوق الذكاء");
 
     draft(merchant, market, "{\"text\":\"سجق ٤٠٠ غ ٤٫٤٩\"}", "ar")
@@ -166,6 +169,7 @@ class ProductDraftAiIntegrationTest extends ProductDraftIntegrationTest {
   @Test
   void fallsBackToTheRulesWhenTheModelFailsOrDeclines() throws Exception {
     String merchant = registerMerchant();
+    confirmEmail(merchant);
     UUID market = createMarket(merchant, "Ausfallmarkt");
 
     status = 500;
@@ -189,6 +193,7 @@ class ProductDraftAiIntegrationTest extends ProductDraftIntegrationTest {
   @Test
   void limitsDraftsPerMerchantAndHour() throws Exception {
     String merchant = registerMerchant();
+    confirmEmail(merchant);
     UUID market = createMarket(merchant, "Limitmarkt");
     for (int i = 0; i < 8; i++) {
       draft(merchant, market, "{\"text\":\"Ayran\"}", "de").andExpect(status().isOk());
@@ -197,6 +202,7 @@ class ProductDraftAiIntegrationTest extends ProductDraftIntegrationTest {
         .andExpect(status().isTooManyRequests())
         .andExpect(jsonPath("$.code").value("RATE_LIMITED"));
     String other = registerMerchant();
+    confirmEmail(other);
     draft(other, createMarket(other, "Anderer Limitmarkt"), "{\"text\":\"Ayran\"}", "de").andExpect(status().isOk());
   }
 }

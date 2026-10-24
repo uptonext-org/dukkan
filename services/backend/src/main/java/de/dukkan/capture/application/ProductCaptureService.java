@@ -13,9 +13,11 @@ import de.dukkan.i18n.application.ContentLocale;
 import de.dukkan.i18n.application.LocaleService;
 import de.dukkan.i18n.application.SupportedLocale;
 import de.dukkan.i18n.application.TextNormalizer;
+import de.dukkan.identity.application.IdentityService;
 import de.dukkan.market.application.MarketService;
 import de.dukkan.media.application.MediaObject;
 import de.dukkan.media.application.MediaService;
+import de.dukkan.shared.ai.AiBudget;
 import de.dukkan.shared.api.CodeName;
 import de.dukkan.shared.config.DukkanProperties;
 import de.dukkan.shared.error.InvalidRequestException;
@@ -75,6 +77,8 @@ public class ProductCaptureService {
   private final LocaleService locales;
   private final MediaService media;
   private final FixedWindowRateLimiter<UUID> rateLimiter;
+  private final IdentityService identity;
+  private final AiBudget budget;
 
   public ProductCaptureService(
       ProductDraftExtractor ai,
@@ -82,6 +86,8 @@ public class ProductCaptureService {
       MarketService markets,
       LocaleService locales,
       MediaService media,
+      IdentityService identity,
+      AiBudget budget,
       DukkanProperties properties,
       Clock clock,
       RateLimitStore rateLimits) {
@@ -90,6 +96,8 @@ public class ProductCaptureService {
     this.markets = markets;
     this.locales = locales;
     this.media = media;
+    this.identity = identity;
+    this.budget = budget;
     this.rateLimiter = new FixedWindowRateLimiter<>("product-drafts", properties.capture().draftsPerHour(), Duration.ofHours(1), clock, rateLimits);
   }
 
@@ -120,6 +128,9 @@ public class ProductCaptureService {
 
     if (!ai.enabled()) {
       warnings.add(DraftWarning.AI_NOT_CONFIGURED);
+    } else if (!identity.isEmailVerified(userId) || !budget.tryAcquire()) {
+      // Unconfirmed address or the platform's hourly AI budget used up: the rule-based draft.
+      warnings.add(DraftWarning.AI_UNAVAILABLE);
     } else {
       Outcome outcome =
           ai.extract(
