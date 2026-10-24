@@ -102,6 +102,15 @@ export interface MerchantMarket {
   addressLine: string;
   type: { code: string; name: string };
   imprint: { legalName: string; addressLine: string; registerInfo?: string | null };
+  review?: MarketReview;
+}
+
+export type MarketReviewCode = 'LEGAL_NAME' | 'POSTAL_ADDRESS' | 'PHONE' | 'REGISTER_INFO';
+
+/** Seller information checklist; approval needs every required item. */
+export interface MarketReview {
+  complete: boolean;
+  items: { code: MarketReviewCode; ok: boolean; required: boolean }[];
 }
 
 export interface Listing {

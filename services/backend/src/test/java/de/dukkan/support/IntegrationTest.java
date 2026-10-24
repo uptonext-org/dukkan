@@ -300,6 +300,7 @@ public abstract class IntegrationTest {
     profile.put(
         "openingHours",
         List.of(1, 2, 3, 4, 5, 6).stream().map(d -> Map.of("dayOfWeek", d, "opensAt", "08:00", "closesAt", "20:00")).toList());
+    profile.put("phone", "+49 40 1234567");
     profile.put("legalName", name + " GmbH");
     return profile;
   }

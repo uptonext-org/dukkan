@@ -279,6 +279,31 @@ describe('admin market review', () => {
     // Admins without a market see no merchant tabs.
     expect(screen.queryByRole('button', { name: 'Bestellungen' })).toBeNull();
   });
+  it('shows what seller information is missing and does not approve an incomplete market', async () => {
+    const incomplete = market({
+      status: 'PENDING_REVIEW',
+      phone: null,
+      review: {
+        complete: false,
+        items: [
+          { code: 'LEGAL_NAME', ok: true, required: true },
+          { code: 'POSTAL_ADDRESS', ok: true, required: true },
+          { code: 'PHONE', ok: false, required: true },
+          { code: 'REGISTER_INFO', ok: false, required: false },
+        ],
+      },
+    });
+    renderPortal(
+      { 'GET /admin/markets?status=PENDING_REVIEW': [incomplete] },
+      { accessToken: 'a', refreshToken: 'r', user: adminUser },
+    );
+    const card = await screen.findByRole('article', { name: 'Anatolia Frischmarkt' });
+    const checklist = within(card).getByRole('list', { name: 'Prüfliste Verkäuferangaben' });
+    expect(within(checklist).getByText(/Telefonnummer: fehlt/)).toBeInTheDocument();
+    expect(within(checklist).getByText(/nur falls eingetragen/)).toBeInTheDocument();
+    expect(within(card).getByText(/Angaben zum Verkäufer unvollständig/)).toBeInTheDocument();
+    expect(within(card).getByRole('button', { name: 'Freigeben' })).toBeDisabled();
+  });
 });
 
 describe('promotions', () => {
@@ -412,6 +437,18 @@ describe('market profile', () => {
     'GET /market-types': [{ code: 'GROCERY', name: 'Lebensmittel' }],
     'GET /cuisines': [{ code: 'turkish', name: 'Türkisch' }],
   };
+
+  it('tells the merchant which seller information approval still needs', async () => {
+    const incomplete = {
+      ...profileMarket(),
+      status: 'PENDING_REVIEW',
+      phone: null,
+      review: { complete: false, items: [{ code: 'PHONE', ok: false, required: true }, { code: 'REGISTER_INFO', ok: false, required: false }] },
+    };
+    const { user } = renderPortal({ 'GET /merchant/markets': [incomplete], 'GET /merchant/markets/m1/orders': [], ...lookups });
+    await user.click(await screen.findByRole('button', { name: 'Marktprofil' }));
+    expect(await screen.findByRole('note')).toHaveTextContent('Für die Freigabe fehlen noch Angaben zum Verkäufer: Telefonnummer.');
+  });
 
   it('saves the edited profile with a looked-up address and keeps every description language', async () => {
     const { user, calls } = renderPortal({

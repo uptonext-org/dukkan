@@ -119,7 +119,19 @@
     "suspend": "Sperren",
     "review": "Zurück in Prüfung",
     "empty": "Keine Märkte mit diesem Status.",
-    "legal": "Impressum"
+    "legal": "Impressum",
+    "phone": "Telefon",
+    "check": {
+      "LEGAL_NAME": "Vollständiger Name oder Firma mit Rechtsform",
+      "POSTAL_ADDRESS": "Anschrift mit Postleitzahl",
+      "PHONE": "Telefonnummer",
+      "REGISTER_INFO": "Registergericht und -nummer"
+    },
+    "optional": "nur falls eingetragen",
+    "incomplete": "Angaben zum Verkäufer unvollständig. Freigabe erst, wenn der Händler sie im Marktprofil ergänzt hat.",
+    "checklist": "Prüfliste Verkäuferangaben",
+    "ok": "erfüllt",
+    "missing": "fehlt"
   },
   "errors": {
     "NETWORK_ERROR": "Keine Verbindung zum Server.",
@@ -144,7 +156,8 @@
     "INVALID_IMAGE": "Das Bild ist beschädigt.",
     "IMAGE_TOO_LARGE": "Das Bild hat zu viele Pixel (max. 40 MP).",
     "ORDER_NOT_ADJUSTABLE": "Die Bestellung ist schon fertig oder unterwegs und kann nicht mehr geändert werden.",
-    "ORDER_ADJUSTMENT_EMPTY": "Es bliebe nichts übrig – lehne die Bestellung stattdessen ab."
+    "ORDER_ADJUSTMENT_EMPTY": "Es bliebe nichts übrig – lehne die Bestellung stattdessen ab.",
+    "MARKET_INCOMPLETE": "Die Angaben zum Verkäufer sind unvollständig."
   },
   "catalog": {
     "title": "Katalogprüfung",
@@ -266,7 +279,8 @@
       "tooLong": "Zu lang.",
       "invalid": "Bitte prüfen."
     },
-    "copyPreviousFor": "Zeiten von {{day}} wie am Vortag"
+    "copyPreviousFor": "Zeiten von {{day}} wie am Vortag",
+    "reviewMissing": "Für die Freigabe fehlen noch Angaben zum Verkäufer: {{items}}."
   },
   "insights": {
     "title": "Übersicht",

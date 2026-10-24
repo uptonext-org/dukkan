@@ -1794,7 +1794,9 @@ paths:
       tags: [admin]
       operationId: adminSetMarketStatus
       summary: Approve (ACTIVE), suspend (SUSPENDED) or return a market to review
-      description: Only ACTIVE markets are visible to customers and accept carts and orders.
+      description: |
+        Only ACTIVE markets are visible to customers and accept carts and orders. Approving needs
+        complete seller information (`review.complete`), otherwise `MARKET_INCOMPLETE`.
       parameters:
         - { $ref: '#/components/parameters/MarketId' }
         - { $ref: '#/components/parameters/AcceptLanguage' }
@@ -1817,6 +1819,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/BusinessRuleViolation' }
 
   /admin/catalog/products:
     get:
@@ -2825,13 +2828,39 @@ components:
       allOf:
         - $ref: '#/components/schemas/MarketDetail'
         - type: object
-          required: [status, descriptions]
+          required: [status, descriptions, review]
           properties:
             status: { $ref: '#/components/schemas/MarketStatus' }
             descriptions:
               type: object
               additionalProperties: { type: string }
               description: The description in every language (locale → text); `description` is only the requested one. Prefill profile forms from this, since updateMyMarket replaces all languages.
+            review: { $ref: '#/components/schemas/MarketReview' }
+    MarketReview:
+      type: object
+      description: |
+        Whether the seller information is complete enough to approve the market (imprint § 5 DDG,
+        trader traceability Art. 30 DSA). Items with `required` block approval (`MARKET_INCOMPLETE`);
+        the others are hints for the reviewer.
+      required: [complete, items]
+      properties:
+        complete: { type: boolean, description: All required items are ok. }
+        items:
+          type: array
+          items:
+            type: object
+            required: [code, ok, required]
+            properties:
+              code:
+                type: string
+                enum: [LEGAL_NAME, POSTAL_ADDRESS, PHONE, REGISTER_INFO]
+                description: |
+                  LEGAL_NAME: first and last name, or company name with legal form.
+                  POSTAL_ADDRESS: address line with a postcode.
+                  PHONE: a phone number.
+                  REGISTER_INFO: register court and number (only registered businesses have one).
+              ok: { type: boolean }
+              required: { type: boolean }
     CatalogProduct:
       type: object
       required: [id, name, unitSize, categoryId, cuisines, organic]

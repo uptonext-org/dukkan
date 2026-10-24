@@ -96,6 +96,7 @@ const profile: MarketProfileRequest = {
     minimumOrderValue: { amountCents: 500, currency: 'EUR' },
   },
   openingHours: [1, 2, 3, 4, 5, 6, 7].map((dayOfWeek) => ({ dayOfWeek, opensAt: '07:00', closesAt: '22:00' })),
+  phone: '+49 89 1234567',
   legalName: `Systemtest Markt ${RUN} GmbH`,
 };
 
