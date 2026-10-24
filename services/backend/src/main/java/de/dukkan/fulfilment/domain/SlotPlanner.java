@@ -25,6 +25,9 @@ public final class SlotPlanner {
   /** A slot that should exist. */
   public record PlannedSlot(Instant startsAt, Instant endsAt, Instant orderCutoffAt) {}
 
+  /** The longest horizon a market can choose. */
+  public static final int MAX_DAYS_AHEAD = 14;
+
   private final int daysAhead;
   private final Duration slotLength;
 

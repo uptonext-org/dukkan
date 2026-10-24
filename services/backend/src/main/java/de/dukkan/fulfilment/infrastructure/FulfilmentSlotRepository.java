@@ -36,6 +36,34 @@ public interface FulfilmentSlotRepository extends JpaRepository<FulfilmentSlot, 
   int insertIfAbsent(
       UUID id, UUID marketId, String type, Instant startsAt, Instant endsAt, Instant cutoffAt, int capacity);
 
+  /** Deletes a slot that no order and no cart references (a slot the market no longer offers). */
+  @Modifying
+  @Query(
+      value =
+          """
+          DELETE FROM fulfilment_slot s
+           WHERE s.id = :id AND s.used_capacity = 0
+             AND NOT EXISTS (SELECT 1 FROM customer_order o WHERE o.slot_id = s.id)
+             AND NOT EXISTS (SELECT 1 FROM cart c WHERE c.reserved_slot_id = s.id)
+          """,
+      nativeQuery = true)
+  int deleteIfUnused(UUID id);
+
+  /**
+   * New capacity (never below what is booked) and order cutoff after the market changed its
+   * settings. Clears the persistence context so that later reads see the new values.
+   */
+  @Modifying(flushAutomatically = true, clearAutomatically = true)
+  @Query(
+      value =
+          """
+          UPDATE fulfilment_slot SET capacity = greatest(:capacity, used_capacity), order_cutoff_at = :cutoffAt,
+                 version = version + 1, updated_at = now()
+           WHERE id = :id
+          """,
+      nativeQuery = true)
+  int updateRules(UUID id, int capacity, Instant cutoffAt);
+
   /**
    * Deletes slots that ended before {@code endedBefore} and are referenced by no order and no cart.
    * Slots of placed orders stay (orders snapshot their times but keep the FK for capacity release).

@@ -14,12 +14,13 @@ import { InsightsPage } from './pages/InsightsPage';
 import { ListingsPage } from './pages/ListingsPage';
 import { LoginPage } from './pages/LoginPage';
 import { MarketProfilePage } from './pages/MarketProfilePage';
+import { OrderSettingsPage } from './pages/OrderSettingsPage';
 import { OrdersBoard } from './pages/OrdersBoard';
 import { PromotionsPage } from './pages/PromotionsPage';
 import { errorMessage } from './ui/errors';
 
-type Route = 'orders' | 'insights' | 'listings' | 'promotions' | 'import' | 'profile' | 'admin' | 'catalog';
-const ROUTES: Route[] = ['orders', 'insights', 'listings', 'promotions', 'import', 'profile', 'admin', 'catalog'];
+type Route = 'orders' | 'insights' | 'listings' | 'promotions' | 'import' | 'profile' | 'settings' | 'admin' | 'catalog';
+const ROUTES: Route[] = ['orders', 'insights', 'listings', 'promotions', 'import', 'profile', 'settings', 'admin', 'catalog'];
 
 function subscribeHash(onChange: () => void) {
   window.addEventListener('hashchange', onChange);
@@ -103,7 +104,7 @@ function Shell({ session, alerts }: { session: Session; alerts: AppDependencies[
     };
   }, [alertsOn, signals]);
 
-  const available: Route[] = [...(isMerchant ? (['orders', 'insights', 'listings', 'promotions', 'import', 'profile'] as const) : []), ...(isAdmin ? (['admin', 'catalog'] as const) : [])];
+  const available: Route[] = [...(isMerchant ? (['orders', 'insights', 'listings', 'promotions', 'import', 'profile', 'settings'] as const) : []), ...(isAdmin ? (['admin', 'catalog'] as const) : [])];
   const current = route !== null && available.includes(route) ? route : available[0];
 
   return (
@@ -192,11 +193,12 @@ function Shell({ session, alerts }: { session: Session; alerts: AppDependencies[
                 {errorMessage(t, markets.error)}
               </p>
             )}
-            {selected !== undefined && current === 'orders' && <OrdersBoard marketId={selected.id} />}
+            {selected !== undefined && current === 'orders' && <OrdersBoard marketId={selected.id} onOpenSettings={() => setRoute('settings')} />}
             {selected !== undefined && current === 'insights' && <InsightsPage key={selected.id} marketId={selected.id} />}
             {selected !== undefined && current === 'listings' && <ListingsPage marketId={selected.id} />}
             {selected !== undefined && current === 'import' && <ImportPage marketId={selected.id} />}
             {selected !== undefined && current === 'profile' && <MarketProfilePage market={selected} />}
+            {selected !== undefined && current === 'settings' && <OrderSettingsPage marketId={selected.id} />}
             {selected !== undefined && current === 'promotions' && <PromotionsPage marketId={selected.id} primaryLocale={selected.primaryLocale} />}
           </>
         )}

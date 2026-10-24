@@ -1,4 +1,4 @@
-import type { AuthResponse, CatalogReviewItem, CodeName, ImportResult, MarketInsights, MarketProfileRequest, Place, Promotion, PromotionRequest, TranslationResult, Listing, MarketStatus, MerchantMarket, Order, OrderStatus, PageResponse, Problem, ReviewStatus, User } from './types';
+import type { AuthResponse, CatalogReviewItem, CodeName, ImportResult, MarketInsights, MarketProfileRequest, Place, Promotion, PromotionRequest, TranslationResult, Listing, MarketStatus, MerchantMarket, MerchantOrderSettings, Order, OrderSettings, OrderStatus, PageResponse, Problem, ReviewStatus, User } from './types';
 
 export class ApiError extends Error {
   readonly status: number;
@@ -173,6 +173,9 @@ export function createApi(options: { baseUrl?: string; fetch?: Fetch; store?: Se
     marketTypes: () => send<CodeName[]>('/market-types'),
     cuisines: () => send<CodeName[]>('/cuisines'),
     searchPlaces: (q: string) => send<Place[]>(`/geo/search?q=${encodeURIComponent(q)}&limit=5`),
+    orderSettings: (marketId: string) => send<MerchantOrderSettings>(`/merchant/markets/${encodeURIComponent(marketId)}/order-settings`),
+    updateOrderSettings: (marketId: string, settings: OrderSettings) =>
+      send<MerchantOrderSettings>(`/merchant/markets/${encodeURIComponent(marketId)}/order-settings`, { method: 'PUT', body: settings }),
     updateMarket: (marketId: string, request: MarketProfileRequest) =>
       send<MerchantMarket>(`/merchant/markets/${encodeURIComponent(marketId)}`, { method: 'PUT', body: request }),
     uploadMedia: (marketId: string, file: File, purpose: 'LOGO' | 'COVER') => {

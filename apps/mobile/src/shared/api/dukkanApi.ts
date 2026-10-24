@@ -26,6 +26,8 @@ import type {
   MediaPurpose,
   MediaUpload,
   MerchantMarket,
+  MerchantOrderSettings,
+  OrderSettings,
   NotificationPage,
   NotificationSettings,
   Order,
@@ -148,6 +150,8 @@ export interface DukkanApi {
   listMyMarkets(signal?: Signal): Promise<MerchantMarket[]>;
   createMyMarket(request: MarketProfileRequest): Promise<MerchantMarket>;
   updateMyMarket(marketId: string, request: MarketProfileRequest): Promise<MerchantMarket>;
+  getOrderSettings(marketId: string, signal?: Signal): Promise<MerchantOrderSettings>;
+  updateOrderSettings(marketId: string, request: OrderSettings): Promise<MerchantOrderSettings>;
   searchSharedCatalog(params: SearchCatalogParams, signal?: Signal): Promise<Page<CatalogProduct>>;
   listMyListings(
     marketId: string,
@@ -319,6 +323,9 @@ export function createDukkanApi(client: ApiClient): DukkanApi {
     createMyMarket: (body) => client.request({ method: 'POST', path: '/merchant/markets', body }),
     updateMyMarket: (marketId, body) =>
       client.request({ method: 'PUT', path: `/merchant/markets/${enc(marketId)}`, body }),
+    getOrderSettings: (marketId, signal) => get(`/merchant/markets/${enc(marketId)}/order-settings`, undefined, signal),
+    updateOrderSettings: (marketId, body) =>
+      client.request({ method: 'PUT', path: `/merchant/markets/${enc(marketId)}/order-settings`, body }),
     searchSharedCatalog: (params, signal) => get('/merchant/catalog', { ...params }, signal),
     listMyListings: (marketId, params, signal) =>
       get(`/merchant/markets/${enc(marketId)}/listings`, { ...params }, signal),

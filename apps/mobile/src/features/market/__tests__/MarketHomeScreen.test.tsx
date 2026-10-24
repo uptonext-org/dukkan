@@ -211,3 +211,48 @@ describe('Market sub-app: Entdecken', () => {
     expect(within(sheet).getByText('Zum Stöbern ist gerade ein Konto nötig.')).toBeOnTheScreen();
   });
 });
+
+describe('Market sub-app: what the merchant switched on', () => {
+  it('shows a market without online orders as a showcase: products, but no "+", cart tab, delivery choice or notice', async () => {
+    const showcase = market({ acceptsOrders: false });
+    const { dependencies } = setup(null, {
+      [`GET /markets/${MARKET_ID}`]: showcase,
+      [`GET /markets/${MARKET_ID}/home`]: marketHome({ market: showcase }),
+    });
+    await renderApp(dependencies);
+    await openMarket();
+
+    const tile = screen.getByTestId(`product-tile-${PRODUCT_ID}`);
+    expect(within(tile).queryByRole('button', { name: /in den Warenkorb/ })).not.toBeOnTheScreen();
+    expect(screen.queryByTestId('market-tab-cart')).not.toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: 'Lieferzeit wählen' })).not.toBeOnTheScreen();
+    expect(screen.queryByTestId('ordering-notice')).not.toBeOnTheScreen();
+  });
+
+  it('announces a pause and a holiday above the market', async () => {
+    const paused = market({ acceptsOrders: false, ordersPausedUntil: '2026-11-03T06:00:00Z', closedFrom: '2026-12-24', closedUntil: '2026-12-26' });
+    const { dependencies } = setup(null, {
+      'GET /platform': { legal: {}, supportEmail: null, payment: 'ON_SITE' },
+      [`GET /markets/${MARKET_ID}`]: { ...paused, paymentMethods: ['CASH', 'CARD'] },
+      [`GET /markets/${MARKET_ID}/home`]: marketHome({ market: paused }),
+    });
+    await renderApp(dependencies);
+    await openMarket();
+
+    const notice = screen.getByTestId('ordering-notice');
+    expect(within(notice).getByText(/Bestellungen wieder ab 03\.11\.2026, 07:00/, { normalizer: normalize })).toBeOnTheScreen();
+    expect(within(notice).getByText(/Geschlossen vom 24\.12\.2026 bis 26\.12\.2026/, { normalizer: normalize })).toBeOnTheScreen();
+
+  });
+
+  it('shows how to pay at handover when payment is on site', async () => {
+    const { dependencies } = setup(null, {
+      'GET /platform': { legal: {}, supportEmail: null, payment: 'ON_SITE' },
+      [`GET /markets/${MARKET_ID}`]: { ...market(), paymentMethods: ['CASH', 'CARD'] },
+    });
+    await renderApp(dependencies);
+    await openMarket();
+    const info = screen.getByTestId('market-info-card');
+    expect(await within(info).findByText('Bezahlung bei Übergabe: bar oder mit Karte', { normalizer: normalize })).toBeOnTheScreen();
+  });
+});

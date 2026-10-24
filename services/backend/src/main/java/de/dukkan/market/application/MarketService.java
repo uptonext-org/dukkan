@@ -21,6 +21,7 @@ import de.dukkan.shared.time.DukkanTime;
 import java.time.Clock;
 import java.time.DayOfWeek;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -165,7 +166,7 @@ public class MarketService {
   }
 
   public Optional<MarketInfo> findInfo(UUID marketId) {
-    return Optional.ofNullable(markets.findByIds(List.of(marketId)).get(marketId)).map(MarketService::info);
+    return Optional.ofNullable(markets.findByIds(List.of(marketId)).get(marketId)).map(this::info);
   }
 
   /** Facts of an ACTIVE market; {@code NOT_FOUND} otherwise (inactive markets are invisible to customers). */
@@ -323,6 +324,85 @@ public class MarketService {
     return merchantView(marketId, locale);
   }
 
+  /** Merchant: the ordering settings with the platform defaults for empty fields. */
+  public OrderSettingsView orderSettings(UUID marketId) {
+    MarketRepository.OrderRow o = row(marketId).orders();
+    return new OrderSettingsView(
+        new OrderSettings(
+            o.enabled(),
+            o.pausedUntil(),
+            o.closedFrom(),
+            o.closedUntil(),
+            o.deliveryCapacity(),
+            o.pickupCapacity(),
+            o.deliveryLeadMinutes(),
+            o.pickupLeadMinutes(),
+            o.daysAhead(),
+            o.deliveryHours().stream()
+                .map(h -> new OpeningHours(h.dayOfWeek(), HH_MM.format(h.opensAt()), HH_MM.format(h.closesAt())))
+                .toList(),
+            o.autoAccept(),
+            o.paymentMethods().stream().map(OrderSettings.PaymentMethod::valueOf).toList(),
+            o.defaultMaxOrderQuantity()),
+        orderDefaults());
+  }
+
+  /** The platform values a market uses where it set nothing. */
+  public OrderSettings.Defaults orderDefaults() {
+    DukkanProperties.Fulfilment f = properties.fulfilment();
+    return new OrderSettings.Defaults(
+        f.deliveryCapacity(),
+        f.pickupCapacity(),
+        (int) f.deliveryCutoff().toMinutes(),
+        (int) f.pickupCutoff().toMinutes(),
+        f.daysAhead(),
+        properties.catalog().defaultMaxOrderQuantity());
+  }
+
+  /**
+   * Merchant: replaces the ordering settings. A pause that already ended is dropped; a pause is at
+   * most 30 days long. Booked slots keep their orders when capacity or times change.
+   */
+  @Transactional
+  public OrderSettingsView updateOrderSettings(UUID marketId, OrderSettings s) {
+    row(marketId);
+    Instant now = clock.instant();
+    Instant pausedUntil = s.pausedUntil() == null || !s.pausedUntil().isAfter(now) ? null : s.pausedUntil();
+    if (pausedUntil != null && pausedUntil.isAfter(now.plus(java.time.Duration.ofDays(30)))) {
+      throw new InvalidRequestException("pausedUntil", "Max", "a pause can last at most 30 days");
+    }
+    if ((s.closedFrom() == null) != (s.closedUntil() == null)) {
+      throw new InvalidRequestException("closedUntil", "ClosedRange", "set both closedFrom and closedUntil, or neither");
+    }
+    if (s.closedFrom() != null && s.closedUntil() != null) {
+      if (s.closedUntil().isBefore(s.closedFrom())) {
+        throw new InvalidRequestException("closedUntil", "ClosedRange", "must not be before closedFrom");
+      }
+      if (s.closedUntil().isAfter(s.closedFrom().plusDays(365))) {
+        throw new InvalidRequestException("closedUntil", "ClosedRange", "a closure can last at most a year");
+      }
+    }
+    List<OpeningInterval> deliveryHours = intervals("deliveryHours", s.deliveryHours());
+    markets.updateOrderSettings(
+        marketId,
+        new MarketRepository.OrderRow(
+            s.ordersEnabled(),
+            pausedUntil,
+            s.closedFrom(),
+            s.closedUntil(),
+            s.deliveryCapacity(),
+            s.pickupCapacity(),
+            s.deliveryLeadMinutes(),
+            s.pickupLeadMinutes(),
+            s.daysAhead(),
+            s.autoAccept(),
+            s.paymentMethods().stream().distinct().map(Enum::name).toList(),
+            s.defaultMaxOrderQuantity(),
+            deliveryHours),
+        now);
+    return orderSettings(marketId);
+  }
+
   @Transactional
   public void assignOwner(UUID marketId, UUID userId) {
     row(marketId);
@@ -363,26 +443,34 @@ public class MarketService {
         throw new InvalidRequestException("fulfilment", "Currency", "amounts must be in EUR");
       }
     }
+    intervals("openingHours", p.openingHours());
+  }
+
+  /** Parses and checks opening-style intervals: valid times, not empty, no overlaps. */
+  private static List<OpeningInterval> intervals(String field, List<OpeningHours> hours) {
     List<OpeningSchedule.Interval> intervals = new ArrayList<>();
-    for (int i = 0; i < p.openingHours().size(); i++) {
-      OpeningHours h = p.openingHours().get(i);
+    List<OpeningInterval> parsed = new ArrayList<>();
+    for (int i = 0; i < hours.size(); i++) {
+      OpeningHours h = hours.get(i);
       LocalTime opens;
       LocalTime closes;
       try {
         opens = LocalTime.parse(h.opensAt());
         closes = LocalTime.parse(h.closesAt());
       } catch (DateTimeParseException e) {
-        throw new InvalidRequestException("openingHours[" + i + "]", "Time", "must be a valid time HH:mm");
+        throw new InvalidRequestException(field + "[" + i + "]", "Time", "must be a valid time HH:mm");
       }
       if (closes.equals(opens)) {
         throw new InvalidRequestException(
-            "openingHours[" + i + "].closesAt", "NotEqualOpensAt", "must differ from opensAt (earlier means the next day)");
+            field + "[" + i + "].closesAt", "NotEqualOpensAt", "must differ from opensAt (earlier means the next day)");
       }
       intervals.add(new OpeningSchedule.Interval(DayOfWeek.of(h.dayOfWeek()), opens, closes));
+      parsed.add(new OpeningInterval(h.dayOfWeek(), opens, closes));
     }
     if (new OpeningSchedule(intervals).hasOverlaps()) {
-      throw new InvalidRequestException("openingHours", "Overlap", "opening intervals must not overlap");
+      throw new InvalidRequestException(field, "Overlap", "intervals must not overlap");
     }
+    return parsed;
   }
 
   private String uniqueSlug(String name) {
@@ -433,7 +521,12 @@ public class MarketService {
         row.phone(),
         hours,
         row.primaryLocale(),
-        new MarketDetail.Imprint(row.legalName(), row.addressLine(), row.registerInfo()));
+        new MarketDetail.Imprint(row.legalName(), row.addressLine(), row.registerInfo()),
+        paymentMethods(row));
+  }
+
+  private static List<OrderSettings.PaymentMethod> paymentMethods(MarketRow row) {
+    return row.orders().paymentMethods().stream().map(OrderSettings.PaymentMethod::valueOf).toList();
   }
 
   private MarketSummary summary(
@@ -472,7 +565,19 @@ public class MarketService {
             row.freeDeliveryFromCents() == null ? null : Money.eur(row.freeDeliveryFromCents()),
             Money.eur(row.minimumOrderCents())),
         promotionCount,
-        row.tags());
+        row.tags(),
+        info(row).acceptsOrders(now),
+        // Only what the merchant switched on is shown: a pause or holiday of a market that takes orders.
+        row.orders().enabled() && row.orders().pausedUntil() != null && now.isBefore(row.orders().pausedUntil())
+            ? DukkanTime.toApi(row.orders().pausedUntil())
+            : null,
+        upcomingClosure(row, now) ? row.orders().closedFrom() : null,
+        upcomingClosure(row, now) ? row.orders().closedUntil() : null);
+  }
+
+  private static boolean upcomingClosure(MarketRow row, Instant now) {
+    LocalDate until = row.orders().closedUntil();
+    return row.orders().enabled() && until != null && !until.isBefore(LocalDate.ofInstant(now, DukkanTime.ZONE));
   }
 
   private static OpeningSchedule schedule(MarketRow row) {
@@ -482,7 +587,9 @@ public class MarketService {
             .toList());
   }
 
-  private static MarketInfo info(MarketRow row) {
+  private MarketInfo info(MarketRow row) {
+    MarketRepository.OrderRow o = row.orders();
+    DukkanProperties.Fulfilment defaults = properties.fulfilment();
     return new MarketInfo(
         row.id(),
         row.name(),
@@ -495,6 +602,21 @@ public class MarketService {
         row.deliveryFeeCents() == null ? 0 : row.deliveryFeeCents(),
         row.freeDeliveryFromCents(),
         row.minimumOrderCents(),
-        List.copyOf(row.hours()));
+        List.copyOf(row.hours()),
+        new MarketInfo.Ordering(
+            o.enabled(),
+            o.pausedUntil(),
+            o.closedFrom(),
+            o.closedUntil(),
+            Objects.requireNonNullElse(o.deliveryCapacity(), defaults.deliveryCapacity()),
+            Objects.requireNonNullElse(o.pickupCapacity(), defaults.pickupCapacity()),
+            Objects.requireNonNullElse(o.deliveryLeadMinutes(), (int) defaults.deliveryCutoff().toMinutes()),
+            Objects.requireNonNullElse(o.pickupLeadMinutes(), (int) defaults.pickupCutoff().toMinutes()),
+            Objects.requireNonNullElse(o.daysAhead(), defaults.daysAhead()),
+            List.copyOf(o.deliveryHours().isEmpty() ? row.hours() : o.deliveryHours()),
+            o.autoAccept(),
+            paymentMethods(row),
+            Objects.requireNonNullElse(o.defaultMaxOrderQuantity(), properties.catalog().defaultMaxOrderQuantity())));
   }
+
 }

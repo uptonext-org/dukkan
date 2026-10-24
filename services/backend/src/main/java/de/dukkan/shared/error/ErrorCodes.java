@@ -41,6 +41,8 @@ public final class ErrorCodes {
   public static final String ACCOUNT_HAS_OPEN_ORDERS = "ACCOUNT_HAS_OPEN_ORDERS";
   public static final String MAX_QUANTITY_EXCEEDED = "MAX_QUANTITY_EXCEEDED";
   public static final String MARKET_NOT_ACTIVE = "MARKET_NOT_ACTIVE";
+  public static final String ORDERS_NOT_ACCEPTED = "ORDERS_NOT_ACCEPTED";
+  public static final String SLOT_UNAVAILABLE = "SLOT_UNAVAILABLE";
   public static final String FULFILMENT_NOT_OFFERED = "FULFILMENT_NOT_OFFERED";
   public static final String ADDRESS_REQUIRED = "ADDRESS_REQUIRED";
   public static final String ADDRESS_OUTSIDE_DELIVERY_AREA = "ADDRESS_OUTSIDE_DELIVERY_AREA";
