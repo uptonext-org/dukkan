@@ -182,6 +182,21 @@ class AuthSessionIntegrationTest extends IntegrationTest {
     social("APPLE", token, Map.of("nonce", "other-nonce"))
         .andExpect(status().isUnauthorized())
         .andExpect(jsonPath("$.code").value("INVALID_SOCIAL_TOKEN"));
+    social("APPLE", token, Map.of()).andExpect(status().isUnauthorized()).andExpect(jsonPath("$.code").value("INVALID_SOCIAL_TOKEN"));
+  }
+
+  @Test
+  void anAccountSomeoneElsePreRegisteredLosesItsPasswordAndSessionsWhenTheOwnerSignsInWithGoogle() throws Exception {
+    String email = uniqueEmail();
+    // Someone registers the victim's address with their own password and never confirms it.
+    register(email, "CUSTOMER");
+    String squatterRefresh = read(login(email, PASSWORD), "$.refreshToken");
+
+    social("GOOGLE", googleToken("google-" + UUID.randomUUID(), Map.of("email", email, "email_verified", true)), Map.of())
+        .andExpect(status().isOk());
+
+    refresh(squatterRefresh).andExpect(status().isUnauthorized());
+    mvc.perform(json(post("/api/v1/auth/login"), toJson(Map.of("email", email, "password", PASSWORD)))).andExpect(status().isUnauthorized());
   }
 
   @Test

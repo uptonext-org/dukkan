@@ -42,6 +42,9 @@ public interface IdentityService {
   /** Adds a role (idempotent), e.g. ADMIN for operators. Takes effect with the next token. */
   UserView grantRole(UUID userId, String role);
 
+  /** Whether any active account has the role. */
+  boolean anyActiveWithRole(String role);
+
   /**
    * Confirms that the signed-in person may delete the account: the current password, or nothing
    * for accounts that only sign in with Apple/Google. Fails with field {@code password}, code

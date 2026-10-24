@@ -113,6 +113,7 @@ class TranslationIntegrationTest extends IntegrationTest {
   @Test
   void merchantsGetSuggestionsForTheEmptyLanguagesOnly() throws Exception {
     String merchant = registerMerchant();
+    confirmEmail(merchant);
     MvcResult result =
         mvc.perform(
                 json(
@@ -154,11 +155,23 @@ class TranslationIntegrationTest extends IntegrationTest {
   }
 
   @Test
-  void aDeclinedTranslationIsReportedAsUnavailable() throws Exception {
-    stopReason = "refusal";
+  void anUnconfirmedAddressGetsNoMachineTranslation() throws Exception {
     mvc.perform(
             json(
                 auth(post("/api/v1/merchant/translations"), registerMerchant()),
+                "{\"kind\":\"MARKET_DESCRIPTION\",\"fields\":[{\"key\":\"d\",\"values\":{\"de\":\"Frische Simit jeden Morgen\"}}]}"))
+        .andExpect(status().isUnprocessableContent())
+        .andExpect(jsonPath("$.code").value("EMAIL_NOT_VERIFIED"));
+  }
+
+  @Test
+  void aDeclinedTranslationIsReportedAsUnavailable() throws Exception {
+    stopReason = "refusal";
+    String merchant = registerMerchant();
+    confirmEmail(merchant);
+    mvc.perform(
+            json(
+                auth(post("/api/v1/merchant/translations"), merchant),
                 "{\"kind\":\"MARKET_DESCRIPTION\",\"fields\":[{\"key\":\"d\",\"values\":{\"de\":\"Frische Simit jeden Morgen\"}}]}"))
         .andExpect(status().isUnprocessableContent())
         .andExpect(jsonPath("$.code").value("TRANSLATION_UNAVAILABLE"));
@@ -167,6 +180,7 @@ class TranslationIntegrationTest extends IntegrationTest {
   @Test
   void aNewPrivateProductIsTranslatedInTheBackgroundAndFoundInEveryLanguage() throws Exception {
     String merchant = registerMerchant();
+    confirmEmail(merchant);
     UUID market = createMarket(merchant, "Übersetzungsmarkt");
     UUID category = jdbc.sql("SELECT id FROM category WHERE slug = 'deli'").query(UUID.class).single();
     Map<String, Object> newProduct = new HashMap<>();

@@ -18,6 +18,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.util.UrlPathHelper;
 
 /**
  * Fixed-window rate limit per client IP for the public auth endpoints: login and social sign-in
@@ -57,15 +58,24 @@ public final class AuthRateLimitFilter extends OncePerRequestFilter {
             "/api/v1/me/email-verification", new Rule("verification-mail", Duration.ofHours(1), limits.passwordResetsPerHour()));
   }
 
+  /**
+   * The path Spring MVC matches the request to: percent-decoded, without {@code ;} parameters and
+   * with duplicate slashes removed. Comparing the raw URI would let {@code /auth/%6Cogin} reach the
+   * login endpoint without being counted.
+   */
+  private static String endpoint(HttpServletRequest request) {
+    return UrlPathHelper.defaultInstance.getLookupPathForRequest(request);
+  }
+
   @Override
   protected boolean shouldNotFilter(HttpServletRequest request) {
-    return !limits.enabled() || !"POST".equals(request.getMethod()) || !rules.containsKey(request.getRequestURI());
+    return !limits.enabled() || !"POST".equals(request.getMethod()) || !rules.containsKey(endpoint(request));
   }
 
   @Override
   protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
       throws ServletException, IOException {
-    Rule rule = rules.get(request.getRequestURI());
+    Rule rule = rules.get(endpoint(request));
     Duration window = rule.window();
     int limit = rule.limit();
     long now = clock.instant().getEpochSecond();
@@ -88,7 +98,7 @@ public final class AuthRateLimitFilter extends OncePerRequestFilter {
                   + "\",\"detail\":\"Too many attempts. Try again in "
                   + retryAfter
                   + " seconds.\",\"instance\":\""
-                  + request.getRequestURI()
+                  + endpoint(request)
                   + "\"}");
       return;
     }

@@ -102,9 +102,11 @@ final class OidcIdTokenVerifier implements IdTokenVerifier {
       LOG.info("Rejected {} ID token: {}", provider, e.getMessage());
       throw invalid();
     }
-    if (nonce != null) {
-      String claim = jwt.getClaimAsString("nonce");
-      if (claim == null || !(claim.equals(nonce) || claim.equals(sha256Hex(nonce)))) {
+    // A token issued for a nonce is only accepted together with that nonce, so a token caught on
+    // its way to one app session cannot be replayed without it.
+    String claim = jwt.getClaimAsString("nonce");
+    if (nonce != null || claim != null) {
+      if (claim == null || nonce == null || !(claim.equals(nonce) || claim.equals(sha256Hex(nonce)))) {
         throw invalid();
       }
     }
