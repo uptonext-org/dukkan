@@ -12,6 +12,7 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.sql.Types;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -53,9 +54,26 @@ public class MarketRepository {
       long minimumOrderCents,
       String legalName,
       @Nullable String registerInfo,
+      OrderRow orders,
       List<String> cuisines,
       List<OpeningInterval> hours,
       Map<String, String> descriptions) {}
+
+  /** The ordering settings of a market (V19); {@code null} numbers mean the platform default. */
+  public record OrderRow(
+      boolean enabled,
+      @Nullable Instant pausedUntil,
+      @Nullable LocalDate closedFrom,
+      @Nullable LocalDate closedUntil,
+      @Nullable Integer deliveryCapacity,
+      @Nullable Integer pickupCapacity,
+      @Nullable Integer deliveryLeadMinutes,
+      @Nullable Integer pickupLeadMinutes,
+      @Nullable Integer daysAhead,
+      boolean autoAccept,
+      List<String> paymentMethods,
+      @Nullable Integer defaultMaxOrderQuantity,
+      List<OpeningInterval> deliveryHours) {}
 
   /**
    * Radius search filters. {@code nameTerm} is already normalised (matched against {@code
@@ -236,6 +254,18 @@ public class MarketRepository {
                   new OpeningInterval(
                       rs.getInt(2), rs.getObject(3, LocalTime.class), rs.getObject(4, LocalTime.class)));
         });
+    jdbc.sql(
+            "SELECT market_id, day_of_week, opens_at, closes_at FROM market_delivery_hours WHERE market_id IN (:ids)"
+                + " ORDER BY day_of_week, opens_at")
+        .param("ids", idList)
+        .query(rs -> {
+          rows.get(rs.getObject(1, UUID.class))
+              .orders()
+              .deliveryHours()
+              .add(
+                  new OpeningInterval(
+                      rs.getInt(2), rs.getObject(3, LocalTime.class), rs.getObject(4, LocalTime.class)));
+        });
     jdbc.sql("SELECT market_id, locale, description FROM market_translation WHERE market_id IN (:ids)")
         .param("ids", idList)
         .query(rs -> {
@@ -376,10 +406,10 @@ public class MarketRepository {
             INSERT INTO market (id, slug, name, type_code, status, primary_locale, address_line, lat, lng, phone,
                                 logo_url, cover_image_url, tags, delivery, pickup, delivery_radius_km,
                                 delivery_fee_cents, free_delivery_from_cents, minimum_order_cents, legal_name,
-                                register_info, search_name, created_at, updated_at)
+                                register_info, search_name, orders_enabled, created_at, updated_at)
             VALUES (:id, :slug, :name, :typeCode, :status, :primaryLocale, :addressLine, :lat, :lng, :phone,
                     :logoUrl, :coverImageUrl, :tags, :delivery, :pickup, :radius, :fee, :freeFrom, :minimum,
-                    :legalName, :registerInfo, :searchName, :now, :now)
+                    :legalName, :registerInfo, :searchName, false, :now, :now)
             """)
         .paramSource(params(id, slug, status, p, now))
         .update();
@@ -493,9 +523,69 @@ public class MarketRepository {
         rs.getLong("minimum_order_cents"),
         rs.getString("legal_name"),
         rs.getString("register_info"),
+        new OrderRow(
+            rs.getBoolean("orders_enabled"),
+            instant(rs.getTimestamp("orders_paused_until")),
+            rs.getObject("closed_from", LocalDate.class),
+            rs.getObject("closed_until", LocalDate.class),
+            rs.getObject("delivery_capacity", Integer.class),
+            rs.getObject("pickup_capacity", Integer.class),
+            rs.getObject("delivery_lead_minutes", Integer.class),
+            rs.getObject("pickup_lead_minutes", Integer.class),
+            rs.getObject("days_ahead", Integer.class),
+            rs.getBoolean("auto_accept"),
+            SqlTextArray.read(rs.getArray("payment_methods")),
+            rs.getObject("default_max_order_quantity", Integer.class),
+            new ArrayList<>()),
         new ArrayList<>(),
         new ArrayList<>(),
         new HashMap<>());
+  }
+
+  private static @Nullable Instant instant(@Nullable Timestamp timestamp) {
+    return timestamp == null ? null : timestamp.toInstant();
+  }
+
+  /** Replaces the ordering settings and delivery hours of a market. */
+  public void updateOrderSettings(UUID id, OrderRow o, Instant now) {
+    org.springframework.jdbc.core.namedparam.MapSqlParameterSource source =
+        new org.springframework.jdbc.core.namedparam.MapSqlParameterSource();
+    source.addValue("id", id);
+    source.addValue("enabled", o.enabled());
+    source.addValue("pausedUntil", o.pausedUntil() == null ? null : Timestamp.from(o.pausedUntil()), Types.TIMESTAMP);
+    source.addValue("closedFrom", o.closedFrom(), Types.DATE);
+    source.addValue("closedUntil", o.closedUntil(), Types.DATE);
+    source.addValue("deliveryCapacity", o.deliveryCapacity(), Types.SMALLINT);
+    source.addValue("pickupCapacity", o.pickupCapacity(), Types.SMALLINT);
+    source.addValue("deliveryLead", o.deliveryLeadMinutes(), Types.SMALLINT);
+    source.addValue("pickupLead", o.pickupLeadMinutes(), Types.SMALLINT);
+    source.addValue("daysAhead", o.daysAhead(), Types.SMALLINT);
+    source.addValue("autoAccept", o.autoAccept());
+    source.addValue("payment", new SqlTextArray(o.paymentMethods()));
+    source.addValue("maxQuantity", o.defaultMaxOrderQuantity(), Types.SMALLINT);
+    source.addValue("now", Timestamp.from(now));
+    jdbc.sql(
+            """
+            UPDATE market SET orders_enabled = :enabled, orders_paused_until = :pausedUntil, closed_from = :closedFrom,
+                   closed_until = :closedUntil, delivery_capacity = :deliveryCapacity, pickup_capacity = :pickupCapacity,
+                   delivery_lead_minutes = :deliveryLead, pickup_lead_minutes = :pickupLead, days_ahead = :daysAhead,
+                   auto_accept = :autoAccept, payment_methods = :payment, default_max_order_quantity = :maxQuantity,
+                   updated_at = :now
+             WHERE id = :id
+            """)
+        .paramSource(source)
+        .update();
+    jdbc.sql("DELETE FROM market_delivery_hours WHERE market_id = :id").param("id", id).update();
+    for (OpeningInterval h : o.deliveryHours()) {
+      jdbc.sql(
+              "INSERT INTO market_delivery_hours (market_id, day_of_week, opens_at, closes_at)"
+                  + " VALUES (:id, :day, :opens, :closes) ON CONFLICT DO NOTHING")
+          .param("id", id)
+          .param("day", h.dayOfWeek())
+          .param("opens", h.opensAt())
+          .param("closes", h.closesAt())
+          .update();
+    }
   }
 
   /** Markets without {@code search_name} (seed data, rows from before V10): id → name. */

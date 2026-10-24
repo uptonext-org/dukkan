@@ -11,7 +11,8 @@ public record MarketDetail(
     @Nullable String phone,
     List<OpeningHours> openingHours,
     String primaryLocale,
-    Imprint imprint) {
+    Imprint imprint,
+    List<OrderSettings.PaymentMethod> paymentMethods) {
 
   /** Legal imprint. */
   public record Imprint(String legalName, String addressLine, @Nullable String registerInfo) {}

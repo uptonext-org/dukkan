@@ -3,6 +3,7 @@ package de.dukkan.notification.application;
 import de.dukkan.address.application.AddressView;
 import de.dukkan.legal.application.PlatformSettings;
 import de.dukkan.market.application.MarketDetail;
+import de.dukkan.market.application.OrderSettings;
 import de.dukkan.order.application.OrderView;
 import de.dukkan.shared.domain.FulfilmentType;
 import java.math.BigDecimal;
@@ -62,6 +63,9 @@ public final class OrderMails {
       String total,
       String originalTotal,
       String payOnSite,
+      String cash,
+      String card,
+      String or,
       String simulated,
       String seller,
       String register,
@@ -105,7 +109,10 @@ public final class OrderMails {
               "Liefergebühr",
               "Gesamt (inkl. MwSt.)",
               "Ursprünglich",
-              "Bezahlung: direkt beim Markt, bei der Abholung bzw. Lieferung.",
+              "Bezahlung: direkt beim Markt, bei der Abholung bzw. Lieferung (%s).",
+              "bar",
+              "mit Karte",
+              " oder ",
               "Testbetrieb: Diese Bestellung ist simuliert, es wird nichts bezahlt.",
               "Verkäufer",
               "Register",
@@ -146,7 +153,10 @@ public final class OrderMails {
               "Delivery fee",
               "Total (incl. VAT)",
               "Originally",
-              "Payment: directly to the market, at pickup or delivery.",
+              "Payment: directly to the market, at pickup or delivery (%s).",
+              "cash",
+              "card",
+              " or ",
               "Test operation: this order is simulated, nothing is charged.",
               "Seller",
               "Register",
@@ -187,7 +197,10 @@ public final class OrderMails {
               "رسوم التوصيل",
               "الإجمالي (شامل الضريبة)",
               "في الأصل",
-              "الدفع: مباشرة للمتجر عند الاستلام أو التوصيل.",
+              "الدفع: مباشرة للمتجر عند الاستلام أو التوصيل (%s).",
+              "نقدًا",
+              "بالبطاقة",
+              " أو ",
               "تشغيل تجريبي: هذا الطلب تجريبي، لا يتم دفع أي مبلغ.",
               "البائع",
               "السجل التجاري",
@@ -249,7 +262,9 @@ public final class OrderMails {
       line(b, w.originalTotal(), money(original, w));
     }
     if (in.kind() == Kind.PLACED || in.kind() == Kind.ADJUSTED) {
-      b.append('\n').append(in.platform().payment() == PlatformSettings.PaymentMode.ON_SITE ? w.payOnSite() : w.simulated()).append('\n');
+      b.append('\n')
+          .append(in.platform().payment() == PlatformSettings.PaymentMode.ON_SITE ? w.payOnSite().formatted(paymentMethods(in.market(), w)) : w.simulated())
+          .append('\n');
     }
 
     MarketDetail.Imprint imprint = in.market().imprint();
@@ -291,4 +306,10 @@ public final class OrderMails {
     format.setCurrency(Currency.getInstance("EUR"));
     return format.format(BigDecimal.valueOf(cents, 2));
   }
+
+  private static String paymentMethods(MarketDetail market, Words w) {
+    return String.join(
+        w.or(), market.paymentMethods().stream().map(m -> m == OrderSettings.PaymentMethod.CARD ? w.card() : w.cash()).toList());
+  }
+
 }

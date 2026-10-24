@@ -102,6 +102,7 @@ public class OrderService {
       throw new BusinessRuleException(ErrorCodes.MARKET_NOT_ACTIVE, "This market is currently not taking orders.");
     }
     Instant now = clock.instant();
+    FulfilmentService.requireAcceptsOrders(market, now);
     CartView cart = carts.getCartForCheckout(userId, marketId, locale);
     if (cart.lines().isEmpty()) {
       throw new BusinessRuleException(ErrorCodes.CART_EMPTY, "The cart is empty.");
@@ -162,6 +163,11 @@ public class OrderService {
     carts.completeCheckout(userId, marketId);
     outbox.append(OrderEvent.PLACED, order.getId(), event(order, null, "CUSTOMER", now));
     meters.counter("dukkan.orders.placed", "fulfilment", order.getFulfilmentType().name()).increment();
+    if (market.ordering().autoAccept() && order.advanceTo(OrderStatus.ACCEPTED)) {
+      // The market accepts every order itself; the customer is told as if the merchant had clicked.
+      outbox.append(OrderEvent.STATUS_CHANGED, order.getId(), event(order, OrderStatus.PLACED, "MERCHANT", now));
+      meters.counter("dukkan.orders.status_changes", "status", OrderStatus.ACCEPTED.name(), "by", "auto").increment();
+    }
     return view(order, locale, false);
   }
 
