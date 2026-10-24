@@ -83,6 +83,36 @@ export interface MarketProfileRequest {
   registerInfo: string | null;
 }
 
+export type PaymentMethod = 'CASH' | 'CARD';
+
+/** What a merchant controls about ordering; null numbers use the platform default. */
+export interface OrderSettings {
+  ordersEnabled: boolean;
+  pausedUntil?: string | null;
+  closedFrom?: string | null;
+  closedUntil?: string | null;
+  deliveryCapacity?: number | null;
+  pickupCapacity?: number | null;
+  deliveryLeadMinutes?: number | null;
+  pickupLeadMinutes?: number | null;
+  daysAhead?: number | null;
+  deliveryHours: OpeningHours[];
+  autoAccept: boolean;
+  paymentMethods: PaymentMethod[];
+  defaultMaxOrderQuantity?: number | null;
+}
+
+export interface MerchantOrderSettings extends OrderSettings {
+  defaults: {
+    deliveryCapacity: number;
+    pickupCapacity: number;
+    deliveryLeadMinutes: number;
+    pickupLeadMinutes: number;
+    daysAhead: number;
+    maxOrderQuantity: number;
+  };
+}
+
 export interface MerchantMarket {
   id: string;
   slug: string;

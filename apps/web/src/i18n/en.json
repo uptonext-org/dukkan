@@ -24,7 +24,8 @@
     "catalog": "Catalog review",
     "promotions": "Promotions",
     "profile": "Market profile",
-    "insights": "Overview"
+    "insights": "Overview",
+    "settings": "Orders & delivery"
   },
   "status": {
     "PENDING_REVIEW": "In review",
@@ -157,7 +158,8 @@
     "IMAGE_TOO_LARGE": "The image has too many pixels (max. 40 MP).",
     "ORDER_NOT_ADJUSTABLE": "The order is ready or on its way and can no longer be changed.",
     "ORDER_ADJUSTMENT_EMPTY": "Nothing would be left – decline the order instead.",
-    "MARKET_INCOMPLETE": "The seller information is incomplete."
+    "MARKET_INCOMPLETE": "The seller information is incomplete.",
+    "ORDERS_NOT_ACCEPTED": "This market is not taking orders right now."
   },
   "catalog": {
     "title": "Catalog review",
@@ -327,5 +329,60 @@
     "announce_other": "{{count}} new orders: {{numbers}}",
     "more_one": "and {{count}} more new order",
     "more_other": "and {{count}} more new orders"
+  },
+  "settings": {
+    "title": "Orders & delivery",
+    "hint": "Decide how customers order from you. Customers only see the effect: anything switched off or left empty does not appear on your market page.",
+    "online": "Online orders",
+    "ordersEnabled": "Customers can order online",
+    "ordersOnHint": "Visible to customers: cart and ordering on your market page.",
+    "ordersOffHint": "Off: your market stays visible with its products and offers, but without cart and ordering. Customers see no notice.",
+    "pause": "Pause",
+    "pauseHint": "No new orders for a while, e.g. when it is busy. Applies at once. Visible to customers: \"Orders again from …\".",
+    "pausedUntil": "Paused until {{time}}",
+    "endPause": "End pause",
+    "pauseHour": "1 hour",
+    "pauseToday": "For today",
+    "pauseUntil": "Until",
+    "startPause": "Pause",
+    "closed": "Holiday / closed",
+    "closedHint": "No slots on these days. Visible to customers until the period is over: \"Closed from … to …\".",
+    "closedOn": "Closed for a period",
+    "closedFrom": "From",
+    "closedUntil": "Until (inclusive)",
+    "slots": "Time slots",
+    "slotsHint": "Empty fields use the platform default. Customers only see the matching slots, never the numbers.",
+    "pickupCapacity": "Pickups per slot",
+    "deliveryCapacity": "Deliveries per slot",
+    "pickupLead": "Pickup lead time (minutes)",
+    "deliveryLead": "Delivery lead time (minutes)",
+    "daysAhead": "Bookable (days ahead)",
+    "default": "Default: {{value}}",
+    "deliveryHours": "Delivery times",
+    "ownDeliveryHours": "Delivery times differ from the opening hours",
+    "deliveryHoursHint": "Deliveries happen during the opening hours (market profile).",
+    "handling": "Accepting orders and payment",
+    "autoAccept": "Accept orders automatically",
+    "autoAcceptHint": "New orders are accepted at once; you do not need to confirm each one.",
+    "payment": "Payment at handover",
+    "paymentHint": "Visible to customers on the market page and in the order confirmation when they pay at handover.",
+    "method": {
+      "CASH": "Cash",
+      "CARD": "Card"
+    },
+    "defaultMax": "Maximum per product",
+    "defaultMaxHint": "Applies to new products without their own maximum.",
+    "save": "Save settings",
+    "saved": "Settings saved.",
+    "problem": {
+      "range": "Value outside the allowed range.",
+      "closedBoth": "Please give the start and the end.",
+      "closedOrder": "The end is before the start.",
+      "noDeliveryHours": "Enter at least one delivery time or switch the option off.",
+      "payment": "Choose at least one payment method."
+    },
+    "boardOff": "Online orders are switched off. Customers see your market but cannot order.",
+    "boardPaused": "Orders paused until {{time}}.",
+    "boardOpen": "Open settings"
   }
 }

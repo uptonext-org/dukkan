@@ -448,7 +448,7 @@ function ImageField({ marketId, purpose, label, url, onChange }: { marketId: str
   );
 }
 
-function HoursEditor({ hours, onChange }: { hours: Interval[][]; onChange: (hours: Interval[][]) => void }) {
+export function HoursEditor({ hours, onChange }: { hours: Interval[][]; onChange: (hours: Interval[][]) => void }) {
   const { t, i18n } = useTranslation();
   const days = weekdayNames(i18n.language);
   const setDay = (index: number, intervals: Interval[]) => onChange(hours.map((day, i) => (i === index ? intervals : day)));

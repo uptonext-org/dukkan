@@ -24,7 +24,8 @@
     "catalog": "Katalogprüfung",
     "promotions": "Aktionen",
     "profile": "Marktprofil",
-    "insights": "Übersicht"
+    "insights": "Übersicht",
+    "settings": "Bestellungen & Lieferung"
   },
   "status": {
     "PENDING_REVIEW": "In Prüfung",
@@ -157,7 +158,8 @@
     "IMAGE_TOO_LARGE": "Das Bild hat zu viele Pixel (max. 40 MP).",
     "ORDER_NOT_ADJUSTABLE": "Die Bestellung ist schon fertig oder unterwegs und kann nicht mehr geändert werden.",
     "ORDER_ADJUSTMENT_EMPTY": "Es bliebe nichts übrig – lehne die Bestellung stattdessen ab.",
-    "MARKET_INCOMPLETE": "Die Angaben zum Verkäufer sind unvollständig."
+    "MARKET_INCOMPLETE": "Die Angaben zum Verkäufer sind unvollständig.",
+    "ORDERS_NOT_ACCEPTED": "Der Markt nimmt gerade keine Bestellungen an."
   },
   "catalog": {
     "title": "Katalogprüfung",
@@ -327,5 +329,60 @@
     "announce_other": "{{count}} neue Bestellungen: {{numbers}}",
     "more_one": "und {{count}} weitere neue Bestellung",
     "more_other": "und {{count}} weitere neue Bestellungen"
+  },
+  "settings": {
+    "title": "Bestellungen & Lieferung",
+    "hint": "Hier legst du fest, wie Kunden bei dir bestellen. Kunden sehen nur die Wirkung: Was ausgeschaltet oder leer ist, erscheint nicht auf deiner Marktseite.",
+    "online": "Online-Bestellungen",
+    "ordersEnabled": "Kunden können online bestellen",
+    "ordersOnHint": "Für Kunden sichtbar: Warenkorb und Bestellen auf deiner Marktseite.",
+    "ordersOffHint": "Aus: Dein Markt bleibt mit Sortiment und Angeboten sichtbar, aber ohne Warenkorb und Bestellen. Kunden sehen keinen Hinweis.",
+    "pause": "Pause",
+    "pauseHint": "Für einen Moment keine neuen Bestellungen, z. B. bei viel Betrieb. Gilt sofort. Für Kunden sichtbar: „Bestellungen wieder ab …“.",
+    "pausedUntil": "Pausiert bis {{time}}",
+    "endPause": "Pause beenden",
+    "pauseHour": "1 Stunde",
+    "pauseToday": "Für heute",
+    "pauseUntil": "Bis",
+    "startPause": "Pausieren",
+    "closed": "Urlaub / geschlossen",
+    "closedHint": "An diesen Tagen gibt es keine Zeitfenster. Für Kunden sichtbar, bis der Zeitraum vorbei ist: „Geschlossen vom … bis …“.",
+    "closedOn": "Geschlossen in einem Zeitraum",
+    "closedFrom": "Von",
+    "closedUntil": "Bis einschließlich",
+    "slots": "Zeitfenster",
+    "slotsHint": "Leere Felder nutzen den Standard der Plattform. Kunden sehen nur die passenden Zeitfenster, nie die Zahlen.",
+    "pickupCapacity": "Abholungen pro Zeitfenster",
+    "deliveryCapacity": "Lieferungen pro Zeitfenster",
+    "pickupLead": "Vorlauf Abholung (Minuten)",
+    "deliveryLead": "Vorlauf Lieferung (Minuten)",
+    "daysAhead": "Bestellbar für (Tage im Voraus)",
+    "default": "Standard: {{value}}",
+    "deliveryHours": "Lieferzeiten",
+    "ownDeliveryHours": "Andere Lieferzeiten als die Öffnungszeiten",
+    "deliveryHoursHint": "Geliefert wird während der Öffnungszeiten (Marktprofil).",
+    "handling": "Bestellannahme und Bezahlung",
+    "autoAccept": "Bestellungen automatisch annehmen",
+    "autoAcceptHint": "Neue Bestellungen sind sofort angenommen; du musst sie nicht einzeln bestätigen.",
+    "payment": "Bezahlung bei Übergabe",
+    "paymentHint": "Für Kunden sichtbar auf der Marktseite und in der Bestellbestätigung, wenn bei Übergabe bezahlt wird.",
+    "method": {
+      "CASH": "Bar",
+      "CARD": "Karte"
+    },
+    "defaultMax": "Höchstmenge pro Artikel",
+    "defaultMaxHint": "Gilt für neue Artikel ohne eigene Höchstmenge.",
+    "save": "Einstellungen speichern",
+    "saved": "Einstellungen gespeichert.",
+    "problem": {
+      "range": "Wert außerhalb des erlaubten Bereichs.",
+      "closedBoth": "Bitte Anfang und Ende angeben.",
+      "closedOrder": "Das Ende liegt vor dem Anfang.",
+      "noDeliveryHours": "Mindestens eine Lieferzeit eintragen oder die Option ausschalten.",
+      "payment": "Mindestens eine Zahlungsart wählen."
+    },
+    "boardOff": "Online-Bestellungen sind ausgeschaltet. Kunden sehen deinen Markt, können aber nicht bestellen.",
+    "boardPaused": "Bestellungen pausiert bis {{time}}.",
+    "boardOpen": "Einstellungen öffnen"
   }
 }

@@ -642,3 +642,102 @@ describe('languages', () => {
     expect(parsePrice('vier')).toBeNull();
   });
 });
+
+describe('orders and delivery settings', () => {
+  const stored = {
+    ordersEnabled: false,
+    pausedUntil: null,
+    closedFrom: null,
+    closedUntil: null,
+    deliveryCapacity: null,
+    pickupCapacity: null,
+    deliveryLeadMinutes: null,
+    pickupLeadMinutes: null,
+    daysAhead: null,
+    deliveryHours: [],
+    autoAccept: false,
+    paymentMethods: ['CASH'],
+    defaultMaxOrderQuantity: null,
+    defaults: { deliveryCapacity: 6, pickupCapacity: 10, deliveryLeadMinutes: 120, pickupLeadMinutes: 60, daysAhead: 7, maxOrderQuantity: 24 },
+  };
+
+  it('tells the merchant on the board that online orders are off and opens the settings', async () => {
+    const { user } = renderPortal({
+      'GET /merchant/markets': [market()],
+      'GET /merchant/markets/m1/orders': [],
+      'GET /merchant/markets/m1/order-settings': stored,
+    });
+    expect(await screen.findByText(/Online-Bestellungen sind ausgeschaltet/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Einstellungen öffnen' }));
+    expect(await screen.findByRole('heading', { name: 'Bestellungen & Lieferung', level: 1 })).toBeInTheDocument();
+    expect(screen.getByLabelText('Abholungen pro Zeitfenster')).toHaveAttribute('placeholder', 'Standard: 10');
+  });
+
+  it('switches orders on with own capacity, holiday, delivery times, card payment and automatic acceptance', async () => {
+    const { user, calls } = renderPortal({
+      'GET /merchant/markets': [market()],
+      'GET /merchant/markets/m1/orders': [],
+      'GET /merchant/markets/m1/order-settings': stored,
+      'PUT /merchant/markets/m1/order-settings': (call: { body: unknown }) => ({ ...(call.body as object), defaults: stored.defaults }),
+    });
+    await user.click(await screen.findByRole('button', { name: 'Bestellungen & Lieferung' }));
+    await user.click(await screen.findByRole('checkbox', { name: 'Kunden können online bestellen' }));
+    await user.type(screen.getByLabelText('Abholungen pro Zeitfenster'), '4');
+    await user.type(screen.getByLabelText('Vorlauf Lieferung (Minuten)'), '9999');
+    await user.click(screen.getByRole('checkbox', { name: 'Geschlossen in einem Zeitraum' }));
+    await user.type(screen.getByLabelText('Von'), '2026-12-24');
+    await user.click(screen.getByRole('checkbox', { name: 'Andere Lieferzeiten als die Öffnungszeiten' }));
+    await user.click(screen.getByRole('checkbox', { name: 'Karte' }));
+    await user.click(screen.getByRole('checkbox', { name: 'Bestellungen automatisch annehmen' }));
+    await user.click(screen.getByRole('button', { name: 'Einstellungen speichern' }));
+
+    // Checked before sending: lead time out of range, holiday without end, no delivery times.
+    expect(screen.getByText('Wert außerhalb des erlaubten Bereichs.')).toBeInTheDocument();
+    expect(screen.getByText('Bitte Anfang und Ende angeben.')).toBeInTheDocument();
+    expect(screen.getByText(/Mindestens eine Lieferzeit/)).toBeInTheDocument();
+    expect(calls.some((c) => c.method === 'PUT')).toBe(false);
+
+    await user.clear(screen.getByLabelText('Vorlauf Lieferung (Minuten)'));
+    await user.type(screen.getByLabelText('Bis einschließlich'), '2026-12-26');
+    await user.click(screen.getByRole('button', { name: /Zeitraum für Dienstag hinzufügen/ }));
+    await user.click(screen.getByRole('button', { name: 'Einstellungen speichern' }));
+
+    expect(await screen.findByRole('status')).toHaveTextContent('Einstellungen gespeichert.');
+    expect(calls.find((c) => c.method === 'PUT')?.body).toEqual({
+      ordersEnabled: true,
+      pausedUntil: null,
+      closedFrom: '2026-12-24',
+      closedUntil: '2026-12-26',
+      deliveryCapacity: null,
+      pickupCapacity: 4,
+      deliveryLeadMinutes: null,
+      pickupLeadMinutes: null,
+      daysAhead: null,
+      deliveryHours: [{ dayOfWeek: 2, opensAt: '09:00', closesAt: '18:00' }],
+      autoAccept: true,
+      paymentMethods: ['CASH', 'CARD'],
+      defaultMaxOrderQuantity: null,
+    });
+  });
+
+  it('pauses at once and ends the pause', async () => {
+    let current: Record<string, unknown> = { ...stored, ordersEnabled: true };
+    const { user, calls } = renderPortal({
+      'GET /merchant/markets': [market()],
+      'GET /merchant/markets/m1/orders': [],
+      'GET /merchant/markets/m1/order-settings': () => current,
+      'PUT /merchant/markets/m1/order-settings': (call: { body: unknown }) => {
+        current = { ...(call.body as object), defaults: stored.defaults };
+        return current;
+      },
+    });
+    await user.click(await screen.findByRole('button', { name: 'Bestellungen & Lieferung' }));
+    await user.click(await screen.findByRole('button', { name: '1 Stunde' }));
+    expect(await screen.findByText(/Pausiert bis/)).toBeInTheDocument();
+    const pausedUntil = (calls.find((c) => c.method === 'PUT')?.body as { pausedUntil: string; ordersEnabled: boolean }).pausedUntil;
+    expect(new Date(pausedUntil).getTime()).toBeGreaterThan(Date.now() + 50 * 60 * 1000);
+    await user.click(screen.getByRole('button', { name: 'Pause beenden' }));
+    expect(await screen.findByRole('button', { name: '1 Stunde' })).toBeInTheDocument();
+    expect((calls.filter((c) => c.method === 'PUT')[1]?.body as { pausedUntil: unknown }).pausedUntil).toBeNull();
+  });
+});
