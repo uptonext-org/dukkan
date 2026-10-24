@@ -81,6 +81,9 @@ function ProfileEditor({ market, language }: { market: MerchantMarket; language:
     save.mutate(result.request);
   };
 
+  // Seller information the platform needs before it approves the market (imprint, Art. 30 DSA).
+  const review = save.data?.review ?? market.review;
+  const missing = review?.items.filter((item) => item.required && !item.ok).map((item) => item.code) ?? [];
   const problemCount = Object.keys(problems).length;
   const problem = (key: keyof ProfileForm) => {
     const message = problems[key];
@@ -96,6 +99,11 @@ function ProfileEditor({ market, language }: { market: MerchantMarket; language:
     <form className="stack" onSubmit={submit} aria-labelledby="profile-title" aria-busy={save.isPending} noValidate>
       <h1 id="profile-title">{t('profile.title')}</h1>
       <p className="muted small">{t('profile.hint')}</p>
+      {missing.length > 0 && (
+        <p className="error small" role="note">
+          {t('profile.reviewMissing', { items: missing.map((code) => t(`admin.check.${code}`)).join(', ') })}
+        </p>
+      )}
       {/* Edits during a save would be replaced by the saved profile, so the form waits. */}
       <fieldset className="stack plain" disabled={save.isPending}>
 

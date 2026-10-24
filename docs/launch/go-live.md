@@ -61,7 +61,9 @@ Die Prüfung im App Store dauert erfahrungsgemäß Tage, die Freischaltung neuer
    Altersprüfung bei Übergabe vereinbaren. Sag mir, wenn du sie willst; dafür baue ich Kennzeichnung
    und Hinweis ein.
 5. **Händlerprüfung:** Wer prüft neue Märkte (Gewerbeanmeldung, Impressum, Lebensmittelhygiene)
-   und wie schnell? In `prod` ist die Prüfung durch einen Admin Pflicht.
+   und wie schnell? In `prod` ist die Prüfung durch einen Admin Pflicht. Das Portal zeigt dabei eine
+   Prüfliste (Name/Firma, Anschrift, Telefon, Register) und gibt einen Markt erst frei, wenn die
+   Pflichtangaben vollständig sind. Gewerbeanmeldung und Hygiene prüfst du weiter selbst.
 6. **E-Mail-Bestätigung Pflicht?** Empfehlung: ja (`DUKKAN_REQUIRE_VERIFIED_EMAIL=true`).
 7. **KI-Funktionen** (Einkaufsliste per Foto/Video, Produkterfassung, Übersetzung): Für den Start
    ohne KI möglich, die Einkaufsliste funktioniert dann für getippte und gesprochene Listen. Mit KI
