@@ -112,6 +112,7 @@ class ShoppingListAiIntegrationTest extends IntegrationTest {
     UUID cucumber = addListing(merchant, market, "Salatgurke", 69);
     UUID tomatoes = addListing(merchant, market, "Strauchtomaten", 249);
     String customer = registerUser();
+    confirmEmail(customer);
     byte[] frame = TestImages.png(64, 48, Color.ORANGE);
 
     mvc.perform(get("/api/v1/shopping-list")).andExpect(status().isOk()).andExpect(jsonPath("$.ai").value(true));
@@ -154,6 +155,7 @@ class ShoppingListAiIntegrationTest extends IntegrationTest {
     UUID market = createMarket(merchant, "Ausfall-Markt");
     UUID cucumber = addListing(merchant, market, "Salatgurke", 69);
     String customer = registerUser();
+    confirmEmail(customer);
     status = 500;
 
     MvcResult result =

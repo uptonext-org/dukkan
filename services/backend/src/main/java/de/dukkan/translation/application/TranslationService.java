@@ -2,6 +2,8 @@ package de.dukkan.translation.application;
 
 import de.dukkan.i18n.application.LocaleService;
 import de.dukkan.i18n.application.SupportedLocale;
+import de.dukkan.identity.application.IdentityService;
+import de.dukkan.shared.ai.AiBudget;
 import de.dukkan.shared.config.DukkanProperties;
 import de.dukkan.shared.error.BusinessRuleException;
 import de.dukkan.shared.error.ErrorCodes;
@@ -35,10 +37,21 @@ public class TranslationService {
   private final Translator translator;
   private final LocaleService locales;
   private final FixedWindowRateLimiter<UUID> rateLimiter;
+  private final IdentityService identity;
+  private final AiBudget budget;
 
-  public TranslationService(Translator translator, LocaleService locales, DukkanProperties properties, Clock clock, RateLimitStore store) {
+  public TranslationService(
+      Translator translator,
+      LocaleService locales,
+      IdentityService identity,
+      AiBudget budget,
+      DukkanProperties properties,
+      Clock clock,
+      RateLimitStore store) {
     this.translator = translator;
     this.locales = locales;
+    this.identity = identity;
+    this.budget = budget;
     this.rateLimiter = new FixedWindowRateLimiter<>("translations", properties.translation().requestsPerHour(), Duration.ofHours(1), clock, store);
   }
 
@@ -75,7 +88,13 @@ public class TranslationService {
     if (items.isEmpty()) {
       return List.of();
     }
+    if (!identity.isEmailVerified(userId)) {
+      throw new BusinessRuleException(ErrorCodes.EMAIL_NOT_VERIFIED, "Please confirm your email address first (link in the welcome email).");
+    }
     rateLimiter.acquire(userId, "translations");
+    if (!budget.tryAcquire()) {
+      throw new BusinessRuleException(ErrorCodes.TRANSLATION_UNAVAILABLE, "Machine translation is busy. Please try again later.");
+    }
     Map<String, Map<String, String>> result =
         translator.translate(kind, items).orElseThrow(() -> new BusinessRuleException(ErrorCodes.TRANSLATION_UNAVAILABLE, "The translation failed. Please try again."));
     List<Field> out = new ArrayList<>();
