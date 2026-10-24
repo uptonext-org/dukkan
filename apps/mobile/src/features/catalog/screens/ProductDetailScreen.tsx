@@ -6,6 +6,7 @@ import { allergenLabel, formatMoney, formatMoneyForAccessibility, forSpeech, iso
 import { makeStyles, useTheme } from '../../../shared/theme';
 import { AppText, Button, IconButton, ImageTile, Price, PromoPill, QuantityStepper, Screen, ScreenHeader, placeholderProps, queryState } from '../../../shared/ui';
 import { useCartQuantities } from '../../cart/api/hooks';
+import { useAcceptsOrders } from '../../market/api/hooks';
 import { useMarketContext } from '../../market/MarketContext';
 import { useToggleProductFavorite } from '../../favorites/api/hooks';
 import { useProduct } from '../api/hooks';
@@ -31,6 +32,7 @@ export function ProductDetailScreen({ route, navigation }: MarketStackScreenProp
   const query = useProduct(route.params.productId);
   const { marketId } = useMarketContext();
   const cart = useCartQuantities(marketId);
+  const orderable = useAcceptsOrders(marketId);
   const { toggle } = useToggleProductFavorite();
   const back = () => navigation.goBack();
 
@@ -64,7 +66,8 @@ export function ProductDetailScreen({ route, navigation }: MarketStackScreenProp
         />
       }
       footer={
-        !product.available ? (
+        // A market that takes no orders shows its products without anything to order.
+        !orderable ? undefined : !product.available ? (
           <AppText variant="bodyStrong" color="accent" center>
             {t('product.unavailable')}
           </AppText>

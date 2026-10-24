@@ -42,6 +42,7 @@ export const queryKeys = {
   orders: (lang: string) => ['orders', lang] as const,
   order: (lang: string, orderId: string) => ['order', lang, orderId] as const,
   myMarkets: (lang: string) => ['myMarkets', lang] as const,
+  orderSettings: (marketId: string) => ['orderSettings', marketId] as const,
   catalog: (lang: string, params: Omit<SearchCatalogParams, 'page'>) => ['catalog', lang, params] as const,
   listings: (lang: string, marketId: string, q: string) => ['listings', lang, marketId, q] as const,
   myPromotions: (lang: string, marketId: string) => ['myPromotions', lang, marketId] as const,

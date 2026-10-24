@@ -7,6 +7,8 @@ import {
   useApi,
   type CreateListingRequest,
   type MarketProfileRequest,
+  type MerchantOrderSettings,
+  type OrderSettings,
   type OrderStatus,
   type ProductDraftRequest,
   type TranslationRequest,
@@ -33,6 +35,46 @@ export function useSaveMarket(marketId?: string) {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['myMarkets'] });
       void queryClient.invalidateQueries({ queryKey: ['markets'] });
+    },
+  });
+}
+
+export function useOrderSettings(marketId: string) {
+  const api = useApi();
+  return useQuery({ queryKey: queryKeys.orderSettings(marketId), queryFn: ({ signal }) => api.getOrderSettings(marketId, signal) });
+}
+
+/** The stored settings without the read-only defaults, ready to send back with a change. */
+export function settingsRequest(settings: MerchantOrderSettings, change: Partial<OrderSettings>): OrderSettings {
+  return {
+    ordersEnabled: settings.ordersEnabled,
+    pausedUntil: settings.pausedUntil ?? null,
+    closedFrom: settings.closedFrom ?? null,
+    closedUntil: settings.closedUntil ?? null,
+    deliveryCapacity: settings.deliveryCapacity ?? null,
+    pickupCapacity: settings.pickupCapacity ?? null,
+    deliveryLeadMinutes: settings.deliveryLeadMinutes ?? null,
+    pickupLeadMinutes: settings.pickupLeadMinutes ?? null,
+    daysAhead: settings.daysAhead ?? null,
+    deliveryHours: settings.deliveryHours,
+    autoAccept: settings.autoAccept,
+    paymentMethods: settings.paymentMethods,
+    defaultMaxOrderQuantity: settings.defaultMaxOrderQuantity ?? null,
+    ...change,
+  };
+}
+
+export function useUpdateOrderSettings(marketId: string) {
+  const api = useApi();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (request: OrderSettings) => api.updateOrderSettings(marketId, request),
+    onSuccess: (updated) => {
+      queryClient.setQueryData(queryKeys.orderSettings(marketId), updated);
+      // What customers see of the market changes (order buttons, notice).
+      void queryClient.invalidateQueries({ queryKey: ['markets'] });
+      void queryClient.invalidateQueries({ queryKey: ['market'] });
+      void queryClient.invalidateQueries({ queryKey: ['marketHome'] });
     },
   });
 }

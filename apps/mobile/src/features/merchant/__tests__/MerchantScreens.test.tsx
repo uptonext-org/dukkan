@@ -1,11 +1,12 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { screen, userEvent, waitFor, within } from '@testing-library/react-native';
+import { fireEvent, screen, userEvent, waitFor, within } from '@testing-library/react-native';
 
 import type { RootStackParamList } from '../../../navigation/types';
 import { createFakeApiClient } from '../../../test/fakeApiClient';
 import { catalogProduct, eur, marketDetail, MARKET_ID, order, page } from '../../../test/fixtures';
 import { createTestDependencies, renderInAppRoot } from '../../../test/render';
 import { AddProductScreen } from '../screens/AddProductScreen';
+import { MarketHubScreen } from '../screens/MarketHubScreen';
 import { MerchantOrdersScreen } from '../screens/MerchantOrdersScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -135,5 +136,45 @@ describe('Mein Markt: Bestellungen', () => {
     await waitFor(() =>
       expect(fake.calls).toContainEqual(expect.objectContaining({ method: 'POST', path: `/merchant/orders/${placed.id}/status`, body: { status: 'ACCEPTED' } })),
     );
+  });
+});
+
+describe('Mein Markt: Bestellungen ein- und ausschalten', () => {
+  const stored = {
+    ordersEnabled: false,
+    pausedUntil: null,
+    deliveryHours: [],
+    autoAccept: false,
+    paymentMethods: ['CASH'],
+    defaults: { deliveryCapacity: 6, pickupCapacity: 10, deliveryLeadMinutes: 120, pickupLeadMinutes: 60, daysAhead: 7, maxOrderQuantity: 24 },
+  };
+
+  it('switches online orders on, pauses for an hour and ends the pause', async () => {
+    let current: Record<string, unknown> = stored;
+    const { fake, dependencies } = setup({
+      [`GET /merchant/markets/${MARKET_ID}/order-settings`]: () => current,
+      [`PUT /merchant/markets/${MARKET_ID}/order-settings`]: (call: { body?: unknown }) => {
+        current = { ...(call.body as object), defaults: stored.defaults };
+        return current;
+      },
+    });
+    await renderInAppRoot(
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="MerchantMarketHub" component={MarketHubScreen} initialParams={{ marketId: MARKET_ID }} />
+      </Stack.Navigator>,
+      dependencies,
+    );
+    const user = userEvent.setup();
+
+    expect(await screen.findByText(/Aus: Dein Markt bleibt mit Sortiment sichtbar/)).toBeOnTheScreen();
+    await fireEvent(screen.getByTestId('ordering-enabled'), 'valueChange', true);
+    await waitFor(() => expect(fake.calls.filter((c) => c.method === 'PUT').at(-1)?.body).toMatchObject({ ordersEnabled: true, paymentMethods: ['CASH'] }));
+    expect(fake.calls.filter((c) => c.method === 'PUT').at(-1)?.body).not.toHaveProperty('defaults');
+
+    await user.press(await screen.findByTestId('ordering-pause-hour'));
+    expect(await screen.findByText(/Pausiert bis/)).toBeOnTheScreen();
+    await user.press(screen.getByTestId('ordering-end-pause'));
+    await waitFor(() => expect(fake.calls.filter((c) => c.method === 'PUT').at(-1)?.body).toMatchObject({ pausedUntil: null }));
+    expect(await screen.findByTestId('ordering-pause-hour')).toBeOnTheScreen();
   });
 });

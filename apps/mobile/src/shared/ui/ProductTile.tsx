@@ -23,6 +23,8 @@ export interface ProductTileProps {
   onChangeQuantity: (product: ProductSummary, quantity: number) => void;
   onToggleFavorite?: (product: ProductSummary) => void;
   busy?: boolean;
+  /** False when the market takes no orders: no "+" and no quantity stepper. */
+  orderable?: boolean;
   /** Fixed width for carousel items; grid tiles stretch. */
   width?: number;
   /**
@@ -37,7 +39,7 @@ export interface ProductTileProps {
  * white "+" bottom-end that turns into − n +, gold tagline, "Bio " prefix, name ›, price
  * (accent + struck-through regular price when discounted), "550 g · 5,07 €/kg".
  */
-function ProductTileComponent({ product, quantity, onPress, onChangeQuantity, onToggleFavorite, busy = false, width, reserveTagline = width !== undefined }: ProductTileProps) {
+function ProductTileComponent({ product, quantity, onPress, onChangeQuantity, onToggleFavorite, busy = false, orderable = true, width, reserveTagline = width !== undefined }: ProductTileProps) {
   const styles = useStyles();
   const { colors } = useTheme();
   const { t } = useTranslation();
@@ -78,7 +80,7 @@ function ProductTileComponent({ product, quantity, onPress, onChangeQuantity, on
         {promotion != null && (
           // Bottom start next to the "+"; once the − n + stepper takes the bottom row, the pill moves
           // to the top start so it stays fully readable (the heart sits top end).
-          <View style={[styles.promo, quantity > 0 && available ? styles.promoTop : styles.promoBottom]} pointerEvents="none">
+          <View style={[styles.promo, quantity > 0 && available && orderable ? styles.promoTop : styles.promoBottom]} pointerEvents="none">
             <PromoPill label={promotion.label} />
           </View>
         )}
@@ -96,7 +98,7 @@ function ProductTileComponent({ product, quantity, onPress, onChangeQuantity, on
           </View>
         )}
         <View style={styles.action}>
-          {!available ? null : quantity > 0 ? (
+          {!available || !orderable ? null : quantity > 0 ? (
             <QuantityStepper
               appearance="floating"
               value={quantity}

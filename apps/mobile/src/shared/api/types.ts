@@ -204,9 +204,41 @@ export interface MarketSummary {
   fulfilment: FulfilmentOptions;
   activePromotionCount: number;
   tags: MarketTag[];
+  /** False while the merchant has switched online orders off or paused them (absent from older servers). */
+  acceptsOrders?: boolean;
+  /** Set only during a pause. */
+  ordersPausedUntil?: string | null;
+  /** A holiday that has not ended yet (local dates, inclusive). */
+  closedFrom?: string | null;
+  closedUntil?: string | null;
+}
+
+export type PaymentMethod = 'CASH' | 'CARD';
+
+/** What a merchant controls about ordering (`OrderSettings`); null numbers use the platform default. */
+export interface OrderSettings {
+  ordersEnabled: boolean;
+  pausedUntil?: string | null;
+  closedFrom?: string | null;
+  closedUntil?: string | null;
+  deliveryCapacity?: number | null;
+  pickupCapacity?: number | null;
+  deliveryLeadMinutes?: number | null;
+  pickupLeadMinutes?: number | null;
+  daysAhead?: number | null;
+  deliveryHours: OpeningHours[];
+  autoAccept: boolean;
+  paymentMethods: PaymentMethod[];
+  defaultMaxOrderQuantity?: number | null;
+}
+
+export interface MerchantOrderSettings extends OrderSettings {
+  defaults: Record<'deliveryCapacity' | 'pickupCapacity' | 'deliveryLeadMinutes' | 'pickupLeadMinutes' | 'daysAhead' | 'maxOrderQuantity', number>;
 }
 
 export interface MarketDetail extends MarketSummary {
+  /** How customers pay at handover; shown only when the platform payment mode is ON_SITE. */
+  paymentMethods?: PaymentMethod[];
   description?: string | null;
   phone?: string | null;
   openingHours: OpeningHours[];
