@@ -53,27 +53,17 @@ Die Prüfung im App Store dauert erfahrungsgemäß Tage, die Freischaltung neuer
 
 ## 3. Was du tun musst
 
-### 3.1 Entscheidungen (zuerst, alles andere hängt daran)
+### 3.1 Entscheidungen (Stand 25.10.2026)
 
-1. **Bezahlung.** Empfehlung für den Start: **Bezahlung beim Markt** (bar oder Karte bei Abholung
-   oder Lieferung), `DUKKAN_PAYMENT=ON_SITE`. Dukkan vermittelt dann nur, nimmt kein Geld an und
-   braucht keinen Zahlungsdienstleister. Online-Zahlung (z. B. Stripe Connect, Mollie, Adyen) ist
-   ein eigenes Projekt (Backlog B-43) mit Vertrag und regulatorischer Prüfung.
-2. **Geschäftsmodell** (B-46): Provision, Monatsgebühr oder anfangs kostenlos. Das bestimmt die
-   Händler-AGB.
-3. **Lieferung:** Wer liefert, der Markt selbst? Dann steht im Händlervertrag, dass der Markt für
-   die Lieferung verantwortlich ist.
-4. **Alkohol und Tabak:** Erst einmal **keine** altersbeschränkten Produkte zulassen, oder eine
-   Altersprüfung bei Übergabe vereinbaren. Sag mir, wenn du sie willst; dafür baue ich Kennzeichnung
-   und Hinweis ein.
-5. **Händlerprüfung:** Wer prüft neue Märkte (Gewerbeanmeldung, Impressum, Lebensmittelhygiene)
-   und wie schnell? In `prod` ist die Prüfung durch einen Admin Pflicht. Das Portal zeigt dabei eine
-   Prüfliste (Name/Firma, Anschrift, Telefon, Register) und gibt einen Markt erst frei, wenn die
-   Pflichtangaben vollständig sind. Gewerbeanmeldung und Hygiene prüfst du weiter selbst.
-6. **E-Mail-Bestätigung Pflicht?** Empfehlung: ja (`DUKKAN_REQUIRE_VERIFIED_EMAIL=true`).
-7. **KI-Funktionen** (Einkaufsliste per Foto/Video, Produkterfassung, Übersetzung): Für den Start
-   ohne KI möglich, die Einkaufsliste funktioniert dann für getippte und gesprochene Listen. Mit KI
-   brauchst du einen Anthropic-Account, `DUKKAN_ANTHROPIC_API_KEY` und einen AV-Vertrag (DPA).
+| Frage | Entscheidung | Umsetzung |
+|---|---|---|
+| Bezahlung | **Beim Markt** (bar oder Karte bei Abholung oder Lieferung). Dukkan nimmt kein Geld an, kein Zahlungsdienstleister. | `prod` setzt `DUKKAN_PAYMENT=ON_SITE`; die Startprüfung verweigert jeden anderen Wert. Apps zeigen „Zahlungspflichtig bestellen“ und „Du bezahlst direkt beim Markt“. |
+| Geschäftsmodell | **Für Händler erst einmal kostenlos** (keine Provision, keine Gebühr). | Nichts im Code; in die Händler-AGB: kostenlos in der Startphase, Änderung nur mit Vorankündigung. |
+| Alkohol und Tabak | **Nicht zulassen.** | Verbot in die Händler-AGB; bei der Marktprüfung und in der Katalogprüfung im Portal darauf achten; bei Verstößen sperrt ein Admin den Markt (Marktprüfung → Sperren). Die Kategorien enthalten keine Alkohol- oder Tabakkategorie. |
+| E-Mail-Bestätigung | **Pflicht** vor Bestellung und Markteröffnung. | `prod` setzt `DUKKAN_REQUIRE_VERIFIED_EMAIL=true`. |
+| KI-Funktionen | **Aus** zum Start. | `DUKKAN_ANTHROPIC_API_KEY` leer lassen: keine KI-Produkterfassung, keine maschinelle Übersetzung, Einkaufsliste nur getippt (Sprechen und Foto/Video bleiben unter „Funktionen“ aus). Kein AV-Vertrag mit Anthropic nötig; in der Datenschutzerklärung entfällt Anthropic. |
+| Lieferung | **Noch offen.** Annahme bis zur Entscheidung: Der Markt liefert selbst oder bietet nur Abholung an. | In die Händler-AGB: Der Markt ist für Lieferung, Preise und Lebensmittelinformationen verantwortlich. |
+| Händlerprüfung | Admin prüft jeden Markt vor der Freischaltung (Prüfliste im Portal); Gewerbe und Hygiene prüfst du. | `merchant-auto-approve: false` in `prod`. |
 
 ### 3.2 Recht und Verträge
 

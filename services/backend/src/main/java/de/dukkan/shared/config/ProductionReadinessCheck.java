@@ -70,6 +70,9 @@ final class ProductionReadinessCheck {
     if (environment.getProperty("dukkan.privacy.erasure-journal", "").isBlank()) {
       problems.add("DUKKAN_ERASURE_JOURNAL is empty: a restored backup would bring deleted accounts back");
     }
+    if (!"ON_SITE".equals(environment.getProperty("dukkan.platform.payment"))) {
+      problems.add("DUKKAN_PAYMENT must be ON_SITE: without online payment customers pay the market, and the apps must say so");
+    }
     String rabbit = environment.getProperty("dukkan.events.rabbitmq-uri", "");
     if ("rabbitmq".equals(environment.getProperty("dukkan.events.transport")) && rabbit.contains("dukkan:dukkan@")) {
       problems.add("DUKKAN_RABBITMQ_URI uses the default credentials");
