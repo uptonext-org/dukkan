@@ -10,7 +10,8 @@ import { AppText, CardSkeletons, ErrorState, Icon, IconButton, SectionTitle } fr
 import { ProductCarousel } from '../../catalog/components/ProductCarousel';
 import { FulfilmentLink } from '../../fulfilment/components/FulfilmentLink';
 import { ShoppingListEntry } from '../../shoppingList/components/ShoppingListEntry';
-import { useMarketHome } from '../api/hooks';
+import { usePlatform } from '../../legal/usePlatform';
+import { useMarket, useMarketHome } from '../api/hooks';
 import { BannerCarousel } from '../components/BannerCarousel';
 import { CategoryBand } from '../components/CategoryBand';
 import { MarketInfoCard } from '../components/MarketInfoCard';
@@ -24,6 +25,8 @@ export function MarketHomeScreen({ navigation }: MarketTabScreenProps<'MarketHom
   const { marketId } = useMarketContext();
   const rootNavigation = useNavigation<NavigationProp<RootStackParamList>>();
   const home = useMarketHome(marketId);
+  const detail = useMarket(marketId).data;
+  const payOnSite = usePlatform().data?.payment === 'ON_SITE';
 
   if (home.isPending) {
     return <CardSkeletons count={2} height={300} />;
@@ -32,6 +35,8 @@ export function MarketHomeScreen({ navigation }: MarketTabScreenProps<'MarketHom
     return <ErrorState error={home.error} onRetry={() => void home.refetch()} />;
   }
   const { market, banners, sections } = home.data;
+  // A showcase market (no online orders right now): no delivery choice and no shopping list.
+  const orderable = market.acceptsOrders !== false;
 
   const openBanner = (banner: Banner) => {
     switch (banner.target.type) {
@@ -79,16 +84,18 @@ export function MarketHomeScreen({ navigation }: MarketTabScreenProps<'MarketHom
       refreshControl={<RefreshControl refreshing={home.isRefetching} onRefresh={() => void home.refetch()} tintColor={colors.primary} />}
       testID="market-home">
       <View style={styles.topRow}>
-        <FulfilmentLink market={market} />
+        {orderable ? <FulfilmentLink market={market} /> : <View />}
         <IconButton icon="user" label={t('shell.account')} onPress={() => rootNavigation.navigate('Shell', { screen: 'Profile' })} />
       </View>
       <CategoryBand marketId={marketId} onOpen={(category) => navigation.navigate('MarketProducts', { title: category.name, filter: { categoryId: category.id } })} />
       {banners.length > 0 && <BannerCarousel banners={banners} onPress={openBanner} label={t('marketHome.banners')} />}
+      {orderable && (
+        <View style={styles.gutter}>
+          <ShoppingListEntry onPress={() => navigation.navigate('ShoppingList')} />
+        </View>
+      )}
       <View style={styles.gutter}>
-        <ShoppingListEntry onPress={() => navigation.navigate('ShoppingList')} />
-      </View>
-      <View style={styles.gutter}>
-        <MarketInfoCard market={market} />
+        <MarketInfoCard market={market} paymentMethods={payOnSite && orderable ? detail?.paymentMethods : undefined} />
       </View>
       {sections
         .filter((section) => section.items.length > 0)

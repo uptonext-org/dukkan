@@ -434,7 +434,8 @@ public class CatalogService {
       outbox.append(PrivateProductCreated.TYPE, catalogProductId, new PrivateProductCreated(catalogProductId, marketId));
     }
     UUID listingId = UUID.randomUUID();
-    listings.insert(listingId, marketId, catalogProductId, draft.priceCents(), draft.available(), draft.maxOrderQuantity(), now);
+    int maxOrderQuantity = Objects.requireNonNullElse(draft.maxOrderQuantity(), market.ordering().defaultMaxOrderQuantity());
+    listings.insert(listingId, marketId, catalogProductId, draft.priceCents(), draft.available(), maxOrderQuantity, now);
     return listing(listingId, locale);
   }
 
@@ -511,7 +512,6 @@ public class CatalogService {
     int failed = (int) results.stream().filter(r -> r.action() == ListingImport.Action.ERROR).count();
     boolean apply = !dryRun && failed == 0 && !plans.isEmpty();
     if (apply) {
-      int defaultMax = properties.catalog().defaultMaxOrderQuantity();
       results.clear();
       for (Planned plan : plans) {
         ListingImport.Row row = plan.row();
@@ -529,7 +529,7 @@ public class CatalogService {
                               plan.product(),
                               Objects.requireNonNull(row.priceCents()),
                               row.available() == null || row.available(),
-                              row.maxOrderQuantity() == null ? defaultMax : row.maxOrderQuantity()),
+                              row.maxOrderQuantity()),
                           ContentLocale.of(market.primaryLocale()))
                       .summary()
                       .id();

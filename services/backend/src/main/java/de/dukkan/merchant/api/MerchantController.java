@@ -6,6 +6,8 @@ import de.dukkan.catalog.application.Listing;
 import de.dukkan.catalog.application.ListingImport;
 import de.dukkan.i18n.application.ContentLocale;
 import de.dukkan.market.application.MerchantMarket;
+import de.dukkan.market.application.OrderSettings;
+import de.dukkan.market.application.OrderSettingsView;
 import de.dukkan.media.api.MediaUploadResponse;
 import de.dukkan.media.api.MediaUrls;
 import de.dukkan.media.application.MediaPurpose;
@@ -24,7 +26,6 @@ import de.dukkan.order.application.MarketInsights;
 import de.dukkan.order.api.OrderResponses;
 import de.dukkan.promotion.application.PromotionView;
 import de.dukkan.shared.api.PageResponse;
-import de.dukkan.shared.config.DukkanProperties;
 import de.dukkan.shared.error.InvalidRequestException;
 import de.dukkan.shared.security.CurrentUser;
 import jakarta.validation.Valid;
@@ -64,13 +65,11 @@ final class MerchantController {
   private final MerchantService merchant;
   private final OrderResponses orderResponses;
   private final MediaUrls mediaUrls;
-  private final int defaultMaxOrderQuantity;
 
-  MerchantController(MerchantService merchant, OrderResponses orderResponses, MediaUrls mediaUrls, DukkanProperties properties) {
+  MerchantController(MerchantService merchant, OrderResponses orderResponses, MediaUrls mediaUrls) {
     this.merchant = merchant;
     this.orderResponses = orderResponses;
     this.mediaUrls = mediaUrls;
-    this.defaultMaxOrderQuantity = properties.catalog().defaultMaxOrderQuantity();
   }
 
   @GetMapping("/markets")
@@ -92,6 +91,17 @@ final class MerchantController {
       @RequestBody @Valid MarketProfileRequest request,
       @RequestAttribute(ContentLocale.REQUEST_ATTRIBUTE) ContentLocale locale) {
     return merchant.updateMarket(CurrentUser.id(security), marketId, request.toProfile(), locale);
+  }
+
+  @GetMapping("/markets/{marketId}/order-settings")
+  OrderSettingsView orderSettings(@CurrentSecurityContext SecurityContext security, @PathVariable UUID marketId) {
+    return merchant.orderSettings(CurrentUser.id(security), marketId);
+  }
+
+  @PutMapping("/markets/{marketId}/order-settings")
+  OrderSettingsView updateOrderSettings(
+      @CurrentSecurityContext SecurityContext security, @PathVariable UUID marketId, @RequestBody @Valid OrderSettings request) {
+    return merchant.updateOrderSettings(CurrentUser.id(security), marketId, request);
   }
 
   /** Multipart upload; the part's declared content type is ignored (magic bytes decide). */
@@ -162,7 +172,7 @@ final class MerchantController {
       @PathVariable UUID marketId,
       @RequestBody @Valid CreateListingRequest request,
       @RequestAttribute(ContentLocale.REQUEST_ATTRIBUTE) ContentLocale locale) {
-    return merchant.createListing(CurrentUser.id(security), marketId, request.toDraft(defaultMaxOrderQuantity), locale);
+    return merchant.createListing(CurrentUser.id(security), marketId, request.toDraft(), locale);
   }
 
   @PutMapping("/markets/{marketId}/listings/{productId}")

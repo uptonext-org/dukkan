@@ -114,10 +114,13 @@ function isAdjustable(order: Order): boolean {
   return order.status === 'PLACED' || order.status === 'ACCEPTED';
 }
 
-export function OrdersBoard({ marketId }: { marketId: string }) {
+export function OrdersBoard({ marketId, onOpenSettings }: { marketId: string; onOpenSettings?: () => void }) {
   const { t, i18n } = useTranslation();
   const api = useApi();
   const queryClient = useQueryClient();
+  // A new market starts without online orders; the board says so until they are on.
+  const settings = useQuery({ queryKey: ['orderSettings', marketId], queryFn: () => api.orderSettings(marketId) });
+  const pausedUntil = settings.data?.pausedUntil != null && new Date(settings.data.pausedUntil) > new Date() ? settings.data.pausedUntil : null;
   const orders = useQuery({ queryKey: ['orders', marketId, i18n.language], queryFn: () => api.orders(marketId), refetchInterval: 30_000, placeholderData: keepPreviousData });
   const [editing, setEditing] = useState<string | null>(null);
   const advance = useMutation({
@@ -138,6 +141,22 @@ export function OrdersBoard({ marketId }: { marketId: string }) {
         </button>
         <span className="muted small">{t('orders.autoRefresh')}</span>
       </div>
+      {(settings.data?.ordersEnabled === false || pausedUntil !== null) && (
+        <div className="card row" role="status">
+          <strong>
+            {settings.data?.ordersEnabled === false
+              ? t('settings.boardOff')
+              : t('settings.boardPaused', {
+                  time: new Intl.DateTimeFormat(i18n.language === 'ar' ? 'ar-u-nu-latn' : i18n.language, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(pausedUntil ?? '')),
+                })}
+          </strong>
+          {onOpenSettings !== undefined && (
+            <button className="button secondary" type="button" onClick={onOpenSettings}>
+              {t('settings.boardOpen')}
+            </button>
+          )}
+        </div>
+      )}
       {orders.isPending && <p>{t('app.loading')}</p>}
       {orders.isError && (
         <p className="error" role="alert">

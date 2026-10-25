@@ -1279,6 +1279,46 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
+  /merchant/markets/{marketId}/order-settings:
+    parameters:
+      - { $ref: '#/components/parameters/MarketId' }
+    get:
+      tags: [merchant]
+      operationId: getOrderSettings
+      summary: Ordering settings of the market, with the platform defaults for empty fields
+      responses:
+        '200':
+          description: Settings.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MerchantOrderSettings' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      tags: [merchant]
+      operationId: updateOrderSettings
+      summary: Replace the ordering settings
+      description: |
+        Customers only see the effect: no order buttons while `ordersEnabled` is false or a pause
+        runs (`MarketSummary.acceptsOrders`), a notice for a pause or holiday, and fewer or other
+        slots. Booked slots keep their orders when capacity or times change. A pause that already
+        ended is dropped; a pause lasts at most 30 days. New markets start with `ordersEnabled: false`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/OrderSettings' }
+      responses:
+        '200':
+          description: Stored settings.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MerchantOrderSettings' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
   /merchant/catalog:
     get:
       tags: [merchant]
@@ -1794,7 +1834,9 @@ paths:
       tags: [admin]
       operationId: adminSetMarketStatus
       summary: Approve (ACTIVE), suspend (SUSPENDED) or return a market to review
-      description: Only ACTIVE markets are visible to customers and accept carts and orders.
+      description: |
+        Only ACTIVE markets are visible to customers and accept carts and orders. Approving needs
+        complete seller information (`review.complete`), otherwise `MARKET_INCOMPLETE`.
       parameters:
         - { $ref: '#/components/parameters/MarketId' }
         - { $ref: '#/components/parameters/AcceptLanguage' }
@@ -1817,6 +1859,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/BusinessRuleViolation' }
 
   /admin/catalog/products:
     get:
@@ -2004,7 +2047,8 @@ components:
     BusinessRuleViolation:
       description: |
         Business rule violated. Codes: PRODUCT_UNAVAILABLE, MAX_QUANTITY_EXCEEDED, MARKET_NOT_ACTIVE,
-        FULFILMENT_NOT_OFFERED, ADDRESS_REQUIRED, ADDRESS_OUTSIDE_DELIVERY_AREA, SLOT_CUTOFF_PASSED,
+        ORDERS_NOT_ACCEPTED (ordering switched off or paused; removing items still works),
+        SLOT_UNAVAILABLE (the market closed that day), FULFILMENT_NOT_OFFERED, ADDRESS_REQUIRED, ADDRESS_OUTSIDE_DELIVERY_AREA, SLOT_CUTOFF_PASSED,
         SLOT_TYPE_MISMATCH, SLOT_NOT_RESERVED, CART_EMPTY, MINIMUM_ORDER_NOT_MET,
         ORDER_NOT_CANCELLABLE, INVALID_STATUS_TRANSITION.
       content:
@@ -2334,6 +2378,49 @@ components:
     MarketStatus:
       type: string
       enum: [PENDING_REVIEW, ACTIVE, SUSPENDED]
+    PaymentMethod:
+      type: string
+      enum: [CASH, CARD]
+    OrderSettings:
+      type: object
+      description: |
+        What a merchant controls about ordering. A `null` number means the platform default
+        (`MerchantOrderSettings.defaults`).
+      required: [ordersEnabled, deliveryHours, autoAccept, paymentMethods]
+      properties:
+        ordersEnabled: { type: boolean, description: Online orders on or off (off = showcase). }
+        pausedUntil: { type: [string, 'null'], format: date-time, description: No new orders before this time. }
+        closedFrom: { type: [string, 'null'], format: date, description: 'Holiday, local date; set together with closedUntil.' }
+        closedUntil: { type: [string, 'null'], format: date }
+        deliveryCapacity: { type: [integer, 'null'], minimum: 1, maximum: 99, description: Deliveries per slot. }
+        pickupCapacity: { type: [integer, 'null'], minimum: 1, maximum: 99, description: Pickups per slot. }
+        deliveryLeadMinutes: { type: [integer, 'null'], minimum: 0, maximum: 2880, description: Order at least this long before a delivery slot starts. }
+        pickupLeadMinutes: { type: [integer, 'null'], minimum: 0, maximum: 2880 }
+        daysAhead: { type: [integer, 'null'], minimum: 1, maximum: 14, description: How many days (from today) customers can book. }
+        deliveryHours:
+          type: array
+          maxItems: 28
+          items: { $ref: '#/components/schemas/OpeningHours' }
+          description: Delivery times when they differ from the opening hours; empty = opening hours.
+        autoAccept: { type: boolean, description: New orders go straight to ACCEPTED. }
+        paymentMethods: { type: array, minItems: 1, maxItems: 2, items: { $ref: '#/components/schemas/PaymentMethod' } }
+        defaultMaxOrderQuantity: { type: [integer, 'null'], minimum: 1, maximum: 99, description: For new products without their own maximum. }
+    MerchantOrderSettings:
+      allOf:
+        - $ref: '#/components/schemas/OrderSettings'
+        - type: object
+          required: [defaults]
+          properties:
+            defaults:
+              type: object
+              required: [deliveryCapacity, pickupCapacity, deliveryLeadMinutes, pickupLeadMinutes, daysAhead, maxOrderQuantity]
+              properties:
+                deliveryCapacity: { type: integer }
+                pickupCapacity: { type: integer }
+                deliveryLeadMinutes: { type: integer }
+                pickupLeadMinutes: { type: integer }
+                daysAhead: { type: integer }
+                maxOrderQuantity: { type: integer }
     OpeningHours:
       type: object
       required: [dayOfWeek, opensAt, closesAt]
@@ -2377,7 +2464,7 @@ components:
           items: { $ref: '#/components/schemas/ProductSummary' }
     MarketSummary:
       type: object
-      required: [id, slug, name, type, cuisines, location, addressLine, openNow, fulfilment, activePromotionCount, tags]
+      required: [id, slug, name, type, cuisines, location, addressLine, openNow, fulfilment, activePromotionCount, tags, acceptsOrders]
       properties:
         id: { type: string, format: uuid }
         slug: { type: string }
@@ -2396,12 +2483,31 @@ components:
         fulfilment: { $ref: '#/components/schemas/FulfilmentOptions' }
         activePromotionCount: { type: integer }
         tags: { type: array, items: { type: string, enum: [ORGANIC, REGIONAL, HALAL, VEGAN_FRIENDLY] } }
+        acceptsOrders:
+          type: boolean
+          description: |
+            New orders are possible now. False while the merchant has switched online orders off
+            (the market is a showcase: show products, hide cart and order buttons, no notice) or
+            paused them (`ordersPausedUntil`).
+        ordersPausedUntil:
+          type: [string, 'null']
+          format: date-time
+          description: Set only during a pause; show "orders again from …".
+        closedFrom:
+          type: [string, 'null']
+          format: date
+          description: A holiday that has not ended yet (local dates, both inclusive); no slots on these days.
+        closedUntil: { type: [string, 'null'], format: date }
     MarketDetail:
       allOf:
         - $ref: '#/components/schemas/MarketSummary'
         - type: object
-          required: [openingHours, primaryLocale, imprint]
+          required: [openingHours, primaryLocale, imprint, paymentMethods]
           properties:
+            paymentMethods:
+              type: array
+              items: { $ref: '#/components/schemas/PaymentMethod' }
+              description: How customers pay at handover; show only when the platform payment mode is ON_SITE.
             description: { type: [string, 'null'] }
             phone: { type: [string, 'null'] }
             openingHours: { type: array, items: { $ref: '#/components/schemas/OpeningHours' } }
@@ -2825,13 +2931,39 @@ components:
       allOf:
         - $ref: '#/components/schemas/MarketDetail'
         - type: object
-          required: [status, descriptions]
+          required: [status, descriptions, review]
           properties:
             status: { $ref: '#/components/schemas/MarketStatus' }
             descriptions:
               type: object
               additionalProperties: { type: string }
               description: The description in every language (locale → text); `description` is only the requested one. Prefill profile forms from this, since updateMyMarket replaces all languages.
+            review: { $ref: '#/components/schemas/MarketReview' }
+    MarketReview:
+      type: object
+      description: |
+        Whether the seller information is complete enough to approve the market (imprint § 5 DDG,
+        trader traceability Art. 30 DSA). Items with `required` block approval (`MARKET_INCOMPLETE`);
+        the others are hints for the reviewer.
+      required: [complete, items]
+      properties:
+        complete: { type: boolean, description: All required items are ok. }
+        items:
+          type: array
+          items:
+            type: object
+            required: [code, ok, required]
+            properties:
+              code:
+                type: string
+                enum: [LEGAL_NAME, POSTAL_ADDRESS, PHONE, REGISTER_INFO]
+                description: |
+                  LEGAL_NAME: first and last name, or company name with legal form.
+                  POSTAL_ADDRESS: address line with a postcode.
+                  PHONE: a phone number.
+                  REGISTER_INFO: register court and number (only registered businesses have one).
+              ok: { type: boolean }
+              required: { type: boolean }
     CatalogProduct:
       type: object
       required: [id, name, unitSize, categoryId, cuisines, organic]

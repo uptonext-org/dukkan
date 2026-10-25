@@ -7,12 +7,15 @@ import type { MarketStackParamList } from '../../navigation/types';
 import { errorMessageKey, type ProductSummary } from '../../shared/api';
 import { useCartQuantities } from '../cart/api/hooks';
 import { useToggleProductFavorite } from '../favorites/api/hooks';
+import { useAcceptsOrders } from '../market/api/hooks';
 
 /** Everything a product tile needs inside a market: quantities, add/change, open, heart. */
 export function useProductActions(marketId: string) {
   const navigation = useNavigation<NavigationProp<MarketStackParamList>>();
   const cart = useCartQuantities(marketId);
   const favorites = useToggleProductFavorite();
+  // A market that takes no orders is a showcase: products without "+" or quantity.
+  const orderable = useAcceptsOrders(marketId);
   const { t } = useTranslation();
   const { setQuantity, error, reset } = cart;
   useEffect(() => {
@@ -32,5 +35,6 @@ export function useProductActions(marketId: string) {
     openProduct,
     changeQuantity,
     toggleFavorite,
+    orderable,
   };
 }

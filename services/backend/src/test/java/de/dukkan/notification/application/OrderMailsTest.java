@@ -6,6 +6,7 @@ import de.dukkan.address.application.AddressView;
 import de.dukkan.fulfilment.application.SlotView;
 import de.dukkan.legal.application.PlatformSettings;
 import de.dukkan.market.application.MarketDetail;
+import de.dukkan.market.application.OrderSettings;
 import de.dukkan.market.application.MarketSummary;
 import de.dukkan.order.application.OrderView;
 import de.dukkan.shared.domain.FulfilmentType;
@@ -50,7 +51,7 @@ class OrderMailsTest {
   private static MarketDetail market() {
     MarketSummary summary = Mockito.mock(MarketSummary.class);
     Mockito.when(summary.name()).thenReturn("Anatolia");
-    return new MarketDetail(summary, null, null, List.of(), "de", new MarketDetail.Imprint("Anatolia GmbH", "Steindamm 1, 20099 Hamburg", null));
+    return new MarketDetail(summary, null, null, List.of(), "de", new MarketDetail.Imprint("Anatolia GmbH", "Steindamm 1, 20099 Hamburg", null), List.of(OrderSettings.PaymentMethod.CASH, OrderSettings.PaymentMethod.CARD));
   }
 
   @Test

@@ -14,6 +14,14 @@ export function useMarket(marketId: string) {
   });
 }
 
+/**
+ * Whether customers can order from the market now. While it loads (or from an older server) the
+ * answer is yes; the server refuses orders anyway when they are switched off.
+ */
+export function useAcceptsOrders(marketId: string): boolean {
+  return useMarket(marketId).data?.acceptsOrders !== false;
+}
+
 export function useMarketHome(marketId: string) {
   const api = useApi();
   const lang = useLang();

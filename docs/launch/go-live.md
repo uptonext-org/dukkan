@@ -30,6 +30,7 @@ Die Prüfung im App Store dauert erfahrungsgemäß Tage, die Freischaltung neuer
 | Keine erfundenen Demo-Märkte in der Produktion: Seed-Daten liegen getrennt (`db/demo`) und laufen in `prod` nicht | `db/demo/V3__seed_hamburg.sql`, Test `ProductionMigrationsIntegrationTest` |
 | Echte Client-IP hinter dem Proxy: Login-Limits gelten pro Person, nicht für alle zusammen | `server.forward-headers-strategy: native` |
 | Märkte gehen in `prod` erst nach Prüfung durch einen Admin online | `merchant-auto-approve: false` |
+| Neue Märkte starten ohne Online-Bestellungen (Schaufenster); der Händler schaltet sie im Portal unter „Bestellungen & Lieferung“ ein und legt dort Pause, Urlaub, Zeitfenster, Lieferzeiten, Bezahlung und automatische Annahme fest | `GET/PUT /merchant/markets/{id}/order-settings` |
 | Erster Admin ohne SQL: `DUKKAN_BOOTSTRAP_ADMIN_EMAIL` | `AdminBootstrap` |
 | Swagger-UI in `prod` aus | `application-prod.yml` |
 | Impressum, Datenschutz, AGB und Kontakt in App und Web verlinkt (`GET /platform`) | `features/legal` |
@@ -62,7 +63,9 @@ Die Prüfung im App Store dauert erfahrungsgemäß Tage, die Freischaltung neuer
    Altersprüfung bei Übergabe vereinbaren. Sag mir, wenn du sie willst; dafür baue ich Kennzeichnung
    und Hinweis ein.
 5. **Händlerprüfung:** Wer prüft neue Märkte (Gewerbeanmeldung, Impressum, Lebensmittelhygiene)
-   und wie schnell? In `prod` ist die Prüfung durch einen Admin Pflicht.
+   und wie schnell? In `prod` ist die Prüfung durch einen Admin Pflicht. Das Portal zeigt dabei eine
+   Prüfliste (Name/Firma, Anschrift, Telefon, Register) und gibt einen Markt erst frei, wenn die
+   Pflichtangaben vollständig sind. Gewerbeanmeldung und Hygiene prüfst du weiter selbst.
 6. **E-Mail-Bestätigung Pflicht?** Empfehlung: ja (`DUKKAN_REQUIRE_VERIFIED_EMAIL=true`).
 7. **KI-Funktionen** (Einkaufsliste per Foto/Video, Produkterfassung, Übersetzung): Für den Start
    ohne KI möglich, die Einkaufsliste funktioniert dann für getippte und gesprochene Listen. Mit KI

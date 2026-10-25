@@ -75,6 +75,16 @@ export function market(overrides: Partial<Record<string, unknown>> = {}) {
     addressLine: 'Steindamm 30, 20099 Hamburg',
     type: { code: 'GROCERY', name: 'Lebensmittel' },
     imprint: { legalName: 'Anatolia GmbH', addressLine: 'Steindamm 30', registerInfo: 'HRB 1' },
+    phone: '+49 40 1234567',
+    review: {
+      complete: true,
+      items: [
+        { code: 'LEGAL_NAME', ok: true, required: true },
+        { code: 'POSTAL_ADDRESS', ok: true, required: true },
+        { code: 'PHONE', ok: true, required: true },
+        { code: 'REGISTER_INFO', ok: true, required: false },
+      ],
+    },
     ...overrides,
   };
 }

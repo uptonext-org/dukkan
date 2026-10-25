@@ -114,13 +114,13 @@ final class MerchantRequests {
       @Nullable Boolean available,
       @Nullable @Max(99) @Min(1) Integer maxOrderQuantity) {
 
-    ListingDraft toDraft(int defaultMaxOrderQuantity) {
+    ListingDraft toDraft() {
       return new ListingDraft(
           catalogProductId,
           newProduct == null ? null : newProduct.toNewProduct(),
           euroCents(price, "price"),
           available == null || available,
-          maxOrderQuantity == null ? defaultMaxOrderQuantity : maxOrderQuantity);
+          maxOrderQuantity);
     }
   }
 

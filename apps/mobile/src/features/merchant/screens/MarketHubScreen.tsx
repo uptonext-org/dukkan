@@ -6,6 +6,7 @@ import type { RootStackScreenProps } from '../../../navigation/types';
 import { makeStyles } from '../../../shared/theme';
 import { AppText, ListRow, Screen, ScreenHeader } from '../../../shared/ui';
 import { useMyMarkets } from '../api/hooks';
+import { OrderingControls } from '../components/OrderingControls';
 
 export function MarketHubScreen({ route, navigation }: RootStackScreenProps<'MerchantMarketHub'>) {
   const styles = useStyles();
@@ -20,6 +21,7 @@ export function MarketHubScreen({ route, navigation }: RootStackScreenProps<'Mer
             {`${t(`merchant.status.${market.status}`)} · ${market.addressLine}`}
           </AppText>
         )}
+        <OrderingControls marketId={marketId} />
         <ListRow title={t('merchant.profile')} icon="edit" onPress={() => navigation.navigate('MerchantMarketForm', { marketId })} />
         <ListRow title={t('merchant.listings')} icon="package" onPress={() => navigation.navigate('MerchantListings', { marketId })} testID="hub-listings" />
         <ListRow title={t('merchant.addProduct')} icon="plus" onPress={() => navigation.navigate('MerchantAddProduct', { marketId })} />

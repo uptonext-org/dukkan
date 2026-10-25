@@ -60,7 +60,7 @@ class OrderMailIntegrationTest extends IntegrationTest {
         .contains("5 × Ayran")
         .contains("Gesamt (inkl. MwSt.): 15,00")
         .contains("Abholung: ")
-        .contains("Bezahlung: direkt beim Markt")
+        .contains("Bezahlung: direkt beim Markt, bei der Abholung bzw. Lieferung (bar).")
         .contains("Verkäufer:")
         .contains("Bestellung ansehen: https://dukkan.example/orders/" + order)
         .contains("AGB: https://dukkan.example/agb")
