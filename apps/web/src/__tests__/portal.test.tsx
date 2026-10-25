@@ -307,6 +307,27 @@ describe('admin market review', () => {
 });
 
 describe('promotions', () => {
+  it('asks for the title only in the market language while merchant multilingual input is off', async () => {
+    const ayran = { id: 'l1', name: 'Ayran', unitSize: '250 ml', price: { amountCents: 99, currency: 'EUR' }, available: true, maxOrderQuantity: 24, privateProduct: false };
+    const { user, calls } = renderPortal({
+      'GET /merchant/markets': [market()],
+      'GET /merchant/markets/m1/orders': [],
+      'GET /merchant/markets/m1/promotions': [],
+      'GET /merchant/markets/m1/listings': { items: [ayran], page: 0, size: 50, totalItems: 1, totalPages: 1 },
+      'GET /features': { SHOPPING_LIST: false, SHOPPING_LIST_VOICE: false, SHOPPING_LIST_MEDIA: false, MERCHANT_MULTILINGUAL: false },
+      'POST /merchant/markets/m1/promotions': (call) => ({ id: 'pr2', ...(call.body as object) }),
+    });
+    await user.click(await screen.findByRole('button', { name: 'Aktionen' }));
+    await user.type(await screen.findByLabelText('Titel'), 'Ayran-Woche');
+    expect(screen.queryByLabelText('Titel · English')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Fehlende Sprachen übersetzen' })).toBeNull();
+    await user.click(await screen.findByRole('checkbox', { name: 'Ayran' }));
+    await user.click(screen.getByRole('button', { name: 'Aktion starten' }));
+    expect(await screen.findByRole('status')).toHaveTextContent('Aktion gestartet.');
+    const body = calls.find((c) => c.method === 'POST' && c.path.endsWith('/promotions'))?.body as Record<string, unknown>;
+    expect(body.title).toEqual({ de: 'Ayran-Woche' });
+  });
+
   it('translates the title, picks products and starts a promotion; ends a running one', async () => {
     const running = {
       id: 'pr1',
@@ -323,6 +344,7 @@ describe('promotions', () => {
       'GET /merchant/markets/m1/orders': [],
       'GET /merchant/markets/m1/promotions': [running],
       'GET /merchant/markets/m1/listings': { items: [ayran], page: 0, size: 50, totalItems: 1, totalPages: 1 },
+      'GET /features': { SHOPPING_LIST: false, SHOPPING_LIST_VOICE: false, SHOPPING_LIST_MEDIA: false, MERCHANT_MULTILINGUAL: true },
       'POST /merchant/translations': { fields: [{ key: 'text', values: { en: 'Ayran week', ar: 'أسبوع العيران' } }] },
       'POST /merchant/markets/m1/promotions': (call) => ({ ...running, id: 'pr2', ...(call.body as object) }),
       'DELETE /merchant/markets/m1/promotions/pr1': respond(204),
@@ -744,7 +766,7 @@ describe('orders and delivery settings', () => {
 
 describe('admin features', () => {
   it('switches the shopping list and its parts on for all customers', async () => {
-    let current: Record<string, boolean> = { SHOPPING_LIST: false, SHOPPING_LIST_VOICE: false, SHOPPING_LIST_MEDIA: false };
+    let current: Record<string, boolean> = { SHOPPING_LIST: false, SHOPPING_LIST_VOICE: false, SHOPPING_LIST_MEDIA: false, MERCHANT_MULTILINGUAL: false };
     const { user, calls } = renderPortal(
       {
         'GET /admin/markets?status=PENDING_REVIEW': [],
@@ -761,6 +783,7 @@ describe('admin features', () => {
     expect(list).not.toBeChecked();
     expect(screen.getByRole('checkbox', { name: 'Einkaufsliste sprechen' })).not.toBeChecked();
     expect(screen.getAllByText(/Wirkt erst, wenn die Einkaufsliste an ist/)).toHaveLength(2);
+    expect(screen.getByRole('checkbox', { name: 'Eingaben in mehreren Sprachen' })).not.toBeChecked();
 
     await user.click(list);
     expect(await screen.findByRole('checkbox', { name: 'Einkaufsliste (eintippen)' })).toBeChecked();

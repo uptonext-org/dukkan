@@ -394,12 +394,15 @@
     "name": {
       "SHOPPING_LIST": "Shopping list (typing)",
       "SHOPPING_LIST_VOICE": "Speak the shopping list",
-      "SHOPPING_LIST_MEDIA": "Photograph or film the shopping list"
+      "SHOPPING_LIST_MEDIA": "Photograph or film the shopping list",
+      "MERCHANT_MULTILINGUAL": "Input in several languages"
     },
     "description": {
       "SHOPPING_LIST": "Customers type their list in a market and the matching products are found.",
       "SHOPPING_LIST_VOICE": "Voice input; recognition runs on the phone.",
-      "SHOPPING_LIST_MEDIA": "Photos or a short video of the list, read by the AI (uses AI requests; needs the Anthropic key)."
-    }
+      "SHOPPING_LIST_MEDIA": "Photos or a short video of the list, read by the AI (uses AI requests; needs the Anthropic key).",
+      "MERCHANT_MULTILINGUAL": "Merchants fill in the market description, products and promotions in every language. Off: only in the market's language, which customers see whatever language they use."
+    },
+    "merchants": "Merchants"
   }
 }

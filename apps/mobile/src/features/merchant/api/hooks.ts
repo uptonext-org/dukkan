@@ -18,7 +18,7 @@ import {
   type UpdateListingRequest,
   type UploadFile,
 } from '../../../shared/api';
-import { useLang } from '../../../shared/i18n';
+import { LANGUAGES, useLang, type Language } from '../../../shared/i18n';
 
 export function useMyMarkets() {
   const api = useApi();
@@ -200,4 +200,15 @@ export function useProductDraft(marketId: string) {
 export function useTranslateTexts() {
   const api = useApi();
   return useMutation({ mutationFn: (request: TranslationRequest) => api.translateTexts(request) });
+}
+
+/**
+ * The languages a merchant fills in texts for: only the market's language unless platform admins
+ * switched on MERCHANT_MULTILINGUAL (also while the switches load or fail).
+ */
+export function useMerchantLanguages(primary: Language): { languages: readonly (typeof LANGUAGES)[number][]; multilingual: boolean } {
+  const api = useApi();
+  const features = useQuery({ queryKey: queryKeys.features, queryFn: ({ signal }) => api.getFeatures(signal), staleTime: 5 * 60_000 });
+  const multilingual = features.data?.MERCHANT_MULTILINGUAL === true;
+  return { languages: multilingual ? LANGUAGES : LANGUAGES.filter((l) => l.code === primary), multilingual };
 }

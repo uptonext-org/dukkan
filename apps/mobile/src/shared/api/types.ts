@@ -729,6 +729,15 @@ export interface PromotionRequest {
   productIds: string[];
 }
 
+/** `GET /features`: functions platform admins switched on or off (effective state). */
+export interface FeatureSwitches {
+  SHOPPING_LIST: boolean;
+  SHOPPING_LIST_VOICE: boolean;
+  SHOPPING_LIST_MEDIA: boolean;
+  /** Merchants enter texts in every language; off: only in the market's language. */
+  MERCHANT_MULTILINGUAL?: boolean;
+}
+
 // ---------------------------------------------------------------- shopping list by voice, photo or video (F1)
 /** `GET /shopping-list`: whether photos and videos can be read (a language model is configured). */
 export interface ShoppingListCapabilities {

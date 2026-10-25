@@ -48,6 +48,7 @@ function setup(draft: ProductDraft | ((request: ApiRequest) => ProductDraft), tr
       { id: 'cat-meat', parentId: null, slug: 'meat', name: 'Fleisch & Geflügel', sortOrder: 1, productCount: null },
       { id: 'cat-dairy', parentId: null, slug: 'dairy', name: 'Milch, Käse & Eier', sortOrder: 2, productCount: null },
     ],
+    'GET /features': { SHOPPING_LIST: false, SHOPPING_LIST_VOICE: false, SHOPPING_LIST_MEDIA: false, MERCHANT_MULTILINGUAL: true },
     [`POST ${DRAFT_PATH}`]: draft,
     ...(translate !== undefined ? { 'POST /merchant/translations': translate } : {}),
     [`POST /merchant/markets/${MARKET_ID}/media`]: { key: KEY, url: PHOTO_URL, width: 800, height: 600, contentType: 'image/jpeg', sizeBytes: 90_000 } satisfies MediaUpload,

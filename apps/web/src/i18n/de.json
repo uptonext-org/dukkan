@@ -394,12 +394,15 @@
     "name": {
       "SHOPPING_LIST": "Einkaufsliste (eintippen)",
       "SHOPPING_LIST_VOICE": "Einkaufsliste sprechen",
-      "SHOPPING_LIST_MEDIA": "Einkaufsliste fotografieren oder filmen"
+      "SHOPPING_LIST_MEDIA": "Einkaufsliste fotografieren oder filmen",
+      "MERCHANT_MULTILINGUAL": "Eingaben in mehreren Sprachen"
     },
     "description": {
       "SHOPPING_LIST": "Kunden tippen ihre Liste im Markt ein, die passenden Produkte werden gefunden.",
       "SHOPPING_LIST_VOICE": "Spracheingabe; die Erkennung läuft auf dem Handy.",
-      "SHOPPING_LIST_MEDIA": "Fotos oder kurzes Video des Einkaufszettels, gelesen von der KI (kostet KI-Anfragen; braucht den Anthropic-Schlüssel)."
-    }
+      "SHOPPING_LIST_MEDIA": "Fotos oder kurzes Video des Einkaufszettels, gelesen von der KI (kostet KI-Anfragen; braucht den Anthropic-Schlüssel).",
+      "MERCHANT_MULTILINGUAL": "Händler füllen Marktbeschreibung, Produkte und Angebote in allen Sprachen aus. Aus: nur in der Sprache des Markts; Kunden sehen diesen Text in jeder Sprache."
+    },
+    "merchants": "Händler"
   }
 }

@@ -32,6 +32,7 @@ Die Prüfung im App Store dauert erfahrungsgemäß Tage, die Freischaltung neuer
 | Märkte gehen in `prod` erst nach Prüfung durch einen Admin online | `merchant-auto-approve: false` |
 | Neue Märkte starten ohne Online-Bestellungen (Schaufenster); der Händler schaltet sie im Portal unter „Bestellungen & Lieferung“ ein und legt dort Pause, Urlaub, Zeitfenster, Lieferzeiten, Bezahlung und automatische Annahme fest | `GET/PUT /merchant/markets/{id}/order-settings` |
 | Die Einkaufsliste (eintippen, sprechen, Foto/Video) ist für alle Kunden aus, bis ein Admin sie im Portal unter „Funktionen“ einschaltet | `GET /features`, `PUT /admin/features/{feature}` |
+| Händler geben Texte (Marktbeschreibung, Produkte, Aktionen) nur in der Sprache ihres Markts ein; mehrere Sprachen schaltet ein Admin unter „Funktionen“ frei | `MERCHANT_MULTILINGUAL` |
 | Erster Admin ohne SQL: `DUKKAN_BOOTSTRAP_ADMIN_EMAIL` | `AdminBootstrap` |
 | Swagger-UI in `prod` aus | `application-prod.yml` |
 | Impressum, Datenschutz, AGB und Kontakt in App und Web verlinkt (`GET /platform`) | `features/legal` |
