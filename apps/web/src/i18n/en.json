@@ -26,7 +26,8 @@
     "profile": "Market profile",
     "insights": "Overview",
     "settings": "Orders & delivery",
-    "features": "Features"
+    "features": "Features",
+    "feedback": "Customer feedback"
   },
   "status": {
     "PENDING_REVIEW": "In review",
@@ -168,7 +169,8 @@
     "ORDER_NOT_ADJUSTABLE": "The order is ready or on its way and can no longer be changed.",
     "ORDER_ADJUSTMENT_EMPTY": "Nothing would be left – decline the order instead.",
     "MARKET_INCOMPLETE": "The seller information is incomplete.",
-    "ORDERS_NOT_ACCEPTED": "This market is not taking orders right now."
+    "ORDERS_NOT_ACCEPTED": "This market is not taking orders right now.",
+    "FEEDBACK_DISABLED": "This market is not taking feedback at the moment."
   },
   "catalog": {
     "title": "Catalog review",
@@ -412,5 +414,13 @@
       "MERCHANT_MULTILINGUAL": "Merchants fill in the market description, products and promotions in every language. Off: only in the market's language, which customers see whatever language they use."
     },
     "merchants": "Merchants"
+  },
+  "feedback": {
+    "title": "Customer feedback",
+    "toggle": "Accept feedback from customers",
+    "toggleHint": "On: customers see a feedback field at the bottom of your market page. Off: the field disappears; messages received stay here.",
+    "empty": "No feedback yet. Messages from your customers appear here.",
+    "rating": "{{rating}} of 5 stars",
+    "more": "Load more"
   }
 }

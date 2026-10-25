@@ -831,6 +831,41 @@ paths:
                 type: array
                 items: { $ref: '#/components/schemas/Promotion' }
         '404': { $ref: '#/components/responses/NotFound' }
+  /markets/{marketId}/feedback:
+    parameters:
+      - { $ref: '#/components/parameters/MarketId' }
+    get:
+      tags: [markets]
+      operationId: getFeedbackAvailability
+      summary: Whether customers can write feedback to this market
+      security: []
+      responses:
+        '200':
+          description: Availability.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FeedbackAvailability' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    post:
+      tags: [markets]
+      operationId: sendFeedback
+      summary: Send feedback to the market (signed-in customers)
+      description: |
+        Only while the merchant takes feedback (else 422 `FEEDBACK_DISABLED`). The merchant sees the
+        message, the optional rating and the customer's first name. At most 3 messages per customer
+        and market a day (429). Deleted with the account.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/FeedbackRequest' }
+      responses:
+        '204': { description: Sent. }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/BusinessRuleViolation' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
   /products/{productId}:
     get:
       tags: [catalog]
@@ -1291,6 +1326,52 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/MerchantMarket' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /merchant/markets/{marketId}/feedback:
+    parameters:
+      - { $ref: '#/components/parameters/MarketId' }
+    get:
+      tags: [merchant]
+      operationId: listMerchantFeedback
+      summary: Customer feedback to the market, newest first, and whether the market takes feedback
+      parameters:
+        - { name: page, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+        - { name: size, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+      responses:
+        '200':
+          description: Switch and messages.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MerchantFeedbackPage' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /merchant/markets/{marketId}/feedback/settings:
+    parameters:
+      - { $ref: '#/components/parameters/MarketId' }
+    put:
+      tags: [merchant]
+      operationId: updateFeedbackSettings
+      summary: Switch receiving customer feedback on or off (new markets start with off)
+      description: Messages already received stay readable when it is switched off.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [enabled]
+              properties:
+                enabled: { type: boolean }
+      responses:
+        '200':
+          description: Switch and the first page of messages.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MerchantFeedbackPage' }
         '400': { $ref: '#/components/responses/ValidationError' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
@@ -2102,7 +2183,7 @@ components:
       description: |
         Business rule violated. Codes: PRODUCT_UNAVAILABLE, MAX_QUANTITY_EXCEEDED, MARKET_NOT_ACTIVE,
         ORDERS_NOT_ACCEPTED (ordering switched off or paused; removing items still works),
-        FEATURE_DISABLED (a function platform admins switched off),
+        FEATURE_DISABLED (a function platform admins switched off), FEEDBACK_DISABLED (the market takes no feedback),
         SLOT_UNAVAILABLE (the market closed that day), FULFILMENT_NOT_OFFERED, ADDRESS_REQUIRED, ADDRESS_OUTSIDE_DELIVERY_AREA, SLOT_CUTOFF_PASSED,
         SLOT_TYPE_MISMATCH, SLOT_NOT_RESERVED, CART_EMPTY, MINIMUM_ORDER_NOT_MET,
         ORDER_NOT_CANCELLABLE, INVALID_STATUS_TRANSITION.
@@ -2306,7 +2387,7 @@ components:
         read: { type: boolean }
     AccountExport:
       type: object
-      required: [exportedAt, account, linkedSignIns, addresses, orders, favorites, notifications, pushEnabled, ownedMarketIds]
+      required: [exportedAt, account, linkedSignIns, addresses, orders, favorites, notifications, pushEnabled, ownedMarketIds, feedback]
       properties:
         exportedAt: { type: string, format: date-time }
         account:
@@ -2341,6 +2422,52 @@ components:
               read: { type: boolean }
         pushEnabled: { type: boolean }
         ownedMarketIds: { type: array, items: { type: string, format: uuid } }
+        feedback:
+          type: array
+          description: Feedback sent to markets.
+          items:
+            type: object
+            required: [marketId, message, createdAt]
+            properties:
+              marketId: { type: string, format: uuid }
+              rating: { type: [integer, 'null'], minimum: 1, maximum: 5 }
+              message: { type: string }
+              createdAt: { type: string, format: date-time }
+    FeedbackAvailability:
+      type: object
+      required: [enabled, maxLength]
+      properties:
+        enabled: { type: boolean, description: The merchant takes feedback; the apps show the form only then. }
+        maxLength: { type: integer, description: Longest message in characters. }
+    FeedbackRequest:
+      type: object
+      required: [message]
+      properties:
+        message: { type: string, minLength: 1, maxLength: 1000 }
+        rating: { type: [integer, 'null'], minimum: 1, maximum: 5 }
+    MarketFeedback:
+      type: object
+      required: [id, customerName, message, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        customerName: { type: string, description: First name only. }
+        rating: { type: [integer, 'null'], minimum: 1, maximum: 5 }
+        message: { type: string }
+        createdAt: { type: string, format: date-time }
+    MerchantFeedbackPage:
+      type: object
+      required: [enabled, feedback]
+      properties:
+        enabled: { type: boolean }
+        feedback:
+          type: object
+          required: [items, page, size, totalItems, totalPages]
+          properties:
+            items: { type: array, items: { $ref: '#/components/schemas/MarketFeedback' } }
+            page: { type: integer }
+            size: { type: integer }
+            totalItems: { type: integer, format: int64 }
+            totalPages: { type: integer }
     NotificationSettings:
       type: object
       required: [pushEnabled]

@@ -27,6 +27,7 @@ export function MarketHubScreen({ route, navigation }: RootStackScreenProps<'Mer
         <ListRow title={t('merchant.addProduct')} icon="plus" onPress={() => navigation.navigate('MerchantAddProduct', { marketId })} />
         <ListRow title={t('merchant.promotions')} icon="percent" onPress={() => navigation.navigate('MerchantPromotions', { marketId })} />
         <ListRow title={t('merchant.orders')} icon="orders" onPress={() => navigation.navigate('MerchantOrders', { marketId })} />
+        <ListRow title={t('merchantFeedback.entry')} icon="message" onPress={() => navigation.navigate('MerchantFeedback', { marketId })} testID="hub-feedback" />
         <ListRow title={t('merchant.viewAsCustomer')} icon="store" onPress={() => openMarket(navigation, marketId)} />
       </ScrollView>
     </Screen>

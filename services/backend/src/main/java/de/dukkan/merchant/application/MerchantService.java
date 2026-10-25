@@ -9,6 +9,7 @@ import de.dukkan.catalog.application.Listing;
 import de.dukkan.catalog.application.ListingDraft;
 import de.dukkan.catalog.application.ListingImport;
 import de.dukkan.catalog.application.ListingUpdate;
+import de.dukkan.feedback.application.FeedbackService;
 import de.dukkan.i18n.application.ContentLocale;
 import de.dukkan.i18n.application.LocaleService;
 import de.dukkan.i18n.application.SupportedLocale;
@@ -63,6 +64,7 @@ public class MerchantService {
   private final ProductCaptureService capture;
   private final LocaleService locales;
   private final IdentityService identity;
+  private final FeedbackService feedback;
 
   public MerchantService(
       MarketService markets,
@@ -73,7 +75,8 @@ public class MerchantService {
       MediaService media,
       ProductCaptureService capture,
       LocaleService locales,
-      IdentityService identity) {
+      IdentityService identity,
+      FeedbackService feedback) {
     this.markets = markets;
     this.catalog = catalog;
     this.promotions = promotions;
@@ -83,6 +86,17 @@ public class MerchantService {
     this.capture = capture;
     this.locales = locales;
     this.identity = identity;
+    this.feedback = feedback;
+  }
+
+  public FeedbackService.MerchantFeedback feedback(UUID userId, UUID marketId, int page, int size) {
+    requireOwner(userId, marketId);
+    return feedback.forMerchant(marketId, page, size);
+  }
+
+  public FeedbackService.MerchantFeedback setFeedbackEnabled(UUID userId, UUID marketId, boolean enabled, int size) {
+    requireOwner(userId, marketId);
+    return feedback.setEnabled(marketId, enabled, size);
   }
 
   @Transactional(readOnly = true)

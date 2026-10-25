@@ -14,10 +14,11 @@ import { usePlatform } from '../../legal/usePlatform';
 import { useMarket, useMarketHome } from '../api/hooks';
 import { BannerCarousel } from '../components/BannerCarousel';
 import { CategoryBand } from '../components/CategoryBand';
+import { MarketFeedbackCard } from '../components/MarketFeedbackCard';
 import { MarketInfoCard } from '../components/MarketInfoCard';
 import { useMarketContext } from '../MarketContext';
 
-/** Market start page: fulfilment link, category band, banner carousel, info card, product sections. */
+/** Market start page: fulfilment link, category band, banner carousel, product sections, info and feedback cards. */
 export function MarketHomeScreen({ navigation }: MarketTabScreenProps<'MarketHome'>) {
   const styles = useStyles();
   const { colors } = useTheme();
@@ -120,8 +121,9 @@ export function MarketHomeScreen({ navigation }: MarketTabScreenProps<'MarketHom
           </View>
         ))}
       {/* Opening hours, delivery, minimum order and payment last, below the products. */}
-      <View style={styles.gutter}>
+      <View style={[styles.gutter, styles.bottom]}>
         <MarketInfoCard market={market} paymentMethods={payOnSite && orderable ? detail?.paymentMethods : undefined} />
+        <MarketFeedbackCard marketId={marketId} marketName={market.name} />
       </View>
     </ScrollView>
   );
@@ -132,6 +134,7 @@ const useStyles = makeStyles((t) => ({
   content: { paddingBottom: t.spacing.xxxl, gap: t.spacing.xxl },
   topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingStart: t.layout.gutter, paddingEnd: t.spacing.xs },
   gutter: { paddingHorizontal: t.layout.gutter },
+  bottom: { gap: t.spacing.lg },
   section: { gap: 0 },
   all: { flexDirection: 'row', alignItems: 'center', minHeight: 44, gap: 2 },
 }));

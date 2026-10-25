@@ -1,6 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 
-import { queryKeys, useApi } from '../../../shared/api';
+import { queryKeys, useApi, type FeedbackRequest } from '../../../shared/api';
 import { useLang } from '../../../shared/i18n';
 import { useChosenPlace } from '../../../shared/location';
 
@@ -29,4 +29,19 @@ export function useMarketHome(marketId: string) {
     queryKey: queryKeys.marketHome(lang, marketId),
     queryFn: ({ signal }) => api.getMarketHome(marketId, signal),
   });
+}
+
+/** Whether the market takes feedback; off while loading or when it fails. */
+export function useFeedbackAvailability(marketId: string) {
+  const api = useApi();
+  return useQuery({
+    queryKey: queryKeys.feedbackAvailability(marketId),
+    queryFn: ({ signal }) => api.getFeedbackAvailability(marketId, signal),
+    staleTime: 5 * 60_000,
+  });
+}
+
+export function useSendFeedback(marketId: string) {
+  const api = useApi();
+  return useMutation({ mutationFn: (request: FeedbackRequest) => api.sendFeedback(marketId, request) });
 }

@@ -73,7 +73,8 @@
     "SHOPPING_LIST_AI_UNAVAILABLE": "Fotos und Videos können gerade nicht gelesen werden, weil die KI nicht eingerichtet ist.",
     "TERMS_NOT_ACCEPTED": "Bitte akzeptiere die AGB und die Datenschutzerklärung.",
     "ORDERS_NOT_ACCEPTED": "Dieser Markt nimmt gerade keine Bestellungen an.",
-    "SLOT_UNAVAILABLE": "An diesem Tag ist der Markt geschlossen. Bitte wähle eine andere Zeit."
+    "SLOT_UNAVAILABLE": "An diesem Tag ist der Markt geschlossen. Bitte wähle eine andere Zeit.",
+    "FEEDBACK_DISABLED": "Dieser Markt nimmt gerade kein Feedback an."
   },
   "validation": {
     "required": "Bitte ausfüllen.",
@@ -807,5 +808,27 @@
     "readTerms": "AGB lesen",
     "readPrivacy": "Datenschutzerklärung lesen",
     "acceptRequired": "Bitte akzeptiere die AGB und die Datenschutzerklärung."
+  },
+  "feedback": {
+    "title": "Feedback an den Markt",
+    "hint": "Lob, Wünsche oder Kritik: Deine Nachricht geht direkt an {{market}}.",
+    "signIn": "Anmelden und Feedback senden",
+    "rating": "Bewertung (freiwillig)",
+    "stars": "{{n}} von 5 Sternen",
+    "message": "Deine Nachricht",
+    "send": "Senden",
+    "sent": "Danke! Der Markt hat deine Nachricht erhalten.",
+    "another": "Weitere Nachricht schreiben",
+    "empty": "Bitte eine Nachricht eingeben."
+  },
+  "merchantFeedback": {
+    "entry": "Kundenfeedback",
+    "title": "Kundenfeedback",
+    "toggle": "Feedback von Kunden annehmen",
+    "toggleHint": "An: Kunden sehen unten auf deiner Marktseite ein Feedback-Feld. Aus: Das Feld verschwindet, erhaltene Nachrichten bleiben hier.",
+    "emptyTitle": "Noch kein Feedback",
+    "emptyMessage": "Nachrichten deiner Kunden erscheinen hier.",
+    "rating": "{{n}} von 5 Sternen",
+    "more": "Mehr laden"
   }
 }

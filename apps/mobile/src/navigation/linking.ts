@@ -48,6 +48,7 @@ export const SCREEN_PATHS: PathConfigMap<RootStackParamList> = {
   MerchantListings: 'merchant/markets/:marketId/listings',
   MerchantAddProduct: 'merchant/markets/:marketId/add-product',
   MerchantPromotions: 'merchant/markets/:marketId/promotions',
+  MerchantFeedback: 'merchant/markets/:marketId/feedback',
   MerchantPromotionForm: 'merchant/markets/:marketId/promotions/new',
   MerchantOrders: 'merchant/markets/:marketId/orders',
   ResetPassword: 'reset-password',

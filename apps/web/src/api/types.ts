@@ -161,6 +161,20 @@ export interface Listing {
   overrides?: ListingOverrides | null;
 }
 
+/** One feedback message as the merchant sees it (customer's first name only). */
+export interface MarketFeedback {
+  id: string;
+  customerName: string;
+  rating?: number | null;
+  message: string;
+  createdAt: string;
+}
+
+export interface MerchantFeedbackPage {
+  enabled: boolean;
+  feedback: PageResponse<MarketFeedback>;
+}
+
 /** A market's own details of a catalog product; empty fields show the catalog value. */
 export interface ListingOverrides {
   name?: string | null;

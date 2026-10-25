@@ -51,6 +51,9 @@ import type {
   TranslationRequest,
   TranslationResult,
   FeatureSwitches,
+  FeedbackAvailability,
+  FeedbackRequest,
+  MerchantFeedbackPage,
   ShoppingListCapabilities,
   ShoppingListRequest,
   ShoppingListResult,
@@ -152,6 +155,8 @@ export interface DukkanApi {
   createMyMarket(request: MarketProfileRequest): Promise<MerchantMarket>;
   updateMyMarket(marketId: string, request: MarketProfileRequest): Promise<MerchantMarket>;
   getOrderSettings(marketId: string, signal?: Signal): Promise<MerchantOrderSettings>;
+  getMerchantFeedback(marketId: string, page: number, signal?: Signal): Promise<MerchantFeedbackPage>;
+  setFeedbackEnabled(marketId: string, enabled: boolean): Promise<MerchantFeedbackPage>;
   updateOrderSettings(marketId: string, request: OrderSettings): Promise<MerchantOrderSettings>;
   searchSharedCatalog(params: SearchCatalogParams, signal?: Signal): Promise<Page<CatalogProduct>>;
   listMyListings(
@@ -175,6 +180,8 @@ export interface DukkanApi {
   createProductDraft(marketId: string, request: ProductDraftRequest): Promise<ProductDraft>;
   translateTexts(request: TranslationRequest): Promise<TranslationResult>;
   getFeatures(signal?: Signal): Promise<FeatureSwitches>;
+  getFeedbackAvailability(marketId: string, signal?: Signal): Promise<FeedbackAvailability>;
+  sendFeedback(marketId: string, request: FeedbackRequest): Promise<void>;
   getShoppingListCapabilities(signal?: Signal): Promise<ShoppingListCapabilities>;
   /** Shopping list by voice, photo or video: matched products to confirm (nothing is added yet). */
   readShoppingList(marketId: string, request: ShoppingListRequest): Promise<ShoppingListResult>;
@@ -326,6 +333,9 @@ export function createDukkanApi(client: ApiClient): DukkanApi {
     updateMyMarket: (marketId, body) =>
       client.request({ method: 'PUT', path: `/merchant/markets/${enc(marketId)}`, body }),
     getOrderSettings: (marketId, signal) => get(`/merchant/markets/${enc(marketId)}/order-settings`, undefined, signal),
+    getMerchantFeedback: (marketId, page, signal) => get(`/merchant/markets/${enc(marketId)}/feedback`, { page, size: 20 }, signal),
+    setFeedbackEnabled: (marketId, enabled) =>
+      client.request({ method: 'PUT', path: `/merchant/markets/${enc(marketId)}/feedback/settings`, body: { enabled } }),
     updateOrderSettings: (marketId, body) =>
       client.request({ method: 'PUT', path: `/merchant/markets/${enc(marketId)}/order-settings`, body }),
     searchSharedCatalog: (params, signal) => get('/merchant/catalog', { ...params }, signal),
@@ -375,6 +385,8 @@ export function createDukkanApi(client: ApiClient): DukkanApi {
       }),
     translateTexts: (body) => client.request({ method: 'POST', path: '/merchant/translations', body, timeoutMs: DRAFT_TIMEOUT_MS }),
     getFeatures: (signal) => get('/features', undefined, signal),
+    getFeedbackAvailability: (marketId, signal) => get(`/markets/${enc(marketId)}/feedback`, undefined, signal),
+    sendFeedback: (marketId, body) => client.request({ method: 'POST', path: `/markets/${enc(marketId)}/feedback`, body }),
     getShoppingListCapabilities: (signal) => get('/shopping-list', undefined, signal),
     readShoppingList: (marketId, request) =>
       client.request({

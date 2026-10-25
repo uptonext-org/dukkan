@@ -10,6 +10,7 @@ import { VerifyEmailScreen } from '../features/auth/screens/VerifyEmailScreen';
 import { MarketNavigator } from '../features/market/MarketNavigator';
 import { NotificationsScreen } from '../features/notifications/screens/NotificationsScreen';
 import { AddProductScreen } from '../features/merchant/screens/AddProductScreen';
+import { FeedbackScreen } from '../features/merchant/screens/FeedbackScreen';
 import { ListingsScreen } from '../features/merchant/screens/ListingsScreen';
 import { MarketHubScreen } from '../features/merchant/screens/MarketHubScreen';
 import { MarketProfileFormScreen } from '../features/merchant/screens/MarketProfileFormScreen';
@@ -70,6 +71,7 @@ export function RootNavigator() {
           <Stack.Screen name="MerchantListings" component={ListingsScreen} />
           <Stack.Screen name="MerchantAddProduct" component={AddProductScreen} />
           <Stack.Screen name="MerchantPromotions" component={PromotionsScreen} />
+          <Stack.Screen name="MerchantFeedback" component={FeedbackScreen} />
           <Stack.Screen name="MerchantPromotionForm" component={PromotionFormScreen} />
           <Stack.Screen name="MerchantOrders" component={MerchantOrdersScreen} />
           <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} options={{ presentation: 'modal' }} />

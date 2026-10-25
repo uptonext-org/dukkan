@@ -1,4 +1,4 @@
-import type { AuthResponse, CatalogReviewItem, CodeName, FeatureKey, FeatureSwitches, ImportResult, Listing, ListingOverrides, MarketInsights, MarketProfileRequest, MarketStatus, MerchantMarket, MerchantOrderSettings, Order, OrderSettings, OrderStatus, PageResponse, Place, Problem, Promotion, PromotionRequest, ReviewStatus, TranslationResult, User } from './types';
+import type { AuthResponse, CatalogReviewItem, CodeName, FeatureKey, FeatureSwitches, ImportResult, Listing, ListingOverrides, MarketInsights, MarketProfileRequest, MarketStatus, MerchantFeedbackPage, MerchantMarket, MerchantOrderSettings, Order, OrderSettings, OrderStatus, PageResponse, Place, Problem, Promotion, PromotionRequest, ReviewStatus, TranslationResult, User } from './types';
 
 export class ApiError extends Error {
   readonly status: number;
@@ -201,6 +201,10 @@ export function createApi(options: { baseUrl?: string; fetch?: Fetch; store?: Se
     reviewCatalogProduct: (productId: string, decision: 'PROMOTE' | 'KEEP_PRIVATE') =>
       send<CatalogReviewItem>(`/admin/catalog/products/${encodeURIComponent(productId)}/review`, { method: 'POST', body: { decision } }),
     features: () => send<FeatureSwitches>('/features'),
+    merchantFeedback: (marketId: string, page: number) =>
+      send<MerchantFeedbackPage>(`/merchant/markets/${encodeURIComponent(marketId)}/feedback?page=${String(page)}&size=20`),
+    setFeedbackEnabled: (marketId: string, enabled: boolean) =>
+      send<MerchantFeedbackPage>(`/merchant/markets/${encodeURIComponent(marketId)}/feedback/settings`, { method: 'PUT', body: { enabled } }),
     adminFeatures: () => send<FeatureSwitches>('/admin/features'),
     adminSetFeature: (feature: FeatureKey, enabled: boolean) =>
       send<FeatureSwitches>(`/admin/features/${feature}`, { method: 'PUT', body: { enabled } }),

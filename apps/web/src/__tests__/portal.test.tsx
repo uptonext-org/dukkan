@@ -211,6 +211,30 @@ describe('own details of a catalog product', () => {
   });
 });
 
+describe('customer feedback', () => {
+  it('switches feedback on and shows the messages with first name and rating', async () => {
+    let enabled = false;
+    const messages = [{ id: 'f1', customerName: 'Ada', rating: 4, message: 'Bitte mehr Bio-Joghurt!', createdAt: '2026-10-20T09:30:00Z' }];
+    const pageOf = () => ({ enabled, feedback: { items: enabled ? messages : [], page: 0, size: 20, totalItems: enabled ? 1 : 0, totalPages: 1 } });
+    const { user, calls } = renderPortal({
+      'GET /merchant/markets': [market()],
+      'GET /merchant/markets/m1/orders': [],
+      'GET /merchant/markets/m1/feedback?page=0&size=20': pageOf,
+      'PUT /merchant/markets/m1/feedback/settings': (call) => {
+        enabled = (call.body as { enabled: boolean }).enabled;
+        return pageOf();
+      },
+    });
+    await user.click(await screen.findByRole('button', { name: 'Kundenfeedback' }));
+    expect(await screen.findByText(/Noch kein Feedback/)).toBeInTheDocument();
+    await user.click(screen.getByRole('checkbox', { name: 'Feedback von Kunden annehmen' }));
+    expect(await screen.findByText('Bitte mehr Bio-Joghurt!')).toBeInTheDocument();
+    expect(calls.find((c) => c.method === 'PUT')?.body).toEqual({ enabled: true });
+    expect(screen.getByText(/Ada · .* · 4 von 5 Sternen/)).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: 'Feedback von Kunden annehmen' })).toBeChecked();
+  });
+});
+
 describe('CSV import', () => {
   const preview = {
     dryRun: true,

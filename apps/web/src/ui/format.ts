@@ -28,3 +28,9 @@ export function centsToInput(cents: number, language: string): string {
   const text = (cents / 100).toFixed(2);
   return language === 'en' ? text : text.replace('.', ',');
 }
+
+/** Date and time in Berlin time, e.g. `20.10.26, 11:30`. */
+export function formatDateTime(iso: string, language: string): string {
+  const locale = language === 'ar' ? 'ar-u-nu-latn' : language;
+  return new Intl.DateTimeFormat(locale, { dateStyle: 'short', timeStyle: 'short', timeZone: 'Europe/Berlin' }).format(new Date(iso));
+}

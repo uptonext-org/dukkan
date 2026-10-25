@@ -745,6 +745,32 @@ export interface PromotionRequest {
   productIds: string[];
 }
 
+// ---------------------------------------------------------------- feedback to a market
+/** `GET /markets/{id}/feedback`: whether customers can write to the market. */
+export interface FeedbackAvailability {
+  enabled: boolean;
+  maxLength: number;
+}
+
+export interface FeedbackRequest {
+  message: string;
+  rating?: number | null;
+}
+
+/** One message as the merchant sees it (customer's first name only). */
+export interface MarketFeedback {
+  id: string;
+  customerName: string;
+  rating?: number | null;
+  message: string;
+  createdAt: string;
+}
+
+export interface MerchantFeedbackPage {
+  enabled: boolean;
+  feedback: Page<MarketFeedback>;
+}
+
 /** `GET /features`: functions platform admins switched on or off (effective state). */
 export interface FeatureSwitches {
   SHOPPING_LIST: boolean;
