@@ -3232,6 +3232,11 @@ components:
         price: { $ref: '#/components/schemas/Money' }
         available: { type: boolean, default: true }
         maxOrderQuantity: { type: integer, minimum: 1, maximum: 99, default: 24 }
+        overrides:
+          description: The market's own details of a catalog product (not with newProduct, error CatalogProductOnly).
+          oneOf:
+            - type: 'null'
+            - $ref: '#/components/schemas/ListingOverrides'
     UpdateListingRequest:
       type: object
       description: Partial update; absent properties stay unchanged.
@@ -3248,6 +3253,9 @@ components:
             `null` = remove it. For a shared catalog product it only applies to this market's listing
             (the catalog image, if any, shows again after removal); for a private product it is the
             product image.
+        overrides:
+          description: Replaces the market's own details (all fields empty = the catalog values again). Absent = unchanged.
+          $ref: '#/components/schemas/ListingOverrides'
     Listing:
       allOf:
         - $ref: '#/components/schemas/ProductSummary'
@@ -3255,6 +3263,21 @@ components:
           required: [privateProduct]
           properties:
             privateProduct: { type: boolean, description: True when created by this market instead of picked from the shared catalog. }
+            overrides:
+              description: The market's own details of this listing; absent when it shows the catalog values.
+              $ref: '#/components/schemas/ListingOverrides'
+    ListingOverrides:
+      type: object
+      description: |
+        A market's own details of a shared catalog product, in the market's language and shown to
+        customers in every language. They apply to this market's listing only and never change the
+        shared catalog. Absent, null or blank fields show the catalog value. The own name is
+        searchable in the market.
+      properties:
+        name: { type: [string, 'null'], maxLength: 200 }
+        description: { type: [string, 'null'], maxLength: 2000 }
+        unitSize: { type: [string, 'null'], maxLength: 40, examples: ['500 ml'] }
+        brand: { type: [string, 'null'], maxLength: 80 }
     ListingPage:
       type: object
       required: [items, page, size, totalItems, totalPages]

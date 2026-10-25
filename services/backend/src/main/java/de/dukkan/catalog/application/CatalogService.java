@@ -393,7 +393,7 @@ public class CatalogService {
     List<Listing> items =
         ids.ids().stream()
             .filter(summaries::containsKey)
-            .map(id -> new Listing(summaries.get(id), rows.get(id).ownerMarketId() != null))
+            .map(id -> listing(rows.get(id), summaries.get(id)))
             .toList();
     return PageResponse.of(items, page, size, ids.total());
   }
@@ -403,6 +403,10 @@ public class CatalogService {
     MarketInfo market = markets.info(marketId);
     if ((draft.catalogProductId() == null) == (draft.newProduct() == null)) {
       throw new InvalidRequestException("catalogProductId", "ExactlyOne", "give exactly one of catalogProductId or newProduct");
+    }
+    ListingOverrides overrides = draft.overrides().normalized();
+    if (draft.newProduct() != null && !overrides.isEmpty()) {
+      throw new InvalidRequestException("overrides", "CatalogProductOnly", "own details adjust a catalog product; a new product has them already");
     }
     Instant now = clock.instant();
     UUID catalogProductId;
@@ -436,6 +440,9 @@ public class CatalogService {
     UUID listingId = UUID.randomUUID();
     int maxOrderQuantity = Objects.requireNonNullElse(draft.maxOrderQuantity(), market.ordering().defaultMaxOrderQuantity());
     listings.insert(listingId, marketId, catalogProductId, draft.priceCents(), draft.available(), maxOrderQuantity, now);
+    if (!overrides.isEmpty()) {
+      saveOverrides(listingId, overrides, now);
+    }
     return listing(listingId, locale);
   }
 
@@ -573,6 +580,13 @@ public class CatalogService {
     if (update.available() != null || update.maxOrderQuantity() != null) {
       listings.updateFlags(listingId, update.available(), update.maxOrderQuantity(), now);
     }
+    if (update.overrides() != null) {
+      ListingOverrides overrides = update.overrides().normalized();
+      if (row.ownerMarketId() != null && !overrides.isEmpty()) {
+        throw new InvalidRequestException("overrides", "CatalogProductOnly", "own details adjust a catalog product; a new product has them already");
+      }
+      saveOverrides(listingId, overrides, now);
+    }
     if (update.changeImage()) {
       if (row.ownerMarketId() != null) {
         // A private product belongs to this market: its own image is the product image.
@@ -595,7 +609,20 @@ public class CatalogService {
 
   private Listing listing(UUID listingId, ContentLocale locale) {
     ListingRow row = Objects.requireNonNull(listings.findByIds(List.of(listingId)).get(listingId));
-    return new Listing(Objects.requireNonNull(summarize(List.of(row), locale, null).get(listingId)), row.ownerMarketId() != null);
+    return listing(row, Objects.requireNonNull(summarize(List.of(row), locale, null).get(listingId)));
+  }
+
+  private static Listing listing(ListingRow row, ProductSummary summary) {
+    return new Listing(summary, row.ownerMarketId() != null, row.overrides().isEmpty() ? null : row.overrides());
+  }
+
+  /** The own name and brand are searchable in this market like catalog names. */
+  private void saveOverrides(UUID listingId, ListingOverrides overrides, Instant now) {
+    String searchText =
+        overrides.name() == null && overrides.brand() == null
+            ? null
+            : SearchText.build(overrides.name() == null ? List.of() : List.of(overrides.name()), overrides.brand(), List.of());
+    listings.updateOverrides(listingId, overrides, searchText, now);
   }
 
   private ListingRow ownedListing(UUID marketId, UUID listingId) {

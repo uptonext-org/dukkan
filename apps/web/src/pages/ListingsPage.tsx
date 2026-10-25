@@ -3,7 +3,7 @@ import { useDeferredValue, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useApi } from '../api/ApiContext';
-import type { Listing } from '../api/types';
+import type { Listing, ListingOverrides } from '../api/types';
 import { errorMessage } from '../ui/errors';
 import { centsToInput, parsePrice } from '../ui/format';
 
@@ -70,6 +70,64 @@ export function ListingsPage({ marketId }: { marketId: string }) {
   );
 }
 
+const OWN_FIELDS = [
+  { key: 'name', max: 200 },
+  { key: 'unitSize', max: 40 },
+  { key: 'brand', max: 80 },
+  { key: 'description', max: 2000 },
+] as const;
+
+/**
+ * The market's own details of a catalog product: they apply to this market only and never change
+ * the shared catalog. Empty fields show the catalog value again.
+ */
+function OwnDetails({ marketId, listing }: { marketId: string; listing: Listing }) {
+  const { t } = useTranslation();
+  const api = useApi();
+  const queryClient = useQueryClient();
+  const [own, setOwn] = useState<Record<keyof ListingOverrides, string>>(() => ({
+    name: listing.overrides?.name ?? '',
+    unitSize: listing.overrides?.unitSize ?? '',
+    brand: listing.overrides?.brand ?? '',
+    description: listing.overrides?.description ?? '',
+  }));
+  const save = useMutation({
+    mutationFn: () =>
+      api.updateListing(marketId, listing.id, {
+        overrides: Object.fromEntries(OWN_FIELDS.map(({ key }): [string, string | null] => [key, own[key].trim() === '' ? null : own[key].trim()])),
+      }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['listings', marketId] }),
+  });
+  return (
+    <details className="small">
+      <summary>{listing.overrides != null ? t('listings.ownDetailsSet') : t('listings.ownDetails')}</summary>
+      <div className="stack tight">
+        <span className="muted">{t('listings.ownDetailsHint')}</span>
+        {OWN_FIELDS.map(({ key, max }) => (
+          <label key={key} className="field">
+            {t(`listings.own_${key}`)}
+            {key === 'description' ? (
+              <textarea rows={3} maxLength={max} value={own[key]} onChange={(e) => setOwn({ ...own, [key]: e.target.value })} />
+            ) : (
+              <input maxLength={max} value={own[key]} onChange={(e) => setOwn({ ...own, [key]: e.target.value })} />
+            )}
+          </label>
+        ))}
+        <div>
+          <button className="button secondary" type="button" disabled={save.isPending} onClick={() => save.mutate()}>
+            {t('listings.saveOwnDetails')}
+          </button>
+        </div>
+        {save.isError && (
+          <div className="error small" role="alert">
+            {errorMessage(t, save.error)}
+          </div>
+        )}
+      </div>
+    </details>
+  );
+}
+
 /** One editable row; keyed by its saved values, so it resets after a save. */
 function ListingRow({ marketId, listing }: { marketId: string; listing: Listing }) {
   const { t, i18n } = useTranslation();
@@ -90,6 +148,7 @@ function ListingRow({ marketId, listing }: { marketId: string; listing: Listing 
       <th scope="row">
         {label}
         {listing.privateProduct && <div className="muted small">{t('listings.own')}</div>}
+        {!listing.privateProduct && <OwnDetails marketId={marketId} listing={listing} />}
       </th>
       <td>
         <bdi>{listing.unitSize}</bdi>

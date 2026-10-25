@@ -157,6 +157,16 @@ export interface Listing {
   available: boolean;
   maxOrderQuantity: number;
   privateProduct: boolean;
+  /** The market's own details; absent when the catalog values show. */
+  overrides?: ListingOverrides | null;
+}
+
+/** A market's own details of a catalog product; empty fields show the catalog value. */
+export interface ListingOverrides {
+  name?: string | null;
+  description?: string | null;
+  unitSize?: string | null;
+  brand?: string | null;
 }
 
 export interface PageResponse<T> {
