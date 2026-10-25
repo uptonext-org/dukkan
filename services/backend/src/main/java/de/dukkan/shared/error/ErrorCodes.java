@@ -43,6 +43,7 @@ public final class ErrorCodes {
   public static final String MARKET_NOT_ACTIVE = "MARKET_NOT_ACTIVE";
   public static final String ORDERS_NOT_ACCEPTED = "ORDERS_NOT_ACCEPTED";
   public static final String FEATURE_DISABLED = "FEATURE_DISABLED";
+  public static final String FEEDBACK_DISABLED = "FEEDBACK_DISABLED";
   public static final String SLOT_UNAVAILABLE = "SLOT_UNAVAILABLE";
   public static final String FULFILMENT_NOT_OFFERED = "FULFILMENT_NOT_OFFERED";
   public static final String ADDRESS_REQUIRED = "ADDRESS_REQUIRED";

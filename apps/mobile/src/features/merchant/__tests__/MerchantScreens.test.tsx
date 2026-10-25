@@ -6,6 +6,7 @@ import { createFakeApiClient } from '../../../test/fakeApiClient';
 import { catalogProduct, eur, marketDetail, MARKET_ID, order, page } from '../../../test/fixtures';
 import { createTestDependencies, renderInAppRoot } from '../../../test/render';
 import { AddProductScreen } from '../screens/AddProductScreen';
+import { FeedbackScreen } from '../screens/FeedbackScreen';
 import { MarketHubScreen } from '../screens/MarketHubScreen';
 import { MerchantOrdersScreen } from '../screens/MerchantOrdersScreen';
 
@@ -227,5 +228,42 @@ describe('Mein Markt: Bestellungen ein- und ausschalten', () => {
     await user.press(screen.getByTestId('ordering-end-pause'));
     await waitFor(() => expect(fake.calls.filter((c) => c.method === 'PUT').at(-1)?.body).toMatchObject({ pausedUntil: null }));
     expect(await screen.findByTestId('ordering-pause-hour')).toBeOnTheScreen();
+  });
+});
+
+describe('Mein Markt: Kundenfeedback', () => {
+  it('opens from the hub, switches feedback on and lists the messages', async () => {
+    let enabled = false;
+    const messages = [
+      { id: 'f2', customerName: 'Ada', rating: 4, message: 'Bitte mehr Bio-Joghurt!', createdAt: '2026-10-20T09:30:00Z' },
+      { id: 'f1', customerName: 'Bo', rating: null, message: 'Sehr freundlich.', createdAt: '2026-10-19T09:30:00Z' },
+    ];
+    const pageOf = () => ({ enabled, feedback: { items: enabled ? messages : [], page: 0, size: 20, totalItems: enabled ? 2 : 0, totalPages: 1 } });
+    const { fake, dependencies } = setup({
+      [`GET /merchant/markets/${MARKET_ID}/order-settings`]: { ordersEnabled: true, deliveryHours: [], autoAccept: false, paymentMethods: ['CASH'], defaults: { deliveryCapacity: 6, pickupCapacity: 10, deliveryLeadMinutes: 120, pickupLeadMinutes: 60, daysAhead: 7, maxOrderQuantity: 24 } },
+      [`GET /merchant/markets/${MARKET_ID}/feedback`]: pageOf,
+      [`PUT /merchant/markets/${MARKET_ID}/feedback/settings`]: (call: { body?: unknown }) => {
+        enabled = (call.body as { enabled: boolean }).enabled;
+        return pageOf();
+      },
+    });
+    await renderInAppRoot(
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="MerchantMarketHub" component={MarketHubScreen} initialParams={{ marketId: MARKET_ID }} />
+        <Stack.Screen name="MerchantFeedback" component={FeedbackScreen} />
+      </Stack.Navigator>,
+      dependencies,
+    );
+    const user = userEvent.setup();
+    await user.press(await screen.findByTestId('hub-feedback'));
+
+    expect(await screen.findByText('Noch kein Feedback')).toBeOnTheScreen();
+    expect(screen.getByText(/An: Kunden sehen unten auf deiner Marktseite ein Feedback-Feld/)).toBeOnTheScreen();
+    await fireEvent(screen.getByTestId('feedback-enabled'), 'valueChange', true);
+    await waitFor(() => expect(fake.calls).toContainEqual(expect.objectContaining({ method: 'PUT', body: { enabled: true } })));
+    expect(await screen.findByText('Bitte mehr Bio-Joghurt!')).toBeOnTheScreen();
+    expect(within(screen.getByTestId('feedback-f2')).getByText(/Ada/)).toBeOnTheScreen();
+    expect(within(screen.getByTestId('feedback-f2')).getByText(/von 5 Sternen/)).toBeOnTheScreen();
+    expect(within(screen.getByTestId('feedback-f1')).queryByText(/Sternen/)).toBeNull();
   });
 });

@@ -9,6 +9,7 @@ import { createApi, type Session, type SessionStore } from './api/client';
 import { applyLanguage, isLanguage, LANGUAGES } from './i18n';
 import { AdminCatalogPage } from './pages/AdminCatalogPage';
 import { AdminFeaturesPage } from './pages/AdminFeaturesPage';
+import { FeedbackPage } from './pages/FeedbackPage';
 import { AdminMarketsPage } from './pages/AdminMarketsPage';
 import { ImportPage } from './pages/ImportPage';
 import { InsightsPage } from './pages/InsightsPage';
@@ -20,8 +21,8 @@ import { OrdersBoard } from './pages/OrdersBoard';
 import { PromotionsPage } from './pages/PromotionsPage';
 import { errorMessage } from './ui/errors';
 
-type Route = 'orders' | 'insights' | 'listings' | 'promotions' | 'import' | 'profile' | 'settings' | 'admin' | 'catalog' | 'features';
-const ROUTES: Route[] = ['orders', 'insights', 'listings', 'promotions', 'import', 'profile', 'settings', 'admin', 'catalog', 'features'];
+type Route = 'orders' | 'insights' | 'listings' | 'promotions' | 'import' | 'profile' | 'settings' | 'feedback' | 'admin' | 'catalog' | 'features';
+const ROUTES: Route[] = ['orders', 'insights', 'listings', 'promotions', 'import', 'profile', 'settings', 'feedback', 'admin', 'catalog', 'features'];
 
 function subscribeHash(onChange: () => void) {
   window.addEventListener('hashchange', onChange);
@@ -105,7 +106,7 @@ function Shell({ session, alerts }: { session: Session; alerts: AppDependencies[
     };
   }, [alertsOn, signals]);
 
-  const available: Route[] = [...(isMerchant ? (['orders', 'insights', 'listings', 'promotions', 'import', 'profile', 'settings'] as const) : []), ...(isAdmin ? (['admin', 'catalog', 'features'] as const) : [])];
+  const available: Route[] = [...(isMerchant ? (['orders', 'insights', 'listings', 'promotions', 'import', 'profile', 'settings', 'feedback'] as const) : []), ...(isAdmin ? (['admin', 'catalog', 'features'] as const) : [])];
   const current = route !== null && available.includes(route) ? route : available[0];
 
   return (
@@ -201,6 +202,7 @@ function Shell({ session, alerts }: { session: Session; alerts: AppDependencies[
             {selected !== undefined && current === 'import' && <ImportPage marketId={selected.id} />}
             {selected !== undefined && current === 'profile' && <MarketProfilePage market={selected} />}
             {selected !== undefined && current === 'settings' && <OrderSettingsPage marketId={selected.id} />}
+            {selected !== undefined && current === 'feedback' && <FeedbackPage marketId={selected.id} />}
             {selected !== undefined && current === 'promotions' && <PromotionsPage marketId={selected.id} primaryLocale={selected.primaryLocale} />}
           </>
         )}

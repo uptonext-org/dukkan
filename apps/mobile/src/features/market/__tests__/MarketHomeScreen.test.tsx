@@ -29,6 +29,37 @@ async function openMarket() {
 }
 
 describe('Market sub-app: Entdecken', () => {
+  it('sends feedback to the market when it takes feedback; guests sign in first', async () => {
+    const { fake, dependencies } = setup('jwt', {
+      'GET /me': { id: 'u1', email: 'a@b.de', firstName: 'Ada', lastName: 'L', roles: ['CUSTOMER'] },
+      [`GET /markets/${MARKET_ID}/feedback`]: { enabled: true, maxLength: 1000 },
+      [`POST /markets/${MARKET_ID}/feedback`]: () => undefined,
+    });
+    await renderApp(dependencies);
+    const user = await openMarket();
+
+    const card = await screen.findByTestId('market-feedback');
+    expect(within(card).getByText('Feedback an den Markt')).toBeOnTheScreen();
+    await user.press(within(card).getByTestId('feedback-send'));
+    expect(await within(card).findByText('Bitte eine Nachricht eingeben.')).toBeOnTheScreen();
+    expect(within(card).getByLabelText(/4\W* von 5 Sternen/)).toBeOnTheScreen();
+    await user.press(within(card).getByTestId('feedback-star-4'));
+    await user.type(within(card).getByTestId('feedback-message'), 'Bitte mehr Bio-Joghurt!');
+    await user.press(within(card).getByTestId('feedback-send'));
+    expect(await screen.findByTestId('feedback-sent')).toHaveTextContent('Danke! Der Markt hat deine Nachricht erhalten.');
+    expect(fake.calls).toContainEqual(
+      expect.objectContaining({ method: 'POST', path: `/markets/${MARKET_ID}/feedback`, body: { message: 'Bitte mehr Bio-Joghurt!', rating: 4 } }),
+    );
+  });
+
+  it('shows no feedback field while the market takes none, and a sign-in button for guests', async () => {
+    const { dependencies } = setup(null, { [`GET /markets/${MARKET_ID}/feedback`]: { enabled: true, maxLength: 1000 } });
+    await renderApp(dependencies);
+    await openMarket();
+    expect(await screen.findByTestId('feedback-sign-in')).toBeOnTheScreen();
+    expect(screen.queryByTestId('feedback-message')).toBeNull();
+  });
+
   it('renders the header, fulfilment link, banners with peek, info card and product sections', async () => {
     const { dependencies } = setup(null);
     await renderApp(dependencies);

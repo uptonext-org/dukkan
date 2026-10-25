@@ -59,6 +59,7 @@ public class SecurityConfiguration {
         API + "/markets/*/search/suggestions",
         API + "/markets/*/promotions",
         API + "/markets/*/slots",
+        API + "/markets/*/feedback",
         API + "/products/*",
         API + "/search/products"
       };

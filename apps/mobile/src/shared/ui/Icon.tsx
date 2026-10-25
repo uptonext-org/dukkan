@@ -65,7 +65,9 @@ import ShoppingBasket from 'lucide-react-native/icons/shopping-basket';
 import SlidersHorizontal from 'lucide-react-native/icons/sliders-horizontal';
 import Snowflake from 'lucide-react-native/icons/snowflake';
 import Soup from 'lucide-react-native/icons/soup';
+import MessageSquare from 'lucide-react-native/icons/message-square';
 import Sparkles from 'lucide-react-native/icons/sparkles';
+import Star from 'lucide-react-native/icons/star';
 import Store from 'lucide-react-native/icons/store';
 import Tag from 'lucide-react-native/icons/tag';
 import Download from 'lucide-react-native/icons/download';
@@ -120,6 +122,8 @@ const ICONS = {
   basket: ShoppingBasket,
   filter: SlidersHorizontal,
   sparkles: Sparkles,
+  star: Star,
+  message: MessageSquare,
   store: Store,
   tag: Tag,
   trash: Trash,

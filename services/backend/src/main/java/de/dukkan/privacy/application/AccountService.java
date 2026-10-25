@@ -4,6 +4,7 @@ import de.dukkan.address.application.AddressService;
 import de.dukkan.address.application.AddressView;
 import de.dukkan.cart.application.CartService;
 import de.dukkan.favorite.application.FavoriteService;
+import de.dukkan.feedback.application.FeedbackService;
 import de.dukkan.i18n.application.ContentLocale;
 import de.dukkan.identity.application.IdentityService;
 import de.dukkan.identity.application.UserView;
@@ -50,7 +51,8 @@ public class AccountService {
       FavoriteService.FavoriteIds favorites,
       List<ExportedNotification> notifications,
       boolean pushEnabled,
-      List<UUID> ownedMarketIds) {}
+      List<UUID> ownedMarketIds,
+      List<FeedbackService.ExportedFeedback> feedback) {}
 
   private final IdentityService identity;
   private final AddressService addresses;
@@ -59,6 +61,7 @@ public class AccountService {
   private final OrderService orders;
   private final NotificationService notifications;
   private final MarketService markets;
+  private final FeedbackService feedback;
   private final Clock clock;
   private final FixedWindowRateLimiter<UUID> deletionAttempts;
   private final ErasureJournal journal;
@@ -71,6 +74,7 @@ public class AccountService {
       OrderService orders,
       NotificationService notifications,
       MarketService markets,
+      FeedbackService feedback,
       Clock clock,
       RateLimitStore rateLimits,
       ErasureJournal journal) {
@@ -81,6 +85,7 @@ public class AccountService {
     this.orders = orders;
     this.notifications = notifications;
     this.markets = markets;
+    this.feedback = feedback;
     this.clock = clock;
     this.journal = journal;
     // The password check must not become a way to guess passwords with a stolen session.
@@ -98,7 +103,8 @@ public class AccountService {
         favorites.ids(userId),
         notifications.export(userId),
         notifications.pushEnabled(userId),
-        markets.ownedMarketIds(userId));
+        markets.ownedMarketIds(userId),
+        feedback.export(userId));
   }
 
   public void delete(UUID userId, @Nullable String password) {
@@ -133,6 +139,7 @@ public class AccountService {
     favorites.deleteAll(userId);
     addresses.deleteAll(userId);
     notifications.deleteAll(userId);
+    feedback.deleteAll(userId);
     orders.anonymizeCustomer(userId);
     identity.anonymize(userId);
   }

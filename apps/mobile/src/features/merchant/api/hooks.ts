@@ -212,3 +212,23 @@ export function useMerchantLanguages(primary: Language): { languages: readonly (
   const multilingual = features.data?.MERCHANT_MULTILINGUAL === true;
   return { languages: multilingual ? LANGUAGES : LANGUAGES.filter((l) => l.code === primary), multilingual };
 }
+
+/** Customer feedback to my market, newest first, plus whether the market takes feedback. */
+export function useMerchantFeedback(marketId: string) {
+  const api = useApi();
+  return useInfiniteQuery({
+    queryKey: queryKeys.merchantFeedback(marketId),
+    queryFn: ({ pageParam, signal }) => api.getMerchantFeedback(marketId, pageParam, signal),
+    initialPageParam: 0,
+    getNextPageParam: (last) => nextPage(last.feedback),
+  });
+}
+
+export function useSetFeedbackEnabled(marketId: string) {
+  const api = useApi();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (enabled: boolean) => api.setFeedbackEnabled(marketId, enabled),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.merchantFeedback(marketId) }),
+  });
+}

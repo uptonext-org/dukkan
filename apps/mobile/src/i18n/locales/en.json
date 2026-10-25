@@ -73,7 +73,8 @@
     "SHOPPING_LIST_AI_UNAVAILABLE": "Photos and videos cannot be read right now because AI is not set up.",
     "TERMS_NOT_ACCEPTED": "Please accept the terms and the privacy notice.",
     "ORDERS_NOT_ACCEPTED": "This market is not taking orders right now.",
-    "SLOT_UNAVAILABLE": "The market is closed on that day. Please choose another time."
+    "SLOT_UNAVAILABLE": "The market is closed on that day. Please choose another time.",
+    "FEEDBACK_DISABLED": "This market is not taking feedback at the moment."
   },
   "validation": {
     "required": "Please fill this in.",
@@ -807,5 +808,27 @@
     "readTerms": "Read the terms",
     "readPrivacy": "Read the privacy notice",
     "acceptRequired": "Please accept the terms and the privacy notice."
+  },
+  "feedback": {
+    "title": "Feedback to the market",
+    "hint": "Praise, wishes or criticism: your message goes straight to {{market}}.",
+    "signIn": "Sign in to send feedback",
+    "rating": "Rating (optional)",
+    "stars": "{{n}} of 5 stars",
+    "message": "Your message",
+    "send": "Send",
+    "sent": "Thank you! The market has received your message.",
+    "another": "Write another message",
+    "empty": "Please enter a message."
+  },
+  "merchantFeedback": {
+    "entry": "Customer feedback",
+    "title": "Customer feedback",
+    "toggle": "Accept feedback from customers",
+    "toggleHint": "On: customers see a feedback field at the bottom of your market page. Off: the field disappears; messages received stay here.",
+    "emptyTitle": "No feedback yet",
+    "emptyMessage": "Messages from your customers appear here.",
+    "rating": "{{n}} of 5 stars",
+    "more": "Load more"
   }
 }

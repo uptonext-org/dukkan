@@ -53,6 +53,7 @@ export type RootStackParamList = {
   MerchantListings: { marketId: string };
   MerchantAddProduct: { marketId: string };
   MerchantPromotions: { marketId: string };
+  MerchantFeedback: { marketId: string };
   MerchantPromotionForm: { marketId: string };
   MerchantOrders: { marketId: string };
   /** Deep link from the reset mail: dukkan://reset-password?token=… */

@@ -26,7 +26,8 @@
     "profile": "Marktprofil",
     "insights": "Übersicht",
     "settings": "Bestellungen & Lieferung",
-    "features": "Funktionen"
+    "features": "Funktionen",
+    "feedback": "Kundenfeedback"
   },
   "status": {
     "PENDING_REVIEW": "In Prüfung",
@@ -168,7 +169,8 @@
     "ORDER_NOT_ADJUSTABLE": "Die Bestellung ist schon fertig oder unterwegs und kann nicht mehr geändert werden.",
     "ORDER_ADJUSTMENT_EMPTY": "Es bliebe nichts übrig – lehne die Bestellung stattdessen ab.",
     "MARKET_INCOMPLETE": "Die Angaben zum Verkäufer sind unvollständig.",
-    "ORDERS_NOT_ACCEPTED": "Der Markt nimmt gerade keine Bestellungen an."
+    "ORDERS_NOT_ACCEPTED": "Der Markt nimmt gerade keine Bestellungen an.",
+    "FEEDBACK_DISABLED": "Dieser Markt nimmt gerade kein Feedback an."
   },
   "catalog": {
     "title": "Katalogprüfung",
@@ -412,5 +414,13 @@
       "MERCHANT_MULTILINGUAL": "Händler füllen Marktbeschreibung, Produkte und Angebote in allen Sprachen aus. Aus: nur in der Sprache des Markts; Kunden sehen diesen Text in jeder Sprache."
     },
     "merchants": "Händler"
+  },
+  "feedback": {
+    "title": "Kundenfeedback",
+    "toggle": "Feedback von Kunden annehmen",
+    "toggleHint": "An: Kunden sehen unten auf deiner Marktseite ein Feedback-Feld. Aus: Das Feld verschwindet, erhaltene Nachrichten bleiben hier.",
+    "empty": "Noch kein Feedback. Nachrichten deiner Kunden erscheinen hier.",
+    "rating": "{{rating}} von 5 Sternen",
+    "more": "Mehr laden"
   }
 }

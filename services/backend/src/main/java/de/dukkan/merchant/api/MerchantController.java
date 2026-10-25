@@ -4,6 +4,7 @@ import de.dukkan.capture.application.ProductDraftResult;
 import de.dukkan.catalog.application.CatalogProduct;
 import de.dukkan.catalog.application.Listing;
 import de.dukkan.catalog.application.ListingImport;
+import de.dukkan.feedback.application.FeedbackService;
 import de.dukkan.i18n.application.ContentLocale;
 import de.dukkan.market.application.MerchantMarket;
 import de.dukkan.market.application.OrderSettings;
@@ -32,6 +33,7 @@ import jakarta.validation.Valid;
 import java.io.IOException;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.net.URI;
@@ -102,6 +104,23 @@ final class MerchantController {
   OrderSettingsView updateOrderSettings(
       @CurrentSecurityContext SecurityContext security, @PathVariable UUID marketId, @RequestBody @Valid OrderSettings request) {
     return merchant.updateOrderSettings(CurrentUser.id(security), marketId, request);
+  }
+
+  @GetMapping("/markets/{marketId}/feedback")
+  FeedbackService.MerchantFeedback feedback(
+      @CurrentSecurityContext SecurityContext security,
+      @PathVariable UUID marketId,
+      @Min(0) @RequestParam(defaultValue = "0") int page,
+      @Max(100) @Min(1) @RequestParam(defaultValue = "20") int size) {
+    return merchant.feedback(CurrentUser.id(security), marketId, page, size);
+  }
+
+  record FeedbackSettingsRequest(@NotNull Boolean enabled) {}
+
+  @PutMapping("/markets/{marketId}/feedback/settings")
+  FeedbackService.MerchantFeedback updateFeedbackSettings(
+      @CurrentSecurityContext SecurityContext security, @PathVariable UUID marketId, @RequestBody @Valid FeedbackSettingsRequest request) {
+    return merchant.setFeedbackEnabled(CurrentUser.id(security), marketId, request.enabled(), 20);
   }
 
   /** Multipart upload; the part's declared content type is ignored (magic bytes decide). */
