@@ -4,6 +4,8 @@ import {
   emptyMarketProfile,
   emptyNewProduct,
   emptyPromotion,
+  promotionEnd,
+  promotionStart,
   endsNextDay,
   fromDraft,
   hoursOverlap,
@@ -150,12 +152,43 @@ describe('market profile validation', () => {
 });
 
 describe('promotions', () => {
-  it('validates percent-off and multi-buy offers', () => {
+  it('validates percent-off, quantity prices and offer prices', () => {
     expect(validatePromotion(emptyPromotion(), 'de')).toEqual({ title: 'namePrimaryRequired', productIds: 'productsRequired' });
-    const multi = { ...emptyPromotion(), title: { de: '3 für 2', en: '', ar: '' }, type: 'MULTI_BUY' as const, bundleQuantity: '1', productIds: ['p1'] };
-    expect(validatePromotion(multi, 'de')).toEqual({ bundleQuantity: 'bundleQuantity', bundlePrice: 'required' });
-    const request = toPromotionRequest({ ...multi, bundleQuantity: '3', bundlePrice: '5' }, new Date('2026-10-20T10:00:00Z'));
-    expect(request).toMatchObject({ type: 'MULTI_BUY', percentOff: null, bundleQuantity: 3, bundlePrice: { amountCents: 500 }, validFrom: '2026-10-20T10:00:00.000Z', validUntil: '2026-10-27T10:00:00.000Z' });
+    const multi = { ...emptyPromotion(), title: { de: '3 für 5', en: '', ar: '' }, type: 'MULTI_BUY' as const, tiers: [{ quantity: '1', price: '' }], productIds: ['p1'] };
+    expect(validatePromotion(multi, 'de')).toEqual({ tiers: 'tiers' });
+    const twice = { ...multi, tiers: [{ quantity: '3', price: '5' }, { quantity: '3', price: '4' }] };
+    expect(validatePromotion(twice, 'de')).toEqual({ tiers: 'tiers' });
+    const tiers = { ...multi, tiers: [{ quantity: '3', price: '5' }, { quantity: '7', price: '10' }] };
+    expect(validatePromotion(tiers, 'de')).toEqual({});
+    const request = toPromotionRequest(tiers, new Date('2026-10-20T10:00:00Z'));
+    expect(request).toMatchObject({
+      type: 'MULTI_BUY',
+      percentOff: null,
+      tiers: [
+        { quantity: 3, price: { amountCents: 500 } },
+        { quantity: 7, price: { amountCents: 1000 } },
+      ],
+      offers: null,
+      weekdays: null,
+      dailyFrom: null,
+      validFrom: '2026-10-20T10:00:00.000Z',
+      validUntil: '2026-10-27T10:00:00.000Z',
+    });
+
+    const fixed = { ...emptyPromotion(), title: { de: 'Angebot', en: '', ar: '' }, type: 'FIXED_PRICE' as const, offers: { p1: '5,00' }, productIds: ['p1'] };
+    expect(validatePromotion(fixed, 'de', new Date(), { p1: 500 })).toEqual({ offers: 'offerBelowPrice' });
+    const cheaper = { ...fixed, offers: { p1: '2' }, weekdays: [6, 1], allDay: false, dailyFrom: '07:00', dailyUntil: '10:00' };
+    expect(validatePromotion(cheaper, 'de', new Date(), { p1: 500 })).toEqual({});
+    expect(toPromotionRequest(cheaper)).toMatchObject({ offers: [{ productId: 'p1', offerPrice: { amountCents: 200 } }], weekdays: [1, 6], dailyFrom: '07:00', dailyUntil: '10:00' });
+    expect(validatePromotion({ ...cheaper, weekdays: [] }, 'de')).toEqual({ weekdays: 'weekdaysRequired' });
+    expect(validatePromotion({ ...cheaper, dailyUntil: '06:00' }, 'de')).toEqual({ daily: 'dailyWindow' });
+  });
+
+  it('starts later at midnight and ends the chosen number of days after the start', () => {
+    const now = new Date(2026, 9, 20, 10, 30);
+    const later = { ...emptyPromotion(), startInDays: 1, days: 3 };
+    expect(promotionStart(later, now)).toEqual(new Date(2026, 9, 21, 0, 0));
+    expect(promotionEnd(later, now)).toEqual(new Date(2026, 9, 24, 0, 0));
   });
 
   it('rejects an end date that is not in the future before sending', () => {

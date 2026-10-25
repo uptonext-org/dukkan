@@ -26,12 +26,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Market promotions. At most one promotion applies per listing: the most recently created active
- * one. Active means {@code validFrom <= now < validUntil}.
+ * Market promotions. At most one promotion applies per listing: the most recently created running
+ * one. Running means {@code validFrom <= now < validUntil}, on one of its weekdays and within its
+ * daily window (Berlin time), when it has those.
  */
 @Service
 @Transactional(readOnly = true)
 public class PromotionService {
+
+  /** Most quantity prices of one multi-buy. */
+  public static final int MAX_TIERS = 5;
 
   private final PromotionRepository promotions;
   private final UiTexts texts;
@@ -57,7 +61,7 @@ public class PromotionService {
   static Map<UUID, PromotionRule> winnersByListing(List<RuleRow> newestFirst) {
     Map<UUID, PromotionRule> winners = new HashMap<>();
     for (RuleRow row : newestFirst) {
-      winners.putIfAbsent(row.listingId(), rule(row.promotionId(), row.type(), row.percentOff(), row.bundleQuantity(), row.bundlePriceCents()));
+      winners.putIfAbsent(row.listingId(), rule(row));
     }
     return winners;
   }
@@ -112,10 +116,12 @@ public class PromotionService {
       case PromotionRule.PercentOff p ->
           texts.format("badge.PERCENT_OFF", locale, Map.of("percent", Integer.toString(p.percentOff())));
       case PromotionRule.MultiBuy m ->
-          texts.format(
-              "badge.MULTI_BUY",
-              locale,
-              Map.of("quantity", Integer.toString(m.bundleQuantity()), "price", formatEuro(m.bundlePriceCents())));
+          String.join(
+              " · ",
+              m.tiers().stream()
+                  .map(t -> texts.format("badge.MULTI_BUY", locale, Map.of("quantity", Integer.toString(t.quantity()), "price", formatEuro(t.priceCents()))))
+                  .toList());
+      case PromotionRule.FixedPrice f -> texts.format("badge.FIXED_PRICE", locale, Map.of("price", formatEuro(f.offerPriceCents())));
     };
   }
 
@@ -144,36 +150,60 @@ public class PromotionService {
     if (!draft.validUntil().isAfter(clock.instant())) {
       throw new InvalidRequestException("validUntil", "Future", "must be in the future");
     }
+    validateSchedule(draft);
     switch (draft.type()) {
       case "PERCENT_OFF" -> {
         if (draft.percentOff() == null) {
           throw new InvalidRequestException("percentOff", "NotNull", "is required for PERCENT_OFF");
         }
-        if (draft.bundleQuantity() != null || draft.bundlePriceCents() != null) {
-          throw new InvalidRequestException("bundleQuantity", "Null", "must be empty for PERCENT_OFF");
+        if (!draft.tiers().isEmpty() || !draft.offerPrices().isEmpty()) {
+          throw new InvalidRequestException("tiers", "Null", "must be empty for PERCENT_OFF");
         }
       }
       case "MULTI_BUY" -> {
-        if (draft.bundleQuantity() == null) {
-          throw new InvalidRequestException("bundleQuantity", "NotNull", "is required for MULTI_BUY");
+        if (draft.tiers().isEmpty()) {
+          throw new InvalidRequestException("tiers", "NotNull", "at least one quantity price is required for MULTI_BUY");
         }
-        if (draft.bundlePriceCents() == null) {
-          throw new InvalidRequestException("bundlePrice", "NotNull", "is required for MULTI_BUY");
+        if (draft.tiers().size() > MAX_TIERS) {
+          throw new InvalidRequestException("tiers", "Size", "at most " + MAX_TIERS + " quantity prices");
         }
-        if (draft.percentOff() != null) {
+        if (draft.tiers().stream().map(PromotionRule.Tier::quantity).distinct().count() != draft.tiers().size()) {
+          throw new InvalidRequestException("tiers", "DistinctQuantities", "each quantity only once");
+        }
+        if (draft.percentOff() != null || !draft.offerPrices().isEmpty()) {
           throw new InvalidRequestException("percentOff", "Null", "must be empty for MULTI_BUY");
         }
       }
-      default -> throw new InvalidRequestException("type", "UnknownCode", "must be PERCENT_OFF or MULTI_BUY");
+      case "FIXED_PRICE" -> {
+        if (draft.offerPrices().isEmpty() || !draft.offerPrices().keySet().equals(Set.copyOf(draft.listingIds()))) {
+          throw new InvalidRequestException("offers", "NotNull", "an offer price for every product is required for FIXED_PRICE");
+        }
+        if (draft.percentOff() != null || !draft.tiers().isEmpty()) {
+          throw new InvalidRequestException("percentOff", "Null", "must be empty for FIXED_PRICE");
+        }
+      }
+      default -> throw new InvalidRequestException("type", "UnknownCode", "must be PERCENT_OFF, MULTI_BUY or FIXED_PRICE");
     }
   }
 
-  private static PromotionRule rule(
-      UUID id, String type, @Nullable Integer percentOff, @Nullable Integer bundleQuantity, @Nullable Long bundlePriceCents) {
-    return switch (type) {
-      case "PERCENT_OFF" -> new PromotionRule.PercentOff(id, requireNonNull(percentOff));
-      case "MULTI_BUY" -> new PromotionRule.MultiBuy(id, requireNonNull(bundleQuantity), requireNonNull(bundlePriceCents));
-      default -> throw new IllegalStateException("Unknown promotion type " + type);
+  private static void validateSchedule(PromotionDraft draft) {
+    if (draft.weekdays() != null && (draft.weekdays().isEmpty() || draft.weekdays().stream().anyMatch(d -> d < 1 || d > 7))) {
+      throw new InvalidRequestException("weekdays", "Weekdays", "1 (Monday) to 7 (Sunday), at least one day");
+    }
+    if ((draft.dailyFrom() == null) != (draft.dailyUntil() == null)) {
+      throw new InvalidRequestException("dailyUntil", "DailyWindow", "dailyFrom and dailyUntil must be given together");
+    }
+    if (draft.dailyFrom() != null && !requireNonNull(draft.dailyUntil()).isAfter(draft.dailyFrom())) {
+      throw new InvalidRequestException("dailyUntil", "DailyWindow", "must be after dailyFrom on the same day");
+    }
+  }
+
+  private static PromotionRule rule(RuleRow row) {
+    return switch (row.type()) {
+      case "PERCENT_OFF" -> new PromotionRule.PercentOff(row.promotionId(), requireNonNull(row.percentOff()));
+      case "MULTI_BUY" -> new PromotionRule.MultiBuy(row.promotionId(), row.tiers());
+      case "FIXED_PRICE" -> new PromotionRule.FixedPrice(row.promotionId(), requireNonNull(row.offerPriceCents()));
+      default -> throw new IllegalStateException("Unknown promotion type " + row.type());
     };
   }
 
@@ -186,10 +216,18 @@ public class PromotionService {
         locale.pick(p.descriptions(), primaryLocale),
         p.type(),
         p.percentOff(),
-        p.bundleQuantity(),
-        p.bundlePriceCents() == null ? null : Money.eur(p.bundlePriceCents()),
+        p.tiers().isEmpty() ? null : p.tiers().getFirst().quantity(),
+        p.tiers().isEmpty() ? null : Money.eur(p.tiers().getFirst().priceCents()),
+        p.tiers().stream().map(t -> new PromotionView.TierView(t.quantity(), Money.eur(t.priceCents()))).toList(),
+        p.listings().entrySet().stream()
+            .filter(e -> e.getValue() != null)
+            .map(e -> new PromotionView.OfferView(e.getKey(), Money.eur(requireNonNull(e.getValue()))))
+            .toList(),
         DukkanTime.toApi(p.validFrom()),
         DukkanTime.toApi(p.validUntil()),
-        p.listingIds());
+        p.weekdays(),
+        p.dailyFrom() == null ? null : p.dailyFrom().toString(),
+        p.dailyUntil() == null ? null : p.dailyUntil().toString(),
+        List.copyOf(p.listings().keySet()));
   }
 }

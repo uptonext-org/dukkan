@@ -682,9 +682,9 @@ public class CatalogService {
       String primaryLocale = primary.get(row.marketId());
       PromotionRule rule = rules.get(row.id());
       Long promotional = null;
-      if (rule instanceof PromotionRule.PercentOff) {
-        promotional =
-            PricingEngine.price(List.of(new PricingEngine.Line(row.id(), row.priceCents(), 1, rule)), 0).totalCents();
+      if (rule instanceof PromotionRule.PercentOff || rule instanceof PromotionRule.FixedPrice) {
+        long reduced = PricingEngine.price(List.of(new PricingEngine.Line(row.id(), row.priceCents(), 1, rule)), 0).totalCents();
+        promotional = reduced < row.priceCents() ? reduced : null;
       }
       long effective = promotional == null ? row.priceCents() : promotional;
       UnitPrice unitPrice =

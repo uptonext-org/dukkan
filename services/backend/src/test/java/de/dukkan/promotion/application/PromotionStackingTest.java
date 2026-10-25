@@ -19,9 +19,9 @@ class PromotionStackingTest {
     // Rows come newest promotion first (ORDER BY created_at DESC).
     List<RuleRow> rows =
         List.of(
-            new RuleRow(newer, shared, "PERCENT_OFF", 30, null, null),
-            new RuleRow(older, shared, "MULTI_BUY", null, 3, 500L),
-            new RuleRow(older, onlyOld, "MULTI_BUY", null, 3, 500L));
+            new RuleRow(newer, shared, "PERCENT_OFF", 30, null, List.of()),
+            new RuleRow(older, shared, "MULTI_BUY", null, null, List.of(new PromotionRule.Tier(3, 500))),
+            new RuleRow(older, onlyOld, "MULTI_BUY", null, null, List.of(new PromotionRule.Tier(3, 500))));
 
     Map<UUID, PromotionRule> winners = PromotionService.winnersByListing(rows);
 

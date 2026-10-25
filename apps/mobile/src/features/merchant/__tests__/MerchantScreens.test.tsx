@@ -8,6 +8,7 @@ import { createTestDependencies, renderInAppRoot } from '../../../test/render';
 import { AddProductScreen } from '../screens/AddProductScreen';
 import { FeedbackScreen } from '../screens/FeedbackScreen';
 import { MarketHubScreen } from '../screens/MarketHubScreen';
+import { PromotionFormScreen } from '../screens/PromotionFormScreen';
 import { MerchantOrdersScreen } from '../screens/MerchantOrdersScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -265,5 +266,55 @@ describe('Mein Markt: Kundenfeedback', () => {
     expect(within(screen.getByTestId('feedback-f2')).getByText(/Ada/)).toBeOnTheScreen();
     expect(within(screen.getByTestId('feedback-f2')).getByText(/von 5 Sternen/)).toBeOnTheScreen();
     expect(within(screen.getByTestId('feedback-f1')).queryByText(/Sternen/)).toBeNull();
+  });
+});
+
+describe('Mein Markt: Aktion anlegen', () => {
+  it('sends quantity prices with weekdays and a daily window', async () => {
+    const listing = { ...ayran, id: 'l1', marketId: MARKET_ID, price: eur(200), available: true, organic: false, isNew: false, maxOrderQuantity: 24, privateProduct: false };
+    const { fake, dependencies } = setup({
+      [`GET /merchant/markets/${MARKET_ID}/listings`]: page([listing]),
+      [`POST /merchant/markets/${MARKET_ID}/promotions`]: (call: { body?: unknown }) => ({ id: 'pr1', ...(call.body as object) }),
+    });
+    await renderInAppRoot(
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="MerchantPromotionForm" component={PromotionFormScreen} initialParams={{ marketId: MARKET_ID }} />
+      </Stack.Navigator>,
+      dependencies,
+    );
+    const user = userEvent.setup();
+
+    await user.type(await screen.findByTestId('promotion-title-de'), 'Ayran-Staffel');
+    await user.press(screen.getByRole('tab', { name: 'Mengenpreise' }));
+    await user.type(screen.getByTestId('tier-price-0'), '5');
+    await user.press(screen.getByTestId('tier-add'));
+    await user.type(screen.getByTestId('tier-quantity-1'), '7');
+    await user.type(screen.getByTestId('tier-price-1'), '10');
+    await user.press(screen.getByTestId('weekday-6'));
+    await user.press(screen.getByTestId('weekday-7'));
+    await fireEvent(screen.getByTestId('promotion-all-day'), 'valueChange', false);
+    await user.clear(screen.getByTestId('daily-from'));
+    await user.type(screen.getByTestId('daily-from'), '07:00');
+    await user.press(await screen.findByText('Ayran'));
+    await user.press(screen.getByRole('button', { name: 'Speichern' }));
+
+    await waitFor(() =>
+      expect(fake.calls).toContainEqual(
+        expect.objectContaining({
+          method: 'POST',
+          body: expect.objectContaining({
+            type: 'MULTI_BUY',
+            tiers: [
+              { quantity: 3, price: { amountCents: 500, currency: 'EUR' } },
+              { quantity: 7, price: { amountCents: 1000, currency: 'EUR' } },
+            ],
+            weekdays: [1, 2, 3, 4, 5],
+            dailyFrom: '07:00',
+            dailyUntil: '12:00',
+            productIds: ['l1'],
+          }),
+        }),
+      ),
+    );
   });
 });

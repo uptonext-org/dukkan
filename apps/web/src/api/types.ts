@@ -255,7 +255,19 @@ export interface CatalogReviewItem {
   duplicates: { id: string; name: string; unitSize: string; barcode?: string | null }[];
 }
 
-export type PromotionType = 'PERCENT_OFF' | 'MULTI_BUY';
+export type PromotionType = 'PERCENT_OFF' | 'MULTI_BUY' | 'FIXED_PRICE';
+
+/** `quantity` units together for `price` (MULTI_BUY). */
+export interface PromotionTier {
+  quantity: number;
+  price: Money;
+}
+
+/** The offer price of one product (FIXED_PRICE). */
+export interface PromotionOffer {
+  productId: string;
+  offerPrice: Money;
+}
 
 export interface Promotion {
   id: string;
@@ -265,8 +277,15 @@ export interface Promotion {
   percentOff?: number | null;
   bundleQuantity?: number | null;
   bundlePrice?: Money | null;
+  tiers?: PromotionTier[];
+  offers?: PromotionOffer[];
   validFrom: string;
   validUntil: string;
+  /** ISO weekdays (1 = Monday); null = every day. */
+  weekdays?: number[] | null;
+  /** "HH:mm" Berlin time; null = all day. */
+  dailyFrom?: string | null;
+  dailyUntil?: string | null;
   productIds: string[];
 }
 
@@ -276,8 +295,13 @@ export interface PromotionRequest {
   percentOff: number | null;
   bundleQuantity: number | null;
   bundlePrice: Money | null;
+  tiers: PromotionTier[] | null;
+  offers: PromotionOffer[] | null;
   validFrom: string;
   validUntil: string;
+  weekdays: number[] | null;
+  dailyFrom: string | null;
+  dailyUntil: string | null;
   productIds: string[];
 }
 

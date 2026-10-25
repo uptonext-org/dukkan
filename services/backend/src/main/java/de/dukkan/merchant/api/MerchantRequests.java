@@ -10,6 +10,7 @@ import de.dukkan.market.application.FulfilmentOptions;
 import de.dukkan.market.application.MarketProfile;
 import de.dukkan.market.application.OpeningHours;
 import de.dukkan.promotion.application.PromotionDraft;
+import de.dukkan.promotion.application.PromotionRule;
 import de.dukkan.shared.api.GeoPoint;
 import de.dukkan.shared.api.Money;
 import de.dukkan.shared.error.InvalidRequestException;
@@ -23,10 +24,14 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
+import java.time.LocalTime;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.hibernate.validator.constraints.URL;
 import org.jspecify.annotations.Nullable;
@@ -172,28 +177,64 @@ final class MerchantRequests {
     }
   }
 
+  /** A quantity price of a MULTI_BUY: {@code quantity} units together for {@code price}. */
+  record TierRequest(@Max(99) @Min(2) int quantity, @NotNull @Valid Money price) {}
+
+  /** The offer price of one product of a FIXED_PRICE promotion. */
+  record OfferRequest(@NotNull UUID productId, @NotNull @Valid Money offerPrice) {}
+
+  /**
+   * A new promotion. MULTI_BUY takes {@code tiers} (or the older single {@code bundleQuantity} and
+   * {@code bundlePrice}); FIXED_PRICE takes {@code offers}, whose products need not be repeated in
+   * {@code productIds}. {@code weekdays} and the daily window narrow the validity.
+   */
   record PromotionRequest(
       @NotNull @Size(min = 1) Map<String, @NotBlank @Size(max = 2000) String> title,
       @Nullable Map<String, @NotNull @Size(max = 2000) String> description,
-      @NotNull @Pattern(regexp = "PERCENT_OFF|MULTI_BUY") String type,
+      @NotNull @Pattern(regexp = "PERCENT_OFF|MULTI_BUY|FIXED_PRICE") String type,
       @Nullable @Max(90) @Min(1) Integer percentOff,
-      @Nullable @Max(20) @Min(2) Integer bundleQuantity,
+      @Nullable @Max(99) @Min(2) Integer bundleQuantity,
       @Nullable @Valid Money bundlePrice,
+      @Nullable @Size(max = 5) List<@NotNull @Valid TierRequest> tiers,
+      @Nullable @Size(max = 200) List<@NotNull @Valid OfferRequest> offers,
       @NotNull OffsetDateTime validFrom,
       @NotNull OffsetDateTime validUntil,
-      @NotNull @Size(max = 200, min = 1) List<@NotNull UUID> productIds) {
+      @Nullable @Size(max = 7, min = 1) List<@NotNull @Max(7) @Min(1) Integer> weekdays,
+      @Nullable LocalTime dailyFrom,
+      @Nullable LocalTime dailyUntil,
+      @Nullable @Size(max = 200) List<@NotNull UUID> productIds) {
 
     PromotionDraft toDraft() {
+      List<PromotionRule.Tier> tierList = new ArrayList<>();
+      if (tiers != null) {
+        tiers.forEach(t -> tierList.add(new PromotionRule.Tier(t.quantity(), euroCents(t.price(), "tiers.price"))));
+      } else if (bundleQuantity != null && bundlePrice != null) {
+        tierList.add(new PromotionRule.Tier(bundleQuantity, euroCents(bundlePrice, "bundlePrice")));
+      } else if (bundleQuantity != null || bundlePrice != null) {
+        throw new InvalidRequestException("bundlePrice", "NotNull", "bundleQuantity and bundlePrice must be given together");
+      }
+      Map<UUID, Long> offerPrices = new LinkedHashMap<>();
+      if (offers != null) {
+        offers.forEach(o -> offerPrices.put(o.productId(), euroCents(o.offerPrice(), "offers.offerPrice")));
+      }
+      Set<UUID> ids = new LinkedHashSet<>(productIds == null ? List.of() : productIds);
+      ids.addAll(offerPrices.keySet());
+      if (ids.isEmpty()) {
+        throw new InvalidRequestException("productIds", "NotEmpty", "at least one product");
+      }
       return new PromotionDraft(
           title,
           description == null ? Map.of() : description,
           type,
           percentOff,
-          bundleQuantity,
-          bundlePrice == null ? null : euroCents(bundlePrice, "bundlePrice"),
+          tierList,
+          offerPrices,
           validFrom.toInstant(),
           validUntil.toInstant(),
-          productIds.stream().distinct().toList());
+          weekdays == null ? null : weekdays.stream().distinct().sorted().toList(),
+          dailyFrom,
+          dailyUntil,
+          List.copyOf(ids));
     }
   }
 

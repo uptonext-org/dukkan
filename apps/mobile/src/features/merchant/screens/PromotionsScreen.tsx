@@ -14,10 +14,11 @@ export function promotionMechanic(t: TFunction, promotion: Promotion): string {
   if (promotion.type === 'PERCENT_OFF' && promotion.percentOff != null) {
     return t('merchant.percentOff', { percent: formatPercent(promotion.percentOff) });
   }
-  if (promotion.bundleQuantity != null && promotion.bundlePrice != null) {
-    return t('merchant.multiBuy', { quantity: String(promotion.bundleQuantity), price: formatMoney(promotion.bundlePrice) });
+  if (promotion.type === 'FIXED_PRICE') {
+    return t('merchant.fixedPrices');
   }
-  return '';
+  const tiers = promotion.tiers !== undefined && promotion.tiers.length > 0 ? promotion.tiers : promotion.bundleQuantity != null && promotion.bundlePrice != null ? [{ quantity: promotion.bundleQuantity, price: promotion.bundlePrice }] : [];
+  return tiers.map((tier) => t('merchant.multiBuy', { quantity: String(tier.quantity), price: formatMoney(tier.price) })).join(' · ');
 }
 
 /** Promotions of my market: active and expired; "end now" for active ones. */

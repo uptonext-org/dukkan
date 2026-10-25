@@ -3,8 +3,10 @@ package de.dukkan.order.application;
 import de.dukkan.order.domain.OrderItem;
 import de.dukkan.promotion.application.PricingEngine;
 import de.dukkan.promotion.application.PromotionRule;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -37,8 +39,15 @@ public final class ChargedPrice {
   public static OrderItem.AppliedPromotion snapshot(@Nullable PromotionRule rule) {
     return switch (rule) {
       case null -> OrderItem.AppliedPromotion.NONE;
-      case PromotionRule.PercentOff p -> new OrderItem.AppliedPromotion(p.percentOff(), null, null);
-      case PromotionRule.MultiBuy m -> new OrderItem.AppliedPromotion(null, m.bundleQuantity(), m.bundlePriceCents());
+      case PromotionRule.PercentOff p -> new OrderItem.AppliedPromotion(p.percentOff(), null, null, null, null);
+      case PromotionRule.MultiBuy m ->
+          new OrderItem.AppliedPromotion(
+              null,
+              m.bundleQuantity(),
+              m.bundlePriceCents(),
+              null,
+              m.tiers().stream().map(t -> t.quantity() + ":" + t.priceCents()).collect(Collectors.joining(";")));
+      case PromotionRule.FixedPrice f -> new OrderItem.AppliedPromotion(null, null, null, f.offerPriceCents(), null);
     };
   }
 
@@ -46,8 +55,19 @@ public final class ChargedPrice {
     if (promotion.percentOff() != null) {
       return new PromotionRule.PercentOff(SNAPSHOT, promotion.percentOff());
     }
+    if (promotion.tiers() != null) {
+      List<PromotionRule.Tier> tiers =
+          Arrays.stream(promotion.tiers().split(";"))
+              .map(t -> t.split(":"))
+              .map(t -> new PromotionRule.Tier(Integer.parseInt(t[0]), Long.parseLong(t[1])))
+              .toList();
+      return new PromotionRule.MultiBuy(SNAPSHOT, tiers);
+    }
     if (promotion.bundleQuantity() != null && promotion.bundlePriceCents() != null) {
       return new PromotionRule.MultiBuy(SNAPSHOT, promotion.bundleQuantity(), promotion.bundlePriceCents());
+    }
+    if (promotion.offerPriceCents() != null) {
+      return new PromotionRule.FixedPrice(SNAPSHOT, promotion.offerPriceCents());
     }
     return null;
   }

@@ -104,7 +104,11 @@
     "checkFields": "Bitte prüf die markierten Felder.",
     "passwordTooLong": "Passwort ist zu lang (höchstens 72 Bytes; arabische Zeichen zählen doppelt).",
     "endDateFuture": "Das Angebot muss in der Zukunft enden.",
-    "hoursOverlap": "Die Zeiträume überschneiden sich."
+    "hoursOverlap": "Die Zeiträume überschneiden sich.",
+    "tiers": "Je Stufe eine Stückzahl von 2 bis 99 (jede nur einmal) und einen Preis wie 4,99.",
+    "offerBelowPrice": "Für jedes gewählte Produkt einen Angebotspreis unter dem normalen Preis eingeben.",
+    "weekdaysRequired": "Bitte mindestens einen Wochentag wählen.",
+    "dailyWindow": "Uhrzeiten wie 08:00; „bis“ muss nach „ab“ liegen."
   },
   "language": {
     "button": "Sprache ändern",
@@ -591,10 +595,8 @@
     "promotionTitle": "Titel",
     "promotionType": "Art des Angebots",
     "typePercent": "Rabatt in %",
-    "typeMultiBuy": "Mengenangebot",
+    "typeMultiBuy": "Mengenpreise",
     "percent": "Rabatt (%)",
-    "bundleQuantity": "Menge",
-    "bundlePrice": "Preis für die Menge (€)",
     "duration": "Dauer",
     "days_one": "{{count}} Tag",
     "days_other": "{{count}} Tage",
@@ -676,7 +678,24 @@
       "pauseToday": "Für heute pausieren",
       "autoAccept": "Bestellungen automatisch annehmen",
       "more": "Zeitfenster, Urlaub, Lieferzeiten und Bezahlung stellst du im Händlerportal unter „Bestellungen & Lieferung“ ein."
-    }
+    },
+    "typeFixed": "Angebotspreis",
+    "tiersHint": "Kunden zahlen automatisch die günstigste Kombination, z. B. 3 für 5 € und 7 für 10 €.",
+    "tierQuantity": "Stück (Stufe {{n}})",
+    "tierPrice": "Preis zusammen € (Stufe {{n}})",
+    "addTier": "Weitere Stufe",
+    "removeTier": "Stufe {{n}} entfernen",
+    "fixedHint": "Wähle unten die Produkte und gib je Produkt den Angebotspreis ein.",
+    "offerPriceFor": "Angebotspreis für {{name}} (€)",
+    "fixedPrices": "Angebotspreise",
+    "start": "Beginn",
+    "startToday": "Heute",
+    "startTomorrow": "Morgen",
+    "startIn": "In {{n}} Tagen",
+    "weekdays": "Wochentage",
+    "allDay": "Ganztägig",
+    "dailyFrom": "Täglich ab (HH:MM)",
+    "dailyUntil": "Täglich bis (HH:MM)"
   },
   "allergen": {
     "gluten": "Gluten",

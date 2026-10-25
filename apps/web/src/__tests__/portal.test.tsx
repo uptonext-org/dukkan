@@ -376,6 +376,52 @@ describe('promotions', () => {
     expect(body.title).toEqual({ de: 'Ayran-Woche' });
   });
 
+  it('sets an offer price per product, on chosen weekdays and hours', async () => {
+    const ayran = { id: 'l1', name: 'Ayran', unitSize: '250 ml', price: { amountCents: 500, currency: 'EUR' }, available: true, maxOrderQuantity: 24, privateProduct: false };
+    const { user, calls } = renderPortal({
+      'GET /merchant/markets': [market()],
+      'GET /merchant/markets/m1/orders': [],
+      'GET /merchant/markets/m1/promotions': [],
+      'GET /merchant/markets/m1/listings': { items: [ayran], page: 0, size: 50, totalItems: 1, totalPages: 1 },
+      'POST /merchant/markets/m1/promotions': (call) => ({ id: 'pr2', ...(call.body as object) }),
+    });
+    await user.click(await screen.findByRole('button', { name: 'Aktionen' }));
+    await user.type(await screen.findByLabelText(/^Titel/), 'Frühstücksangebot');
+    await user.selectOptions(screen.getByLabelText('Art'), 'FIXED_PRICE');
+    await user.click(await screen.findByRole('checkbox', { name: 'Ayran' }));
+    await user.type(screen.getByLabelText('Angebotspreis für Ayran (€)'), '5,00');
+    // Only weekdays Monday to Friday, 07:00–10:00.
+    const days = screen.getByRole('group', { name: 'Wochentage' });
+    await user.click(within(days).getByRole('checkbox', { name: 'Sa' }));
+    await user.click(within(days).getByRole('checkbox', { name: 'So' }));
+    await user.click(screen.getByRole('checkbox', { name: 'Ganztägig' }));
+    await user.clear(screen.getByLabelText('Täglich ab'));
+    await user.type(screen.getByLabelText('Täglich ab'), '07:00');
+    await user.clear(screen.getByLabelText('Täglich bis'));
+    await user.type(screen.getByLabelText('Täglich bis'), '10:00');
+    await user.click(screen.getByRole('button', { name: 'Aktion starten' }));
+    // 5,00 € is not below the regular price.
+    expect(await screen.findByText('Für jedes gewählte Produkt einen Angebotspreis unter dem normalen Preis eingeben.')).toBeInTheDocument();
+    await user.clear(screen.getByLabelText('Angebotspreis für Ayran (€)'));
+    await user.type(screen.getByLabelText('Angebotspreis für Ayran (€)'), '2');
+    await user.click(screen.getByRole('button', { name: 'Aktion starten' }));
+    expect(await screen.findByRole('status')).toHaveTextContent('Aktion gestartet.');
+    const body = calls.find((c) => c.method === 'POST' && c.path.endsWith('/promotions'))?.body as Record<string, unknown>;
+    expect(body).toEqual(
+      expect.objectContaining({
+        type: 'FIXED_PRICE',
+        tiers: null,
+        offers: [{ productId: 'l1', offerPrice: { amountCents: 200, currency: 'EUR' } }],
+        weekdays: [1, 2, 3, 4, 5],
+        dailyFrom: '07:00',
+        dailyUntil: '10:00',
+        productIds: ['l1'],
+      }),
+    );
+    // A week from today, ending at midnight after the last day.
+    expect(new Date(body.validUntil as string).getTime() - new Date(body.validFrom as string).getTime()).toBeGreaterThan(6 * 24 * 3600 * 1000);
+  });
+
   it('translates the title, picks products and starts a promotion; ends a running one', async () => {
     const running = {
       id: 'pr1',
@@ -409,7 +455,10 @@ describe('promotions', () => {
     await waitFor(() => expect(screen.getByLabelText('Titel · English')).toHaveValue('Ayran week'));
     expect(screen.getByLabelText('Titel · Deutsch (Hauptsprache)')).toHaveValue('Ayran-Woche');
     await user.selectOptions(screen.getByLabelText('Art'), 'MULTI_BUY');
-    await user.type(screen.getByLabelText('Preis zusammen (€)'), '2,49');
+    await user.type(screen.getByLabelText('Preis zusammen in € (Stufe 1)'), '2,49');
+    await user.click(screen.getByRole('button', { name: 'Weitere Stufe' }));
+    await user.type(screen.getByLabelText('Stück (Stufe 2)'), '7');
+    await user.type(screen.getByLabelText('Preis zusammen in € (Stufe 2)'), '5');
     await user.click(await screen.findByRole('checkbox', { name: 'Ayran' }));
     await user.click(screen.getByRole('button', { name: 'Aktion starten' }));
     expect(await screen.findByRole('status')).toHaveTextContent('Aktion gestartet.');
@@ -419,8 +468,13 @@ describe('promotions', () => {
         title: { de: 'Ayran-Woche', en: 'Ayran week', ar: 'أسبوع العيران' },
         type: 'MULTI_BUY',
         percentOff: null,
-        bundleQuantity: 3,
-        bundlePrice: { amountCents: 249, currency: 'EUR' },
+        tiers: [
+          { quantity: 3, price: { amountCents: 249, currency: 'EUR' } },
+          { quantity: 7, price: { amountCents: 500, currency: 'EUR' } },
+        ],
+        offers: null,
+        weekdays: null,
+        dailyFrom: null,
         productIds: ['l1'],
       }),
     );

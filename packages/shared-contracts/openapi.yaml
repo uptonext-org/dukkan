@@ -2760,7 +2760,11 @@ components:
         productCount: { type: [integer, 'null'], description: Set on market-scoped lists. }
     PromotionType:
       type: string
-      enum: [PERCENT_OFF, MULTI_BUY]
+      enum: [PERCENT_OFF, MULTI_BUY, FIXED_PRICE]
+      description: |
+        PERCENT_OFF: a percentage off every unit. MULTI_BUY: quantity prices (`tiers`, e.g. 3 for
+        5 € and 7 for 10 €); a cart line costs the cheapest combination of tiers and single units.
+        FIXED_PRICE: an offer price per product (`offers`, e.g. 5 € → 2 €).
     PromotionBadge:
       type: object
       required: [promotionId, label, type]
@@ -2905,14 +2909,35 @@ components:
         description: { type: [string, 'null'] }
         type: { $ref: '#/components/schemas/PromotionType' }
         percentOff: { type: [integer, 'null'], minimum: 1, maximum: 90 }
-        bundleQuantity: { type: [integer, 'null'], minimum: 2 }
+        bundleQuantity: { type: [integer, 'null'], minimum: 2, description: 'MULTI_BUY: the smallest tier (older clients).' }
         bundlePrice:
+          description: 'MULTI_BUY: the price of the smallest tier (older clients).'
           oneOf:
             - type: 'null'
             - $ref: '#/components/schemas/Money'
+        tiers: { type: array, items: { $ref: '#/components/schemas/PromotionTier' }, description: 'MULTI_BUY: all quantity prices, smallest first.' }
+        offers: { type: array, items: { $ref: '#/components/schemas/PromotionOffer' }, description: 'FIXED_PRICE: the offer price per product.' }
         validFrom: { type: string, format: date-time }
         validUntil: { type: string, format: date-time }
+        weekdays:
+          type: [array, 'null']
+          items: { type: integer, minimum: 1, maximum: 7 }
+          description: Runs only on these days (ISO, 1 = Monday); null = every day.
+        dailyFrom: { type: [string, 'null'], pattern: '^\d{2}:\d{2}$', description: 'Runs daily from this time (Berlin, "HH:mm"); null = all day.' }
+        dailyUntil: { type: [string, 'null'], pattern: '^\d{2}:\d{2}$', description: Until this time (exclusive). }
         productIds: { type: array, items: { type: string, format: uuid } }
+    PromotionTier:
+      type: object
+      required: [quantity, price]
+      properties:
+        quantity: { type: integer, minimum: 2, maximum: 99 }
+        price: { $ref: '#/components/schemas/Money' }
+    PromotionOffer:
+      type: object
+      required: [productId, offerPrice]
+      properties:
+        productId: { type: string, format: uuid }
+        offerPrice: { $ref: '#/components/schemas/Money' }
     FavoriteGroup:
       type: object
       required: [category, items]
@@ -3430,17 +3455,28 @@ components:
         sizeBytes: { type: integer, format: int64 }
     PromotionRequest:
       type: object
-      required: [title, type, validFrom, validUntil, productIds]
+      required: [title, type, validFrom, validUntil]
+      description: |
+        PERCENT_OFF needs `percentOff`; MULTI_BUY needs `tiers` (or the older single
+        `bundleQuantity` + `bundlePrice`), at most 5 with distinct quantities; FIXED_PRICE needs
+        `offers`, each below the product's price (else 400 `BelowRegularPrice`); their products need
+        not be repeated in `productIds`. At least one product in total. `weekdays` and the daily
+        window narrow `validFrom`–`validUntil` (errors `Weekdays`, `DailyWindow`).
       properties:
         title: { $ref: '#/components/schemas/LocalizedText' }
         description: { $ref: '#/components/schemas/LocalizedText' }
         type: { $ref: '#/components/schemas/PromotionType' }
         percentOff: { type: [integer, 'null'], minimum: 1, maximum: 90 }
-        bundleQuantity: { type: [integer, 'null'], minimum: 2, maximum: 20 }
+        bundleQuantity: { type: [integer, 'null'], minimum: 2, maximum: 99 }
         bundlePrice:
           oneOf:
             - type: 'null'
             - $ref: '#/components/schemas/Money'
+        tiers: { type: [array, 'null'], items: { $ref: '#/components/schemas/PromotionTier' }, maxItems: 5 }
+        offers: { type: [array, 'null'], items: { $ref: '#/components/schemas/PromotionOffer' }, maxItems: 200 }
         validFrom: { type: string, format: date-time }
         validUntil: { type: string, format: date-time }
-        productIds: { type: array, items: { type: string, format: uuid }, minItems: 1, maxItems: 200 }
+        weekdays: { type: [array, 'null'], items: { type: integer, minimum: 1, maximum: 7 }, minItems: 1, maxItems: 7 }
+        dailyFrom: { type: [string, 'null'], pattern: '^\d{2}:\d{2}$', examples: ['08:00'] }
+        dailyUntil: { type: [string, 'null'], pattern: '^\d{2}:\d{2}$', examples: ['12:00'] }
+        productIds: { type: [array, 'null'], items: { type: string, format: uuid }, maxItems: 200 }

@@ -8,6 +8,7 @@ import de.dukkan.catalog.application.CatalogService;
 import de.dukkan.catalog.application.Listing;
 import de.dukkan.catalog.application.ListingDraft;
 import de.dukkan.catalog.application.ListingImport;
+import de.dukkan.catalog.application.ListingInfo;
 import de.dukkan.catalog.application.ListingUpdate;
 import de.dukkan.feedback.application.FeedbackService;
 import de.dukkan.i18n.application.ContentLocale;
@@ -32,6 +33,7 @@ import de.dukkan.promotion.application.PromotionService;
 import de.dukkan.promotion.application.PromotionView;
 import de.dukkan.shared.api.PageResponse;
 import de.dukkan.shared.error.ContentRejectedException;
+import de.dukkan.shared.error.InvalidRequestException;
 import de.dukkan.shared.error.NotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -188,6 +190,16 @@ public class MerchantService {
     Set<UUID> valid = catalog.activeListingIdsOfMarket(marketId, draft.listingIds());
     if (!valid.containsAll(draft.listingIds())) {
       throw new NotFoundException("One or more products are not listed in this market.");
+    }
+    if (!draft.offerPrices().isEmpty()) {
+      // An offer price is a reduction: it must be below the product's regular price.
+      Map<UUID, ListingInfo> listings = catalog.listingInfos(draft.offerPrices().keySet(), locale);
+      draft.offerPrices().forEach((id, offer) -> {
+        ListingInfo listing = listings.get(id);
+        if (listing != null && offer >= listing.priceCents()) {
+          throw new InvalidRequestException("offers", "BelowRegularPrice", "the offer price of " + listing.name() + " must be below its price");
+        }
+      });
     }
     return promotions.create(marketId, draft, locale, market.primaryLocale());
   }

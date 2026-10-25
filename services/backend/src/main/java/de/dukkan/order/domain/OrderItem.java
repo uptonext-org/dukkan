@@ -62,9 +62,25 @@ public class OrderItem {
   @Column(name = "promo_bundle_price_cents")
   private @Nullable Long promoBundlePriceCents;
 
-  /** The promotion that applied when ordering (one of both kinds), kept to re-price fewer units. */
-  public record AppliedPromotion(@Nullable Integer percentOff, @Nullable Integer bundleQuantity, @Nullable Long bundlePriceCents) {
-    public static final AppliedPromotion NONE = new AppliedPromotion(null, null, null);
+  @Column(name = "promo_offer_price_cents")
+  private @Nullable Long promoOfferPriceCents;
+
+  /** All quantity prices of a multi-buy, e.g. {@code 3:500;7:1000}. */
+  @Column(name = "promo_tiers")
+  private @Nullable String promoTiers;
+
+  /**
+   * The promotion that applied when ordering, kept to re-price fewer units: a percentage, quantity
+   * prices ({@code tiers} as {@code 3:500;7:1000}, the smallest also in {@code bundle*}) or an offer
+   * price. Lines ordered before quantity tiers existed only have {@code bundle*}.
+   */
+  public record AppliedPromotion(
+      @Nullable Integer percentOff,
+      @Nullable Integer bundleQuantity,
+      @Nullable Long bundlePriceCents,
+      @Nullable Long offerPriceCents,
+      @Nullable String tiers) {
+    public static final AppliedPromotion NONE = new AppliedPromotion(null, null, null, null, null);
   }
 
   protected OrderItem() {}
@@ -91,6 +107,8 @@ public class OrderItem {
     this.promoPercentOff = promotion.percentOff();
     this.promoBundleQuantity = promotion.bundleQuantity();
     this.promoBundlePriceCents = promotion.bundlePriceCents();
+    this.promoOfferPriceCents = promotion.offerPriceCents();
+    this.promoTiers = promotion.tiers();
   }
 
   public int getLineNo() {
@@ -137,7 +155,7 @@ public class OrderItem {
   }
 
   public AppliedPromotion getPromotion() {
-    return new AppliedPromotion(promoPercentOff, promoBundleQuantity, promoBundlePriceCents);
+    return new AppliedPromotion(promoPercentOff, promoBundleQuantity, promoBundlePriceCents, promoOfferPriceCents, promoTiers);
   }
 
   /** Units handed over and their price (computed by the application, see {@code ChargedPrice}). */

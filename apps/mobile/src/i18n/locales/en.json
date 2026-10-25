@@ -104,7 +104,11 @@
     "checkFields": "Please check the highlighted fields.",
     "passwordTooLong": "Password is too long (at most 72 bytes; Arabic characters count double).",
     "endDateFuture": "The offer must end in the future.",
-    "hoursOverlap": "The time ranges overlap."
+    "hoursOverlap": "The time ranges overlap.",
+    "tiers": "For every tier a quantity from 2 to 99 (each only once) and a price like 4.99.",
+    "offerBelowPrice": "Enter an offer price below the regular price for every selected product.",
+    "weekdaysRequired": "Please select at least one weekday.",
+    "dailyWindow": "Times like 08:00; “until” must be after “from”."
   },
   "language": {
     "button": "Change language",
@@ -591,10 +595,8 @@
     "promotionTitle": "Title",
     "promotionType": "Offer type",
     "typePercent": "Discount in %",
-    "typeMultiBuy": "Multi-buy",
+    "typeMultiBuy": "Quantity prices",
     "percent": "Discount (%)",
-    "bundleQuantity": "Quantity",
-    "bundlePrice": "Price for the quantity (€)",
     "duration": "Duration",
     "days_one": "{{count}} day",
     "days_other": "{{count}} days",
@@ -676,7 +678,24 @@
       "pauseToday": "Pause for today",
       "autoAccept": "Accept orders automatically",
       "more": "Time slots, holidays, delivery times and payment are set in the merchant portal under \"Orders & delivery\"."
-    }
+    },
+    "typeFixed": "Offer price",
+    "tiersHint": "Customers automatically pay the cheapest combination, e.g. 3 for €5 and 7 for €10.",
+    "tierQuantity": "Units (tier {{n}})",
+    "tierPrice": "Price together € (tier {{n}})",
+    "addTier": "Add tier",
+    "removeTier": "Remove tier {{n}}",
+    "fixedHint": "Select the products below and enter an offer price for each.",
+    "offerPriceFor": "Offer price for {{name}} (€)",
+    "fixedPrices": "Offer prices",
+    "start": "Start",
+    "startToday": "Today",
+    "startTomorrow": "Tomorrow",
+    "startIn": "In {{n}} days",
+    "weekdays": "Weekdays",
+    "allDay": "All day",
+    "dailyFrom": "Daily from (HH:MM)",
+    "dailyUntil": "Daily until (HH:MM)"
   },
   "allergen": {
     "gluten": "Gluten",
