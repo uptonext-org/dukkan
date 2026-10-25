@@ -87,7 +87,7 @@ describe('Mein Markt: Produkt hinzufügen', () => {
     await user.press(within(await screen.findByTestId(`catalog-${ayran.id}`)).getByRole('button', { name: 'Ayran wählen' }));
     await user.type(screen.getByTestId(`catalog-price-${ayran.id}`), '1,49');
     expect(screen.queryByTestId(`catalog-own-${ayran.id}`)).toBeNull();
-    fireEvent(screen.getByTestId(`catalog-adjust-${ayran.id}`), 'valueChange', true);
+    await fireEvent(screen.getByTestId(`catalog-adjust-${ayran.id}`), 'valueChange', true);
     expect(await screen.findByText('Gilt nur für deinen Markt; der gemeinsame Katalog bleibt unverändert. Leere Felder zeigen die Katalogangabe.')).toBeOnTheScreen();
     expect(screen.getByTestId(`catalog-own-name-${ayran.id}`)).toHaveDisplayValue('Ayran');
     await user.clear(screen.getByTestId(`catalog-own-name-${ayran.id}`));
