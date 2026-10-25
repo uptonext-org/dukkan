@@ -180,5 +180,48 @@ class PricingEngineTest {
     assertThat(new PromotionRule.PercentOff(PROMO, 20).label()).isEqualTo("-20%");
     assertThat(new PromotionRule.MultiBuy(PROMO, 3, 300).label()).isEqualTo("3 for 3.00 €");
     assertThat(new PromotionRule.MultiBuy(PROMO, 2, 499).label()).isEqualTo("2 for 4.99 €");
+    assertThat(new PromotionRule.MultiBuy(PROMO, List.of(new PromotionRule.Tier(7, 1000), new PromotionRule.Tier(3, 500))).label())
+        .isEqualTo("3 for 5.00 € · 7 for 10.00 €");
+    assertThat(new PromotionRule.FixedPrice(PROMO, 200).label()).isEqualTo("2.00 €");
+  }
+
+  @Nested
+  class QuantityTiers {
+
+    private final PromotionRule tiers = new PromotionRule.MultiBuy(PROMO, List.of(new PromotionRule.Tier(3, 500), new PromotionRule.Tier(7, 1000)));
+
+    /** 2,00 € each, "3 for 5 €" and "7 for 10 €": always the cheapest combination. */
+    @ParameterizedTest
+    @CsvSource({"1, 200", "2, 400", "3, 500", "4, 700", "5, 900", "6, 1000", "7, 1000", "8, 1200", "9, 1400", "10, 1500", "13, 2000", "14, 2000"})
+    void takeTheCheapestCombination(int quantity, long total) {
+      assertThat(priceOne(200, quantity, tiers).totalCents()).isEqualTo(total);
+    }
+
+    @Test
+    void aTierThatCostsMoreThanSingleUnitsIsIgnored() {
+      // 1,00 € each but "3 for 5 €": three single units are cheaper.
+      PricedLine line = priceOne(100, 3, tiers);
+      assertThat(line.totalCents()).isEqualTo(300);
+      assertThat(line.promotion()).isNull();
+    }
+  }
+
+  @Nested
+  class OfferPrice {
+
+    @Test
+    void everyUnitCostsTheOfferPrice() {
+      PricedLine line = priceOne(500, 3, new PromotionRule.FixedPrice(PROMO, 200));
+      assertThat(line.subtotalCents()).isEqualTo(1500);
+      assertThat(line.discountCents()).isEqualTo(900);
+      assertThat(line.totalCents()).isEqualTo(600);
+    }
+
+    @Test
+    void anOfferAboveTheRegularPriceChangesNothing() {
+      PricedLine line = priceOne(150, 2, new PromotionRule.FixedPrice(PROMO, 200));
+      assertThat(line.totalCents()).isEqualTo(300);
+      assertThat(line.promotion()).isNull();
+    }
   }
 }

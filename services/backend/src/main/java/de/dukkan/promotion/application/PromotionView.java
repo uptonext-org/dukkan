@@ -16,6 +16,18 @@ public record PromotionView(
     @Nullable Integer percentOff,
     @Nullable Integer bundleQuantity,
     @Nullable Money bundlePrice,
+    List<TierView> tiers,
+    List<OfferView> offers,
     OffsetDateTime validFrom,
     OffsetDateTime validUntil,
-    List<UUID> productIds) {}
+    @Nullable List<Integer> weekdays,
+    @Nullable String dailyFrom,
+    @Nullable String dailyUntil,
+    List<UUID> productIds) {
+
+  /** Contract schema {@code PromotionTier}: {@code quantity} units together for {@code price}. */
+  public record TierView(int quantity, Money price) {}
+
+  /** Contract schema {@code PromotionOffer}: the offer price of one product. */
+  public record OfferView(UUID productId, Money offerPrice) {}
+}

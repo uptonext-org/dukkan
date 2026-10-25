@@ -77,14 +77,30 @@ public final class PricingEngine {
         switch (rule) {
           case PromotionRule.PercentOff p ->
               Math.multiplyExact(roundHalfUpDiv(line.unitPriceCents() * p.percentOff(), 100), (long) line.quantity());
-          case PromotionRule.MultiBuy m -> {
-            long groups = line.quantity() / m.bundleQuantity();
-            long remainder = line.quantity() % m.bundleQuantity();
-            long discounted = groups * m.bundlePriceCents() + remainder * line.unitPriceCents();
-            yield subtotal - discounted;
-          }
+          case PromotionRule.MultiBuy m -> subtotal - cheapestCombination(line.unitPriceCents(), line.quantity(), m.tiers());
+          case PromotionRule.FixedPrice f ->
+              Math.multiplyExact(Math.max(0, line.unitPriceCents() - f.offerPriceCents()), (long) line.quantity());
         };
     return Math.clamp(discount, 0, subtotal);
+  }
+
+  /**
+   * The cheapest way to pay for {@code quantity} units with tiers and single units (an unbounded
+   * knapsack over at most a few hundred units): 7 units with "3 for 5 €" and "7 for 10 €" at 2 €
+   * each cost 10 €, 6 units cost 10 € (two times 3), 8 units 12 € (7 + 1).
+   */
+  static long cheapestCombination(long unitPriceCents, int quantity, List<PromotionRule.Tier> tiers) {
+    long[] cost = new long[quantity + 1];
+    for (int n = 1; n <= quantity; n++) {
+      long best = Math.addExact(cost[n - 1], unitPriceCents);
+      for (PromotionRule.Tier tier : tiers) {
+        if (tier.quantity() <= n) {
+          best = Math.min(best, Math.addExact(cost[n - tier.quantity()], tier.priceCents()));
+        }
+      }
+      cost[n] = best;
+    }
+    return cost[quantity];
   }
 
   /** {@code round_half_up(numerator / denominator)} for non-negative values. */

@@ -1,11 +1,17 @@
 package de.dukkan.promotion.infrastructure;
 
 import de.dukkan.promotion.application.PromotionDraft;
+import de.dukkan.promotion.application.PromotionRule;
+import java.sql.Array;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Time;
 import java.sql.Timestamp;
+import java.sql.Types;
 import java.time.Instant;
+import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -20,28 +26,33 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class PromotionRepository {
 
-  /** One (promotion, listing) pair of an active promotion. */
+  /** One (promotion, listing) pair of a running promotion; tiers only for MULTI_BUY. */
   public record RuleRow(
       UUID promotionId,
       UUID listingId,
       String type,
       @Nullable Integer percentOff,
-      @Nullable Integer bundleQuantity,
-      @Nullable Long bundlePriceCents) {}
+      @Nullable Long offerPriceCents,
+      List<PromotionRule.Tier> tiers) {}
 
-  /** A promotion with all translations and listing ids. */
+  /** A promotion with all translations, tiers and listings (with their offer prices). */
   public record PromotionRow(
       UUID id,
       UUID marketId,
       String type,
       @Nullable Integer percentOff,
-      @Nullable Integer bundleQuantity,
-      @Nullable Long bundlePriceCents,
       Instant validFrom,
       Instant validUntil,
+      @Nullable List<Integer> weekdays,
+      @Nullable LocalTime dailyFrom,
+      @Nullable LocalTime dailyUntil,
       Map<String, String> titles,
       Map<String, String> descriptions,
-      List<UUID> listingIds) {}
+      List<PromotionRule.Tier> tiers,
+      Map<UUID, @Nullable Long> listings) {}
+
+  /** Running at {@code :now} (SQL function from V23: dates, weekdays, daily window). */
+  private static final String RUNNING = "promotion_running(p.valid_from, p.valid_until, p.weekdays, p.daily_from, p.daily_until, :now)";
 
   private final JdbcClient jdbc;
 
@@ -49,37 +60,38 @@ public class PromotionRepository {
     this.jdbc = jdbc;
   }
 
-  /** Active (promotion, listing) pairs for the listings, newest promotion first. */
+  /** Running (promotion, listing) pairs for the listings, newest promotion first. */
   public List<RuleRow> findActiveRules(Set<UUID> listingIds, Instant now) {
-    return jdbc.sql(
-            """
-            SELECT p.id, pp.market_product_id, p.type, p.percent_off, p.bundle_quantity, p.bundle_price_cents
-              FROM promotion p JOIN promotion_product pp ON pp.promotion_id = p.id
-             WHERE pp.market_product_id IN (:ids) AND p.valid_from <= :now AND p.valid_until > :now
-             ORDER BY p.created_at DESC, p.id
-            """)
-        .param("ids", List.copyOf(listingIds))
-        .param("now", Timestamp.from(now))
-        .query(
-            (rs, i) ->
-                new RuleRow(
-                    rs.getObject(1, UUID.class),
-                    rs.getObject(2, UUID.class),
-                    rs.getString(3),
-                    rs.getObject(4, Integer.class),
-                    rs.getObject(5, Integer.class),
-                    rs.getObject(6, Long.class)))
-        .list();
+    record Raw(UUID promotionId, UUID listingId, String type, @Nullable Integer percentOff, @Nullable Long offerPriceCents) {}
+    List<Raw> raw =
+        jdbc.sql(
+                "SELECT p.id, pp.market_product_id, p.type, p.percent_off, pp.offer_price_cents"
+                    + " FROM promotion p JOIN promotion_product pp ON pp.promotion_id = p.id"
+                    + " WHERE pp.market_product_id IN (:ids) AND " + RUNNING
+                    + " ORDER BY p.created_at DESC, p.id")
+            .param("ids", List.copyOf(listingIds))
+            .param("now", Timestamp.from(now))
+            .query(
+                (rs, i) ->
+                    new Raw(
+                        rs.getObject(1, UUID.class),
+                        rs.getObject(2, UUID.class),
+                        rs.getString(3),
+                        rs.getObject(4, Integer.class),
+                        rs.getObject(5, Long.class)))
+            .list();
+    Map<UUID, List<PromotionRule.Tier>> tiers =
+        tiers(raw.stream().filter(r -> r.type().equals("MULTI_BUY")).map(Raw::promotionId).distinct().toList());
+    return raw.stream()
+        .map(r -> new RuleRow(r.promotionId(), r.listingId(), r.type(), r.percentOff(), r.offerPriceCents(), tiers.getOrDefault(r.promotionId(), List.of())))
+        .toList();
   }
 
   public Set<UUID> findActiveListingIds(UUID marketId, Instant now) {
     return new HashSet<>(
         jdbc.sql(
-                """
-                SELECT DISTINCT pp.market_product_id
-                  FROM promotion p JOIN promotion_product pp ON pp.promotion_id = p.id
-                 WHERE p.market_id = :marketId AND p.valid_from <= :now AND p.valid_until > :now
-                """)
+                "SELECT DISTINCT pp.market_product_id FROM promotion p JOIN promotion_product pp ON pp.promotion_id = p.id"
+                    + " WHERE p.market_id = :marketId AND " + RUNNING)
             .param("marketId", marketId)
             .param("now", Timestamp.from(now))
             .query(UUID.class)
@@ -88,12 +100,7 @@ public class PromotionRepository {
 
   public Map<UUID, Integer> countActive(Set<UUID> marketIds, Instant now) {
     Map<UUID, Integer> counts = new HashMap<>();
-    jdbc.sql(
-            """
-            SELECT market_id, count(*) FROM promotion
-             WHERE market_id IN (:ids) AND valid_from <= :now AND valid_until > :now
-             GROUP BY market_id
-            """)
+    jdbc.sql("SELECT p.market_id, count(*) FROM promotion p WHERE p.market_id IN (:ids) AND " + RUNNING + " GROUP BY p.market_id")
         .param("ids", List.copyOf(marketIds))
         .param("now", Timestamp.from(now))
         .query(rs -> {
@@ -104,20 +111,20 @@ public class PromotionRepository {
 
   public Set<UUID> findMarketsWithActive(Instant now) {
     return new HashSet<>(
-        jdbc.sql("SELECT DISTINCT market_id FROM promotion WHERE valid_from <= :now AND valid_until > :now")
+        jdbc.sql("SELECT DISTINCT p.market_id FROM promotion p WHERE " + RUNNING)
             .param("now", Timestamp.from(now))
             .query(UUID.class)
             .list());
   }
 
-  /** Promotions of a market, newest first; {@code activeOnly} restricts to those active at {@code now}. */
+  /** Promotions of a market, newest first; {@code activeOnly} restricts to those running at {@code now}. */
   public List<PromotionRow> findByMarket(UUID marketId, Instant now, boolean activeOnly) {
     Map<UUID, PromotionRow> rows = new LinkedHashMap<>();
     jdbc.sql(
-            "SELECT id, market_id, type, percent_off, bundle_quantity, bundle_price_cents, valid_from, valid_until"
-                + " FROM promotion WHERE market_id = :marketId"
-                + (activeOnly ? " AND valid_from <= :now AND valid_until > :now" : "")
-                + " ORDER BY created_at DESC, id")
+            "SELECT p.id, p.market_id, p.type, p.percent_off, p.valid_from, p.valid_until, p.weekdays, p.daily_from, p.daily_until"
+                + " FROM promotion p WHERE p.market_id = :marketId"
+                + (activeOnly ? " AND " + RUNNING : "")
+                + " ORDER BY p.created_at DESC, p.id")
         .param("marketId", marketId)
         .param("now", Timestamp.from(now))
         .query(rs -> {
@@ -139,30 +146,36 @@ public class PromotionRepository {
           }
         });
     jdbc.sql(
-            "SELECT promotion_id, market_product_id FROM promotion_product WHERE promotion_id IN (:ids)"
+            "SELECT promotion_id, market_product_id, offer_price_cents FROM promotion_product WHERE promotion_id IN (:ids)"
                 + " ORDER BY market_product_id")
         .param("ids", ids)
         .query(rs -> {
-          rows.get(rs.getObject(1, UUID.class)).listingIds().add(rs.getObject(2, UUID.class));
+          rows.get(rs.getObject(1, UUID.class)).listings().put(rs.getObject(2, UUID.class), rs.getObject(3, Long.class));
         });
+    tiers(ids).forEach((id, tiers) -> rows.get(id).tiers().addAll(tiers));
     return List.copyOf(rows.values());
   }
 
   public void insert(UUID id, UUID marketId, PromotionDraft draft, Instant now) {
+    PromotionRule.Tier smallest = draft.tiers().stream().min((a, b) -> Integer.compare(a.quantity(), b.quantity())).orElse(null);
     jdbc.sql(
             """
             INSERT INTO promotion (id, market_id, type, percent_off, bundle_quantity, bundle_price_cents,
-                                   valid_from, valid_until, created_at, updated_at)
-            VALUES (:id, :marketId, :type, :percentOff, :bundleQuantity, :bundlePrice, :validFrom, :validUntil, :now, :now)
+                                   valid_from, valid_until, weekdays, daily_from, daily_until, created_at, updated_at)
+            VALUES (:id, :marketId, :type, :percentOff, :bundleQuantity, :bundlePrice, :validFrom, :validUntil,
+                    CAST(:weekdays AS smallint[]), :dailyFrom, :dailyUntil, :now, :now)
             """)
         .param("id", id)
         .param("marketId", marketId)
         .param("type", draft.type())
-        .param("percentOff", draft.percentOff(), java.sql.Types.INTEGER)
-        .param("bundleQuantity", draft.bundleQuantity(), java.sql.Types.INTEGER)
-        .param("bundlePrice", draft.bundlePriceCents(), java.sql.Types.BIGINT)
+        .param("percentOff", draft.percentOff(), Types.INTEGER)
+        .param("bundleQuantity", smallest == null ? null : smallest.quantity(), Types.INTEGER)
+        .param("bundlePrice", smallest == null ? null : smallest.priceCents(), Types.BIGINT)
         .param("validFrom", Timestamp.from(draft.validFrom()))
         .param("validUntil", Timestamp.from(draft.validUntil()))
+        .param("weekdays", draft.weekdays() == null ? null : "{" + String.join(",", draft.weekdays().stream().sorted().distinct().map(String::valueOf).toList()) + "}", Types.VARCHAR)
+        .param("dailyFrom", draft.dailyFrom() == null ? null : Time.valueOf(draft.dailyFrom()), Types.TIME)
+        .param("dailyUntil", draft.dailyUntil() == null ? null : Time.valueOf(draft.dailyUntil()), Types.TIME)
         .param("now", Timestamp.from(now))
         .update();
     for (Map.Entry<String, String> title : draft.title().entrySet()) {
@@ -171,13 +184,21 @@ public class PromotionRepository {
           .param("id", id)
           .param("locale", title.getKey())
           .param("title", title.getValue())
-          .param("description", draft.description().get(title.getKey()), java.sql.Types.VARCHAR)
+          .param("description", draft.description().get(title.getKey()), Types.VARCHAR)
           .update();
     }
     for (UUID listingId : Set.copyOf(draft.listingIds())) {
-      jdbc.sql("INSERT INTO promotion_product (promotion_id, market_product_id) VALUES (:id, :listingId)")
+      jdbc.sql("INSERT INTO promotion_product (promotion_id, market_product_id, offer_price_cents) VALUES (:id, :listingId, :offer)")
           .param("id", id)
           .param("listingId", listingId)
+          .param("offer", draft.offerPrices().get(listingId), Types.BIGINT)
+          .update();
+    }
+    for (PromotionRule.Tier tier : draft.tiers()) {
+      jdbc.sql("INSERT INTO promotion_tier (promotion_id, quantity, price_cents) VALUES (:id, :quantity, :price)")
+          .param("id", id)
+          .param("quantity", tier.quantity())
+          .param("price", tier.priceCents())
           .update();
     }
   }
@@ -195,18 +216,42 @@ public class PromotionRepository {
         .update();
   }
 
+  private Map<UUID, List<PromotionRule.Tier>> tiers(List<UUID> promotionIds) {
+    Map<UUID, List<PromotionRule.Tier>> tiers = new HashMap<>();
+    if (promotionIds.isEmpty()) {
+      return tiers;
+    }
+    jdbc.sql("SELECT promotion_id, quantity, price_cents FROM promotion_tier WHERE promotion_id IN (:ids) ORDER BY quantity")
+        .param("ids", promotionIds)
+        .query(rs -> {
+          tiers.computeIfAbsent(rs.getObject(1, UUID.class), k -> new ArrayList<>()).add(new PromotionRule.Tier(rs.getInt(2), rs.getLong(3)));
+        });
+    return tiers;
+  }
+
   private static PromotionRow row(ResultSet rs) throws SQLException {
+    Time from = rs.getTime("daily_from");
+    Time until = rs.getTime("daily_until");
     return new PromotionRow(
         rs.getObject("id", UUID.class),
         rs.getObject("market_id", UUID.class),
         rs.getString("type"),
         rs.getObject("percent_off", Integer.class),
-        rs.getObject("bundle_quantity", Integer.class),
-        rs.getObject("bundle_price_cents", Long.class),
         rs.getTimestamp("valid_from").toInstant(),
         rs.getTimestamp("valid_until").toInstant(),
+        weekdays(rs.getArray("weekdays")),
+        from == null ? null : from.toLocalTime(),
+        until == null ? null : until.toLocalTime(),
         new HashMap<>(),
         new HashMap<>(),
-        new ArrayList<>());
+        new ArrayList<>(),
+        new LinkedHashMap<>());
+  }
+
+  private static @Nullable List<Integer> weekdays(@Nullable Array array) throws SQLException {
+    if (array == null) {
+      return null;
+    }
+    return Arrays.stream((Object[]) array.getArray()).map(v -> ((Number) v).intValue()).sorted().toList();
   }
 }

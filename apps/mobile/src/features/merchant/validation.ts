@@ -503,31 +503,83 @@ export function fromMerchantMarket(market: MerchantMarket, language: Language): 
 
 // ---------------------------------------------------------------- promotions
 
+/** One quantity price of a multi-buy: `quantity` units together for `price`. */
+export interface TierValues {
+  quantity: string;
+  price: string;
+}
+
 export interface PromotionValues {
   title: Record<Language, string>;
   type: PromotionType;
   percentOff: string;
-  bundleQuantity: string;
-  bundlePrice: string;
+  /** MULTI_BUY: e.g. 3 for 5 € and 7 for 10 €. */
+  tiers: TierValues[];
+  /** FIXED_PRICE: offer price per selected product id. */
+  offers: Record<string, string>;
+  /** 0 = starts now, else at midnight that many days from today. */
+  startInDays: number;
   days: number;
+  /** ISO weekdays (1 = Monday); all seven = every day. */
+  weekdays: number[];
+  allDay: boolean;
+  /** "HH:mm", Berlin time, used when not all day. */
+  dailyFrom: string;
+  dailyUntil: string;
   productIds: string[];
 }
 
-export type PromotionField = 'title' | 'percentOff' | 'bundleQuantity' | 'bundlePrice' | 'days' | 'productIds';
+export type PromotionField = 'title' | 'percentOff' | 'tiers' | 'offers' | 'days' | 'weekdays' | 'daily' | 'productIds';
+
+export const ALL_WEEKDAYS = [1, 2, 3, 4, 5, 6, 7];
+const MAX_TIERS = 5;
 
 export function emptyPromotion(): PromotionValues {
-  return { title: emptyLocalized(), type: 'PERCENT_OFF', percentOff: '20', bundleQuantity: '3', bundlePrice: '', days: 7, productIds: [] };
+  return {
+    title: emptyLocalized(),
+    type: 'PERCENT_OFF',
+    percentOff: '20',
+    tiers: [{ quantity: '3', price: '' }],
+    offers: {},
+    startInDays: 0,
+    days: 7,
+    weekdays: ALL_WEEKDAYS,
+    allDay: true,
+    dailyFrom: '08:00',
+    dailyUntil: '12:00',
+    productIds: [],
+  };
 }
 
-/** End of the promotion: `days` after `now` (validFrom). */
-export function promotionEnd(values: Pick<PromotionValues, 'days'>, now: Date = new Date()): Date {
-  return new Date(now.getTime() + values.days * 24 * 60 * 60 * 1000);
+/** Start of the promotion: now, or midnight `startInDays` days from today (device time). */
+export function promotionStart(values: Pick<PromotionValues, 'startInDays'>, now: Date = new Date()): Date {
+  if (values.startInDays <= 0) {
+    return now;
+  }
+  const start = new Date(now);
+  start.setHours(0, 0, 0, 0);
+  start.setDate(start.getDate() + values.startInDays);
+  return start;
 }
 
-export function validatePromotion(values: PromotionValues, primaryLocale: Language, now: Date = new Date()): Errors<PromotionField> {
+/** End of the promotion: `days` after its start. */
+export function promotionEnd(values: Pick<PromotionValues, 'days' | 'startInDays'>, now: Date = new Date()): Date {
+  return new Date(promotionStart(values, now).getTime() + values.days * 24 * 60 * 60 * 1000);
+}
+
+/**
+ * Checks what the server checks too. `regularPrices` (cents per product id) lets an offer price be
+ * checked against the product's price before sending.
+ */
+export function validatePromotion(
+  values: PromotionValues,
+  primaryLocale: Language,
+  now: Date = new Date(),
+  regularPrices: Record<string, number> = {},
+): Errors<PromotionField> {
   const errors: Errors<PromotionField> = {};
   // Contract: validUntil after validFrom and in the future (server field code `Future`).
-  if (!Number.isFinite(values.days) || promotionEnd(values, now).getTime() <= now.getTime()) {
+  if (!Number.isFinite(values.days) || values.days <= 0 || promotionEnd(values, now).getTime() <= now.getTime()) {
     errors.days = 'endDateFuture';
   }
   if (values.title[primaryLocale].trim() === '') {
@@ -538,15 +590,32 @@ export function validatePromotion(values: PromotionValues, primaryLocale: Langua
     if (!Number.isInteger(pct) || pct < 1 || pct > 90) {
       errors.percentOff = 'percent';
     }
+  } else if (values.type === 'MULTI_BUY') {
+    const quantities = values.tiers.map((tier) => Number(tier.quantity));
+    const invalid =
+      values.tiers.length === 0 ||
+      values.tiers.length > MAX_TIERS ||
+      quantities.some((q) => !Number.isInteger(q) || q < 2 || q > 99) ||
+      new Set(quantities).size !== quantities.length ||
+      values.tiers.some((tier) => validatePrice(tier.price) !== undefined);
+    if (invalid) {
+      errors.tiers = 'tiers';
+    }
   } else {
-    const qty = Number(values.bundleQuantity);
-    if (!Number.isInteger(qty) || qty < 2 || qty > 20) {
-      errors.bundleQuantity = 'bundleQuantity';
+    const wrong = values.productIds.some((id) => {
+      const offer = parseMoneyInput(values.offers[id] ?? '');
+      const regular = regularPrices[id];
+      return offer === null || validatePrice(values.offers[id] ?? '') !== undefined || (regular !== undefined && offer >= regular);
+    });
+    if (wrong) {
+      errors.offers = 'offerBelowPrice';
     }
-    const price = validatePrice(values.bundlePrice);
-    if (price !== undefined) {
-      errors.bundlePrice = price;
-    }
+  }
+  if (values.weekdays.length === 0) {
+    errors.weekdays = 'weekdaysRequired';
+  }
+  if (!values.allDay && !(TIME.test(values.dailyFrom) && TIME.test(values.dailyUntil) && values.dailyFrom < values.dailyUntil)) {
+    errors.daily = 'dailyWindow';
   }
   if (values.productIds.length === 0) {
     errors.productIds = 'productsRequired';
@@ -557,15 +626,17 @@ export function validatePromotion(values: PromotionValues, primaryLocale: Langua
 }
 
 export function toPromotionRequest(values: PromotionValues, now: Date = new Date()): PromotionRequest {
-  const until = promotionEnd(values, now);
   return {
     title: localized(values.title),
     type: values.type,
     percentOff: values.type === 'PERCENT_OFF' ? Number(values.percentOff) : null,
-    bundleQuantity: values.type === 'MULTI_BUY' ? Number(values.bundleQuantity) : null,
-    bundlePrice: values.type === 'MULTI_BUY' ? money(values.bundlePrice) : null,
-    validFrom: now.toISOString(),
-    validUntil: until.toISOString(),
+    tiers: values.type === 'MULTI_BUY' ? values.tiers.map((tier) => ({ quantity: Number(tier.quantity), price: money(tier.price) })) : null,
+    offers: values.type === 'FIXED_PRICE' ? values.productIds.map((id) => ({ productId: id, offerPrice: money(values.offers[id] ?? '') })) : null,
+    validFrom: promotionStart(values, now).toISOString(),
+    validUntil: promotionEnd(values, now).toISOString(),
+    weekdays: values.weekdays.length === 7 ? null : [...values.weekdays].sort((a, b) => a - b),
+    dailyFrom: values.allDay ? null : values.dailyFrom,
+    dailyUntil: values.allDay ? null : values.dailyUntil,
     productIds: values.productIds,
   };
 }

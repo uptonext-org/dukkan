@@ -34,6 +34,7 @@ Die Prüfung im App Store dauert erfahrungsgemäß Tage, die Freischaltung neuer
 | Die Einkaufsliste (eintippen, sprechen, Foto/Video) ist für alle Kunden aus, bis ein Admin sie im Portal unter „Funktionen“ einschaltet | `GET /features`, `PUT /admin/features/{feature}` |
 | Händler geben Texte (Marktbeschreibung, Produkte, Aktionen) nur in der Sprache ihres Markts ein; mehrere Sprachen schaltet ein Admin unter „Funktionen“ frei | `MERCHANT_MULTILINGUAL` |
 | Kundenfeedback an den Markt ist je Markt aus, bis der Händler es einschaltet (App „Kundenfeedback“, Portal „Kundenfeedback“); höchstens 3 Nachrichten pro Kunde, Markt und Tag; Datenexport und Kontolöschung schließen es ein | `GET/POST /markets/{id}/feedback`, `/merchant/markets/{id}/feedback` |
+| Aktionen: Prozent-Rabatt, Mengenpreise mit bis zu 5 Stufen (Warenkorb rechnet die günstigste Kombination) oder Angebotspreis je Produkt; Zeitraum plus Wochentage und tägliches Zeitfenster (Berliner Zeit) | `POST /merchant/markets/{id}/promotions` |
 | Erster Admin ohne SQL: `DUKKAN_BOOTSTRAP_ADMIN_EMAIL` | `AdminBootstrap` |
 | Swagger-UI in `prod` aus | `application-prod.yml` |
 | Impressum, Datenschutz, AGB und Kontakt in App und Web verlinkt (`GET /platform`) | `features/legal` |

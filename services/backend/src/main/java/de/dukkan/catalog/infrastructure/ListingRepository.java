@@ -116,13 +116,16 @@ public class ListingRepository {
   /**
    * The unit price a shopper pays now: the newest active promotion wins (as in
    * PromotionService.winningRules); PERCENT_OFF lowers the price with half-up rounding like
-   * PricingEngine, MULTI_BUY leaves the unit price alone. Needs {@code :now}.
+   * PricingEngine, FIXED_PRICE sets the offer price, MULTI_BUY leaves the unit price alone. Needs
+   * {@code :now}.
    */
   private static final String EFFECTIVE_PRICE =
-      "(mp.price_cents - COALESCE((SELECT (mp.price_cents * p.percent_off + 50) / 100"
+      "COALESCE((SELECT CASE p.type WHEN 'PERCENT_OFF' THEN mp.price_cents - (mp.price_cents * p.percent_off + 50) / 100"
+          + " WHEN 'FIXED_PRICE' THEN LEAST(pp.offer_price_cents, mp.price_cents) ELSE mp.price_cents END"
           + " FROM promotion p JOIN promotion_product pp ON pp.promotion_id = p.id"
-          + " WHERE pp.market_product_id = mp.id AND p.valid_from <= :now AND p.valid_until > :now"
-          + " ORDER BY p.created_at DESC, p.id LIMIT 1), 0))";
+          + " WHERE pp.market_product_id = mp.id"
+          + " AND promotion_running(p.valid_from, p.valid_until, p.weekdays, p.daily_from, p.daily_until, :now)"
+          + " ORDER BY p.created_at DESC, p.id LIMIT 1), mp.price_cents)";
 
   private static final String ANY_NAME_FIRST_WORD =
       "EXISTS (SELECT 1 FROM catalog_product_translation t3 WHERE t3.catalog_product_id = cp.id"
