@@ -162,7 +162,11 @@ describeSystem('system test: from a new market to a packed order', () => {
 
   it('3. a customer reads a dictated shopping list and fills the cart with it', async () => {
     customer = await register('CUSTOMER', 'Kai');
+    // The shopping list starts switched off; a platform admin switches it on for everyone.
+    const admin = await login('admin@dukkan.local');
+    await admin.client.request({ method: 'PUT', path: '/admin/features/SHOPPING_LIST', body: { enabled: true } });
     const capabilities = await session().api.getShoppingListCapabilities();
+    expect(capabilities.enabled).toBe(true);
     const list = await customer.api.readShoppingList(marketId, { text: '2 Gurken, 1 kg Tomaten und 4 Ayran', images: [] });
     if (!capabilities.ai) {
       expect(list.engine).toBe('RULES');

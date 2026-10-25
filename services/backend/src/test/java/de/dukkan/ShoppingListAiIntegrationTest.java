@@ -76,6 +76,8 @@ class ShoppingListAiIntegrationTest extends IntegrationTest {
 
   @BeforeEach
   void reset() {
+    setFeature("SHOPPING_LIST", true);
+    setFeature("SHOPPING_LIST_MEDIA", true);
     status = 200;
     stopReason = "end_turn";
   }

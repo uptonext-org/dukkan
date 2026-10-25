@@ -25,7 +25,8 @@
     "promotions": "Aktionen",
     "profile": "Marktprofil",
     "insights": "Übersicht",
-    "settings": "Bestellungen & Lieferung"
+    "settings": "Bestellungen & Lieferung",
+    "features": "Funktionen"
   },
   "status": {
     "PENDING_REVIEW": "In Prüfung",
@@ -384,5 +385,21 @@
     "boardOff": "Online-Bestellungen sind ausgeschaltet. Kunden sehen deinen Markt, können aber nicht bestellen.",
     "boardPaused": "Bestellungen pausiert bis {{time}}.",
     "boardOpen": "Einstellungen öffnen"
+  },
+  "features": {
+    "title": "Funktionen für Kunden",
+    "hint": "Hier schaltest du Funktionen für alle Kundinnen und Kunden ein und aus. Was aus ist, erscheint in App und Web-App nicht.",
+    "shoppingList": "Einkaufsliste",
+    "needsList": "Wirkt erst, wenn die Einkaufsliste an ist.",
+    "name": {
+      "SHOPPING_LIST": "Einkaufsliste (eintippen)",
+      "SHOPPING_LIST_VOICE": "Einkaufsliste sprechen",
+      "SHOPPING_LIST_MEDIA": "Einkaufsliste fotografieren oder filmen"
+    },
+    "description": {
+      "SHOPPING_LIST": "Kunden tippen ihre Liste im Markt ein, die passenden Produkte werden gefunden.",
+      "SHOPPING_LIST_VOICE": "Spracheingabe; die Erkennung läuft auf dem Handy.",
+      "SHOPPING_LIST_MEDIA": "Fotos oder kurzes Video des Einkaufszettels, gelesen von der KI (kostet KI-Anfragen; braucht den Anthropic-Schlüssel)."
+    }
   }
 }

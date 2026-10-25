@@ -94,9 +94,6 @@ export function MarketHomeScreen({ navigation }: MarketTabScreenProps<'MarketHom
           <ShoppingListEntry onPress={() => navigation.navigate('ShoppingList')} />
         </View>
       )}
-      <View style={styles.gutter}>
-        <MarketInfoCard market={market} paymentMethods={payOnSite && orderable ? detail?.paymentMethods : undefined} />
-      </View>
       {sections
         .filter((section) => section.items.length > 0)
         .map((section) => (
@@ -122,6 +119,10 @@ export function MarketHomeScreen({ navigation }: MarketTabScreenProps<'MarketHom
             <ProductCarousel marketId={marketId} products={section.items} label={section.title} />
           </View>
         ))}
+      {/* Opening hours, delivery, minimum order and payment last, below the products. */}
+      <View style={styles.gutter}>
+        <MarketInfoCard market={market} paymentMethods={payOnSite && orderable ? detail?.paymentMethods : undefined} />
+      </View>
     </ScrollView>
   );
 }

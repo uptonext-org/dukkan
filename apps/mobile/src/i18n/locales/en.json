@@ -727,14 +727,21 @@
   },
   "myMarkets": {
     "emptyTitle": "No markets yet",
-    "emptyMessage": "Markets you ordered from or browsed appear here – with what you bought there.",
+    "emptyMessage": "Your favourite markets (heart in the market) and the markets you ordered from appear here – with what you bought there.",
     "emptyGuest": "Markets you looked at appear here.",
     "discover": "Discover markets",
     "lastOrder_one": "Last ordered on {{date}} · {{count}} order",
     "lastOrder_other": "Last ordered on {{date}} · {{count}} orders",
     "lastVisit": "Last viewed on {{date}}",
     "boughtHere": "Bought here",
-    "lastOrderButton": "View last order"
+    "lastOrderButton": "View last order",
+    "favorites": "My favourites",
+    "bought": "Where I bought",
+    "favoriteLabel": "Favourite",
+    "boughtLabel": "Bought",
+    "removeFavorite": "Remove",
+    "removeFavoriteFor": "Remove {{name}} from favourites",
+    "signInMessage": "Sign in to see your favourite markets and the markets you bought from."
   },
   "shoppingList": {
     "title": "Shopping list",
@@ -779,7 +786,14 @@
     "again": "New list",
     "lineNotFound": "Not found in this market's range",
     "include": "Add {{name}} to cart",
-    "alternatives": "Other matching products"
+    "alternatives": "Other matching products",
+    "entryTitleVoice": "Speak your shopping list",
+    "entryTitleMedia": "Photograph or film your shopping list",
+    "entryTitleType": "Type your shopping list",
+    "entrySubtitleType": "Type what you need – we find the products.",
+    "introType": "Type your list, e.g. \"2 cucumbers, 1 kg tomatoes\".",
+    "introMedia": "You can also photograph or briefly film your shopping list or your fridge.",
+    "disabled": "The shopping list is not available right now."
   },
   "legal": {
     "title": "Legal",

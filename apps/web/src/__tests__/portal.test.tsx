@@ -741,3 +741,30 @@ describe('orders and delivery settings', () => {
     expect((calls.filter((c) => c.method === 'PUT')[1]?.body as { pausedUntil: unknown }).pausedUntil).toBeNull();
   });
 });
+
+describe('admin features', () => {
+  it('switches the shopping list and its parts on for all customers', async () => {
+    let current: Record<string, boolean> = { SHOPPING_LIST: false, SHOPPING_LIST_VOICE: false, SHOPPING_LIST_MEDIA: false };
+    const { user, calls } = renderPortal(
+      {
+        'GET /admin/markets?status=PENDING_REVIEW': [],
+        'GET /admin/features': () => current,
+        'PUT /admin/features/SHOPPING_LIST': (call: { body: unknown }) => {
+          current = { ...current, SHOPPING_LIST: (call.body as { enabled: boolean }).enabled };
+          return current;
+        },
+      },
+      { accessToken: 'a', refreshToken: 'r', user: adminUser },
+    );
+    await user.click(await screen.findByRole('button', { name: 'Funktionen' }));
+    const list = await screen.findByRole('checkbox', { name: 'Einkaufsliste (eintippen)' });
+    expect(list).not.toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Einkaufsliste sprechen' })).not.toBeChecked();
+    expect(screen.getAllByText(/Wirkt erst, wenn die Einkaufsliste an ist/)).toHaveLength(2);
+
+    await user.click(list);
+    expect(await screen.findByRole('checkbox', { name: 'Einkaufsliste (eintippen)' })).toBeChecked();
+    expect(calls.find((c) => c.method === 'PUT')?.body).toEqual({ enabled: true });
+    expect(screen.queryByText(/Wirkt erst, wenn die Einkaufsliste an ist/)).toBeNull();
+  });
+});

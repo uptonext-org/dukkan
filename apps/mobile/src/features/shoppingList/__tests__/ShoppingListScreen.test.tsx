@@ -30,9 +30,14 @@ const RESULT: ShoppingListResult = {
 };
 
 function setup(
-  options: { ai: boolean; result?: ShoppingListResult | ((request: ApiRequest) => unknown); failTomatoesOnce?: boolean } & TestOptions,
+  options: {
+    ai: boolean;
+    result?: ShoppingListResult | ((request: ApiRequest) => unknown);
+    failTomatoesOnce?: boolean;
+    switches?: { enabled: boolean; voice: boolean; media: boolean };
+  } & TestOptions,
 ) {
-  const { ai, result, failTomatoesOnce = false, ...testOptions } = options;
+  const { ai, result, failTomatoesOnce = false, switches, ...testOptions } = options;
   let tomatoFailures = failTomatoesOnce ? 1 : 0;
   const quantities: Record<string, number> = {};
   const fake = createFakeApiClient({
@@ -47,7 +52,7 @@ function setup(
     'GET /carts': [],
     // One cucumber is in the cart already.
     [`GET /markets/${MARKET_ID}/cart`]: cart({ items: [cartItem({ productId: CUCUMBER.id, quantity: 1 })] }),
-    'GET /shopping-list': { ai, maxImages: 4, maxTextLength: 2000 },
+    'GET /shopping-list': { ...switches, ai, maxImages: 4, maxTextLength: 2000 },
     [`POST /markets/${MARKET_ID}/shopping-list`]: result ?? RESULT,
     [`PUT /markets/${MARKET_ID}/cart/items/${CUCUMBER.id}`]: (request: ApiRequest) => {
       quantities[CUCUMBER.id] = (request.body as { quantity: number }).quantity;
@@ -241,5 +246,35 @@ describe('Einkaufsliste per Sprache, Foto oder Video', () => {
         /KI ist für diesen Dienst noch nicht eingerichtet/,
       ),
     );
+  });
+
+  it('is not offered while platform admins have switched it off', async () => {
+    const { dependencies } = setup({ ai: true, switches: { enabled: false, voice: false, media: false } });
+    await renderApp(dependencies);
+    const user = userEvent.setup();
+    await user.press(await screen.findByTestId(`market-card-${MARKET_ID}`));
+    await screen.findByTestId('market-home');
+    expect(screen.queryByTestId('shopping-list-entry')).not.toBeOnTheScreen();
+  });
+
+  it('offers only typing when speaking and photo/video are switched off', async () => {
+    const speech = createFakeShoppingInput();
+    const { fake, dependencies } = setup({ ai: true, shoppingInput: speech.input, switches: { enabled: true, voice: false, media: false } });
+    await renderApp(dependencies);
+    const user = userEvent.setup();
+    await user.press(await screen.findByTestId(`market-card-${MARKET_ID}`));
+    expect(await screen.findByTestId('shopping-list-entry')).toHaveTextContent(/Einkaufsliste eingeben/);
+    await user.press(screen.getByTestId('shopping-list-entry'));
+    await screen.findByTestId('shopping-list');
+
+    expect(screen.queryByTestId('shopping-list-mic')).not.toBeOnTheScreen();
+    expect(screen.queryByTestId('shopping-list-video')).not.toBeOnTheScreen();
+    expect(screen.queryByTestId('shopping-list-photo')).not.toBeOnTheScreen();
+    expect(screen.queryByTestId('shopping-list-no-ai')).not.toBeOnTheScreen();
+    expect(screen.getByText(/Tippe deine Liste/)).toBeOnTheScreen();
+
+    await user.type(screen.getByLabelText('Deine Einkaufsliste'), '3 Gurken');
+    await user.press(screen.getByTestId('shopping-list-recognise'));
+    await waitFor(() => expect(fake.calls.some((c) => c.method === 'POST' && c.path === `/markets/${MARKET_ID}/shopping-list`)).toBe(true));
   });
 });

@@ -68,6 +68,7 @@ public class SecurityConfiguration {
       new String[] {
         API + "/locales",
         API + "/platform",
+        API + "/features",
         API + "/market-types",
         API + "/cuisines",
         API + "/categories",
