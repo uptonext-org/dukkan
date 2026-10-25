@@ -50,6 +50,7 @@ import type {
   SocialSignInRequest,
   TranslationRequest,
   TranslationResult,
+  FeatureSwitches,
   ShoppingListCapabilities,
   ShoppingListRequest,
   ShoppingListResult,
@@ -173,6 +174,7 @@ export interface DukkanApi {
   /** AI product capture: a draft from text and/or an uploaded photo (nothing is saved). */
   createProductDraft(marketId: string, request: ProductDraftRequest): Promise<ProductDraft>;
   translateTexts(request: TranslationRequest): Promise<TranslationResult>;
+  getFeatures(signal?: Signal): Promise<FeatureSwitches>;
   getShoppingListCapabilities(signal?: Signal): Promise<ShoppingListCapabilities>;
   /** Shopping list by voice, photo or video: matched products to confirm (nothing is added yet). */
   readShoppingList(marketId: string, request: ShoppingListRequest): Promise<ShoppingListResult>;
@@ -372,6 +374,7 @@ export function createDukkanApi(client: ApiClient): DukkanApi {
         timeoutMs: DRAFT_TIMEOUT_MS,
       }),
     translateTexts: (body) => client.request({ method: 'POST', path: '/merchant/translations', body, timeoutMs: DRAFT_TIMEOUT_MS }),
+    getFeatures: (signal) => get('/features', undefined, signal),
     getShoppingListCapabilities: (signal) => get('/shopping-list', undefined, signal),
     readShoppingList: (marketId, request) =>
       client.request({

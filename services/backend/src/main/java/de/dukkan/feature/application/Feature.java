@@ -10,7 +10,12 @@ public enum Feature {
   /** Speak the shopping list (speech recognition on the device). Needs SHOPPING_LIST. */
   SHOPPING_LIST_VOICE(false),
   /** Photos or a short video of a handwritten list, read by the AI model. Needs SHOPPING_LIST. */
-  SHOPPING_LIST_MEDIA(false);
+  SHOPPING_LIST_MEDIA(false),
+  /**
+   * Merchants enter texts (market description, products, promotions) in every language. Off:
+   * only in the market's language, which customers then see whatever language they use.
+   */
+  MERCHANT_MULTILINGUAL(false);
 
   private final boolean defaultEnabled;
 

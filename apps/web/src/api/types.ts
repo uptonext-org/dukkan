@@ -85,7 +85,7 @@ export interface MarketProfileRequest {
 
 export type PaymentMethod = 'CASH' | 'CARD';
 
-export type FeatureKey = 'SHOPPING_LIST' | 'SHOPPING_LIST_VOICE' | 'SHOPPING_LIST_MEDIA';
+export type FeatureKey = 'SHOPPING_LIST' | 'SHOPPING_LIST_VOICE' | 'SHOPPING_LIST_MEDIA' | 'MERCHANT_MULTILINGUAL';
 
 /** Functions platform admins switch on and off for all customers. */
 export type FeatureSwitches = Record<FeatureKey, boolean>;

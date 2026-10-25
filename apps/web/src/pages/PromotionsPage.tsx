@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { useApi } from '../api/ApiContext';
 import type { Promotion, PromotionType } from '../api/types';
+import { useMerchantLanguages } from '../api/useMerchantLanguages';
 import { LANGUAGES } from '../i18n';
 import { errorMessage } from '../ui/errors';
 import { formatMoney, parsePrice } from '../ui/format';
@@ -99,6 +100,7 @@ function PromotionForm({ marketId, primaryLocale }: { marketId: string; primaryL
   const { t, i18n } = useTranslation();
   const api = useApi();
   const queryClient = useQueryClient();
+  const { languages, multilingual } = useMerchantLanguages(primaryLocale);
   const [titles, setTitles] = useState<Record<string, string>>({});
   const [type, setType] = useState<PromotionType>('PERCENT_OFF');
   const [percent, setPercent] = useState('20');
@@ -178,13 +180,13 @@ function PromotionForm({ marketId, primaryLocale }: { marketId: string; primaryL
     <form className="card stack" onSubmit={submit} aria-labelledby="new-promotion">
       <h2 id="new-promotion">{t('promotions.new')}</h2>
       <div className="row" style={{ alignItems: 'flex-end' }}>
-        {LANGUAGES.map((l) => (
+        {languages.map((l) => (
           <label key={l.code} className="field" style={{ flex: '1 1 200px' }}>
-            {`${t('promotions.titleLabel')} · ${l.nativeName}${l.code === primaryLocale ? ` (${t('promotions.primary')})` : ''}`}
+            {multilingual ? `${t('promotions.titleLabel')} · ${l.nativeName}${l.code === primaryLocale ? ` (${t('promotions.primary')})` : ''}` : t('promotions.titleLabel')}
             <input dir={l.direction} lang={l.code} value={titles[l.code] ?? ''} onChange={(e) => setTitles({ ...titles, [l.code]: e.target.value })} />
           </label>
         ))}
-        {filledTitles.length > 0 && filledTitles.length < LANGUAGES.length && (
+        {multilingual && filledTitles.length > 0 && filledTitles.length < LANGUAGES.length && (
           <button className="button secondary" type="button" disabled={translate.isPending} onClick={() => translate.mutate()}>
             {t('promotions.translate')}
           </button>

@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useApi } from '../api/ApiContext';
 import { ApiError } from '../api/client';
 import type { MerchantMarket, Place } from '../api/types';
+import { useMerchantLanguages } from '../api/useMerchantLanguages';
 import { LANGUAGES } from '../i18n';
 import { errorMessage } from '../ui/errors';
 import { formField, fromMarket, MARKET_TAGS, MAX_CUISINES, MAX_INTERVALS_PER_DAY, toRequest, type Interval, type ProfileForm, type ProfileProblems } from './marketProfile';
@@ -309,6 +310,7 @@ function AmountField({ label, value, onChange, problem, described }: { label: st
 function Descriptions({ form, onChange, described }: { form: ProfileForm; onChange: (descriptions: Record<string, string>) => void; described: object }) {
   const { t } = useTranslation();
   const api = useApi();
+  const { languages, multilingual } = useMerchantLanguages(form.primaryLocale);
   const filled = LANGUAGES.filter((l) => (form.descriptions[l.code] ?? '').trim() !== '');
   const translate = useMutation({
     mutationFn: () => api.translate('MARKET_DESCRIPTION', Object.fromEntries(filled.map((l): [string, string] => [l.code, form.descriptions[l.code] ?? '']))),
@@ -326,14 +328,14 @@ function Descriptions({ form, onChange, described }: { form: ProfileForm; onChan
   return (
     <div className="stack">
       <div className="row" style={{ alignItems: 'flex-start' }}>
-        {LANGUAGES.map((l) => (
+        {languages.map((l) => (
           <label key={l.code} className="field" style={{ flex: '1 1 240px' }}>
-            {`${t('profile.description')} · ${l.nativeName}${l.code === form.primaryLocale ? ` (${t('promotions.primary')})` : ''}`}
+            {multilingual ? `${t('profile.description')} · ${l.nativeName}${l.code === form.primaryLocale ? ` (${t('promotions.primary')})` : ''}` : t('profile.description')}
             <textarea rows={4} dir={l.direction} lang={l.code} maxLength={2000} value={form.descriptions[l.code] ?? ''} onChange={(e) => onChange({ ...form.descriptions, [l.code]: e.target.value })} {...described} />
           </label>
         ))}
       </div>
-      {filled.length > 0 && filled.length < LANGUAGES.length && (
+      {multilingual && filled.length > 0 && filled.length < LANGUAGES.length && (
         <div>
           <button className="button secondary" type="button" disabled={translate.isPending} onClick={() => translate.mutate()}>
             {t('promotions.translate')}

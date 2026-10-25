@@ -200,6 +200,7 @@ export function createApi(options: { baseUrl?: string; fetch?: Fetch; store?: Se
       send<CatalogReviewItem>(`/admin/catalog/products/${encodeURIComponent(productId)}/texts`, { method: 'PUT', body: { names, descriptions } }),
     reviewCatalogProduct: (productId: string, decision: 'PROMOTE' | 'KEEP_PRIVATE') =>
       send<CatalogReviewItem>(`/admin/catalog/products/${encodeURIComponent(productId)}/review`, { method: 'POST', body: { decision } }),
+    features: () => send<FeatureSwitches>('/features'),
     adminFeatures: () => send<FeatureSwitches>('/admin/features'),
     adminSetFeature: (feature: FeatureKey, enabled: boolean) =>
       send<FeatureSwitches>(`/admin/features/${feature}`, { method: 'PUT', body: { enabled } }),

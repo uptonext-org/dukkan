@@ -1845,7 +1845,7 @@ paths:
       operationId: adminSetFeature
       summary: Switch a function on or off for all customers (role ADMIN)
       parameters:
-        - { name: feature, in: path, required: true, schema: { type: string, enum: [SHOPPING_LIST, SHOPPING_LIST_VOICE, SHOPPING_LIST_MEDIA] } }
+        - { name: feature, in: path, required: true, schema: { type: string, enum: [SHOPPING_LIST, SHOPPING_LIST_VOICE, SHOPPING_LIST_MEDIA, MERCHANT_MULTILINGUAL] } }
       requestBody:
         required: true
         content:
@@ -2649,11 +2649,12 @@ components:
         unit: { type: string, enum: [kg, l, piece] }
     FeatureSwitches:
       type: object
-      required: [SHOPPING_LIST, SHOPPING_LIST_VOICE, SHOPPING_LIST_MEDIA]
+      required: [SHOPPING_LIST, SHOPPING_LIST_VOICE, SHOPPING_LIST_MEDIA, MERCHANT_MULTILINGUAL]
       properties:
         SHOPPING_LIST: { type: boolean, description: Shopping list in a market (typed list). }
         SHOPPING_LIST_VOICE: { type: boolean, description: Speak the list. }
         SHOPPING_LIST_MEDIA: { type: boolean, description: Photos or a short video of the list. }
+        MERCHANT_MULTILINGUAL: { type: boolean, description: 'Merchants enter texts in every language; off: only in the market''s language.' }
     ShoppingListCapabilities:
       type: object
       required: [enabled, voice, media, ai, maxImages, maxTextLength]

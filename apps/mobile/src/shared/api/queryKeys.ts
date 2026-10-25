@@ -14,6 +14,7 @@ import type {
 export const queryKeys = {
   me: ['me'] as const,
   shoppingListCapabilities: ['shoppingListCapabilities'] as const,
+  features: ['features'] as const,
   platform: ['platform'] as const,
   marketTypes: (lang: string) => ['marketTypes', lang] as const,
   cuisines: (lang: string) => ['cuisines', lang] as const,

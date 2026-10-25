@@ -79,8 +79,32 @@ describe('Mein Markt: Produkt hinzufügen', () => {
     expect(await screen.findByTestId('listing-added')).toHaveTextContent('Produkt hinzugefügt.');
   });
 
+  it('asks for the name only in the market language while merchant multilingual input is off', async () => {
+    const { fake, dependencies } = setup({ 'GET /features': { SHOPPING_LIST: false, SHOPPING_LIST_VOICE: false, SHOPPING_LIST_MEDIA: false, MERCHANT_MULTILINGUAL: false } });
+    await renderMerchantScreen('MerchantAddProduct', dependencies);
+    const user = userEvent.setup();
+    await user.press(await screen.findByRole('tab', { name: 'Neues Produkt' }));
+    await screen.findByTestId('new-product-form');
+
+    expect(screen.getByTestId('new-name-de')).toBeOnTheScreen();
+    expect(screen.queryByTestId('new-name-en')).toBeNull();
+    expect(screen.queryByTestId('new-name-ar')).toBeNull();
+    expect(screen.getByLabelText('Name')).toBeOnTheScreen();
+    await user.type(screen.getByTestId('new-name-de'), 'Knoblauchwurst');
+    expect(screen.queryByTestId('new-name-translate')).toBeNull();
+    await user.type(screen.getByTestId('new-unit'), '250 g');
+    await user.press(screen.getByRole('button', { name: 'Getränke' }));
+    await user.type(screen.getByTestId('new-price'), '4,99');
+    await user.press(screen.getByTestId('new-product-submit'));
+    await waitFor(() =>
+      expect(fake.calls).toContainEqual(
+        expect.objectContaining({ method: 'POST', body: expect.objectContaining({ newProduct: expect.objectContaining({ name: { de: 'Knoblauchwurst' } }) }) }),
+      ),
+    );
+  });
+
   it('validates the create-product form before sending, then sends names in de/en/ar and keywords', async () => {
-    const { fake, dependencies } = setup();
+    const { fake, dependencies } = setup({ 'GET /features': { SHOPPING_LIST: false, SHOPPING_LIST_VOICE: false, SHOPPING_LIST_MEDIA: false, MERCHANT_MULTILINGUAL: true } });
     await renderMerchantScreen('MerchantAddProduct', dependencies);
     const user = userEvent.setup();
     await user.press(await screen.findByRole('tab', { name: 'Neues Produkt' }));

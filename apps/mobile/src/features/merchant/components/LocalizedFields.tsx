@@ -4,10 +4,11 @@ import { useTranslation } from 'react-i18next';
 import { errorMessageKey, type TranslationKind } from '../../../shared/api';
 import { LANGUAGES, type Language } from '../../../shared/i18n';
 import { AppText, Button, TextField } from '../../../shared/ui';
-import { useTranslateTexts } from '../api/hooks';
+import { useMerchantLanguages, useTranslateTexts } from '../api/hooks';
 
 /**
- * One text field per content language (de/en/ar). Each field takes the writing direction of its
+ * One text field per content language (de/en/ar), or only the market's language (`primary`, no
+ * language suffix, no translation) while platform admins keep MERCHANT_MULTILINGUAL off. Each field takes the writing direction of its
  * language, independent of the UI language, so Arabic is typed right-to-left even in German UI.
  * With `translateKind`, a button fills the empty languages with machine translations (B-38) for
  * the merchant to review; filled fields are never overwritten.
@@ -33,8 +34,9 @@ export function LocalizedFields({
 }) {
   const { t } = useTranslation();
   const translate = useTranslateTexts();
+  const { languages, multilingual } = useMerchantLanguages(primary);
   const filled = LANGUAGES.filter((l) => values[l.code].trim() !== '');
-  const canTranslate = translateKind !== undefined && filled.length > 0 && filled.length < LANGUAGES.length;
+  const canTranslate = multilingual && translateKind !== undefined && filled.length > 0 && filled.length < LANGUAGES.length;
   const prefix = testIDPrefix ?? 'localized';
 
   const run = () => {
@@ -61,10 +63,10 @@ export function LocalizedFields({
 
   return (
     <View>
-      {LANGUAGES.map((l) => (
+      {languages.map((l) => (
         <TextField
           key={l.code}
-          label={`${label} · ${l.nativeName}${l.code === primary ? ` (${t('merchant.primary')})` : ''}`}
+          label={multilingual ? `${label} · ${l.nativeName}${l.code === primary ? ` (${t('merchant.primary')})` : ''}` : label}
           value={values[l.code]}
           onChangeText={(text) => onChange(l.code, text)}
           error={l.code === primary ? error : undefined}
