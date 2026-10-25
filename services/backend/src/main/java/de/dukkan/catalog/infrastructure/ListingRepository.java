@@ -1,10 +1,13 @@
 package de.dukkan.catalog.infrastructure;
 
+import de.dukkan.catalog.application.ListingOverrides;
+import de.dukkan.i18n.application.TextNormalizer;
 import de.dukkan.shared.persistence.SqlTextArray;
 import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.sql.Types;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -50,7 +53,8 @@ public class ListingRepository {
       @Nullable String origin,
       @Nullable String iconKey,
       ProductTexts texts,
-      List<String> cuisines) {}
+      List<String> cuisines,
+      ListingOverrides overrides) {}
 
   /** Translations of a catalog product, keyed by locale. */
   public record ProductTexts(
@@ -86,8 +90,10 @@ public class ListingRepository {
   private static final String LISTING_COLUMNS =
       """
       SELECT mp.id, mp.market_id, mp.catalog_product_id, mp.price_cents, mp.available, mp.max_order_quantity,
-             mp.created_at, mp.deleted_at IS NOT NULL AS deleted, cp.owner_market_id, cp.category_id, cp.brand,
-             cp.unit_size, cp.net_quantity, cp.net_unit, cp.organic, cp.allergens, cp.barcode,
+             mp.created_at, mp.deleted_at IS NOT NULL AS deleted, cp.owner_market_id, cp.category_id,
+             COALESCE(mp.brand, cp.brand) AS brand, COALESCE(mp.unit_size, cp.unit_size) AS unit_size,
+             mp.name AS own_name, mp.description AS own_description, mp.unit_size AS own_unit_size, mp.brand AS own_brand,
+             cp.net_quantity, cp.net_unit, cp.organic, cp.allergens, cp.barcode,
              COALESCE(mp.image_url, cp.image_url) AS image_url, cp.origin,
              COALESCE(cp.icon_key, (SELECT c.icon_key FROM category c WHERE c.id = cp.category_id)) AS icon_key
         FROM market_product mp JOIN catalog_product cp ON cp.id = mp.catalog_product_id
@@ -95,12 +101,13 @@ public class ListingRepository {
 
   /**
    * Picks one translation per catalog product: the first locale of :l0, :l1, :l2, else the
-   * alphabetically first one.
+   * alphabetically first one. The market's own name of the listing wins over every translation.
    */
   private static final String LOCALIZED =
       """
        LEFT JOIN LATERAL (
-         SELECT t.name, t.search_name FROM catalog_product_translation t
+         SELECT COALESCE(mp.name, t.name) AS name, COALESCE(mp.search_name, t.search_name) AS search_name
+           FROM catalog_product_translation t
           WHERE t.catalog_product_id = cp.id
           ORDER BY CASE t.locale WHEN :l0 THEN 0 WHEN :l1 THEN 1 WHEN :l2 THEN 2 ELSE 3 END, t.locale
           LIMIT 1) loc ON true
@@ -208,7 +215,7 @@ public class ListingRepository {
             + " FROM market_product mp JOIN catalog_product cp ON cp.id = mp.catalog_product_id"
             + LOCALIZED
             + " WHERE mp.market_id IN (:marketIds) AND mp.deleted_at IS NULL AND mp.available"
-            + " AND cp.search_text ILIKE :pattern ESCAPE '\\'"
+            + " AND (cp.search_text ILIKE :pattern ESCAPE '\\' OR mp.search_text ILIKE :pattern ESCAPE '\\')"
             + " ORDER BY tier, len, loc.name, mp.id LIMIT :cap";
     MarketSearch search =
         new MarketSearch(new UUID(0, 0), term, null, null, null, false, true, "relevance", locales, now);
@@ -328,11 +335,33 @@ public class ListingRepository {
         .update();
   }
 
+  /**
+   * Replaces the market's own details of a listing ({@link ListingOverrides#NONE}: catalog values
+   * again). {@code searchText} indexes the own name and brand; null without them.
+   */
+  public void updateOverrides(UUID id, ListingOverrides overrides, @Nullable String searchText, Instant now) {
+    jdbc.sql(
+            """
+            UPDATE market_product SET name = :name, description = :description, unit_size = :unitSize, brand = :brand,
+                   search_name = :searchName, search_text = :searchText, updated_at = :now
+             WHERE id = :id
+            """)
+        .param("id", id)
+        .param("name", overrides.name(), Types.VARCHAR)
+        .param("description", overrides.description(), Types.VARCHAR)
+        .param("unitSize", overrides.unitSize(), Types.VARCHAR)
+        .param("brand", overrides.brand(), Types.VARCHAR)
+        .param("searchName", overrides.name() == null ? null : TextNormalizer.normalize(overrides.name()), Types.VARCHAR)
+        .param("searchText", searchText, Types.VARCHAR)
+        .param("now", Timestamp.from(now))
+        .update();
+  }
+
   // ------------------------------------------------------------------ helpers
 
   private static void appendFilters(StringBuilder where, MarketSearch search) {
     if (search.term() != null) {
-      where.append(" AND cp.search_text ILIKE :pattern ESCAPE '\\'");
+      where.append(" AND (cp.search_text ILIKE :pattern ESCAPE '\\' OR mp.search_text ILIKE :pattern ESCAPE '\\')");
     }
     if (search.categoryId() != null) {
       where.append(
@@ -451,6 +480,23 @@ public class ListingRepository {
             row.cuisines().add(rs.getString(2));
           }
         });
+    rows.forEach(ListingRepository::applyOverrides);
+  }
+
+  /** The market's own name and description replace the catalog texts in every language. */
+  private static void applyOverrides(ListingRow row) {
+    ListingOverrides own = row.overrides();
+    Map<String, String> names = row.texts().names();
+    if (own.description() != null) {
+      String description = own.description();
+      Map<String, String> descriptions = row.texts().descriptions();
+      descriptions.clear();
+      names.keySet().forEach(locale -> descriptions.put(locale, description));
+    }
+    if (own.name() != null) {
+      String name = own.name();
+      names.replaceAll((locale, catalogName) -> name);
+    }
   }
 
   private static void putIfPresent(Map<String, String> map, String key, @Nullable String value) {
@@ -482,6 +528,8 @@ public class ListingRepository {
         rs.getString("origin"),
         rs.getString("icon_key"),
         ProductTexts.empty(),
-        new ArrayList<>());
+        new ArrayList<>(),
+        new ListingOverrides(
+            rs.getString("own_name"), rs.getString("own_description"), rs.getString("own_unit_size"), rs.getString("own_brand")));
   }
 }

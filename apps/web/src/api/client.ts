@@ -1,4 +1,4 @@
-import type { AuthResponse, CatalogReviewItem, CodeName, FeatureKey, FeatureSwitches, ImportResult, MarketInsights, MarketProfileRequest, Place, Promotion, PromotionRequest, TranslationResult, Listing, MarketStatus, MerchantMarket, MerchantOrderSettings, Order, OrderSettings, OrderStatus, PageResponse, Problem, ReviewStatus, User } from './types';
+import type { AuthResponse, CatalogReviewItem, CodeName, FeatureKey, FeatureSwitches, ImportResult, Listing, ListingOverrides, MarketInsights, MarketProfileRequest, MarketStatus, MerchantMarket, MerchantOrderSettings, Order, OrderSettings, OrderStatus, PageResponse, Place, Problem, Promotion, PromotionRequest, ReviewStatus, TranslationResult, User } from './types';
 
 export class ApiError extends Error {
   readonly status: number;
@@ -163,7 +163,7 @@ export function createApi(options: { baseUrl?: string; fetch?: Fetch; store?: Se
       }
       return send<PageResponse<Listing>>(`/merchant/markets/${encodeURIComponent(marketId)}/listings?${query.toString()}`);
     },
-    updateListing: (marketId: string, listingId: string, update: { price?: { amountCents: number; currency: 'EUR' }; available?: boolean }) =>
+    updateListing: (marketId: string, listingId: string, update: { price?: { amountCents: number; currency: 'EUR' }; available?: boolean; overrides?: ListingOverrides }) =>
       send<Listing>(`/merchant/markets/${encodeURIComponent(marketId)}/listings/${encodeURIComponent(listingId)}`, { method: 'PUT', body: update }),
     importListings: (marketId: string, file: File, dryRun: boolean) => {
       const form = new FormData();

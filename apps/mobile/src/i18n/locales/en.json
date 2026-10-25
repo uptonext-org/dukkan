@@ -569,6 +569,8 @@
     "price": "Price (€)",
     "add": "Add",
     "added": "Product added.",
+    "adjust": "Adjust details for my market",
+    "adjustHint": "Applies to your market only; the shared catalog stays unchanged. Empty fields show the catalog value.",
     "catalogEmptyTitle": "Not in the catalog",
     "catalogEmptyMessage": "Just create the product yourself.",
     "productName": "Name",

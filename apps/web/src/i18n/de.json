@@ -87,7 +87,15 @@
     "invalidPrice": "Preis wie 4,49 eingeben.",
     "empty": "Noch keine Produkte. Lege sie in der App an oder importiere eine CSV-Datei.",
     "count": "{{count}} Produkte",
-    "more": "Mehr laden"
+    "more": "Mehr laden",
+    "ownDetails": "Für meinen Markt anpassen",
+    "ownDetailsSet": "Für meinen Markt angepasst",
+    "ownDetailsHint": "Gilt nur für deinen Markt; der gemeinsame Katalog bleibt unverändert. Leere Felder zeigen die Katalogangabe.",
+    "own_name": "Name",
+    "own_unitSize": "Größe",
+    "own_brand": "Marke",
+    "own_description": "Beschreibung",
+    "saveOwnDetails": "Angaben speichern"
   },
   "import": {
     "title": "Produkte per CSV importieren",

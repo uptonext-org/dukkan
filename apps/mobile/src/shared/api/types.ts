@@ -612,12 +612,24 @@ export interface NewCatalogProduct {
   barcode?: string | null;
 }
 
+/**
+ * A market's own details of a shared catalog product, in the market's language. They apply to
+ * this market's listing only and never change the shared catalog; empty fields show the catalog value.
+ */
+export interface ListingOverrides {
+  name?: string | null;
+  description?: string | null;
+  unitSize?: string | null;
+  brand?: string | null;
+}
+
 export interface CreateListingRequest {
   catalogProductId?: string | null;
   newProduct?: NewCatalogProduct | null;
   price: Money;
   available?: boolean;
   maxOrderQuantity?: number;
+  overrides?: ListingOverrides | null;
 }
 
 export interface UpdateListingRequest {
@@ -626,6 +638,8 @@ export interface UpdateListingRequest {
   maxOrderQuantity?: number;
   /** Absent = unchanged, null = remove the market's photo (a shared catalog image shows again). */
   imageUrl?: string | null;
+  /** Replaces the market's own details; all empty = the catalog values again. */
+  overrides?: ListingOverrides;
 }
 
 export type MediaPurpose = 'LOGO' | 'COVER' | 'BANNER' | 'PRODUCT';
@@ -715,6 +729,8 @@ export interface ProductDraft {
 
 export interface Listing extends ProductSummary {
   privateProduct: boolean;
+  /** The market's own details; absent when the catalog values show. */
+  overrides?: ListingOverrides | null;
 }
 
 export interface PromotionRequest {

@@ -187,6 +187,30 @@ describe('assortment', () => {
   });
 });
 
+describe('own details of a catalog product', () => {
+  it('adjusts a listing for this market only; empty fields go back to the catalog', async () => {
+    const listing = { id: 'l1', name: 'Ayran', brand: 'Sütaş', unitSize: '250 ml', price: { amountCents: 99, currency: 'EUR' }, available: true, maxOrderQuantity: 24, privateProduct: false };
+    const own = { ...listing, id: 'l2', name: 'Omas Simit', privateProduct: true };
+    const { user, calls } = renderPortal({
+      'GET /merchant/markets': [market()],
+      'GET /merchant/markets/m1/orders': [],
+      'GET /merchant/markets/m1/listings': { items: [listing, own], page: 0, size: 50, totalItems: 2, totalPages: 1 },
+      'PUT /merchant/markets/m1/listings/l1': (call) => ({ ...listing, overrides: (call.body as { overrides: unknown }).overrides }),
+    });
+    await user.click(await screen.findByRole('button', { name: 'Sortiment' }));
+    // Only catalog products can be adjusted; a private product is the market's own anyway.
+    expect(await screen.findAllByText('Für meinen Markt anpassen')).toHaveLength(1);
+    await user.click(screen.getByText('Für meinen Markt anpassen'));
+    expect(screen.getByText(/der gemeinsame Katalog bleibt unverändert/)).toBeInTheDocument();
+    await user.type(screen.getByLabelText('Name'), ' Hausgemachter Ayran ');
+    await user.type(screen.getByLabelText('Größe'), '500 ml');
+    await user.click(screen.getByRole('button', { name: 'Angaben speichern' }));
+    await waitFor(() =>
+      expect(calls.find((c) => c.method === 'PUT')?.body).toEqual({ overrides: { name: 'Hausgemachter Ayran', unitSize: '500 ml', brand: null, description: null } }),
+    );
+  });
+});
+
 describe('CSV import', () => {
   const preview = {
     dryRun: true,

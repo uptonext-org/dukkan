@@ -79,6 +79,33 @@ describe('Mein Markt: Produkt hinzufügen', () => {
     expect(await screen.findByTestId('listing-added')).toHaveTextContent('Produkt hinzugefügt.');
   });
 
+  it('adjusts a catalog product for this market only; unchanged fields are not sent', async () => {
+    const { fake, dependencies } = setup();
+    await renderMerchantScreen('MerchantAddProduct', dependencies);
+    const user = userEvent.setup();
+
+    await user.press(within(await screen.findByTestId(`catalog-${ayran.id}`)).getByRole('button', { name: 'Ayran wählen' }));
+    await user.type(screen.getByTestId(`catalog-price-${ayran.id}`), '1,49');
+    expect(screen.queryByTestId(`catalog-own-${ayran.id}`)).toBeNull();
+    await fireEvent(screen.getByTestId(`catalog-adjust-${ayran.id}`), 'valueChange', true);
+    expect(await screen.findByText('Gilt nur für deinen Markt; der gemeinsame Katalog bleibt unverändert. Leere Felder zeigen die Katalogangabe.')).toBeOnTheScreen();
+    expect(screen.getByTestId(`catalog-own-name-${ayran.id}`)).toHaveDisplayValue('Ayran');
+    await user.clear(screen.getByTestId(`catalog-own-name-${ayran.id}`));
+    await user.type(screen.getByTestId(`catalog-own-name-${ayran.id}`), 'Hausgemachter Ayran');
+    await user.clear(screen.getByTestId(`catalog-own-unit-${ayran.id}`));
+    await user.type(screen.getByTestId(`catalog-own-unit-${ayran.id}`), '500 ml');
+    await user.press(screen.getByTestId(`catalog-add-${ayran.id}`));
+    await waitFor(() =>
+      expect(fake.calls).toContainEqual(
+        expect.objectContaining({
+          method: 'POST',
+          path: `/merchant/markets/${MARKET_ID}/listings`,
+          body: expect.objectContaining({ catalogProductId: ayran.id, overrides: { name: 'Hausgemachter Ayran', description: null, unitSize: '500 ml', brand: null } }),
+        }),
+      ),
+    );
+  });
+
   it('asks for the name only in the market language while merchant multilingual input is off', async () => {
     const { fake, dependencies } = setup({ 'GET /features': { SHOPPING_LIST: false, SHOPPING_LIST_VOICE: false, SHOPPING_LIST_MEDIA: false, MERCHANT_MULTILINGUAL: false } });
     await renderMerchantScreen('MerchantAddProduct', dependencies);

@@ -87,7 +87,15 @@
     "invalidPrice": "Enter a price like 4.49.",
     "empty": "No products yet. Add them in the app or import a CSV file.",
     "count": "{{count}} products",
-    "more": "Load more"
+    "more": "Load more",
+    "ownDetails": "Adjust for my market",
+    "ownDetailsSet": "Adjusted for my market",
+    "ownDetailsHint": "Applies to your market only; the shared catalog stays unchanged. Empty fields show the catalog value.",
+    "own_name": "Name",
+    "own_unitSize": "Size",
+    "own_brand": "Brand",
+    "own_description": "Description",
+    "saveOwnDetails": "Save details"
   },
   "import": {
     "title": "Import products from CSV",

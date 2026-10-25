@@ -569,6 +569,8 @@
     "price": "Preis (€)",
     "add": "Hinzufügen",
     "added": "Produkt hinzugefügt.",
+    "adjust": "Angaben für meinen Markt anpassen",
+    "adjustHint": "Gilt nur für deinen Markt; der gemeinsame Katalog bleibt unverändert. Leere Felder zeigen die Katalogangabe.",
     "catalogEmptyTitle": "Nicht im Katalog",
     "catalogEmptyMessage": "Leg das Produkt einfach selbst an.",
     "productName": "Name",

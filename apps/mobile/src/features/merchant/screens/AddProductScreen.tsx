@@ -22,6 +22,7 @@ import {
   fromDraft,
   toCatalogListing,
   toNewProductListing,
+  toOverrides,
   validateNewProduct,
   validatePrice,
   type Errors,
@@ -38,6 +39,8 @@ function CatalogRow({ product, marketId, onAdded, initialPrice = '' }: { product
   const [open, setOpen] = useState(false);
   const [price, setPrice] = useState(initialPrice);
   const [error, setError] = useState<string | undefined>();
+  const [adjust, setAdjust] = useState(false);
+  const [own, setOwn] = useState({ name: product.name, description: '', unitSize: product.unitSize, brand: product.brand ?? '' });
   const listed = product.alreadyListed === true;
   const add = () => {
     const key = validatePrice(price);
@@ -46,7 +49,7 @@ function CatalogRow({ product, marketId, onAdded, initialPrice = '' }: { product
       return;
     }
     setError(undefined);
-    create.mutate(toCatalogListing(product.id, price), { onSuccess: onAdded });
+    create.mutate(toCatalogListing(product.id, price, adjust ? toOverrides(own, product) : null), { onSuccess: onAdded });
   };
   return (
     <View style={styles.catalogRow} testID={`catalog-${product.id}`}>
@@ -74,6 +77,25 @@ function CatalogRow({ product, marketId, onAdded, initialPrice = '' }: { product
             <TextField label={t('merchant.price')} value={price} onChangeText={setPrice} keyboardType="decimal-pad" error={error} inputDirection="ltr" testID={`catalog-price-${product.id}`} />
           </View>
           <Button title={t('merchant.add')} onPress={add} loading={create.isPending} testID={`catalog-add-${product.id}`} />
+        </View>
+      )}
+      {open && !listed && (
+        <View style={styles.switchRow}>
+          <AppText variant="body" style={styles.flex}>
+            {t('merchant.adjust')}
+          </AppText>
+          <ToggleSwitch value={adjust} onValueChange={setAdjust} accessibilityLabel={t('merchant.adjust')} testID={`catalog-adjust-${product.id}`} />
+        </View>
+      )}
+      {open && !listed && adjust && (
+        <View testID={`catalog-own-${product.id}`}>
+          <AppText variant="caption" color="textSecondary">
+            {t('merchant.adjustHint')}
+          </AppText>
+          <TextField label={t('merchant.productName')} value={own.name} onChangeText={(name) => setOwn({ ...own, name })} maxLength={200} testID={`catalog-own-name-${product.id}`} />
+          <TextField label={t('merchant.unitSize')} value={own.unitSize} onChangeText={(unitSize) => setOwn({ ...own, unitSize })} maxLength={40} testID={`catalog-own-unit-${product.id}`} />
+          <TextField label={t('merchant.brand')} value={own.brand} onChangeText={(brand) => setOwn({ ...own, brand })} maxLength={80} testID={`catalog-own-brand-${product.id}`} />
+          <TextField label={t('merchant.description')} value={own.description} onChangeText={(description) => setOwn({ ...own, description })} maxLength={2000} multiline testID={`catalog-own-description-${product.id}`} />
         </View>
       )}
       {create.isError && (

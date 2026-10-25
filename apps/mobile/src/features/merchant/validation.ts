@@ -1,6 +1,7 @@
 import type {
   CreateListingRequest,
   FulfilmentOptions,
+  ListingOverrides,
   LocalizedText,
   MarketProfileRequest,
   MarketTag,
@@ -199,13 +200,36 @@ export function toNewProductListing(values: NewProductValues): CreateListingRequ
   };
 }
 
-export function toCatalogListing(catalogProductId: string, price: string): CreateListingRequest {
+/** What the merchant changed of a catalog product; fields equal to the catalog value are left out. */
+export interface OwnDetails {
+  name: string;
+  description: string;
+  unitSize: string;
+  brand: string;
+}
+
+export function toOverrides(own: OwnDetails, catalog: { name: string; unitSize: string; brand?: string | null }): ListingOverrides | null {
+  const changed = (value: string, original: string | null | undefined) => {
+    const trimmed = value.trim();
+    return trimmed === '' || trimmed === (original ?? '').trim() ? null : trimmed;
+  };
+  const overrides: ListingOverrides = {
+    name: changed(own.name, catalog.name),
+    description: changed(own.description, ''),
+    unitSize: changed(own.unitSize, catalog.unitSize),
+    brand: changed(own.brand, catalog.brand),
+  };
+  return Object.values(overrides).every((v) => v === null) ? null : overrides;
+}
+
+export function toCatalogListing(catalogProductId: string, price: string, overrides: ListingOverrides | null = null): CreateListingRequest {
   return {
     catalogProductId,
     newProduct: null,
     price: { amountCents: parseMoneyInput(price) ?? 0, currency: 'EUR' },
     available: true,
     maxOrderQuantity: 24,
+    ...(overrides !== null ? { overrides } : {}),
   };
 }
 

@@ -3,6 +3,7 @@ package de.dukkan.merchant.api;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import de.dukkan.capture.application.ProductDraftInput;
 import de.dukkan.catalog.application.ListingDraft;
+import de.dukkan.catalog.application.ListingOverrides;
 import de.dukkan.catalog.application.ListingUpdate;
 import de.dukkan.catalog.application.NewProduct;
 import de.dukkan.market.application.FulfilmentOptions;
@@ -112,7 +113,8 @@ final class MerchantRequests {
       @Nullable @Valid NewCatalogProductRequest newProduct,
       @NotNull @Valid Money price,
       @Nullable Boolean available,
-      @Nullable @Max(99) @Min(1) Integer maxOrderQuantity) {
+      @Nullable @Max(99) @Min(1) Integer maxOrderQuantity,
+      @Nullable @Valid ListingOverrides overrides) {
 
     ListingDraft toDraft() {
       return new ListingDraft(
@@ -120,7 +122,8 @@ final class MerchantRequests {
           newProduct == null ? null : newProduct.toNewProduct(),
           euroCents(price, "price"),
           available == null || available,
-          maxOrderQuantity);
+          maxOrderQuantity,
+          overrides == null ? ListingOverrides.NONE : overrides);
     }
   }
 
@@ -135,6 +138,7 @@ final class MerchantRequests {
     private @Nullable @Max(99) @Min(1) Integer maxOrderQuantity;
     private @Nullable @Size(max = 500) @URL String imageUrl;
     private boolean imageUrlPresent;
+    private @Nullable @Valid ListingOverrides overrides;
 
     @JsonSetter("price")
     void setPrice(@Nullable Money price) {
@@ -157,9 +161,14 @@ final class MerchantRequests {
       this.imageUrlPresent = true;
     }
 
+    @JsonSetter("overrides")
+    void setOverrides(@Nullable ListingOverrides overrides) {
+      this.overrides = overrides;
+    }
+
     ListingUpdate toUpdate() {
       return new ListingUpdate(
-          price == null ? null : euroCents(price, "price"), available, maxOrderQuantity, imageUrlPresent, imageUrl);
+          price == null ? null : euroCents(price, "price"), available, maxOrderQuantity, imageUrlPresent, imageUrl, overrides);
     }
   }
 
