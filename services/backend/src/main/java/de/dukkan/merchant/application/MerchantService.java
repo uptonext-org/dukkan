@@ -17,6 +17,8 @@ import de.dukkan.market.application.MarketInfo;
 import de.dukkan.market.application.MarketProfile;
 import de.dukkan.market.application.MarketService;
 import de.dukkan.market.application.MerchantMarket;
+import de.dukkan.market.application.OrderSettings;
+import de.dukkan.market.application.OrderSettingsView;
 import de.dukkan.media.application.MediaPurpose;
 import de.dukkan.media.application.MediaService;
 import de.dukkan.media.application.StoredMedia;
@@ -96,6 +98,17 @@ public class MerchantService {
   public MerchantMarket updateMarket(UUID userId, UUID marketId, MarketProfile profile, ContentLocale locale) {
     requireOwner(userId, marketId);
     return markets.update(marketId, profile, locale);
+  }
+
+  @Transactional(readOnly = true)
+  public OrderSettingsView orderSettings(UUID userId, UUID marketId) {
+    requireOwner(userId, marketId);
+    return markets.orderSettings(marketId);
+  }
+
+  public OrderSettingsView updateOrderSettings(UUID userId, UUID marketId, OrderSettings settings) {
+    requireOwner(userId, marketId);
+    return markets.updateOrderSettings(marketId, settings);
   }
 
   /**

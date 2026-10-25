@@ -300,16 +300,40 @@ public abstract class IntegrationTest {
     profile.put(
         "openingHours",
         List.of(1, 2, 3, 4, 5, 6).stream().map(d -> Map.of("dayOfWeek", d, "opensAt", "08:00", "closesAt", "20:00")).toList());
+    profile.put("phone", "+49 40 1234567");
     profile.put("legalName", name + " GmbH");
     return profile;
   }
 
+  /** Creates a market with {@link #marketProfile} and switches online orders on (new markets start without). */
   protected UUID createMarket(String merchantToken, String name) throws Exception {
     MvcResult result =
         mvc.perform(json(auth(post("/api/v1/merchant/markets"), merchantToken), toJson(marketProfile(name))))
             .andExpect(status().isCreated())
             .andReturn();
-    return UUID.fromString(read(result, "$.id"));
+    UUID marketId = UUID.fromString(read(result, "$.id"));
+    updateOrderSettings(merchantToken, marketId, Map.of());
+    return marketId;
+  }
+
+  /** Default ordering settings with orders switched on, overridden by {@code changes}. */
+  protected Map<String, Object> orderSettings(Map<String, Object> changes) {
+    Map<String, Object> settings = new HashMap<>();
+    settings.put("ordersEnabled", true);
+    settings.put("deliveryHours", List.of());
+    settings.put("autoAccept", false);
+    settings.put("paymentMethods", List.of("CASH"));
+    settings.putAll(changes);
+    return settings;
+  }
+
+  protected MvcResult updateOrderSettings(String merchantToken, UUID marketId, Map<String, Object> changes) throws Exception {
+    return mvc.perform(
+            json(
+                auth(put("/api/v1/merchant/markets/" + marketId + "/order-settings"), merchantToken),
+                toJson(orderSettings(changes))))
+        .andExpect(status().isOk())
+        .andReturn();
   }
 
   /** Adds a shared catalog product (by German name) to a merchant's market and returns the listing id. */

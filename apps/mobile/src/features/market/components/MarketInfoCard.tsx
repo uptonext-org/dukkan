@@ -1,7 +1,7 @@
 import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
-import type { MarketSummary } from '../../../shared/api';
+import type { MarketSummary, PaymentMethod } from '../../../shared/api';
 import { formatMoneyShort } from '../../../shared/format';
 import { makeStyles, useTheme } from '../../../shared/theme';
 import { AppText, Icon, type IconName } from '../../../shared/ui';
@@ -19,8 +19,11 @@ function Line({ icon, text }: { icon: IconName; text: string }) {
   );
 }
 
-/** Market info card on `surfaceRose`: opening hours, delivery/pickup, minimum order. */
-export function MarketInfoCard({ market }: { market: MarketSummary }) {
+/**
+ * Market info card on `surfaceRose`: opening hours, delivery/pickup, minimum order and, when the
+ * customer pays at handover, how ("Bezahlung bei Übergabe: bar oder Karte").
+ */
+export function MarketInfoCard({ market, paymentMethods }: { market: MarketSummary; paymentMethods?: PaymentMethod[] | undefined }) {
   const styles = useStyles();
   const { t } = useTranslation();
   // "Lieferung (2,90 €) · Abholung": the fee belongs to delivery, not a third option.
@@ -44,6 +47,9 @@ export function MarketInfoCard({ market }: { market: MarketSummary }) {
         <Line icon={market.fulfilment.delivery ? 'truck' : 'store'} text={ways} />
         {minimum !== undefined && <Line icon="basket" text={minimum} />}
         {freeFrom != null && market.fulfilment.delivery && <Line icon="tag" text={t('market.freeDeliveryFrom', { amount: formatMoneyShort(freeFrom) })} />}
+        {paymentMethods !== undefined && paymentMethods.length > 0 && (
+          <Line icon="receipt" text={t('market.payment', { methods: paymentMethods.map((m) => t(`market.paymentMethod.${m}`)).join(t('market.paymentOr')) })} />
+        )}
       </View>
     </View>
   );

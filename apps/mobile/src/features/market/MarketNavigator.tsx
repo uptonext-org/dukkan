@@ -18,7 +18,9 @@ import { MarketFavoritesScreen } from '../favorites/screens/MarketFavoritesScree
 import { OrderConfirmationScreen } from '../orders/screens/OrderConfirmationScreen';
 import { MarketSearchScreen } from '../search/screens/MarketSearchScreen';
 import { ShoppingListScreen } from '../shoppingList/screens/ShoppingListScreen';
+import { useMarket } from './api/hooks';
 import { MarketHeader } from './components/MarketHeader';
+import { OrderingNotice } from './components/OrderingNotice';
 import { MarketContext, useMarketContext } from './MarketContext';
 import { MarketHomeScreen } from './screens/MarketHomeScreen';
 
@@ -44,24 +46,32 @@ function MarketTabs() {
   const { t } = useTranslation();
   const { marketId } = useMarketContext();
   const { badge, label } = useCartBadge(marketId);
+  const { data: market } = useMarket(marketId);
+  const { data: cart } = useCart(marketId);
+  // A showcase market (no online orders) has no cart tab, unless a cart from before is still there.
+  const showCart = market?.acceptsOrders !== false || (cart?.itemCount ?? 0) > 0;
+  const tabCount = showCart ? 4 : 3;
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.bg }}>
       <MarketHeader />
+      <OrderingNotice market={market} />
       <Tab.Navigator screenOptions={tabBarOptions(theme, insets.bottom)}>
-        <Tab.Screen name="MarketHome" component={MarketHomeScreen} options={{ title: t('market.tabs.discover'), tabBarIcon: tabIcon('home'), tabBarAccessibilityLabel: tabLabel(t, t('market.tabs.discover'), 1, 4) }} />
-        <Tab.Screen name="MarketFavorites" component={MarketFavoritesScreen} options={{ title: t('market.tabs.favorites'), tabBarIcon: tabIcon('heart'), tabBarAccessibilityLabel: tabLabel(t, t('market.tabs.favorites'), 2, 4) }} />
-        <Tab.Screen name="MarketSearch" component={MarketSearchScreen} options={{ title: t('market.tabs.search'), tabBarIcon: tabIcon('search'), tabBarAccessibilityLabel: tabLabel(t, t('market.tabs.search'), 3, 4) }} />
-        <Tab.Screen
-          name="MarketCart"
-          component={MarketCartScreen}
-          options={{
-            title: t('market.tabs.cart'),
-            tabBarIcon: tabIcon('basket'),
-            ...(badge !== undefined ? { tabBarBadge: badge } : {}),
-            tabBarAccessibilityLabel: label,
-            tabBarButtonTestID: 'market-tab-cart',
-          }}
-        />
+        <Tab.Screen name="MarketHome" component={MarketHomeScreen} options={{ title: t('market.tabs.discover'), tabBarIcon: tabIcon('home'), tabBarAccessibilityLabel: tabLabel(t, t('market.tabs.discover'), 1, tabCount) }} />
+        <Tab.Screen name="MarketFavorites" component={MarketFavoritesScreen} options={{ title: t('market.tabs.favorites'), tabBarIcon: tabIcon('heart'), tabBarAccessibilityLabel: tabLabel(t, t('market.tabs.favorites'), 2, tabCount) }} />
+        <Tab.Screen name="MarketSearch" component={MarketSearchScreen} options={{ title: t('market.tabs.search'), tabBarIcon: tabIcon('search'), tabBarAccessibilityLabel: tabLabel(t, t('market.tabs.search'), 3, tabCount) }} />
+        {showCart && (
+          <Tab.Screen
+            name="MarketCart"
+            component={MarketCartScreen}
+            options={{
+              title: t('market.tabs.cart'),
+              tabBarIcon: tabIcon('basket'),
+              ...(badge !== undefined ? { tabBarBadge: badge } : {}),
+              tabBarAccessibilityLabel: label,
+              tabBarButtonTestID: 'market-tab-cart',
+            }}
+          />
+        )}
       </Tab.Navigator>
     </View>
   );

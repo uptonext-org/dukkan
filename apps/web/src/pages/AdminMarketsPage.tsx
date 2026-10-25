@@ -8,7 +8,10 @@ import { errorMessage } from '../ui/errors';
 
 const STATUSES: MarketStatus[] = ['PENDING_REVIEW', 'ACTIVE', 'SUSPENDED'];
 
-/** Market review for admins (B-36): approve new markets, suspend or return them to review. */
+/**
+ * Market review for admins (B-36): approve new markets, suspend or return them to review. Approval
+ * needs complete seller information (imprint, Art. 30 DSA); the checklist shows what is missing.
+ */
 export function AdminMarketsPage() {
   const { t, i18n } = useTranslation();
   const api = useApi();
@@ -58,10 +61,27 @@ export function AdminMarketsPage() {
           <div className="small">
             {t('admin.legal')}: {market.imprint.legalName}
             {market.imprint.registerInfo != null && ` · ${market.imprint.registerInfo}`}
+            {market.phone != null && ` · ${t('admin.phone')}: ${market.phone}`}
           </div>
+          {market.review && (
+            <ul className="small checklist" aria-label={t('admin.checklist')}>
+              {market.review.items.map((item) => (
+                <li key={item.code} className={item.ok ? undefined : item.required ? 'error' : 'muted'}>
+                  {item.ok ? '✓' : '✗'} {t(`admin.check.${item.code}`)}
+                  {!item.required && ` (${t('admin.optional')})`}: {t(item.ok ? 'admin.ok' : 'admin.missing')}
+                </li>
+              ))}
+            </ul>
+          )}
+          {market.review?.complete === false && <p className="small error">{t('admin.incomplete')}</p>}
           <div className="row">
             {market.status !== 'ACTIVE' && (
-              <button className="button" type="button" disabled={setMarketStatus.isPending} onClick={() => setMarketStatus.mutate({ market, next: 'ACTIVE' })}>
+              <button
+                className="button"
+                type="button"
+                disabled={setMarketStatus.isPending || market.review?.complete === false}
+                onClick={() => setMarketStatus.mutate({ market, next: 'ACTIVE' })}
+              >
                 {t('admin.approve')}
               </button>
             )}

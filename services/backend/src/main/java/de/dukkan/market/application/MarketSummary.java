@@ -2,6 +2,7 @@ package de.dukkan.market.application;
 
 import de.dukkan.shared.api.CodeName;
 import de.dukkan.shared.api.GeoPoint;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -25,4 +26,8 @@ public record MarketSummary(
     @Nullable OffsetDateTime nextOpeningAt,
     FulfilmentOptions fulfilment,
     int activePromotionCount,
-    List<String> tags) {}
+    List<String> tags,
+    boolean acceptsOrders,
+    @Nullable OffsetDateTime ordersPausedUntil,
+    @Nullable LocalDate closedFrom,
+    @Nullable LocalDate closedUntil) {}

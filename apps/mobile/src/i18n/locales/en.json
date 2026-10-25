@@ -71,7 +71,9 @@
     "ACCOUNT_OWNS_MARKETS": "This account runs a market. Please contact Dukkan support to close or hand over the market.",
     "EMAIL_NOT_VERIFIED": "Please confirm your email address first (link in the welcome email).",
     "SHOPPING_LIST_AI_UNAVAILABLE": "Photos and videos cannot be read right now because AI is not set up.",
-    "TERMS_NOT_ACCEPTED": "Please accept the terms and the privacy notice."
+    "TERMS_NOT_ACCEPTED": "Please accept the terms and the privacy notice.",
+    "ORDERS_NOT_ACCEPTED": "This market is not taking orders right now.",
+    "SLOT_UNAVAILABLE": "The market is closed on that day. Please choose another time."
   },
   "validation": {
     "required": "Please fill this in.",
@@ -224,7 +226,18 @@
     },
     "deliveryWithFee": "Delivery ({{amount}})",
     "deliveryFreeShort": "Delivery (free)",
-    "openHomeHint": "Opens the market's start page"
+    "openHomeHint": "Opens the market's start page",
+    "ordering": {
+      "pausedUntil": "Orders again from {{time}}",
+      "closed": "Closed from {{from}} to {{until}}",
+      "notAccepting": "This market is not taking orders right now."
+    },
+    "payment": "Payment at handover: {{methods}}",
+    "paymentMethod": {
+      "CASH": "cash",
+      "CARD": "card"
+    },
+    "paymentOr": " or "
   },
   "marketHome": {
     "banners": "Highlights",
@@ -648,6 +661,18 @@
       "hint": "Fills empty languages with a machine translation to review before saving.",
       "review": "Translated – please review before saving.",
       "nothing": "Nothing to translate."
+    },
+    "ordering": {
+      "title": "Orders",
+      "enabled": "Online orders",
+      "enabledHint": "Customers can order from you.",
+      "disabledHint": "Off: your market stays visible with its products, but without cart and ordering.",
+      "pausedUntil": "Paused until {{time}}",
+      "endPause": "End pause",
+      "pauseHour": "Pause 1 hour",
+      "pauseToday": "Pause for today",
+      "autoAccept": "Accept orders automatically",
+      "more": "Time slots, holidays, delivery times and payment are set in the merchant portal under \"Orders & delivery\"."
     }
   },
   "allergen": {

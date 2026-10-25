@@ -59,6 +59,7 @@ export function MarketFavoritesScreen() {
                     product={item}
                     quantity={actions.quantities.get(item.id) ?? 0}
                     busy={actions.busyProductId === item.id}
+            orderable={actions.orderable}
                     onPress={actions.openProduct}
                     onChangeQuantity={actions.changeQuantity}
                     onToggleFavorite={actions.toggleFavorite}

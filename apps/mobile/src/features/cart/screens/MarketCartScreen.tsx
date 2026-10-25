@@ -11,6 +11,7 @@ import { useAuth } from '../../auth/AuthProvider';
 import { useAuthGate } from '../../auth/AuthGate';
 import { FulfilmentSheet } from '../../fulfilment/components/FulfilmentSheet';
 import { reservationLabel } from '../../fulfilment/format';
+import { useAcceptsOrders } from '../../market/api/hooks';
 import { useMarketContext } from '../../market/MarketContext';
 import { usePlaceOrder } from '../../orders/api/hooks';
 import { useCart, useClearCart, useSetCartQuantity } from '../api/hooks';
@@ -35,6 +36,8 @@ export function MarketCartScreen({ navigation }: MarketTabScreenProps<'MarketCar
   const [sheetOpen, setSheetOpen] = useState(false);
   // In Germany the order button must say that ordering obliges to pay (§ 312j BGB).
   const payOnSite = usePlatform().data?.payment === 'ON_SITE';
+  // A cart from before the merchant paused or switched off orders: it stays, but cannot be ordered.
+  const acceptsOrders = useAcceptsOrders(marketId);
 
   if (status !== 'signedIn') {
     return (
@@ -101,6 +104,11 @@ export function MarketCartScreen({ navigation }: MarketTabScreenProps<'MarketCar
       padded={false}
       footer={
         <View>
+          {!acceptsOrders && (
+            <AppText variant="subhead" color="accent" accessibilityRole="alert" style={styles.error} testID="cart-not-accepting">
+              {t('market.ordering.notAccepting')}
+            </AppText>
+          )}
           {placeOrder.isError && (
             <AppText variant="subhead" color="accent" accessibilityRole="alert" style={styles.error}>
               {t(errorMessageKey(placeOrder.error))}
@@ -109,7 +117,7 @@ export function MarketCartScreen({ navigation }: MarketTabScreenProps<'MarketCar
           <Button
             title={ctaTitle}
             onPress={submit}
-            disabled={cta.kind === 'order' && !cta.enabled}
+            disabled={!acceptsOrders || (cta.kind === 'order' && !cta.enabled)}
             loading={placeOrder.isPending}
             {...(cta.kind === 'order' && !cta.enabled ? { accessibilityHint: t('cart.minimumHint') } : {})}
             testID="cart-cta"

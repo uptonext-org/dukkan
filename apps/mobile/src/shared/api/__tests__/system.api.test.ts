@@ -96,6 +96,7 @@ const profile: MarketProfileRequest = {
     minimumOrderValue: { amountCents: 500, currency: 'EUR' },
   },
   openingHours: [1, 2, 3, 4, 5, 6, 7].map((dayOfWeek) => ({ dayOfWeek, opensAt: '07:00', closesAt: '22:00' })),
+  phone: '+49 89 1234567',
   legalName: `Systemtest Markt ${RUN} GmbH`,
 };
 
@@ -125,7 +126,14 @@ describeSystem('system test: from a new market to a packed order', () => {
     }
     await expectApiError(session().api.getMarket(marketId), 404);
     await setStatus('ACTIVE');
-    expect((await session().api.getMarket(marketId)).name).toBe(profile.name);
+    const visible = await session().api.getMarket(marketId);
+    expect(visible.name).toBe(profile.name);
+    // A new market is a showcase until the merchant switches online orders on.
+    expect(visible.acceptsOrders).toBe(false);
+    const settings = await merchant.api.getOrderSettings(marketId);
+    expect(settings.ordersEnabled).toBe(false);
+    await merchant.api.updateOrderSettings(marketId, { ordersEnabled: true, deliveryHours: settings.deliveryHours, autoAccept: false, paymentMethods: settings.paymentMethods });
+    expect((await session().api.getMarket(marketId)).acceptsOrders).toBe(true);
   });
 
   it('2. the merchant lists products from the shared catalog and runs a "3 for 5 €" offer', async () => {

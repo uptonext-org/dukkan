@@ -90,10 +90,14 @@ public class CartService {
 
   /**
    * Sets the quantity of a listing of this market (0 removes it). Fails with {@code NOT_FOUND},
-   * {@code MARKET_NOT_ACTIVE}, {@code PRODUCT_UNAVAILABLE} or {@code MAX_QUANTITY_EXCEEDED}.
+   * {@code MARKET_NOT_ACTIVE}, {@code ORDERS_NOT_ACCEPTED} (except for removing), {@code
+   * PRODUCT_UNAVAILABLE} or {@code MAX_QUANTITY_EXCEEDED}.
    */
   public CartView setQuantity(UUID userId, UUID marketId, UUID listingId, int quantity, ContentLocale locale) {
     MarketInfo market = activeForChanges(marketId);
+    if (quantity > 0) {
+      FulfilmentService.requireAcceptsOrders(market, clock.instant());
+    }
     ListingInfo listing = catalog.listingInfos(List.of(listingId), locale).get(listingId);
     if (listing == null || listing.deleted() || !listing.marketId().equals(marketId)) {
       throw new NotFoundException("Product not found in this market.");
@@ -116,10 +120,10 @@ public class CartService {
   /**
    * Adds the lines to the cart on top of what is already there, each capped at the listing's
    * per-order maximum. Removed and unavailable listings are skipped and reported, so one sold-out
-   * product does not block the rest. Fails with {@code MARKET_NOT_ACTIVE}.
+   * product does not block the rest. Fails with {@code MARKET_NOT_ACTIVE} or {@code ORDERS_NOT_ACCEPTED}.
    */
   public CartAddition.Result addAll(UUID userId, UUID marketId, List<CartAddition.Line> lines, ContentLocale locale) {
-    activeForChanges(marketId);
+    FulfilmentService.requireAcceptsOrders(activeForChanges(marketId), clock.instant());
     Map<UUID, ListingInfo> listings = catalog.listingInfos(lines.stream().map(CartAddition.Line::listingId).toList(), locale);
     Cart cart = loadForUpdate(userId, marketId);
     releaseIfExpired(cart);

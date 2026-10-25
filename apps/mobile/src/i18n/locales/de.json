@@ -71,7 +71,9 @@
     "ACCOUNT_OWNS_MARKETS": "Dieses Konto führt einen Markt. Bitte wende dich an den Dukkan-Support, um den Markt zu schließen oder zu übergeben.",
     "EMAIL_NOT_VERIFIED": "Bitte bestätige zuerst deine E-Mail-Adresse (Link in der Willkommens-Mail).",
     "SHOPPING_LIST_AI_UNAVAILABLE": "Fotos und Videos können gerade nicht gelesen werden, weil die KI nicht eingerichtet ist.",
-    "TERMS_NOT_ACCEPTED": "Bitte akzeptiere die AGB und die Datenschutzerklärung."
+    "TERMS_NOT_ACCEPTED": "Bitte akzeptiere die AGB und die Datenschutzerklärung.",
+    "ORDERS_NOT_ACCEPTED": "Dieser Markt nimmt gerade keine Bestellungen an.",
+    "SLOT_UNAVAILABLE": "An diesem Tag ist der Markt geschlossen. Bitte wähle eine andere Zeit."
   },
   "validation": {
     "required": "Bitte ausfüllen.",
@@ -224,7 +226,18 @@
     },
     "deliveryWithFee": "Lieferung ({{amount}})",
     "deliveryFreeShort": "Lieferung (gratis)",
-    "openHomeHint": "Öffnet die Startseite des Markts"
+    "openHomeHint": "Öffnet die Startseite des Markts",
+    "ordering": {
+      "pausedUntil": "Bestellungen wieder ab {{time}}",
+      "closed": "Geschlossen vom {{from}} bis {{until}}",
+      "notAccepting": "Dieser Markt nimmt gerade keine Bestellungen an."
+    },
+    "payment": "Bezahlung bei Übergabe: {{methods}}",
+    "paymentMethod": {
+      "CASH": "bar",
+      "CARD": "mit Karte"
+    },
+    "paymentOr": " oder "
   },
   "marketHome": {
     "banners": "Aktuelles",
@@ -648,6 +661,18 @@
       "hint": "Füllt leere Sprachen mit einer maschinellen Übersetzung, die du vor dem Speichern prüfen kannst.",
       "review": "Übersetzt – bitte vor dem Speichern prüfen.",
       "nothing": "Keine Übersetzung nötig."
+    },
+    "ordering": {
+      "title": "Bestellungen",
+      "enabled": "Online-Bestellungen",
+      "enabledHint": "Kunden können bei dir bestellen.",
+      "disabledHint": "Aus: Dein Markt bleibt mit Sortiment sichtbar, aber ohne Warenkorb und Bestellen.",
+      "pausedUntil": "Pausiert bis {{time}}",
+      "endPause": "Pause beenden",
+      "pauseHour": "1 Std. pausieren",
+      "pauseToday": "Für heute pausieren",
+      "autoAccept": "Bestellungen automatisch annehmen",
+      "more": "Zeitfenster, Urlaub, Lieferzeiten und Bezahlung stellst du im Händlerportal unter „Bestellungen & Lieferung“ ein."
     }
   },
   "allergen": {
