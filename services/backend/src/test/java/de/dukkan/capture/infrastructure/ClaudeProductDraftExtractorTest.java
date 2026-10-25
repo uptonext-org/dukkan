@@ -75,7 +75,8 @@ class ClaudeProductDraftExtractorTest {
           calls.incrementAndGet();
           requestBody.set(new String(exchange.getRequestBody().readAllBytes(), UTF_8));
           betaHeader.set(exchange.getRequestHeaders().getFirst("anthropic-beta"));
-          apiKeyHeader.set(exchange.getRequestHeaders().getFirst("x-api-key"));
+          // SDK 3 (API version 2026-10-21) sends the API key as a bearer token.
+          apiKeyHeader.set(exchange.getRequestHeaders().getFirst("Authorization"));
           byte[] body = responseBody.getBytes(UTF_8);
           exchange.getResponseHeaders().add("Content-Type", "application/json");
           exchange.sendResponseHeaders(status, body.length);
@@ -121,7 +122,7 @@ class ClaudeProductDraftExtractorTest {
     Outcome outcome = extractor(true).extract(REQUEST);
 
     assertThat(outcome).isInstanceOf(Outcome.Extracted.class);
-    assertThat(apiKeyHeader.get()).isEqualTo("test-key");
+    assertThat(apiKeyHeader.get()).isEqualTo("Bearer test-key");
     assertThat(betaHeader.get()).contains(ClaudeProductDraftExtractor.FALLBACK_BETA);
     JsonNode body = JSON.readTree(requestBody.get());
     assertThat(body.get("model").asString()).isEqualTo("claude-opus-5-5");

@@ -168,7 +168,7 @@ final class ClaudeProductDraftExtractor implements ProductDraftExtractor {
                             .schema(JsonOutputFormat.Schema.builder().putAllAdditionalProperties(jsonValues(DraftPrompt.schema(request))).build())
                             .build())
                     .build())
-            .addUserMessageOfBlockParams(content);
+            .addUserMessageOfContentBlockParams(content);
     if (settings.serverSideFallbacks()) {
       builder.putAdditionalHeader("anthropic-beta", FALLBACK_BETA).putAdditionalBodyProperty("fallbacks", JsonValue.from("default"));
     }
