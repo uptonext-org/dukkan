@@ -727,14 +727,21 @@
   },
   "myMarkets": {
     "emptyTitle": "Noch keine Märkte",
-    "emptyMessage": "Hier erscheinen die Märkte, in denen du bestellt oder gestöbert hast – mit dem, was du dort gekauft hast.",
+    "emptyMessage": "Hier erscheinen deine Lieblingsmärkte (Herz im Markt) und die Märkte, in denen du bestellt hast – mit dem, was du dort gekauft hast.",
     "emptyGuest": "Hier erscheinen die Märkte, die du dir angesehen hast.",
     "discover": "Märkte entdecken",
     "lastOrder_one": "Zuletzt bestellt am {{date}} · {{count}} Bestellung",
     "lastOrder_other": "Zuletzt bestellt am {{date}} · {{count}} Bestellungen",
     "lastVisit": "Zuletzt angesehen am {{date}}",
     "boughtHere": "Hier gekauft",
-    "lastOrderButton": "Letzte Bestellung ansehen"
+    "lastOrderButton": "Letzte Bestellung ansehen",
+    "favorites": "Meine Favoriten",
+    "bought": "Hier habe ich gekauft",
+    "favoriteLabel": "Favorit",
+    "boughtLabel": "Gekauft",
+    "removeFavorite": "Entfernen",
+    "removeFavoriteFor": "{{name}} aus den Favoriten entfernen",
+    "signInMessage": "Melde dich an, um deine Favoriten und die Märkte zu sehen, in denen du gekauft hast."
   },
   "shoppingList": {
     "title": "Einkaufsliste",
@@ -779,7 +786,14 @@
     "again": "Neue Liste",
     "lineNotFound": "Nicht im Sortiment dieses Markts gefunden",
     "include": "{{name}} in den Warenkorb legen",
-    "alternatives": "Andere passende Produkte"
+    "alternatives": "Andere passende Produkte",
+    "entryTitleVoice": "Einkaufsliste sprechen",
+    "entryTitleMedia": "Einkaufsliste fotografieren oder filmen",
+    "entryTitleType": "Einkaufsliste eingeben",
+    "entrySubtitleType": "Tippe, was du brauchst – wir finden die Produkte.",
+    "introType": "Tippe deine Liste, z. B. „2 Gurken, 1 kg Tomaten“.",
+    "introMedia": "Du kannst auch deinen Einkaufszettel oder deinen Kühlschrank fotografieren oder kurz filmen.",
+    "disabled": "Die Einkaufsliste ist gerade nicht verfügbar."
   },
   "legal": {
     "title": "Rechtliches",

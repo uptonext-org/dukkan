@@ -1,10 +1,13 @@
 package de.dukkan.admin.api;
 
 import de.dukkan.catalog.application.CatalogModerationService;
+import de.dukkan.feature.application.Feature;
+import de.dukkan.feature.application.FeatureService;
 import de.dukkan.i18n.application.ContentLocale;
 import de.dukkan.market.application.MarketService;
 import de.dukkan.market.application.MerchantMarket;
 import de.dukkan.shared.api.PageResponse;
+import de.dukkan.shared.security.CurrentUser;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -15,6 +18,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
+import org.springframework.security.core.annotation.CurrentSecurityContext;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -34,10 +39,26 @@ final class AdminController {
 
   private final MarketService markets;
   private final CatalogModerationService moderation;
+  private final FeatureService features;
 
-  AdminController(MarketService markets, CatalogModerationService moderation) {
+  AdminController(MarketService markets, CatalogModerationService moderation, FeatureService features) {
     this.markets = markets;
     this.moderation = moderation;
+    this.features = features;
+  }
+
+  record FeatureRequest(@NotNull Boolean enabled) {}
+
+  /** The switches as set (a sub-feature keeps its value while the shopping list is off). */
+  @GetMapping("/features")
+  Map<Feature, Boolean> features() {
+    return features.switches();
+  }
+
+  @PutMapping("/features/{feature}")
+  Map<Feature, Boolean> setFeature(
+      @CurrentSecurityContext SecurityContext security, @PathVariable Feature feature, @RequestBody @Valid FeatureRequest request) {
+    return features.set(feature, request.enabled(), CurrentUser.id(security));
   }
 
   @GetMapping("/markets")

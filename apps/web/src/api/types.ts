@@ -85,6 +85,11 @@ export interface MarketProfileRequest {
 
 export type PaymentMethod = 'CASH' | 'CARD';
 
+export type FeatureKey = 'SHOPPING_LIST' | 'SHOPPING_LIST_VOICE' | 'SHOPPING_LIST_MEDIA';
+
+/** Functions platform admins switch on and off for all customers. */
+export type FeatureSwitches = Record<FeatureKey, boolean>;
+
 /** What a merchant controls about ordering; null numbers use the platform default. */
 export interface OrderSettings {
   ordersEnabled: boolean;

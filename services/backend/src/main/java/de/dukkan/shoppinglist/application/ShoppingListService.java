@@ -3,6 +3,8 @@ package de.dukkan.shoppinglist.application;
 import de.dukkan.catalog.application.CatalogService;
 import de.dukkan.catalog.application.MarketProductQuery;
 import de.dukkan.catalog.application.ProductSummary;
+import de.dukkan.feature.application.Feature;
+import de.dukkan.feature.application.FeatureService;
 import de.dukkan.i18n.application.ContentLocale;
 import de.dukkan.identity.application.IdentityService;
 import de.dukkan.market.application.MarketService;
@@ -23,6 +25,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
@@ -65,6 +68,7 @@ public class ShoppingListService {
   private final FixedWindowRateLimiter<UUID> rateLimiter;
   private final IdentityService identity;
   private final AiBudget budget;
+  private final FeatureService features;
 
   public ShoppingListService(
       ShoppingListReader reader,
@@ -72,6 +76,7 @@ public class ShoppingListService {
       CatalogService catalog,
       IdentityService identity,
       AiBudget budget,
+      FeatureService features,
       DukkanProperties properties,
       Clock clock,
       RateLimitStore store) {
@@ -80,6 +85,7 @@ public class ShoppingListService {
     this.catalog = catalog;
     this.identity = identity;
     this.budget = budget;
+    this.features = features;
     this.rateLimiter = new FixedWindowRateLimiter<>("shopping-lists", properties.shoppingList().requestsPerHour(), Duration.ofHours(1), clock, store);
   }
 
@@ -87,7 +93,19 @@ public class ShoppingListService {
     return reader.enabled();
   }
 
+  /** What admins switched on for customers (the app shows only these options). */
+  public record Switches(boolean enabled, boolean voice, boolean media) {}
+
+  public Switches switches() {
+    Map<Feature, Boolean> all = features.all();
+    return new Switches(all.get(Feature.SHOPPING_LIST), all.get(Feature.SHOPPING_LIST_VOICE), all.get(Feature.SHOPPING_LIST_MEDIA));
+  }
+
   public Result read(UUID userId, UUID marketId, @Nullable String text, List<ModelImages.Image> images, ContentLocale locale) {
+    Switches switches = switches();
+    if (!switches.enabled() || (!images.isEmpty() && !switches.media())) {
+      throw new BusinessRuleException(ErrorCodes.FEATURE_DISABLED, "This function is switched off.");
+    }
     String spoken = text == null || text.isBlank() ? null : text.strip();
     if (spoken == null && images.isEmpty()) {
       throw new InvalidRequestException("text", "NotBlank", "send a text or at least one image");

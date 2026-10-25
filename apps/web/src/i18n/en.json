@@ -25,7 +25,8 @@
     "promotions": "Promotions",
     "profile": "Market profile",
     "insights": "Overview",
-    "settings": "Orders & delivery"
+    "settings": "Orders & delivery",
+    "features": "Features"
   },
   "status": {
     "PENDING_REVIEW": "In review",
@@ -384,5 +385,21 @@
     "boardOff": "Online orders are switched off. Customers see your market but cannot order.",
     "boardPaused": "Orders paused until {{time}}.",
     "boardOpen": "Open settings"
+  },
+  "features": {
+    "title": "Features for customers",
+    "hint": "Switch functions on and off for all customers. Anything switched off does not appear in the app and web app.",
+    "shoppingList": "Shopping list",
+    "needsList": "Takes effect only while the shopping list is on.",
+    "name": {
+      "SHOPPING_LIST": "Shopping list (typing)",
+      "SHOPPING_LIST_VOICE": "Speak the shopping list",
+      "SHOPPING_LIST_MEDIA": "Photograph or film the shopping list"
+    },
+    "description": {
+      "SHOPPING_LIST": "Customers type their list in a market and the matching products are found.",
+      "SHOPPING_LIST_VOICE": "Voice input; recognition runs on the phone.",
+      "SHOPPING_LIST_MEDIA": "Photos or a short video of the list, read by the AI (uses AI requests; needs the Anthropic key)."
+    }
   }
 }

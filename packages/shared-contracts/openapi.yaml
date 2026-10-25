@@ -62,6 +62,21 @@ paths:
               schema:
                 type: array
                 items: { $ref: '#/components/schemas/Locale' }
+  /features:
+    get:
+      tags: [meta]
+      operationId: getFeatures
+      summary: Functions platform admins switched on (effective state)
+      description: |
+        A sub-feature (`SHOPPING_LIST_VOICE`, `SHOPPING_LIST_MEDIA`) is only true while
+        `SHOPPING_LIST` is. All start switched off.
+      security: []
+      responses:
+        '200':
+          description: Feature → on.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FeatureSwitches' }
   /platform:
     get:
       tags: [meta]
@@ -694,7 +709,8 @@ paths:
         `engine` is `AI` when the language model read the list, `RULES` when simple rules did
         (no model configured, or the model failed; text only). Images without a model, or images
         the model could not read without text → 422 `SHOPPING_LIST_AI_UNAVAILABLE`.
-        20 lists per customer and hour → 429 `RATE_LIMITED`.
+        20 lists per customer and hour → 429 `RATE_LIMITED`. The shopping list switched off by
+        platform admins, or images while photo/video is switched off → 422 `FEATURE_DISABLED`.
       parameters:
         - { $ref: '#/components/parameters/MarketId' }
         - { $ref: '#/components/parameters/AcceptLanguage' }
@@ -1810,6 +1826,44 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
 
   # ---------------------------------------------------------------- admin
+  /admin/features:
+    get:
+      tags: [admin]
+      operationId: adminFeatures
+      summary: Feature switches as set (role ADMIN)
+      responses:
+        '200':
+          description: Feature → on, as stored.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FeatureSwitches' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /admin/features/{feature}:
+    put:
+      tags: [admin]
+      operationId: adminSetFeature
+      summary: Switch a function on or off for all customers (role ADMIN)
+      parameters:
+        - { name: feature, in: path, required: true, schema: { type: string, enum: [SHOPPING_LIST, SHOPPING_LIST_VOICE, SHOPPING_LIST_MEDIA] } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [enabled]
+              properties:
+                enabled: { type: boolean }
+      responses:
+        '200':
+          description: All switches after the change.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FeatureSwitches' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
   /admin/markets:
     get:
       tags: [admin]
@@ -2048,6 +2102,7 @@ components:
       description: |
         Business rule violated. Codes: PRODUCT_UNAVAILABLE, MAX_QUANTITY_EXCEEDED, MARKET_NOT_ACTIVE,
         ORDERS_NOT_ACCEPTED (ordering switched off or paused; removing items still works),
+        FEATURE_DISABLED (a function platform admins switched off),
         SLOT_UNAVAILABLE (the market closed that day), FULFILMENT_NOT_OFFERED, ADDRESS_REQUIRED, ADDRESS_OUTSIDE_DELIVERY_AREA, SLOT_CUTOFF_PASSED,
         SLOT_TYPE_MISMATCH, SLOT_NOT_RESERVED, CART_EMPTY, MINIMUM_ORDER_NOT_MET,
         ORDER_NOT_CANCELLABLE, INVALID_STATUS_TRANSITION.
@@ -2592,11 +2647,21 @@ components:
       properties:
         price: { $ref: '#/components/schemas/Money' }
         unit: { type: string, enum: [kg, l, piece] }
+    FeatureSwitches:
+      type: object
+      required: [SHOPPING_LIST, SHOPPING_LIST_VOICE, SHOPPING_LIST_MEDIA]
+      properties:
+        SHOPPING_LIST: { type: boolean, description: Shopping list in a market (typed list). }
+        SHOPPING_LIST_VOICE: { type: boolean, description: Speak the list. }
+        SHOPPING_LIST_MEDIA: { type: boolean, description: Photos or a short video of the list. }
     ShoppingListCapabilities:
       type: object
-      required: [ai, maxImages, maxTextLength]
+      required: [enabled, voice, media, ai, maxImages, maxTextLength]
       additionalProperties: false
       properties:
+        enabled: { type: boolean, description: 'Platform admins switched the shopping list on (getFeatures SHOPPING_LIST). Off: no entry in the app.' }
+        voice: { type: boolean, description: Speaking the list is switched on (speech recognition on the device). }
+        media: { type: boolean, description: Photos and videos are switched on and can be read (needs `ai`). }
         ai: { type: boolean, description: 'Photos and videos can be read; dictated lists are read by the model too.' }
         maxImages: { type: integer, example: 4 }
         maxTextLength: { type: integer, example: 2000 }

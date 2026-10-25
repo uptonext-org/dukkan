@@ -4,7 +4,6 @@ import type { ApiRequest } from '../../../shared/api';
 import { createFakeApiClient } from '../../../test/fakeApiClient';
 import { market, MARKET_ID, marketHome, order, page, product } from '../../../test/fixtures';
 import { createTestDependencies, normalize, renderApp, ST_GEORG } from '../../../test/render';
-import { mergeMyMarkets } from '../components/MyMarkets';
 import { buildMarketQuery, DEFAULT_FILTERS } from '../model';
 import { addVisit } from '../visits/VisitedMarkets';
 
@@ -175,9 +174,10 @@ describe('<DiscoverScreen />', () => {
     expect(await screen.findByTestId('market-home')).toBeOnTheScreen();
   });
 
-  it('shows "Meine Märkte": bought-from markets with what was bought, and remembers visited markets', async () => {
+  it('shows "Meine Märkte": favourites (removable) and markets bought from, told apart', async () => {
     const bakery = market({ id: 'm2', name: 'Bäckerei Kaya' });
     const past = order({ id: 'o-last', status: 'COMPLETED' });
+    let favorites = [bakery, market()];
     const fake = createFakeApiClient({
       'GET /market-types': types,
       'GET /cuisines': cuisines,
@@ -185,73 +185,59 @@ describe('<DiscoverScreen />', () => {
       'GET /me': { id: 'u1', email: 'a@b.de', firstName: 'Ada', lastName: 'L', roles: ['CUSTOMER'] },
       'GET /me/notifications': { ...page([]), unreadCount: 0 },
       'GET /carts': [],
-      'GET /favorites/markets': [],
-      [`GET /markets/${MARKET_ID}`]: market(),
-      [`GET /markets/${MARKET_ID}/home`]: marketHome(),
-      'GET /markets/m2': bakery,
-      'GET /markets/m2/home': { ...marketHome(), market: bakery },
-      'GET /markets/recent': (request: ApiRequest) => {
-        const visited = (request.query?.visited as string[] | undefined) ?? [];
-        return [
-          {
-            market: market(),
-            lastOrderAt: '2026-10-18T10:00:00+02:00',
-            lastOrderId: past.id,
-            orderCount: 3,
-            recentProducts: [product()],
-          },
-          ...(visited.includes('m2')
-            ? [{ market: bakery, lastOrderAt: null, lastOrderId: null, orderCount: 0, recentProducts: [] }]
-            : []),
-        ];
+      'GET /favorites/markets': () => favorites,
+      'DELETE /favorites/markets/m2': () => {
+        favorites = favorites.filter((m) => m.id !== 'm2');
+        return undefined;
       },
+      'GET /markets/recent': [
+        {
+          market: market(),
+          lastOrderAt: '2026-10-18T10:00:00+02:00',
+          lastOrderId: past.id,
+          orderCount: 3,
+          recentProducts: [product()],
+        },
+      ],
       [`GET /orders/${past.id}`]: past,
     });
     await renderApp(createTestDependencies(fake.client, { token: 'jwt' }));
     const user = userEvent.setup();
+    await screen.findByTestId(`market-card-${MARKET_ID}`);
 
-    // Visit the bakery first, then come back.
-    await user.press(await screen.findByTestId('market-card-m2'));
-    await screen.findByTestId('market-home');
-    await user.press(screen.getByTestId('market-exit'));
-
-    await user.press(await screen.findByRole('tab', { name: 'Meine' }));
-    const mine = await screen.findByTestId(`my-market-${MARKET_ID}`);
+    await user.press(screen.getByRole('tab', { name: 'Meine' }));
+    // Two parts with their own heading; a market can be in both.
+    expect(await screen.findByTestId('my-markets-favorites')).toHaveTextContent('Meine Favoriten');
+    expect(screen.getByTestId('my-markets-bought')).toHaveTextContent('Hier habe ich gekauft');
+    expect(within(screen.getByTestId('my-favorite-m2')).getByText('Favorit')).toBeOnTheScreen();
+    expect(screen.getByTestId(`my-favorite-${MARKET_ID}`)).toBeOnTheScreen();
+    const mine = screen.getByTestId(`my-market-${MARKET_ID}`);
+    expect(within(mine).getByText('Gekauft')).toBeOnTheScreen();
     expect(within(mine).getByText(/Zuletzt bestellt am .* · .?3.? Bestellungen/)).toBeOnTheScreen();
     expect(within(mine).getByText('Hier gekauft')).toBeOnTheScreen();
-    // The visited market appears below, and was sent to the server.
-    expect(await screen.findByTestId('my-market-m2')).toHaveTextContent(/Zuletzt angesehen am/);
-    expect(
-      fake.calls.some(
-        (c) => c.path === '/markets/recent' && (c.query?.visited as string[] | undefined)?.includes('m2'),
-      ),
-    ).toBe(true);
-    // Chips and filters are for the list and map only.
+    // Only markets with orders are asked for; visits are not part of this view.
+    expect(fake.calls.find((c) => c.path === '/markets/recent')?.query?.visited).toBeUndefined();
     expect(screen.queryByTestId('type-chips')).not.toBeOnTheScreen();
+
+    await user.press(screen.getByRole('button', { name: 'Bäckerei Kaya aus den Favoriten entfernen' }));
+    await waitFor(() => expect(screen.queryByTestId('my-favorite-m2')).not.toBeOnTheScreen());
+    expect(fake.calls.some((c) => c.method === 'DELETE' && c.path === '/favorites/markets/m2')).toBe(true);
 
     await user.press(within(mine).getByTestId(`my-market-order-${MARKET_ID}`));
     expect(await screen.findByText(past.orderNumber, { exact: false })).toBeOnTheScreen();
   });
 
-  it('merges orders and visits by the latest activity and keeps each market once', () => {
-    const recent = [
-      {
-        market: market(),
-        lastOrderAt: '2026-10-10T10:00:00Z',
-        lastOrderId: 'o1',
-        orderCount: 1,
-        recentProducts: [],
-      },
-      {
-        market: market({ id: 'm2' }),
-        lastOrderAt: null,
-        lastOrderId: null,
-        orderCount: 0,
-        recentProducts: [],
-      },
-    ];
+  it('asks a guest to sign in for "Meine Märkte"', async () => {
+    const fake = createFakeApiClient({ 'GET /market-types': types, 'GET /cuisines': cuisines, 'GET /markets': page([market()]) });
+    await renderApp(createTestDependencies(fake.client));
+    const user = userEvent.setup();
+    await screen.findByTestId(`market-card-${MARKET_ID}`);
+    await user.press(screen.getByRole('tab', { name: 'Meine' }));
+    expect(await screen.findByText(/Melde dich an, um deine Favoriten/)).toBeOnTheScreen();
+  });
+
+  it('keeps the visited markets in order of the last visit', () => {
     const visits = addVisit(addVisit([], MARKET_ID, '2026-10-01T10:00:00Z'), 'm2', '2026-10-15T10:00:00Z');
-    expect(mergeMyMarkets(recent, visits).map((m) => m.market.id)).toEqual(['m2', MARKET_ID]);
     expect(addVisit(visits, MARKET_ID, '2026-10-20T10:00:00Z').map((v) => v.marketId)).toEqual([
       MARKET_ID,
       'm2',

@@ -9,11 +9,11 @@ import { useLang } from '../../../shared/i18n';
 import { toUploadFile, usePhotoPicker, type PhotoSource, type PickedPhoto } from '../../../shared/media';
 import { SpeechInputError, useShoppingInput, type SpeechFailure } from '../../../shared/shoppingInput';
 import { makeStyles, useTheme } from '../../../shared/theme';
-import { AppText, Button, Icon, IconButton, Screen, ScreenHeader } from '../../../shared/ui';
+import { AppText, Button, EmptyState, Icon, IconButton, Screen, ScreenHeader } from '../../../shared/ui';
 import { useAuthGate } from '../../auth/AuthGate';
 import { useCart } from '../../cart/api/hooks';
 import { useMarketContext } from '../../market/MarketContext';
-import { PartialApplyError, useApplyShoppingList, useReadShoppingList, useShoppingListCapabilities } from '../api/hooks';
+import { PartialApplyError, useApplyShoppingList, useReadShoppingList, useShoppingListCapabilities, useShoppingListSwitches } from '../api/hooks';
 import { ShoppingListLineRow } from '../components/ShoppingListLineRow';
 import { appendText, cartUpdates, chosen, initialSelections, speechLanguage, type LineSelection } from '../model';
 
@@ -37,6 +37,8 @@ export function ShoppingListScreen({ navigation }: MarketStackScreenProps<'Shopp
   const photoPicker = usePhotoPicker();
   const { requireAuth } = useAuthGate();
   const capabilities = useShoppingListCapabilities();
+  // Only what platform admins switched on is offered.
+  const switches = useShoppingListSwitches();
   const speechAvailable = useQuery({
     queryKey: ['speechAvailable'],
     queryFn: () => speech.isAvailable(),
@@ -209,6 +211,15 @@ export function ShoppingListScreen({ navigation }: MarketStackScreenProps<'Shopp
   const applyError =
     apply.error !== null ? t(errorMessageKey(apply.error instanceof PartialApplyError ? apply.error.reason : apply.error)) : null;
 
+  if (capabilities.isSuccess && !switches.enabled) {
+    // Opened by a link while platform admins have switched the shopping list off.
+    return (
+      <Screen padded={false} header={header}>
+        <EmptyState icon="list" title={t('shoppingList.title')} message={t('shoppingList.disabled')} actionLabel={t('common.back')} onAction={() => navigation.goBack()} />
+      </Screen>
+    );
+  }
+
   if (result !== null) {
     const unmatched = result.lines.filter((line) => line.match === null).length;
     return (
@@ -296,10 +307,10 @@ export function ShoppingListScreen({ navigation }: MarketStackScreenProps<'Shopp
       }>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <AppText variant="body" color="textSecondary">
-          {t(ai ? 'shoppingList.intro' : 'shoppingList.introNoAi')}
+          {[t(switches.voice ? 'shoppingList.introNoAi' : 'shoppingList.introType'), switches.media ? t('shoppingList.introMedia') : null].filter(Boolean).join(' ')}
         </AppText>
 
-        {speechAvailable.data !== false && (
+        {switches.voice && speechAvailable.data !== false && (
           <Pressable
             onPress={() => void (listening ? stopListening() : startListening())}
             disabled={stopping}
@@ -327,7 +338,7 @@ export function ShoppingListScreen({ navigation }: MarketStackScreenProps<'Shopp
           testID="shopping-list-text"
         />
 
-        {ai ? (
+        {switches.media ? (
           <View style={styles.media}>
             <AppText variant="headline">{t('shoppingList.mediaTitle')}</AppText>
             <AppText variant="subhead" color="textSecondary">
@@ -373,7 +384,8 @@ export function ShoppingListScreen({ navigation }: MarketStackScreenProps<'Shopp
             )}
           </View>
         ) : (
-          capabilities.isSuccess && (
+          // Switched on by admins, but no model to read photos with.
+          capabilities.isSuccess && capabilities.data.media === undefined && !ai && (
             <View style={styles.notice} testID="shopping-list-no-ai">
               <Icon name="alert" size={18} color={colors.textSecondary} />
               <AppText variant="subhead" color="textSecondary" style={styles.noticeText}>

@@ -8,6 +8,7 @@ import { ApiProvider, useApi } from './api/ApiContext';
 import { createApi, type Session, type SessionStore } from './api/client';
 import { applyLanguage, isLanguage, LANGUAGES } from './i18n';
 import { AdminCatalogPage } from './pages/AdminCatalogPage';
+import { AdminFeaturesPage } from './pages/AdminFeaturesPage';
 import { AdminMarketsPage } from './pages/AdminMarketsPage';
 import { ImportPage } from './pages/ImportPage';
 import { InsightsPage } from './pages/InsightsPage';
@@ -19,8 +20,8 @@ import { OrdersBoard } from './pages/OrdersBoard';
 import { PromotionsPage } from './pages/PromotionsPage';
 import { errorMessage } from './ui/errors';
 
-type Route = 'orders' | 'insights' | 'listings' | 'promotions' | 'import' | 'profile' | 'settings' | 'admin' | 'catalog';
-const ROUTES: Route[] = ['orders', 'insights', 'listings', 'promotions', 'import', 'profile', 'settings', 'admin', 'catalog'];
+type Route = 'orders' | 'insights' | 'listings' | 'promotions' | 'import' | 'profile' | 'settings' | 'admin' | 'catalog' | 'features';
+const ROUTES: Route[] = ['orders', 'insights', 'listings', 'promotions', 'import', 'profile', 'settings', 'admin', 'catalog', 'features'];
 
 function subscribeHash(onChange: () => void) {
   window.addEventListener('hashchange', onChange);
@@ -104,7 +105,7 @@ function Shell({ session, alerts }: { session: Session; alerts: AppDependencies[
     };
   }, [alertsOn, signals]);
 
-  const available: Route[] = [...(isMerchant ? (['orders', 'insights', 'listings', 'promotions', 'import', 'profile', 'settings'] as const) : []), ...(isAdmin ? (['admin', 'catalog'] as const) : [])];
+  const available: Route[] = [...(isMerchant ? (['orders', 'insights', 'listings', 'promotions', 'import', 'profile', 'settings'] as const) : []), ...(isAdmin ? (['admin', 'catalog', 'features'] as const) : [])];
   const current = route !== null && available.includes(route) ? route : available[0];
 
   return (
@@ -185,7 +186,8 @@ function Shell({ session, alerts }: { session: Session; alerts: AppDependencies[
       <main>
         {current === 'admin' && <AdminMarketsPage />}
         {current === 'catalog' && <AdminCatalogPage />}
-        {current !== 'admin' && current !== 'catalog' && current !== undefined && (
+        {current === 'features' && <AdminFeaturesPage />}
+        {current !== 'admin' && current !== 'catalog' && current !== 'features' && current !== undefined && (
           <>
             {markets.isPending && <p>{t('app.loading')}</p>}
             {markets.isError && (

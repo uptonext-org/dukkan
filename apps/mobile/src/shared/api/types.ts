@@ -732,6 +732,12 @@ export interface PromotionRequest {
 // ---------------------------------------------------------------- shopping list by voice, photo or video (F1)
 /** `GET /shopping-list`: whether photos and videos can be read (a language model is configured). */
 export interface ShoppingListCapabilities {
+  /** Platform admins switched the shopping list on (absent from older servers: on). */
+  enabled?: boolean;
+  /** Speaking the list is switched on. */
+  voice?: boolean;
+  /** Photos and videos are switched on and can be read. */
+  media?: boolean;
   ai: boolean;
   maxImages: number;
   maxTextLength: number;

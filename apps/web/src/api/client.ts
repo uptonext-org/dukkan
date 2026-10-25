@@ -1,4 +1,4 @@
-import type { AuthResponse, CatalogReviewItem, CodeName, ImportResult, MarketInsights, MarketProfileRequest, Place, Promotion, PromotionRequest, TranslationResult, Listing, MarketStatus, MerchantMarket, MerchantOrderSettings, Order, OrderSettings, OrderStatus, PageResponse, Problem, ReviewStatus, User } from './types';
+import type { AuthResponse, CatalogReviewItem, CodeName, FeatureKey, FeatureSwitches, ImportResult, MarketInsights, MarketProfileRequest, Place, Promotion, PromotionRequest, TranslationResult, Listing, MarketStatus, MerchantMarket, MerchantOrderSettings, Order, OrderSettings, OrderStatus, PageResponse, Problem, ReviewStatus, User } from './types';
 
 export class ApiError extends Error {
   readonly status: number;
@@ -200,6 +200,9 @@ export function createApi(options: { baseUrl?: string; fetch?: Fetch; store?: Se
       send<CatalogReviewItem>(`/admin/catalog/products/${encodeURIComponent(productId)}/texts`, { method: 'PUT', body: { names, descriptions } }),
     reviewCatalogProduct: (productId: string, decision: 'PROMOTE' | 'KEEP_PRIVATE') =>
       send<CatalogReviewItem>(`/admin/catalog/products/${encodeURIComponent(productId)}/review`, { method: 'POST', body: { decision } }),
+    adminFeatures: () => send<FeatureSwitches>('/admin/features'),
+    adminSetFeature: (feature: FeatureKey, enabled: boolean) =>
+      send<FeatureSwitches>(`/admin/features/${feature}`, { method: 'PUT', body: { enabled } }),
     adminSetMarketStatus: (marketId: string, status: MarketStatus) =>
       send<MerchantMarket>(`/admin/markets/${encodeURIComponent(marketId)}/status`, { method: 'POST', body: { status } }),
   };

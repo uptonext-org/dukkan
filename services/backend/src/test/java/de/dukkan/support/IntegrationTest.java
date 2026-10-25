@@ -146,6 +146,15 @@ public abstract class IntegrationTest {
     return read(result, "$.accessToken");
   }
 
+  /** Sets a platform feature switch (as an admin would in the portal). */
+  protected void setFeature(String key, boolean enabled) {
+    jdbc.sql(
+            "INSERT INTO platform_feature (feature_key, enabled, updated_at) VALUES (?, ?, now())"
+                + " ON CONFLICT (feature_key) DO UPDATE SET enabled = EXCLUDED.enabled, updated_at = now()")
+        .params(key, enabled)
+        .update();
+  }
+
   /** Marks the account's e-mail address as confirmed (as the link in the welcome mail does). */
   protected void confirmEmail(String token) throws Exception {
     jdbc.sql("UPDATE app_user SET email_verified_at = now() WHERE id = ?").param(userId(token)).update();

@@ -4,6 +4,18 @@ import { queryKeys, useApi, type Cart, type ShoppingListRequest } from '../../..
 import { useStoreCart } from '../../cart/api/hooks';
 import type { CartUpdate } from '../model';
 
+/** What customers may use, as switched by platform admins; all off while loading. */
+export function useShoppingListSwitches(): { enabled: boolean; voice: boolean; media: boolean } {
+  const data = useShoppingListCapabilities().data;
+  // Older servers without switches: the list and voice on, photos and videos when the model is set up.
+  const enabled = data !== undefined && data.enabled !== false;
+  return {
+    enabled,
+    voice: enabled && (data.voice ?? true),
+    media: enabled && (data.media ?? data.ai),
+  };
+}
+
 export function useShoppingListCapabilities() {
   const api = useApi();
   return useQuery({

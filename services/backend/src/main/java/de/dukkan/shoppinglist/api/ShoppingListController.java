@@ -35,12 +35,19 @@ final class ShoppingListController {
     this.shoppingLists = shoppingLists;
   }
 
-  record Capabilities(boolean ai, int maxImages, int maxTextLength) {}
+  /**
+   * {@code enabled}, {@code voice} and {@code media}: what platform admins switched on;
+   * {@code ai}: whether photos and videos can be read at all (model configured).
+   */
+  record Capabilities(boolean enabled, boolean voice, boolean media, boolean ai, int maxImages, int maxTextLength) {}
 
-  /** Public: the app shows the voice, photo and video options accordingly. */
+  /** Public: the app shows the shopping list and its voice, photo and video options accordingly. */
   @GetMapping("/api/v1/shopping-list")
   Capabilities capabilities() {
-    return new Capabilities(shoppingLists.aiAvailable(), ShoppingListService.MAX_IMAGES, ShoppingListService.MAX_TEXT);
+    ShoppingListService.Switches switches = shoppingLists.switches();
+    boolean ai = shoppingLists.aiAvailable();
+    return new Capabilities(
+        switches.enabled(), switches.voice(), switches.media() && ai, ai, ShoppingListService.MAX_IMAGES, ShoppingListService.MAX_TEXT);
   }
 
   @PostMapping(path = "/api/v1/markets/{marketId}/shopping-list", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)

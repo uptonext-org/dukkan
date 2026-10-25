@@ -10,6 +10,7 @@ import de.dukkan.support.IntegrationTest;
 import de.dukkan.support.TestImages;
 import java.awt.Color;
 import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
 import org.springframework.mock.web.MockMultipartFile;
@@ -18,6 +19,12 @@ import org.springframework.test.web.servlet.request.MockMultipartHttpServletRequ
 
 /** F1 without a language model: dictated or typed lists are read by rules, photos are declined. */
 class ShoppingListIntegrationTest extends IntegrationTest {
+
+  @BeforeEach
+  void switchOn() {
+    setFeature("SHOPPING_LIST", true);
+    setFeature("SHOPPING_LIST_MEDIA", true);
+  }
 
   @Test
   void dictatedListIsMatchedToTheMarketsProductsWithPackCounts() throws Exception {
