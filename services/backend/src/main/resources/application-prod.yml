@@ -37,6 +37,14 @@ logging:
       console: ecs
 
 dukkan:
+  # Launch decisions (docs/launch/go-live.md 3.1): customers pay the market at pickup or delivery,
+  # e-mail addresses are confirmed before ordering, no language model (DUKKAN_ANTHROPIC_API_KEY
+  # empty: AI capture, translation and shopping lists from photos or videos are off).
+  platform:
+    payment: ${DUKKAN_PAYMENT:ON_SITE}
+  ai:
+    anthropic:
+      api-key: ${DUKKAN_ANTHROPIC_API_KEY:}
   features:
     # Markets wait for an admin's review (imprint, trader identity) before they appear.
     merchant-auto-approve: ${DUKKAN_MERCHANT_AUTO_APPROVE:false}
@@ -51,3 +59,4 @@ dukkan:
       # https://dukkan.de/reset-password. Required: the app scheme does not open on a computer.
       password-reset-url: ${DUKKAN_PASSWORD_RESET_URL:}
       email-verification-url: ${DUKKAN_EMAIL_VERIFICATION_URL:}
+      require-verified-email: ${DUKKAN_REQUIRE_VERIFIED_EMAIL:true}
