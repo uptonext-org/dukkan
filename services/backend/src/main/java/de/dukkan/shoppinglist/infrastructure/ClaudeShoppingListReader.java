@@ -146,7 +146,7 @@ final class ClaudeShoppingListReader implements ShoppingListReader {
                     .effort(OutputConfig.Effort.of(settings.effort()))
                     .format(JsonOutputFormat.builder().schema(JsonOutputFormat.Schema.builder().putAllAdditionalProperties(jsonValues(schema())).build()).build())
                     .build())
-            .addUserMessageOfBlockParams(content);
+            .addUserMessageOfContentBlockParams(content);
     if (settings.serverSideFallbacks()) {
       builder.putAdditionalHeader("anthropic-beta", FALLBACK_BETA).putAdditionalBodyProperty("fallbacks", JsonValue.from("default"));
     }
