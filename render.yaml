@@ -20,6 +20,7 @@ services:
     plan: starter
     dockerfilePath: ./services/backend/Dockerfile
     dockerContext: ./services/backend
+    branch: main
     autoDeploy: true
     buildFilter:
       paths: ["services/backend/**"]
