@@ -2,6 +2,7 @@ package de.dukkan.shared.error;
 
 import static org.springframework.http.MediaType.APPLICATION_PROBLEM_JSON;
 
+import de.dukkan.shared.security.SecurityEvents;
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
 import java.util.ArrayList;
@@ -66,6 +67,9 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
                 case INVALID -> HttpStatus.BAD_REQUEST;
               };
         };
+    if (ex instanceof InvalidCredentialsException) {
+      SecurityEvents.loginFailed(request.getRemoteAddr());
+    }
     if (ex instanceof InvalidRequestException invalid) {
       ProblemDetail problem =
           Problems.of(HttpStatus.BAD_REQUEST, ErrorCodes.VALIDATION_FAILED, "The request failed validation.", request.getRequestURI());
@@ -75,6 +79,7 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
       return ResponseEntity.status(status).contentType(APPLICATION_PROBLEM_JSON).body(problem);
     }
     if (ex instanceof RateLimitedException limited) {
+      SecurityEvents.rateLimited(ex.getMessage(), request.getRemoteAddr(), request.getRequestURI());
       return ResponseEntity.status(status)
           .header(HttpHeaders.RETRY_AFTER, Long.toString(limited.retryAfterSeconds()))
           .contentType(APPLICATION_PROBLEM_JSON)
@@ -106,7 +111,8 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
   @ExceptionHandler(DataIntegrityViolationException.class)
   ResponseEntity<ProblemDetail> handleIntegrity(DataIntegrityViolationException ex, HttpServletRequest request) {
-    LOG.info("Data integrity violation", ex);
+    // The class only: the database's message quotes the conflicting values (e-mail addresses).
+    LOG.info("Data integrity violation: {}", ex.getMostSpecificCause().getClass().getSimpleName());
     return problem(HttpStatus.CONFLICT, ErrorCodes.CONFLICT, "The request conflicts with existing data.", request);
   }
 

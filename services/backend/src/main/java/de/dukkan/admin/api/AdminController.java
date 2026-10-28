@@ -8,6 +8,7 @@ import de.dukkan.market.application.MarketService;
 import de.dukkan.market.application.MerchantMarket;
 import de.dukkan.shared.api.PageResponse;
 import de.dukkan.shared.security.CurrentUser;
+import de.dukkan.shared.security.SecurityEvents;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -58,7 +59,9 @@ final class AdminController {
   @PutMapping("/features/{feature}")
   Map<Feature, Boolean> setFeature(
       @CurrentSecurityContext SecurityContext security, @PathVariable Feature feature, @RequestBody @Valid FeatureRequest request) {
-    return features.set(feature, request.enabled(), CurrentUser.id(security));
+    UUID admin = CurrentUser.id(security);
+    SecurityEvents.adminAction(admin.toString(), "feature_" + (request.enabled() ? "on" : "off"), feature.name());
+    return features.set(feature, request.enabled(), admin);
   }
 
   @GetMapping("/markets")
@@ -70,9 +73,11 @@ final class AdminController {
 
   @PostMapping("/markets/{marketId}/status")
   MerchantMarket setStatus(
+      @CurrentSecurityContext SecurityContext security,
       @PathVariable UUID marketId,
       @RequestBody @Valid MarketStatusRequest request,
       @RequestAttribute(ContentLocale.REQUEST_ATTRIBUTE) ContentLocale locale) {
+    SecurityEvents.adminAction(CurrentUser.id(security).toString(), "market_" + request.status(), marketId.toString());
     return markets.setStatus(marketId, request.status(), locale);
   }
 
@@ -89,17 +94,21 @@ final class AdminController {
 
   @PutMapping("/catalog/products/{productId}/texts")
   CatalogModerationService.Item updateTexts(
+      @CurrentSecurityContext SecurityContext security,
       @PathVariable UUID productId,
       @RequestBody @Valid ProductTextsRequest request,
       @RequestAttribute(ContentLocale.REQUEST_ATTRIBUTE) ContentLocale locale) {
+    SecurityEvents.adminAction(CurrentUser.id(security).toString(), "catalog_texts", productId.toString());
     return moderation.updateTexts(productId, request.names(), request.descriptions() == null ? Map.of() : request.descriptions(), locale);
   }
 
   @PostMapping("/catalog/products/{productId}/review")
   CatalogModerationService.Item review(
+      @CurrentSecurityContext SecurityContext security,
       @PathVariable UUID productId,
       @RequestBody @Valid ReviewRequest request,
       @RequestAttribute(ContentLocale.REQUEST_ATTRIBUTE) ContentLocale locale) {
+    SecurityEvents.adminAction(CurrentUser.id(security).toString(), "catalog_" + request.decision(), productId.toString());
     return moderation.decide(productId, request.decision(), locale);
   }
 

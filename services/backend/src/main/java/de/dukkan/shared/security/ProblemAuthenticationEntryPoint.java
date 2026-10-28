@@ -7,11 +7,13 @@ import de.dukkan.shared.error.Problems;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.stereotype.Component;
@@ -39,6 +41,11 @@ public final class ProblemAuthenticationEntryPoint implements AuthenticationEntr
   public void handle(
       HttpServletRequest request, HttpServletResponse response, AccessDeniedException accessDeniedException)
       throws IOException {
+    SecurityEvents.accessDenied(
+        CurrentUser.optionalId(SecurityContextHolder.getContext()).map(UUID::toString).orElse(null),
+        request.getRemoteAddr(),
+        request.getMethod(),
+        request.getRequestURI());
     write(request, response, HttpStatus.FORBIDDEN, ErrorCodes.FORBIDDEN, "Access is denied.");
   }
 

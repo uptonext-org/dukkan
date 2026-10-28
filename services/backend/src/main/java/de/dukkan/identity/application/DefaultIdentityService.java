@@ -19,6 +19,7 @@ import de.dukkan.shared.error.RateLimitedException;
 import de.dukkan.shared.error.UnauthorizedException;
 import de.dukkan.shared.ratelimit.FixedWindowRateLimiter;
 import de.dukkan.shared.ratelimit.RateLimitStore;
+import de.dukkan.shared.security.SecurityEvents;
 import java.net.URLEncoder;
 import java.time.Clock;
 import java.time.Duration;
@@ -136,7 +137,7 @@ class DefaultIdentityService implements IdentityService {
     if (row.revokedAt() != null) {
       // A rotated token came back: someone else holds the newer one. End the whole sign-in.
       int revoked = sessions.revokeFamily(row.familyId(), now);
-      LOG.warn("Refresh token reuse for user {}; revoked {} token(s) of the sign-in", row.userId(), revoked);
+      SecurityEvents.refreshTokenReused(row.userId().toString(), revoked);
       throw invalidRefresh();
     }
     if (!row.expiresAt().isAfter(now)) {
@@ -288,6 +289,7 @@ class DefaultIdentityService implements IdentityService {
   public UserView grantRole(UUID userId, String role) {
     User user = user(userId);
     user.grantRole(Role.valueOf(role));
+    SecurityEvents.roleGranted(userId.toString(), role);
     return view(user);
   }
 
@@ -376,7 +378,7 @@ class DefaultIdentityService implements IdentityService {
     User user = user(userId);
     user.anonymize("deleted-" + userId + "@deleted.invalid", passwordEncoder.encode(OpaqueTokens.generate()), clock.instant());
     sessions.deleteAllForUser(userId);
-    LOG.info("Account {} deleted (anonymised)", userId);
+    SecurityEvents.accountDeleted(userId.toString());
   }
 
   @Override
