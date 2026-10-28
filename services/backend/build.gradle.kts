@@ -28,8 +28,12 @@ dependencyLocking {
 }
 
 dependencies {
-    // Spring Boot's BOM manages every transitive version; nothing below overrides it.
+    // Spring Boot's BOM manages every transitive version; only the security fixes below are newer.
     implementation(platform(libs.spring.boot.bom))
+    implementation(platform(libs.jackson2.bom))
+    constraints {
+        implementation(libs.amqp.client)
+    }
     testImplementation(platform(libs.spring.boot.bom))
     testRuntimeOnly(platform(libs.spring.boot.bom))
     developmentOnly(platform(libs.spring.boot.bom))
