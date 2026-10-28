@@ -68,7 +68,7 @@ Die Prüfung im App Store dauert erfahrungsgemäß Tage, die Freischaltung neuer
 ### 3.2 Recht und Verträge
 
 - [ ] **Firma und Gewerbe:** Wer betreibt Dukkan (GmbH, UG, Einzelunternehmen)? Das steht im Impressum.
-- [ ] **Impressum** (§ 5 DDG), **Datenschutzerklärung**, **AGB für Kundinnen und Kunden**,
+- [ ] **Impressum** (§ 5 DDG), **Datenschutzerklärung**, **AGB für Kundinnen und Kunden** (Entwürfe: `docs/legal/`),
       **Händler-AGB** (inkl. Pflichten nach P2B-Verordnung und DSA: Ranking-Kriterien, Beschwerdeweg,
       Identität der Händler). Als Seiten auf deiner Domain veröffentlichen und die Adressen in
       `DUKKAN_IMPRINT_URL`, `DUKKAN_PRIVACY_URL` und `DUKKAN_TERMS_URL` eintragen; `DUKKAN_TERMS_VERSION`
