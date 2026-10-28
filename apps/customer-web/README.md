@@ -58,5 +58,8 @@ proxy in front (`infrastructure/production`). Runtime settings, one image for al
 | `DUKKAN_MAP_ATTRIBUTION` | OpenStreetMap credit | Credit line required by the tile provider |
 | `DUKKAN_CSP_CONNECT_SRC` | `'self'` | |
 
+Static hosting without the container (e.g. Hostinger, root directory `apps/customer-web`, output
+`dist`): `npm run build:hostinger` installs `apps/mobile` first, then builds.
+
 The container runs with a read-only root file system if `/tmp` is writable (tmpfs/emptyDir);
 CI checks that.
