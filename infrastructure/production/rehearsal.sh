@@ -7,7 +7,8 @@
 #    2. first admin: register, confirm the mail, restart with DUKKAN_BOOTSTRAP_ADMIN_EMAIL
 #    3. start catalog: docs/launch/start-katalog.csv, preview then import
 #    4. merchant: register, confirm, open a market, admin approves, list a catalog product
-#    5. customer: register, confirm, cart, pickup slot, order, confirmation mail
+#    5. customer: register, confirm, cart, pickup slot, order, confirmation mail; the market
+#       accepts, packs and hands it over
 #    6. data export (Art. 15/20)
 #    7. backup: dump with restore test, encrypted offsite snapshot
 #    8. account deletion after the backup, restore from offsite: the order is back, the deleted
@@ -229,6 +230,11 @@ expect 201
 wait_mail "$customer" "Probemarkt" || fail "no order confirmation mail"
 api GET "/merchant/markets/$market_id/orders" "$merchant_token" | jq -e --arg o "$order" 'tostring|contains($o)' >/dev/null \
   || fail "merchant does not see the order"
+# The market accepts, packs and hands over; only then may the customer delete the account.
+for status in ACCEPTED READY_FOR_PICKUP COMPLETED; do
+  api POST "/merchant/orders/$order/status" "$merchant_token" "{\"status\":\"$status\"}" >/dev/null
+  expect 200
+done
 echo "ok: order $order"
 
 step "6. Data export"
