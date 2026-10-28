@@ -211,6 +211,28 @@ describe('own details of a catalog product', () => {
   });
 });
 
+describe('alcohol and tobacco hint', () => {
+  it('marks a listing whose name looks like alcohol or tobacco', async () => {
+    const base = { unitSize: '70 cl', price: { amountCents: 1999, currency: 'EUR' }, available: true, maxOrderQuantity: 24, privateProduct: true };
+    const { user } = renderPortal({
+      'GET /merchant/markets': [market()],
+      'GET /merchant/markets/m1/orders': [],
+      'GET /merchant/markets/m1/listings': {
+        items: [
+          { ...base, id: 'l1', name: 'Yeni Rakı', restrictedGoodsHint: true },
+          { ...base, id: 'l2', name: 'Ayran', restrictedGoodsHint: false },
+        ],
+        page: 0,
+        size: 50,
+        totalItems: 2,
+        totalPages: 1,
+      },
+    });
+    await user.click(await screen.findByRole('button', { name: 'Sortiment' }));
+    expect(await screen.findAllByText(/Alkohol oder Tabak\?/)).toHaveLength(1);
+  });
+});
+
 describe('customer feedback', () => {
   it('switches feedback on and shows the messages with first name and rating', async () => {
     let enabled = false;
@@ -500,6 +522,7 @@ describe('admin catalog review', () => {
       en: { name: 'Quince jam', description: null, machineTranslated: true },
     },
     duplicates: [{ id: 'p9', name: 'Quittengelee', unitSize: '250 g', barcode: '4000000000001' }],
+    restrictedGoodsHint: false,
   };
 
   it('corrects a machine translation, then promotes the product', async () => {

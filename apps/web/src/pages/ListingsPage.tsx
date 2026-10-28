@@ -148,6 +148,11 @@ function ListingRow({ marketId, listing }: { marketId: string; listing: Listing 
       <th scope="row">
         {label}
         {listing.privateProduct && <div className="muted small">{t('listings.own')}</div>}
+        {listing.restrictedGoodsHint && (
+          <div className="badge SUSPENDED small" role="note">
+            {t('listings.restricted')}
+          </div>
+        )}
         {!listing.privateProduct && <OwnDetails marketId={marketId} listing={listing} />}
       </th>
       <td>

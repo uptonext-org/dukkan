@@ -693,7 +693,9 @@ public class CatalogService {
   }
 
   private static Listing listing(ListingRow row, ProductSummary summary) {
-    return new Listing(summary, row.ownerMarketId() != null, row.overrides().isEmpty() ? null : row.overrides());
+    ListingOverrides overrides = row.overrides();
+    boolean restricted = RestrictedGoods.suspected(summary.name(), summary.brand(), overrides.name(), overrides.brand());
+    return new Listing(summary, row.ownerMarketId() != null, overrides.isEmpty() ? null : overrides, restricted);
   }
 
   /** The own name and brand are searchable in this market like catalog names. */
