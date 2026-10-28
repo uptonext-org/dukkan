@@ -1,5 +1,5 @@
 [versions]
-spring-boot = "4.1.1"
+spring-boot = "4.1.2"
 springdoc = "3.1.1"
 errorprone-plugin = "5.1.1"
 errorprone = "2.50.0"
@@ -7,8 +7,13 @@ errorprone-support = "0.30.0"
 archunit = "1.5.1"
 anthropic = "3.0.0"
 awssdk = "2.57.1"
+# Security fixes ahead of the Spring Boot BOM (trivy, Dependabot); remove each once the BOM has it.
+jackson2 = "2.22.4"
+amqp-client = "5.34.0"
 
 [libraries]
+jackson2-bom = { module = "com.fasterxml.jackson:jackson-bom", version.ref = "jackson2" }
+amqp-client = { module = "com.rabbitmq:amqp-client", version.ref = "amqp-client" }
 spring-boot-bom = { module = "org.springframework.boot:spring-boot-dependencies", version.ref = "spring-boot" }
 spring-boot-starter-webmvc = { module = "org.springframework.boot:spring-boot-starter-webmvc" }
 spring-boot-starter-data-jpa = { module = "org.springframework.boot:spring-boot-starter-data-jpa" }
