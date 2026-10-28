@@ -1,0 +1,25 @@
+# Dress rehearsal (rehearsal.sh): the production stack on one machine, without real domains, mail or
+# offsite storage. Only the differences to compose.yaml are here:
+#   - Caddy serves localhost and portal.localhost with its own CA instead of Let's Encrypt,
+#   - mails go to Mailpit (web UI and API on 127.0.0.1:8025) instead of a relay,
+#   - restic writes to a local volume instead of S3.
+# Never on the server: rehearsal.sh copies this directory to a scratch folder and runs there.
+services:
+  backend:
+    environment:
+      # Mailpit speaks plain SMTP without login; production keeps STARTTLS and auth required.
+      SPRING_APPLICATION_JSON: '{"spring":{"mail":{"properties":{"mail.smtp.auth":false,"mail.smtp.starttls.enable":false,"mail.smtp.starttls.required":false}}}}'
+    depends_on:
+      mailpit:
+        condition: service_started
+
+  mailpit:
+    image: axllent/mailpit:v1.21.8
+    ports: ["127.0.0.1:8025:8025"]
+
+  offsite:
+    volumes:
+      - restic-repo:/repo
+
+volumes:
+  restic-repo:

@@ -146,7 +146,12 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: Lint the scripts
-        run: shellcheck -s sh backup.sh offsite-backup.sh restore.sh
+        run: shellcheck -s sh backup.sh offsite-backup.sh restore.sh check-env.sh rehearsal.sh
+      - name: The .env check rejects the unfilled example
+        run: |
+          cp .env.example .env && chmod 600 .env
+          if sh check-env.sh > check.log; then cat check.log; echo "the example passed"; exit 1; fi
+          grep -q "PROBLEM  DUKKAN_VERSION" check.log
       - name: Dump, restore test, encrypted offsite snapshot, restore from it
         run: |
           set -eu
@@ -179,6 +184,30 @@ jobs:
           docker run --rm --network drill $pg -v "$RUNNER_TEMP/out:/out:ro" postgres:18.6 pg_restore --no-owner -d drill_restore /out/backups/latest.dump
           test "$(docker exec postgres psql -U dukkan -d drill_restore -tAc 'select count(*) from app_user')" = 42
           test -f "$RUNNER_TEMP/out/data/media/a.jpg"
+
+  rehearsal:
+    name: Production dress rehearsal (release images, compose, Caddy, backup, restore)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build the release images
+        run: |
+          docker build -t rehearsal/dukkan-backend:ci services/backend
+          docker build -t rehearsal/dukkan-web:ci -f apps/customer-web/Dockerfile .
+          docker build -t rehearsal/dukkan-portal:ci apps/web
+      - name: No known critical vulnerability with a fix in the images (high ones are listed)
+        run: |
+          for image in dukkan-backend dukkan-web dukkan-portal; do
+            docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v trivy-cache:/root/.cache aquasec/trivy:0.58.0 \
+              image -q --scanners vuln --ignore-unfixed --severity HIGH,CRITICAL "rehearsal/$image:ci"
+            docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v trivy-cache:/root/.cache aquasec/trivy:0.58.0 \
+              image -q --scanners vuln --ignore-unfixed --severity CRITICAL --exit-code 1 "rehearsal/$image:ci"
+          done
+      - name: Rehearse launch day (infrastructure/production/rehearsal.sh)
+        env:
+          DUKKAN_IMAGE_PREFIX: rehearsal
+          DUKKAN_VERSION: ci
+        run: sh infrastructure/production/rehearsal.sh
 
   e2e-api:
     name: End-to-end API (app client against the real backend)
