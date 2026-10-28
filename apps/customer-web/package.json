@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "build": "vite build",
+    "prebuild": "node scripts/install-app.mjs",
     "preview": "vite preview --port 5175 --strictPort",
     "dev": "vite build && vite preview --port 5175 --strictPort",
     "typecheck": "tsc --noEmit",
