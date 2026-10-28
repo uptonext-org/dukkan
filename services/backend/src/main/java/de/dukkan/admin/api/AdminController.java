@@ -14,6 +14,7 @@ import de.dukkan.merchant.application.ListingCsv;
 import de.dukkan.shared.api.PageResponse;
 import de.dukkan.shared.error.InvalidRequestException;
 import de.dukkan.shared.security.CurrentUser;
+import de.dukkan.shared.security.SecurityEvents;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -72,7 +73,9 @@ final class AdminController {
   @PutMapping("/features/{feature}")
   Map<Feature, Boolean> setFeature(
       @CurrentSecurityContext SecurityContext security, @PathVariable Feature feature, @RequestBody @Valid FeatureRequest request) {
-    return features.set(feature, request.enabled(), CurrentUser.id(security));
+    UUID admin = CurrentUser.id(security);
+    SecurityEvents.adminAction(admin.toString(), "feature_" + (request.enabled() ? "on" : "off"), feature.name());
+    return features.set(feature, request.enabled(), admin);
   }
 
   @GetMapping("/markets")
@@ -84,9 +87,11 @@ final class AdminController {
 
   @PostMapping("/markets/{marketId}/status")
   MerchantMarket setStatus(
+      @CurrentSecurityContext SecurityContext security,
       @PathVariable UUID marketId,
       @RequestBody @Valid MarketStatusRequest request,
       @RequestAttribute(ContentLocale.REQUEST_ATTRIBUTE) ContentLocale locale) {
+    SecurityEvents.adminAction(CurrentUser.id(security).toString(), "market_" + request.status(), marketId.toString());
     return markets.setStatus(marketId, request.status(), locale);
   }
 
@@ -103,17 +108,21 @@ final class AdminController {
 
   @PutMapping("/catalog/products/{productId}/texts")
   CatalogModerationService.Item updateTexts(
+      @CurrentSecurityContext SecurityContext security,
       @PathVariable UUID productId,
       @RequestBody @Valid ProductTextsRequest request,
       @RequestAttribute(ContentLocale.REQUEST_ATTRIBUTE) ContentLocale locale) {
+    SecurityEvents.adminAction(CurrentUser.id(security).toString(), "catalog_texts", productId.toString());
     return moderation.updateTexts(productId, request.names(), request.descriptions() == null ? Map.of() : request.descriptions(), locale);
   }
 
   @PostMapping("/catalog/products/{productId}/review")
   CatalogModerationService.Item review(
+      @CurrentSecurityContext SecurityContext security,
       @PathVariable UUID productId,
       @RequestBody @Valid ReviewRequest request,
       @RequestAttribute(ContentLocale.REQUEST_ATTRIBUTE) ContentLocale locale) {
+    SecurityEvents.adminAction(CurrentUser.id(security).toString(), "catalog_" + request.decision(), productId.toString());
     return moderation.decide(productId, request.decision(), locale);
   }
 
@@ -122,12 +131,18 @@ final class AdminController {
    * by default. See {@link CatalogService#importShared}.
    */
   @PostMapping(path = "/catalog/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-  CatalogImport.Result importCatalog(@RequestPart("file") MultipartFile file, @RequestParam(defaultValue = "true") boolean dryRun) throws IOException {
+  CatalogImport.Result importCatalog(
+      @CurrentSecurityContext SecurityContext security, @RequestPart("file") MultipartFile file, @RequestParam(defaultValue = "true") boolean dryRun)
+      throws IOException {
     if (file.getSize() > ListingCsv.MAX_BYTES) {
       throw new InvalidRequestException("file", "Size", "the file may have at most 1 MB");
     }
     List<String> codes = locales.enabled().stream().map(SupportedLocale::code).toList();
-    return catalog.importShared(ListingCsv.parseCatalog(file.getBytes(), codes), dryRun);
+    CatalogImport.Result result = catalog.importShared(ListingCsv.parseCatalog(file.getBytes(), codes), dryRun);
+    if (result.applied()) {
+      SecurityEvents.adminAction(CurrentUser.id(security).toString(), "catalog_import", result.created() + " products");
+    }
+    return result;
   }
 
   record ProductTextsRequest(

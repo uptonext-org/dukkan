@@ -49,6 +49,7 @@ Die Prüfung im App Store dauert erfahrungsgemäß Tage, die Freischaltung neuer
 | Release-Signierung, Version und API-Adresse für Store-Builds | `android/app/build.gradle`, `npm run release:api` |
 | Android: Bestätigungslink aus der Willkommensmail öffnet die App (fehlte vorher) | `AndroidManifest.xml` |
 | iOS-Datenschutz-Manifest um E-Mail, Name, Telefon, Adresse und Bestellungen ergänzt | `PrivacyInfo.xcprivacy` |
+| Anforderungsliste (DSGVO, Sicherheit 1–20) mit Belegen und offenen Punkten | `docs/launch/anforderungen.md` |
 | Schon vorher vorhanden: Datenexport und Kontolöschung (Art. 15/17/20 DSGVO), Rate-Limits, Passwort-Reset, E-Mail-Bestätigung, strukturierte Logs, Prometheus-Metriken | B-51, B-53, B-39 |
 
 ## 3. Was du tun musst

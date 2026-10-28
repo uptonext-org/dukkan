@@ -3,6 +3,7 @@ package de.dukkan.shared.web;
 import de.dukkan.shared.config.DukkanProperties;
 import de.dukkan.shared.error.ErrorCodes;
 import de.dukkan.shared.ratelimit.RateLimitStore;
+import de.dukkan.shared.security.SecurityEvents;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -85,6 +86,7 @@ public final class AuthRateLimitFilter extends OncePerRequestFilter {
         store.increment(
             "auth-" + rule.name(), request.getRemoteAddr(), Instant.ofEpochSecond(start), Instant.ofEpochSecond(start + length));
     if (count > limit) {
+      SecurityEvents.rateLimited("auth-" + rule.name(), request.getRemoteAddr(), endpoint(request));
       long retryAfter = Math.max(1, start + length - now);
       response.setStatus(429);
       response.setHeader("Retry-After", Long.toString(retryAfter));
