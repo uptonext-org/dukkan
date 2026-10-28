@@ -893,3 +893,36 @@ describe('admin features', () => {
     expect(screen.queryByText(/Wirkt erst, wenn die Einkaufsliste an ist/)).toBeNull();
   });
 });
+
+describe('admin catalog import', () => {
+  it('checks a catalog file, then imports only the new products', async () => {
+    const preview = {
+      dryRun: true,
+      applied: false,
+      created: 1,
+      existing: 1,
+      failed: 0,
+      rows: [
+        { line: 2, action: 'CREATE', name: 'Tomaten', productId: null, errors: [] },
+        { line: 3, action: 'EXISTS', name: 'Ayran', productId: 'p1', errors: [] },
+      ],
+    };
+    const { user, calls } = renderPortal(
+      {
+        'GET /admin/markets?status=PENDING_REVIEW': [],
+        'GET /admin/catalog/products?status=PENDING&page=0&size=20': { items: [], page: 0, size: 20, totalItems: 0, totalPages: 0 },
+        'POST /admin/catalog/import?dryRun=true': preview,
+        'POST /admin/catalog/import?dryRun=false': { ...preview, dryRun: false, applied: true },
+      },
+      { accessToken: 'a', refreshToken: 'r', user: adminUser },
+    );
+    await user.click(await screen.findByRole('button', { name: 'Katalogprüfung' }));
+    await user.click(await screen.findByText('Gemeinsamen Katalog per CSV füllen'));
+    await user.upload(screen.getByLabelText('CSV-Datei'), new File(['name_de;unit_size;category\nTomaten;1 kg;fruit-veg\n'], 'start-katalog.csv', { type: 'text/csv' }));
+    await user.click(screen.getByRole('button', { name: 'Datei prüfen' }));
+    expect(await screen.findByText('1 neu · 1 schon vorhanden · 0 mit Fehlern')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '1 Produkt übernehmen' }));
+    expect(await screen.findByRole('status')).toHaveTextContent('1 Produkt im Katalog angelegt.');
+    expect(calls.find((c) => c.path.endsWith('dryRun=false'))?.body).toBeInstanceOf(FormData);
+  });
+});

@@ -1,0 +1,135 @@
+name_de;name_en;name_ar;unit_size;category;cuisines;keywords;allergens
+Tomaten;Tomatoes;طماطم;1 kg;fruit-veg;;domates;
+Gurken;Cucumbers;خيار;1 kg;fruit-veg;;salatalık|mini gurken;
+Paprika rot;Red peppers;فلفل أحمر;500 g;fruit-veg;;biber;
+Spitzpaprika;Pointed peppers;فلفل حلو طويل;500 g;fruit-veg;TURKISH;sivri biber;
+Peperoni grün;Green chili peppers;فلفل أخضر حار;250 g;fruit-veg;TURKISH|ARABIC;acı biber|chili;
+Auberginen;Aubergines;باذنجان;1 kg;fruit-veg;;patlıcan|eggplant;
+Zucchini;Courgettes;كوسا;1 kg;fruit-veg;;kabak|zucchini;
+Zwiebeln;Onions;بصل;2 kg;fruit-veg;;soğan;
+Rote Zwiebeln;Red onions;بصل أحمر;1 kg;fruit-veg;;kırmızı soğan;
+Knoblauch;Garlic;ثوم;250 g;fruit-veg;;sarımsak;
+Kartoffeln festkochend;Waxy potatoes;بطاطا;2,5 kg;fruit-veg;;patates;
+Süßkartoffeln;Sweet potatoes;بطاطا حلوة;1 kg;fruit-veg;;tatlı patates;
+Karotten;Carrots;جزر;1 kg;fruit-veg;;havuç|möhren;
+Blumenkohl;Cauliflower;قرنبيط;1 Stück;fruit-veg;;karnabahar;
+Weißkohl;White cabbage;ملفوف;1 Stück;fruit-veg;;lahana;
+Eisbergsalat;Iceberg lettuce;خس;1 Stück;fruit-veg;;marul;
+Römersalat;Romaine lettuce;خس روماني;1 Stück;fruit-veg;;göbek marul;
+Petersilie glatt;Flat-leaf parsley;بقدونس;1 Bund;fruit-veg;;maydanoz;
+Koriander frisch;Fresh coriander;كزبرة خضراء;1 Bund;fruit-veg;;kişniş|cilantro;
+Minze frisch;Fresh mint;نعناع;1 Bund;fruit-veg;;nane;
+Dill frisch;Fresh dill;شبت;1 Bund;fruit-veg;;dereotu;
+Frühlingszwiebeln;Spring onions;بصل أخضر;1 Bund;fruit-veg;;yeşil soğan;
+Okraschoten;Okra;بامية;500 g;fruit-veg;ARABIC|TURKISH;bamya;
+Zitronen;Lemons;ليمون;1 kg;fruit-veg;;limon;
+Limetten;Limes;ليمون أخضر;500 g;fruit-veg;;misket limonu;
+Äpfel;Apples;تفاح;1 kg;fruit-veg;;elma;
+Bananen;Bananas;موز;1 kg;fruit-veg;;muz;
+Orangen;Oranges;برتقال;2 kg;fruit-veg;;portakal;
+Mandarinen;Mandarins;يوسفي;1 kg;fruit-veg;;mandalina;
+Weintrauben hell;White grapes;عنب أبيض;500 g;fruit-veg;;üzüm;
+Granatäpfel;Pomegranates;رمان;1 Stück;fruit-veg;;nar;
+Wassermelone;Watermelon;بطيخ;1 Stück;fruit-veg;;karpuz;
+Avocado;Avocado;أفوكادو;1 Stück;fruit-veg;;;
+Mango;Mango;مانجو;1 Stück;fruit-veg;;;
+Fladenbrot;Flatbread;خبز تركي;1 Stück;bakery;TURKISH;pide|ekmek;gluten
+Arabisches Brot;Arabic flatbread;خبز عربي;6 Stück;bakery;ARABIC;khubz|pita;gluten
+Lavash-Brot;Lavash bread;خبز لواش;10 Stück;bakery;TURKISH|PERSIAN;lavaş;gluten
+Simit;Simit sesame ring;سميط;1 Stück;bakery;TURKISH;;gluten|sesame
+Yufka-Teigblätter;Yufka pastry sheets;رقائق عجين يوفكا;500 g;bakery;TURKISH;yufka|börek;gluten
+Toastbrot;Toast bread;خبز توست;500 g;bakery;;tost ekmeği;gluten
+Baguette;Baguette;خبز فرنسي;1 Stück;bakery;;;gluten
+Vollkornbrot;Wholegrain bread;خبز أسمر;500 g;bakery;GERMAN;;gluten
+Rinderhackfleisch;Minced beef;لحم بقر مفروم;500 g;meat;;kıyma|helal;
+Lammfleisch Keule;Lamb leg;فخذ خروف;1 kg;meat;;kuzu|helal;
+Hähnchenbrustfilet;Chicken breast fillet;صدر دجاج;1 kg;meat;;tavuk göğsü|helal;
+Hähnchenschenkel;Chicken thighs;أفخاذ دجاج;1 kg;meat;;tavuk but|helal;
+Ganzes Hähnchen;Whole chicken;دجاجة كاملة;1 Stück;meat;;bütün tavuk|helal;
+Rindergulasch;Beef goulash meat;لحم بقر مكعبات;500 g;meat;;kuşbaşı|helal;
+Sucuk Knoblauchwurst;Sucuk garlic sausage;سجق;250 g;meat;TURKISH;sucuk|helal;
+Pastırma;Pastirma;بسطرمة;100 g;meat;TURKISH|ARABIC;pastırma|basterma|helal;
+Vollmilch 3,5 %;Whole milk 3.5%;حليب كامل الدسم;1 l;dairy;;süt;milk
+Ayran;Ayran yoghurt drink;عيران;250 ml;dairy;TURKISH;;milk
+Joghurt 3,5 %;Yoghurt 3.5%;لبن زبادي;1 kg;dairy;;yoğurt;milk
+Süzme Joghurt 10 %;Strained yoghurt 10%;لبنة مصفاة;1 kg;dairy;TURKISH;süzme yoğurt;milk
+Labneh;Labneh;لبنة;400 g;dairy;ARABIC;labne;milk
+Weißkäse Schafskäse;Sheep's cheese in brine;جبنة بيضاء غنم;400 g;dairy;TURKISH|BALKAN;beyaz peynir|feta;milk
+Weißkäse Kuhmilch;White cheese (cow's milk);جبنة بيضاء;800 g;dairy;TURKISH|ARABIC;beyaz peynir;milk
+Halloumi;Halloumi;جبنة حلوم;250 g;dairy;ARABIC;hellim;milk
+Kaşar Käse;Kashkaval cheese;جبنة قشقوان;400 g;dairy;TURKISH;kaşar;milk
+Akkawi Käse;Akkawi cheese;جبنة عكاوي;400 g;dairy;ARABIC;akkawi;milk
+Butter;Butter;زبدة;250 g;dairy;;tereyağı;milk
+Kaymak;Clotted cream (kaymak);قيمر;100 g;dairy;TURKISH|ARABIC;kaymak|qashta;milk
+Eier Freiland Größe M;Free-range eggs size M;بيض;10 Stück;dairy;;yumurta;eggs
+Basmatireis;Basmati rice;أرز بسمتي;1 kg;grains;INDIAN|ARABIC|PERSIAN;pirinç;
+Rundkornreis;Short-grain rice;أرز حبة قصيرة;1 kg;grains;TURKISH|ARABIC;baldo|osmancık;
+Bulgur fein;Fine bulgur;برغل ناعم;1 kg;grains;TURKISH|ARABIC;köftelik bulgur|burghul;gluten
+Bulgur grob;Coarse bulgur;برغل خشن;1 kg;grains;TURKISH|ARABIC;pilavlık bulgur|burghul;gluten
+Rote Linsen;Red lentils;عدس أحمر;1 kg;grains;;kırmızı mercimek;
+Grüne Linsen;Green lentils;عدس أخضر;1 kg;grains;;yeşil mercimek;
+Kichererbsen getrocknet;Dried chickpeas;حمص حب;1 kg;grains;;nohut;
+Kichererbsen gekocht;Cooked chickpeas;حمص مسلوق;400 g;grains;;nohut konserve;
+Weiße Bohnen getrocknet;Dried white beans;فاصوليا بيضاء;1 kg;grains;;kuru fasulye;
+Ful Bohnen gekocht;Cooked fava beans;فول مدمس;400 g;grains;ARABIC;foul medames;
+Freekeh;Freekeh;فريكة;1 kg;grains;ARABIC;firik;gluten
+Couscous;Couscous;كسكس;1 kg;grains;AFRICAN|ARABIC;kuskus;gluten
+Weizengrieß;Semolina;سميد;1 kg;grains;;irmik;gluten
+Weizenmehl Type 405;Wheat flour type 405;طحين قمح;1 kg;grains;;un;gluten
+Spaghetti;Spaghetti;سباغيتي;500 g;pasta;ITALIAN;makarna;gluten
+Penne;Penne;معكرونة بيني;500 g;pasta;ITALIAN;makarna;gluten
+Fadennudeln;Vermicelli;شعيرية;500 g;pasta;TURKISH|ARABIC;şehriye;gluten
+Arpa Nudeln;Orzo;لسان العصفور;500 g;pasta;TURKISH;arpa şehriye;gluten
+Pul Biber;Turkish chili flakes;فلفل أحمر مجروش;200 g;spices;TURKISH;pul biber|chili flocken;
+Kreuzkümmel gemahlen;Ground cumin;كمون مطحون;100 g;spices;;kimyon;
+Sumach;Sumac;سماق;100 g;spices;ARABIC|TURKISH;sumak;
+Za'atar;Za'atar;زعتر;200 g;spices;ARABIC;zahter;sesame
+Baharat Gewürzmischung;Baharat spice mix;بهارات مشكلة;100 g;spices;ARABIC;;
+Kurkuma gemahlen;Ground turmeric;كركم;100 g;spices;INDIAN|ARABIC;zerdeçal;
+Zimt gemahlen;Ground cinnamon;قرفة مطحونة;100 g;spices;;tarçın;
+Kardamom grün;Green cardamom;هيل;50 g;spices;ARABIC|INDIAN;kakule;
+Schwarzer Pfeffer gemahlen;Ground black pepper;فلفل أسود;100 g;spices;;karabiber;
+Paprikapulver edelsüß;Sweet paprika;بابريكا;100 g;spices;;tatlı toz biber;
+Getrocknete Minze;Dried mint;نعناع مجفف;50 g;spices;TURKISH|ARABIC;kuru nane;
+Olivenöl nativ extra;Extra virgin olive oil;زيت زيتون بكر ممتاز;1 l;spices;;zeytinyağı;
+Sonnenblumenöl;Sunflower oil;زيت دوار الشمس;1 l;spices;;ayçiçek yağı;
+Tomatenmark;Tomato paste;معجون طماطم;700 g;spices;TURKISH;domates salçası;
+Paprikamark mild;Mild pepper paste;معجون فلفل;700 g;spices;TURKISH;biber salçası tatlı;
+Paprikamark scharf;Hot pepper paste;معجون فلفل حار;700 g;spices;TURKISH;biber salçası acı;
+Granatapfelsirup;Pomegranate molasses;دبس رمان;330 ml;spices;ARABIC|TURKISH;nar ekşisi;
+Tahin;Tahini;طحينة;300 g;spices;ARABIC|TURKISH;tahin|tahina;sesame
+Zitronensaft;Lemon juice;عصير ليمون;500 ml;spices;;limon suyu;
+Salz jodiert;Iodised salt;ملح;500 g;spices;;tuz;
+Schwarze Oliven;Black olives;زيتون أسود;500 g;deli;TURKISH|ARABIC;siyah zeytin;
+Grüne Oliven;Green olives;زيتون أخضر;500 g;deli;TURKISH|ARABIC;yeşil zeytin;
+Weinblätter eingelegt;Pickled vine leaves;ورق عنب;500 g;deli;TURKISH|ARABIC;asma yaprağı|sarma;
+Gefüllte Weinblätter;Stuffed vine leaves;ورق عنب محشي;400 g;deli;TURKISH|ARABIC;yaprak sarma|dolma;
+Eingelegte Gurken;Pickled cucumbers;خيار مخلل;700 g;deli;;turşu;
+Mixed Pickles;Mixed pickles;مخللات مشكلة;700 g;deli;ARABIC|TURKISH;karışık turşu;
+Hummus;Hummus;حمص بالطحينة;400 g;deli;ARABIC;humus;sesame
+Ajvar;Ajvar;أيفار;550 g;deli;BALKAN;;
+Thunfisch in Öl;Tuna in oil;تونة بالزيت;160 g;deli;;ton balığı;fish
+Gehackte Tomaten;Chopped tomatoes;طماطم مقطعة;400 g;deli;;doğranmış domates;
+Halva Sesam;Sesame halva;حلاوة طحينية;500 g;sweets;TURKISH|ARABIC;helva;sesame
+Erbsen tiefgekühlt;Frozen peas;بازلاء مجمدة;1 kg;frozen;;bezelye;
+Spinat tiefgekühlt;Frozen spinach;سبانخ مجمدة;1 kg;frozen;;ıspanak;
+Okra tiefgekühlt;Frozen okra;بامية مجمدة;400 g;frozen;ARABIC|TURKISH;bamya;
+Molokhia tiefgekühlt;Frozen molokhia;ملوخية مجمدة;400 g;frozen;ARABIC|AFRICAN;mulukhiyah;
+Sigara Börek tiefgekühlt;Frozen cigar börek;بوريك أصابع مجمد;500 g;frozen;TURKISH;sigara böreği;gluten|milk
+Baklava mit Pistazien;Pistachio baklava;بقلاوة بالفستق;500 g;sweets;TURKISH|ARABIC;baklava;gluten|nuts|milk
+Lokum Rosen;Rose Turkish delight;راحة حلقوم بالورد;400 g;sweets;TURKISH;lokum;
+Datteln Medjool;Medjool dates;تمر مجدول;500 g;sweets;ARABIC;hurma;
+Getrocknete Aprikosen;Dried apricots;مشمش مجفف;500 g;sweets;TURKISH;kuru kayısı;sulphites
+Getrocknete Feigen;Dried figs;تين مجفف;500 g;sweets;TURKISH;kuru incir;
+Pistazien geröstet gesalzen;Roasted salted pistachios;فستق حلبي محمص;250 g;sweets;;antep fıstığı;nuts
+Sonnenblumenkerne geröstet;Roasted sunflower seeds;بذر دوار الشمس;300 g;sweets;TURKISH|ARABIC;ay çekirdeği;
+Mineralwasser still;Still mineral water;مياه معدنية;1,5 l;drinks;;su;
+Mineralwasser mit Kohlensäure;Sparkling mineral water;مياه غازية;1 l;drinks;;maden suyu|soda;
+Orangensaft;Orange juice;عصير برتقال;1 l;drinks;;portakal suyu;
+Granatapfelsaft;Pomegranate juice;عصير رمان;1 l;drinks;;nar suyu;
+Şalgam Saft;Turnip juice (şalgam);عصير لفت;1 l;drinks;TURKISH;şalgam suyu;
+Schwarzer Tee;Black tea;شاي أسود;1 kg;tea-coffee;TURKISH;çay|rize;
+Türkischer Mokka gemahlen;Turkish coffee ground;قهوة تركية مطحونة;250 g;tea-coffee;TURKISH;türk kahvesi;
+Arabischer Kaffee mit Kardamom;Arabic coffee with cardamom;قهوة عربية بالهيل;250 g;tea-coffee;ARABIC;qahwa;
+Pfefferminztee;Peppermint tea;شاي نعناع;20 Beutel;tea-coffee;;nane çayı;
+Salbeitee;Sage tea;شاي ميرمية;50 g;tea-coffee;ARABIC|TURKISH;adaçayı|maramiya;
