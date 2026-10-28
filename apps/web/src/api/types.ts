@@ -157,6 +157,8 @@ export interface Listing {
   available: boolean;
   maxOrderQuantity: number;
   privateProduct: boolean;
+  /** The name looks like alcohol or tobacco, which Dukkan does not allow (a hint, never a block). */
+  restrictedGoodsHint: boolean;
   /** The market's own details; absent when the catalog values show. */
   overrides?: ListingOverrides | null;
 }
@@ -253,6 +255,8 @@ export interface CatalogReviewItem {
   createdAt: string;
   texts: Record<string, { name: string; description?: string | null; machineTranslated: boolean }>;
   duplicates: { id: string; name: string; unitSize: string; barcode?: string | null }[];
+  /** A name or the brand looks like alcohol or tobacco. */
+  restrictedGoodsHint: boolean;
 }
 
 export type PromotionType = 'PERCENT_OFF' | 'MULTI_BUY' | 'FIXED_PRICE';

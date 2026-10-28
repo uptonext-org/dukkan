@@ -54,7 +54,8 @@ public class CatalogModerationService {
       String reviewStatus,
       Instant createdAt,
       Map<String, Text> texts,
-      List<DuplicateRef> duplicates) {}
+      List<DuplicateRef> duplicates,
+      boolean restrictedGoodsHint) {}
 
   public enum Decision {
     PROMOTE,
@@ -177,7 +178,9 @@ public class CatalogModerationService {
         row.reviewStatus(),
         row.createdAt(),
         texts,
-        duplicates.stream().map(d -> new DuplicateRef(d.id(), d.name(), d.unitSize(), d.barcode())).toList());
+        duplicates.stream().map(d -> new DuplicateRef(d.id(), d.name(), d.unitSize(), d.barcode())).toList(),
+        RestrictedGoods.suspected(texts.values().stream().map(Text::name).toArray(String[]::new))
+            || RestrictedGoods.suspected(row.brand()));
   }
 
   private Map<UUID, CategoryRow> categoryRows() {

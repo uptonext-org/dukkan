@@ -93,6 +93,11 @@ function ReviewCard({ item }: { item: CatalogReviewItem }) {
       <div className="muted small">
         {[item.market?.name, item.category?.name, item.brand, item.unitSize, item.barcode].filter((v) => v != null && v !== '').join(' · ')}
       </div>
+      {item.restrictedGoodsHint && (
+        <p className="badge SUSPENDED small" role="note">
+          {t('catalog.restricted')}
+        </p>
+      )}
       {item.duplicates.length > 0 && (
         <div className="small" role="note">
           <strong>{t('catalog.duplicates')}</strong>{' '}

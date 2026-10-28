@@ -3264,7 +3264,7 @@ components:
         totalPages: { type: integer }
     CatalogReviewItem:
       type: object
-      required: [id, unitSize, reviewStatus, createdAt, texts, duplicates]
+      required: [id, unitSize, reviewStatus, createdAt, texts, duplicates, restrictedGoodsHint]
       properties:
         id: { type: string, format: uuid, description: Catalog product id. }
         market:
@@ -3292,6 +3292,7 @@ components:
               name: { type: string }
               description: { type: [string, 'null'] }
               machineTranslated: { type: boolean }
+        restrictedGoodsHint: { type: boolean, description: A name or the brand looks like alcohol or tobacco (not allowed on Dukkan). }
         duplicates:
           type: array
           items:
@@ -3412,9 +3413,10 @@ components:
       allOf:
         - $ref: '#/components/schemas/ProductSummary'
         - type: object
-          required: [privateProduct]
+          required: [privateProduct, restrictedGoodsHint]
           properties:
             privateProduct: { type: boolean, description: True when created by this market instead of picked from the shared catalog. }
+            restrictedGoodsHint: { type: boolean, description: 'The name looks like alcohol or tobacco, which Dukkan does not allow; a hint for the merchant, never a block.' }
             overrides:
               description: The market's own details of this listing; absent when it shows the catalog values.
               $ref: '#/components/schemas/ListingOverrides'

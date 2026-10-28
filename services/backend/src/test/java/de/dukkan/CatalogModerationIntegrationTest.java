@@ -134,4 +134,24 @@ class CatalogModerationIntegrationTest extends IntegrationTest {
     mvc.perform(json(auth(post("/api/v1/admin/catalog/products/" + UUID.randomUUID() + "/review"), admin), "{\"decision\":\"PROMOTE\"}").header(HttpHeaders.ACCEPT_LANGUAGE, "de"))
         .andExpect(status().isNotFound());
   }
+
+  @Test
+  void productsThatLookLikeAlcoholOrTobaccoCarryAHintForMerchantAndAdmin() throws Exception {
+    String admin = adminToken();
+    String merchant = registerMerchant();
+    UUID market = createMarket(merchant, "Hinweismarkt");
+    UUID raki = privateProduct(merchant, market, "Yeni Rakı", "70 cl", null);
+    UUID ayran = privateProduct(merchant, market, "Ayran Hinweis", "250 ml", null);
+
+    // The merchant sees the hint on the listing; nothing is blocked.
+    mvc.perform(auth(get("/api/v1/merchant/markets/" + market + "/listings").param("size", "50"), merchant))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.items[?(@.catalogProductId == '" + raki + "')].restrictedGoodsHint").value(true))
+        .andExpect(jsonPath("$.items[?(@.catalogProductId == '" + ayran + "')].restrictedGoodsHint").value(false));
+    // The admin sees it in the catalog review.
+    mvc.perform(auth(get("/api/v1/admin/catalog/products").param("size", "100"), admin))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.items[?(@.id == '" + raki + "')].restrictedGoodsHint").value(true))
+        .andExpect(jsonPath("$.items[?(@.id == '" + ayran + "')].restrictedGoodsHint").value(false));
+  }
 }
