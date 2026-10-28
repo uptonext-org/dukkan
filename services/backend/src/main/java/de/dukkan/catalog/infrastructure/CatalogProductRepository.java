@@ -167,16 +167,26 @@ public class CatalogProductRepository {
 
   /** Inserts a market-private product with translations and cuisines. */
   public void insertPrivate(UUID id, UUID ownerMarketId, NewProduct p, String searchText, Instant now) {
+    insert(id, ownerMarketId, "PENDING", p, searchText, now);
+  }
+
+  /** A product of the shared catalog, added by platform admins (no review needed). */
+  public void insertShared(UUID id, NewProduct p, String searchText, Instant now) {
+    insert(id, null, null, p, searchText, now);
+  }
+
+  private void insert(UUID id, @Nullable UUID ownerMarketId, @Nullable String reviewStatus, NewProduct p, String searchText, Instant now) {
     jdbc.sql(
             """
             INSERT INTO catalog_product (id, owner_market_id, category_id, brand, unit_size, net_quantity, net_unit,
                                          organic, allergens, keywords, barcode, image_url, origin, search_text,
                                          review_status, created_at, updated_at)
             VALUES (:id, :owner, :categoryId, :brand, :unitSize, :netQuantity, :netUnit, :organic, :allergens,
-                    :keywords, :barcode, :imageUrl, NULL, :searchText, 'PENDING', :now, :now)
+                    :keywords, :barcode, :imageUrl, NULL, :searchText, :reviewStatus, :now, :now)
             """)
         .param("id", id)
-        .param("owner", ownerMarketId)
+        .param("owner", ownerMarketId, Types.OTHER)
+        .param("reviewStatus", reviewStatus, Types.VARCHAR)
         .param("categoryId", p.categoryId())
         .param("brand", p.brand(), Types.VARCHAR)
         .param("unitSize", p.unitSize().strip())
@@ -309,6 +319,30 @@ public class CatalogProductRepository {
             """)
         .param("barcode", barcode)
         .param("marketId", marketId)
+        .query(UUID.class)
+        .optional();
+  }
+
+  /**
+   * Shared catalog import: a shared product with the same barcode, or with this normalised name in
+   * {@code locale} and the same pack size.
+   */
+  public Optional<UUID> findShared(@Nullable String barcode, String locale, @Nullable String searchName, String unitSize) {
+    return jdbc.sql(
+            """
+            SELECT cp.id FROM catalog_product cp
+            WHERE cp.owner_market_id IS NULL
+              AND ((CAST(:barcode AS varchar) IS NOT NULL AND cp.barcode = :barcode)
+                OR (lower(cp.unit_size) = lower(:unitSize) AND EXISTS (
+                      SELECT 1 FROM catalog_product_translation t
+                       WHERE t.catalog_product_id = cp.id AND t.locale = :locale AND t.search_name = :searchName)))
+            ORDER BY cp.created_at, cp.id
+            LIMIT 1
+            """)
+        .param("barcode", barcode, Types.VARCHAR)
+        .param("locale", locale)
+        .param("searchName", searchName, Types.VARCHAR)
+        .param("unitSize", unitSize)
         .query(UUID.class)
         .optional();
   }

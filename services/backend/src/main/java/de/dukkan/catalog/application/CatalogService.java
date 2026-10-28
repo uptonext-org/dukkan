@@ -58,6 +58,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class CatalogService {
 
+  /** The shared catalog is kept in German first; other languages are optional. */
+  public static final String SHARED_CATALOG_LOCALE = "de";
+
   /** Upper bound of matches considered by the cross-market search before sorting and paging. */
   private static final int NEARBY_CAP = 1000;
 
@@ -556,6 +559,83 @@ public class CatalogService {
         List.copyOf(results));
   }
 
+  /**
+   * Imports products into the shared catalog (platform admins), e.g. the start catalog before
+   * launch. Every row needs a German name ({@link #SHARED_CATALOG_LOCALE}), a pack size and a
+   * category; products already in the shared catalog (same barcode, or same German name and pack
+   * size) are skipped. All or nothing, like {@link #importListings}.
+   */
+  @Transactional
+  public CatalogImport.Result importShared(List<ListingImport.Row> rows, boolean dryRun) {
+    Map<String, UUID> categoryIds = new HashMap<>();
+    categoryRows().forEach(c -> categoryIds.put(c.slug(), c.id()));
+    record Planned(ListingImport.Row row, NewProduct product) {}
+    List<Planned> plans = new ArrayList<>();
+    List<CatalogImport.RowResult> results = new ArrayList<>();
+    Map<String, Integer> seen = new HashMap<>();
+    for (ListingImport.Row row : rows) {
+      List<ListingImport.RowError> errors = new ArrayList<>(row.errors());
+      String name = row.names().get(SHARED_CATALOG_LOCALE);
+      String label = name != null ? name : row.names().values().stream().findFirst().orElseGet(row::barcode);
+      if (name == null) {
+        errors.add(new ListingImport.RowError("name_" + SHARED_CATALOG_LOCALE, "PrimaryLocaleRequired", "the shared catalog needs a German name"));
+      }
+      if (row.unitSize() == null) {
+        errors.add(new ListingImport.RowError("unit_size", "Required", "the pack size is required, e.g. 500 g"));
+      }
+      UUID categoryId = row.categorySlug() == null ? null : categoryIds.get(row.categorySlug());
+      if (categoryId == null) {
+        errors.add(new ListingImport.RowError("category", row.categorySlug() == null ? "Required" : "UnknownCode", "a known category is required, e.g. " + String.join(", ", categoryIds.keySet().stream().sorted().limit(5).toList())));
+      }
+      if (!errors.isEmpty()) {
+        results.add(new CatalogImport.RowResult(row.line(), CatalogImport.Action.ERROR, label, null, List.copyOf(errors)));
+        continue;
+      }
+      String unitSize = Objects.requireNonNull(row.unitSize());
+      String searchName = TextNormalizer.normalize(Objects.requireNonNull(name));
+      UUID existing = products.findShared(row.barcode(), SHARED_CATALOG_LOCALE, searchName, unitSize).orElse(null);
+      if (existing != null) {
+        results.add(new CatalogImport.RowResult(row.line(), CatalogImport.Action.EXISTS, label, existing, List.of()));
+        continue;
+      }
+      NewProduct product =
+          new NewProduct(
+              row.names(), row.descriptions(), Map.of(), row.keywords(), row.brand(), unitSize, null, null, Objects.requireNonNull(categoryId),
+              row.cuisineCodes(), row.organic(), row.allergens(), null, row.barcode());
+      try {
+        validate(product, SHARED_CATALOG_LOCALE);
+      } catch (InvalidRequestException e) {
+        errors.add(new ListingImport.RowError(importField(e.field()), e.violation(), e.getMessage()));
+      }
+      Integer first = seen.putIfAbsent(searchName + "|" + unitSize.toLowerCase(Locale.ROOT), row.line());
+      if (first != null) {
+        errors.add(new ListingImport.RowError("name_" + SHARED_CATALOG_LOCALE, "Duplicate", "the same product as line " + first));
+      }
+      if (errors.isEmpty()) {
+        plans.add(new Planned(row, product));
+        results.add(new CatalogImport.RowResult(row.line(), CatalogImport.Action.CREATE, label, null, List.of()));
+      } else {
+        results.add(new CatalogImport.RowResult(row.line(), CatalogImport.Action.ERROR, label, null, List.copyOf(errors)));
+      }
+    }
+    int failed = (int) results.stream().filter(r -> r.action() == CatalogImport.Action.ERROR).count();
+    int existing = (int) results.stream().filter(r -> r.action() == CatalogImport.Action.EXISTS).count();
+    boolean apply = !dryRun && failed == 0 && !plans.isEmpty();
+    if (apply) {
+      Instant now = clock.instant();
+      Map<Integer, UUID> created = new HashMap<>();
+      for (Planned plan : plans) {
+        UUID id = UUID.randomUUID();
+        NewProduct product = plan.product();
+        products.insertShared(id, product, SearchText.build(product.name().values(), product.brand(), product.keywords()), now);
+        product.name().forEach((code, text) -> products.updateSearchName(id, code, TextNormalizer.normalize(text)));
+        created.put(plan.row().line(), id);
+      }
+      results.replaceAll(r -> r.action() == CatalogImport.Action.CREATE ? new CatalogImport.RowResult(r.line(), r.action(), r.name(), created.get(r.line()), List.of()) : r);
+    }
+    return new CatalogImport.Result(dryRun, apply, plans.size(), existing, failed, List.copyOf(results));
+  }
+
   private static int count(List<ListingImport.RowResult> results, ListingImport.Action action) {
     return (int) results.stream().filter(r -> r.action() == action).count();
   }
@@ -636,9 +716,13 @@ public class CatalogService {
   }
 
   private void validate(NewProduct p, MarketInfo market) {
-    if (p.name().isEmpty() || !p.name().containsKey(market.primaryLocale())) {
+    validate(p, market.primaryLocale());
+  }
+
+  private void validate(NewProduct p, String primaryLocale) {
+    if (p.name().isEmpty() || !p.name().containsKey(primaryLocale)) {
       throw new InvalidRequestException(
-          "newProduct.name", "PrimaryLocaleRequired", "must contain the market's primary locale " + market.primaryLocale());
+          "newProduct.name", "PrimaryLocaleRequired", "must contain the market's primary locale " + primaryLocale);
     }
     for (Map<String, String> texts : List.of(p.name(), p.description(), p.tagline())) {
       for (String code : texts.keySet()) {

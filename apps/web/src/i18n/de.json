@@ -441,5 +441,14 @@
     "empty": "Noch kein Feedback. Nachrichten deiner Kunden erscheinen hier.",
     "rating": "{{rating}} von 5 Sternen",
     "more": "Mehr laden"
+  },
+  "catalogImport": {
+    "title": "Gemeinsamen Katalog per CSV füllen",
+    "intro": "Für den Start-Katalog (docs/launch/start-katalog.csv) oder neue Grundprodukte. Spalten wie beim Händler-Import, ohne Preise; Pflicht: name_de, unit_size, category. Produkte, die schon im Katalog sind, werden übersprungen.",
+    "apply_one": "{{count}} Produkt übernehmen",
+    "apply_other": "{{count}} Produkte übernehmen",
+    "summary": "{{created}} neu · {{existing}} schon vorhanden · {{failed}} mit Fehlern",
+    "done_one": "{{count}} Produkt im Katalog angelegt.",
+    "done_other": "{{count}} Produkte im Katalog angelegt."
   }
 }

@@ -441,5 +441,14 @@
     "empty": "No feedback yet. Messages from your customers appear here.",
     "rating": "{{rating}} of 5 stars",
     "more": "Load more"
+  },
+  "catalogImport": {
+    "title": "Fill the shared catalog from CSV",
+    "intro": "For the start catalog (docs/launch/start-katalog.csv) or new staple products. Same columns as the merchant import, without prices; required: name_de, unit_size, category. Products already in the catalog are skipped.",
+    "apply_one": "Import {{count}} product",
+    "apply_other": "Import {{count}} products",
+    "summary": "{{created}} new · {{existing}} already there · {{failed}} with errors",
+    "done_one": "{{count}} product added to the catalog.",
+    "done_other": "{{count}} products added to the catalog."
   }
 }

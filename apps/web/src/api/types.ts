@@ -185,6 +185,16 @@ export interface ListingOverrides {
   brand?: string | null;
 }
 
+/** Report of the shared catalog import (admins). */
+export interface CatalogImportResult {
+  dryRun: boolean;
+  applied: boolean;
+  created: number;
+  existing: number;
+  failed: number;
+  rows: { line: number; action: 'CREATE' | 'EXISTS' | 'ERROR'; name?: string | null; productId?: string | null; errors: { field: string; code: string; message: string }[] }[];
+}
+
 export interface PageResponse<T> {
   items: T[];
   page: number;
