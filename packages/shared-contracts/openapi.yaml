@@ -2050,6 +2050,38 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
         '409': { $ref: '#/components/responses/Conflict' }
+  /admin/catalog/import:
+    post:
+      tags: [admin]
+      operationId: importCatalog
+      summary: Fill the shared catalog from a CSV file (role ADMIN)
+      description: |
+        For the start catalog before launch (`docs/launch/start-katalog.csv`) and later additions.
+        Same file format as importListings, without prices (a `price` column is ignored). Every row
+        needs `name_de`, `unit_size` and `category`; other languages are optional. **Dry run by
+        default**; send `dryRun=false` to write. All or nothing. Rows already in the shared catalog
+        (same barcode, or same German name and pack size) are reported as `EXISTS` and skipped, so a
+        file can be imported again. Products go straight into the shared catalog (no review).
+      parameters:
+        - { name: dryRun, in: query, required: false, schema: { type: boolean, default: true } }
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: { type: string, format: binary }
+      responses:
+        '200':
+          description: The report (also when rows have errors).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CatalogImportResult' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
   /admin/catalog/products/{productId}/review:
     post:
       tags: [admin]
@@ -3253,6 +3285,34 @@ components:
               field: { type: string, description: 'CSV column, e.g. price or name_de.' }
               code: { type: string, description: 'e.g. Required, Pattern, UnknownCode, Duplicate, PrimaryLocaleRequired.' }
               message: { type: string }
+    CatalogImportResult:
+      type: object
+      required: [dryRun, applied, created, existing, failed, rows]
+      properties:
+        dryRun: { type: boolean }
+        applied: { type: boolean, description: True when the products were written. }
+        created: { type: integer, description: New shared products (to be created in a dry run). }
+        existing: { type: integer, description: Rows already in the shared catalog (skipped). }
+        failed: { type: integer, description: Rows with errors. }
+        rows:
+          type: array
+          items:
+            type: object
+            required: [line, action, errors]
+            properties:
+              line: { type: integer, description: Row number in the spreadsheet (header = 1). }
+              action: { type: string, enum: [CREATE, EXISTS, ERROR] }
+              name: { type: [string, 'null'] }
+              productId: { type: [string, 'null'], format: uuid, description: 'The catalog product (EXISTS, or CREATE once applied).' }
+              errors:
+                type: array
+                items:
+                  type: object
+                  required: [field, code, message]
+                  properties:
+                    field: { type: string }
+                    code: { type: string }
+                    message: { type: string }
     CatalogReviewPage:
       type: object
       required: [items, page, size, totalItems, totalPages]
