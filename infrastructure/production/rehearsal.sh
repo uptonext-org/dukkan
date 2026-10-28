@@ -123,10 +123,14 @@ step "1. Edge: HTTPS, headers, closed internals, launch decisions"
 curl -sfI --cacert "$ca" https://localhost/ | grep -qi '^strict-transport-security: max-age=31536000' || fail "no HSTS"
 curl -sfI --cacert "$ca" https://localhost/ | grep -qi "^content-security-policy:" || fail "no CSP on the web app"
 curl -sf --cacert "$ca" https://portal.localhost/ | grep -q '<div id="root">' || fail "portal not served"
-for path in /actuator/health /actuator/prometheus /api/v1/../actuator/env; do
+for path in /actuator/health /actuator/prometheus; do
   code=$(curl -s --cacert "$ca" -o /dev/null -w '%{http_code}' "https://localhost$path")
   [ "$code" = 404 ] || fail "$path answers $code"
 done
+# Through the API route: the backend's public port has no actuator (it runs on 8081), so the
+# request ends in Spring Security or a 404, never in actuator data.
+code=$(curl -s --path-as-is --cacert "$ca" -o "$work/body" -w '%{http_code}' "https://localhost/api/v1/../../actuator/env")
+case "$code" in 401|403|404) ;; *) fail "/api/v1/../../actuator/env answers $code: $(head -c 200 "$work/body")" ;; esac
 for path in /api/v3/api-docs /api/swagger-ui.html /api/v1/v3/api-docs; do
   code=$(curl -s --cacert "$ca" -o /dev/null -w '%{http_code}' "https://localhost$path")
   case "$code" in 401|403|404) ;; *) fail "$path answers $code" ;; esac
