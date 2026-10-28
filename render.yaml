@@ -1,0 +1,96 @@
+# Render Blueprint: the backend (prod profile) and its PostgreSQL database, in Frankfurt.
+# The customer web app is hosted elsewhere (https://dukkan.uptonext.de) and calls this API across
+# origins: DUKKAN_CORS_ALLOWED_ORIGINS, and apiBaseUrl in the web app's /config.js.
+# Values marked `sync: false` are asked for once when the Blueprint is created; never commit them.
+
+databases:
+  - name: dukkan-db
+    databaseName: dukkan
+    user: dukkan
+    region: frankfurt
+    plan: basic-256mb
+    postgresMajorVersion: "18"
+
+services:
+  - type: web
+    name: dukkan-backend
+    runtime: docker
+    region: frankfurt
+    # A persistent disk needs a paid instance.
+    plan: starter
+    dockerfilePath: ./services/backend/Dockerfile
+    dockerContext: ./services/backend
+    autoDeploy: true
+    buildFilter:
+      paths: ["services/backend/**"]
+    healthCheckPath: /api/v1/locales
+    disk:
+      # Uploaded photos (media/) and the erasure journal (erasures/), see application-prod.yml.
+      name: dukkan-data
+      mountPath: /var/lib/dukkan
+      sizeGB: 5
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: PORT
+        value: "8080"
+      # Actuator stays off the public port, as in infrastructure/production.
+      - key: MANAGEMENT_SERVER_PORT
+        value: "8081"
+
+      # Database. Spring resolves the placeholders, so the JDBC URL needs no start script.
+      - key: DUKKAN_DB_URL
+        value: jdbc:postgresql://${DUKKAN_DB_HOST}:${DUKKAN_DB_PORT}/${DUKKAN_DB_NAME}
+      - key: DUKKAN_DB_HOST
+        fromDatabase: { name: dukkan-db, property: host }
+      - key: DUKKAN_DB_PORT
+        fromDatabase: { name: dukkan-db, property: port }
+      - key: DUKKAN_DB_NAME
+        fromDatabase: { name: dukkan-db, property: database }
+      - key: DUKKAN_DB_USER
+        fromDatabase: { name: dukkan-db, property: user }
+      - key: DUKKAN_DB_PASSWORD
+        fromDatabase: { name: dukkan-db, property: password }
+
+      - key: DUKKAN_JWT_SECRET
+        generateValue: true
+
+      # The web app.
+      - key: DUKKAN_CORS_ALLOWED_ORIGINS
+        value: https://dukkan.uptonext.de
+      - key: DUKKAN_WEB_URL
+        value: https://dukkan.uptonext.de
+      - key: DUKKAN_PASSWORD_RESET_URL
+        value: https://dukkan.uptonext.de/reset-password
+      - key: DUKKAN_EMAIL_VERIFICATION_URL
+        value: https://dukkan.uptonext.de/verify-email
+
+      # Mail (required by the prod profile): password reset and e-mail verification.
+      - key: SPRING_MAIL_HOST
+        sync: false
+      - key: SPRING_MAIL_PORT
+        value: "587"
+      - key: SPRING_MAIL_USERNAME
+        sync: false
+      - key: SPRING_MAIL_PASSWORD
+        sync: false
+      - key: DUKKAN_MAIL_FROM
+        sync: false
+
+      # Launch decisions (docs/launch/go-live.md).
+      - key: DUKKAN_PAYMENT
+        value: ON_SITE
+      - key: DUKKAN_MERCHANT_AUTO_APPROVE
+        value: "false"
+      - key: DUKKAN_REQUIRE_VERIFIED_EMAIL
+        value: "true"
+      - key: DUKKAN_IMPRINT_URL
+        sync: false
+      - key: DUKKAN_PRIVACY_URL
+        sync: false
+      - key: DUKKAN_TERMS_URL
+        sync: false
+      - key: DUKKAN_SUPPORT_EMAIL
+        sync: false
+      - key: DUKKAN_BOOTSTRAP_ADMIN_EMAIL
+        sync: false

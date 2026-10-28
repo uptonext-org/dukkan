@@ -8,6 +8,8 @@ import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import com.nimbusds.jose.proc.SecurityContext;
 import de.dukkan.shared.config.DukkanProperties;
 import java.time.Clock;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import javax.crypto.SecretKey;
@@ -15,6 +17,7 @@ import javax.crypto.spec.SecretKeySpec;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -36,6 +39,9 @@ import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 /**
  * Stateless security: self-issued HS256 bearer tokens carrying a {@code roles} claim. Browsing is
@@ -86,7 +92,8 @@ public class SecurityConfiguration {
       @Value("${management.server.port:-1}") int managementPort)
       throws Exception {
     boolean loginToBrowse = properties.features().requireLoginToBrowse();
-    http.csrf(AbstractHttpConfigurer::disable)
+    http.cors(Customizer.withDefaults())
+        .csrf(AbstractHttpConfigurer::disable)
         .httpBasic(AbstractHttpConfigurer::disable)
         .formLogin(AbstractHttpConfigurer::disable)
         .logout(AbstractHttpConfigurer::disable)
@@ -138,6 +145,28 @@ public class SecurityConfiguration {
                     .accessDeniedHandler(entryPoint)
                     .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())));
     return http.build();
+  }
+
+  /**
+   * Browsers on these origins may call the API (a web app not served from the API's origin, e.g.
+   * on static hosting). Comma-separated, e.g. {@code https://dukkan.de}. Empty: same origin only.
+   */
+  @Bean
+  CorsConfigurationSource corsConfigurationSource(@Value("${dukkan.security.cors.allowed-origins:}") String allowedOrigins) {
+    List<String> origins = Arrays.stream(allowedOrigins.split(",")).map(String::trim).filter(o -> !o.isEmpty()).toList();
+    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+    if (!origins.isEmpty()) {
+      CorsConfiguration cors = new CorsConfiguration();
+      cors.setAllowedOrigins(origins);
+      cors.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+      cors.setAllowedHeaders(List.of("*"));
+      cors.setExposedHeaders(List.of("Location", "Retry-After"));
+      // Bearer tokens, no cookies.
+      cors.setAllowCredentials(false);
+      cors.setMaxAge(3600L);
+      source.registerCorsConfiguration(API + "/**", cors);
+    }
+    return source;
   }
 
   /** Maps the {@code roles} claim (e.g. {@code ["CUSTOMER","MERCHANT"]}) to {@code ROLE_*} authorities. */
