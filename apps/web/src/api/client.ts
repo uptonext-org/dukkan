@@ -1,4 +1,4 @@
-import type { AuthResponse, CatalogReviewItem, CodeName, FeatureKey, FeatureSwitches, ImportResult, Listing, ListingOverrides, MarketInsights, MarketProfileRequest, MarketStatus, MerchantFeedbackPage, MerchantMarket, MerchantOrderSettings, Order, OrderSettings, OrderStatus, PageResponse, Place, Problem, Promotion, PromotionRequest, ReviewStatus, TranslationResult, User } from './types';
+import type { AuthResponse, CatalogImportResult, CatalogReviewItem, CodeName, FeatureKey, FeatureSwitches, ImportResult, Listing, ListingOverrides, MarketInsights, MarketProfileRequest, MarketStatus, MerchantFeedbackPage, MerchantMarket, MerchantOrderSettings, Order, OrderSettings, OrderStatus, PageResponse, Place, Problem, Promotion, PromotionRequest, ReviewStatus, TranslationResult, User } from './types';
 
 export class ApiError extends Error {
   readonly status: number;
@@ -169,6 +169,11 @@ export function createApi(options: { baseUrl?: string; fetch?: Fetch; store?: Se
       const form = new FormData();
       form.append('file', file);
       return send<ImportResult>(`/merchant/markets/${encodeURIComponent(marketId)}/listings/import?dryRun=${String(dryRun)}`, { method: 'POST', form });
+    },
+    importCatalog: (file: File, dryRun: boolean) => {
+      const form = new FormData();
+      form.append('file', file);
+      return send<CatalogImportResult>(`/admin/catalog/import?dryRun=${String(dryRun)}`, { method: 'POST', form });
     },
     marketTypes: () => send<CodeName[]>('/market-types'),
     cuisines: () => send<CodeName[]>('/cuisines'),
