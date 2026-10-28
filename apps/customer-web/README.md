@@ -59,7 +59,7 @@ proxy in front (`infrastructure/production`). Runtime settings, one image for al
 | `DUKKAN_CSP_CONNECT_SRC` | `'self'` | |
 
 Static hosting without the container (e.g. Hostinger, root directory `apps/customer-web`, output
-`dist`): `npm run build:hostinger` installs `apps/mobile` first, then builds.
+`dist`): `npm install && npm run build` is enough, `prebuild` installs `apps/mobile` if it is missing.
 
 The container runs with a read-only root file system if `/tmp` is writable (tmpfs/emptyDir);
 CI checks that.
