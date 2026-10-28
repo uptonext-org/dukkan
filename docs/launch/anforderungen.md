@@ -38,6 +38,12 @@ Text, Entscheidung)
 | 19 | **Sichere Konfiguration** | ✅ | `ProductionReadinessCheck` verweigert den Start mit Demo-Profil, Standard-Passwort, Platzhalter-Secret, fehlendem SMTP, Reset-Links im Log, abgeschalteten Rate-Limits und Bezahlart ≠ `ON_SITE`. Swagger aus, Actuator intern, kein Debug-Logging, keine Testkonten. Images laufen ohne Root, Web und Portal mit read-only Dateisystem. `check-env.sh` prüft die `.env` vor dem ersten Start. |
 | 20 | **Sicherheitstests vor dem Release** | ✅ | Jede Änderung durchläuft die CI: rund 380 Backend-Tests (davon viele zu Berechtigungen, Rate-Limits und Löschung), statische Analyse (Error Prone), Contract-Lint, Ende-zu-Ende-Tests der App gegen das echte Backend, Browser-Smoke-Test, Backup-Drill, Generalprobe und Trivy-Scan. Dazu kommt die Sicherheitsprüfung vor dem Start (Rate-Limits pro Konto, Pfad-Normalisierung, Token-Rotation, Upload-Grenzen). 📝 Für eine größere Nutzerzahl empfiehlt sich ein externer Penetrationstest. |
 
+## Weitere Lücke, beim Prüfen gefunden
+
+| Thema | Stand | Was fehlt |
+|---|---|---|
+| **Grundpreis** (§ 4 PAngV: Preis je kg bzw. l bei Waren nach Gewicht oder Volumen) | ❌ | App und Web zeigen Preis und Größe („500 g“), aber keinen Grundpreis. Im Fernabsatz ist er Pflicht und wird gern abgemahnt. Lösung: aus der Größe berechnen („500 g · 3,98 €/kg“) und überall neben dem Preis anzeigen. Das lässt sich im Code umsetzen. |
+
 ## Was du vor dem Start noch tun musst (aus dieser Liste)
 
 1. Rechtstexte prüfen lassen und veröffentlichen (Punkte 1, 2, 5, 9, 10): Entwürfe in `docs/legal/`.
