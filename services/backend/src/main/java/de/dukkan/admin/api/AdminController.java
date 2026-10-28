@@ -131,12 +131,18 @@ final class AdminController {
    * by default. See {@link CatalogService#importShared}.
    */
   @PostMapping(path = "/catalog/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-  CatalogImport.Result importCatalog(@RequestPart("file") MultipartFile file, @RequestParam(defaultValue = "true") boolean dryRun) throws IOException {
+  CatalogImport.Result importCatalog(
+      @CurrentSecurityContext SecurityContext security, @RequestPart("file") MultipartFile file, @RequestParam(defaultValue = "true") boolean dryRun)
+      throws IOException {
     if (file.getSize() > ListingCsv.MAX_BYTES) {
       throw new InvalidRequestException("file", "Size", "the file may have at most 1 MB");
     }
     List<String> codes = locales.enabled().stream().map(SupportedLocale::code).toList();
-    return catalog.importShared(ListingCsv.parseCatalog(file.getBytes(), codes), dryRun);
+    CatalogImport.Result result = catalog.importShared(ListingCsv.parseCatalog(file.getBytes(), codes), dryRun);
+    if (result.applied()) {
+      SecurityEvents.adminAction(CurrentUser.id(security).toString(), "catalog_import", result.created() + " products");
+    }
+    return result;
   }
 
   record ProductTextsRequest(
