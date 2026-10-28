@@ -115,7 +115,9 @@ case "$(value RESTIC_REPOSITORY)" in
   "") ;;
   /* | local:*) problem "RESTIC_REPOSITORY is on this server; it must be storage elsewhere (an S3 bucket in the EU)" ;;
   s3:*)
-    [ -n "$(value RESTIC_S3_ACCESS_KEY)" ] && [ -n "$(value RESTIC_S3_SECRET_KEY)" ] || problem "RESTIC_S3_ACCESS_KEY and RESTIC_S3_SECRET_KEY are needed for an S3 repository"
+    if [ -z "$(value RESTIC_S3_ACCESS_KEY)" ] || [ -z "$(value RESTIC_S3_SECRET_KEY)" ]; then
+      problem "RESTIC_S3_ACCESS_KEY and RESTIC_S3_SECRET_KEY are needed for an S3 repository"
+    fi
     ;;
 esac
 [ -n "$(value OFFSITE_HEALTHCHECK_URL)" ] || warn "OFFSITE_HEALTHCHECK_URL is empty: nobody is alerted when a nightly backup fails"
