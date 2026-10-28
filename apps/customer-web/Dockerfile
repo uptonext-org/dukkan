@@ -18,6 +18,10 @@ COPY apps/customer-web apps/customer-web
 RUN cd apps/customer-web && npm run build
 
 FROM nginxinc/nginx-unprivileged:1.31.7-alpine@sha256:b5047b9b76845eac124358373c6852377c52e4b05834a47647e955dd91cb8f1e
+# Alpine security fixes newer than the base image (the dress rehearsal scans the result).
+USER root
+RUN apk upgrade --no-cache
+USER 101
 # Runtime settings (see deploy/40-dukkan-config.sh and src/config.ts); empty = built-in default.
 ENV DUKKAN_API_BASE_URL="" \
     DUKKAN_MAP_TILE_URL="" \
