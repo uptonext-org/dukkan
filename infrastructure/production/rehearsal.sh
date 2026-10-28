@@ -100,6 +100,15 @@ mail_text() { # mail_text EMAIL SUBJECT-WORDS -> text of the newest matching mai
   done
   fail "no mail to $1 ($2)"
 }
+wait_mail() { # wait_mail EMAIL TEXT: a mail to EMAIL containing TEXT arrives (mails go out after the commit)
+  for _ in $(seq 1 60); do
+    for id in $(curl -sS "http://127.0.0.1:8025/api/v1/search?query=$(jq -rn --arg q "to:$1" '$q|@uri')" | jq -r '.messages[].ID'); do
+      curl -sS "http://127.0.0.1:8025/api/v1/message/$id" | jq -r '.Subject + "\n" + .Text' | grep -q "$2" && return 0
+    done
+    sleep 1
+  done
+  return 1
+}
 confirm() { # confirm EMAIL: opens the link of the welcome mail
   token=$(mail_text "$1" "" | grep -o 'verify-email?token=[A-Za-z0-9_-]*' | head -1 | cut -d= -f2)
   [ -n "$token" ] || fail "no confirmation link for $1"
@@ -217,7 +226,7 @@ expect 422 # ordering needs a confirmed address
 confirm "$customer"
 order=$(api POST "/markets/$market_id/orders" "$customer_token" | jq -r .id)
 expect 201
-mail_text "$customer" "Bestellung" | grep -q "Probemarkt" || fail "no order confirmation mail"
+wait_mail "$customer" "Probemarkt" || fail "no order confirmation mail"
 api GET "/merchant/markets/$market_id/orders" "$merchant_token" | jq -e --arg o "$order" 'tostring|contains($o)' >/dev/null \
   || fail "merchant does not see the order"
 echo "ok: order $order"
