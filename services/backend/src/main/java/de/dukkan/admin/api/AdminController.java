@@ -1,12 +1,18 @@
 package de.dukkan.admin.api;
 
+import de.dukkan.catalog.application.CatalogImport;
 import de.dukkan.catalog.application.CatalogModerationService;
+import de.dukkan.catalog.application.CatalogService;
 import de.dukkan.feature.application.Feature;
 import de.dukkan.feature.application.FeatureService;
 import de.dukkan.i18n.application.ContentLocale;
+import de.dukkan.i18n.application.LocaleService;
+import de.dukkan.i18n.application.SupportedLocale;
 import de.dukkan.market.application.MarketService;
 import de.dukkan.market.application.MerchantMarket;
+import de.dukkan.merchant.application.ListingCsv;
 import de.dukkan.shared.api.PageResponse;
+import de.dukkan.shared.error.InvalidRequestException;
 import de.dukkan.shared.security.CurrentUser;
 import de.dukkan.shared.security.SecurityEvents;
 import jakarta.validation.Valid;
@@ -15,10 +21,12 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.CurrentSecurityContext;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -29,7 +37,9 @@ import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 /** Platform operators (role ADMIN): review markets, and products merchants add to the catalog. */
 @RequestMapping("/api/v1/admin")
@@ -41,11 +51,15 @@ final class AdminController {
   private final MarketService markets;
   private final CatalogModerationService moderation;
   private final FeatureService features;
+  private final CatalogService catalog;
+  private final LocaleService locales;
 
-  AdminController(MarketService markets, CatalogModerationService moderation, FeatureService features) {
+  AdminController(MarketService markets, CatalogModerationService moderation, FeatureService features, CatalogService catalog, LocaleService locales) {
     this.markets = markets;
     this.moderation = moderation;
     this.features = features;
+    this.catalog = catalog;
+    this.locales = locales;
   }
 
   record FeatureRequest(@NotNull Boolean enabled) {}
@@ -110,6 +124,19 @@ final class AdminController {
       @RequestAttribute(ContentLocale.REQUEST_ATTRIBUTE) ContentLocale locale) {
     SecurityEvents.adminAction(CurrentUser.id(security).toString(), "catalog_" + request.decision(), productId.toString());
     return moderation.decide(productId, request.decision(), locale);
+  }
+
+  /**
+   * Shared catalog import from a CSV file (the listing import's columns without prices); dry run
+   * by default. See {@link CatalogService#importShared}.
+   */
+  @PostMapping(path = "/catalog/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+  CatalogImport.Result importCatalog(@RequestPart("file") MultipartFile file, @RequestParam(defaultValue = "true") boolean dryRun) throws IOException {
+    if (file.getSize() > ListingCsv.MAX_BYTES) {
+      throw new InvalidRequestException("file", "Size", "the file may have at most 1 MB");
+    }
+    List<String> codes = locales.enabled().stream().map(SupportedLocale::code).toList();
+    return catalog.importShared(ListingCsv.parseCatalog(file.getBytes(), codes), dryRun);
   }
 
   record ProductTextsRequest(
