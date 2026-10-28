@@ -11,7 +11,10 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -26,6 +29,15 @@ class AccountDeletionRaceIntegrationTest extends IntegrationTest {
 
   @Autowired private IdentityService identity;
   @Autowired private PlatformTransactionManager transactionManager;
+
+  // Own threads: the common pool has a single thread on a two-core CI runner, where the second
+  // task would wait behind the first, which is blocked on purpose.
+  private final ExecutorService threads = Executors.newFixedThreadPool(2);
+
+  @AfterEach
+  void stopThreads() {
+    threads.shutdownNow();
+  }
 
   private long notifications(UUID userId) {
     return jdbc.sql("SELECT count(*) FROM notification WHERE user_id = :u").param("u", userId).query(Long.class).single();
@@ -75,7 +87,8 @@ class AccountDeletionRaceIntegrationTest extends IntegrationTest {
                           .param("u", userId)
                           .param("now", Timestamp.from(clock.instant()))
                           .update();
-                    }));
+                    }),
+            threads);
     assertThat(locked.await(10, TimeUnit.SECONDS)).isTrue();
 
     CompletableFuture<Integer> deletion =
@@ -89,7 +102,8 @@ class AccountDeletionRaceIntegrationTest extends IntegrationTest {
               } catch (Exception e) {
                 throw new IllegalStateException(e);
               }
-            });
+            },
+            threads);
     // The deletion waits on the handler's row lock (seen by the database, not guessed from timing).
     assertThat(waitsForLock("FOR NO KEY UPDATE")).isTrue();
     assertThat(deletion).isNotDone();
@@ -125,7 +139,8 @@ class AccountDeletionRaceIntegrationTest extends IntegrationTest {
                         Thread.currentThread().interrupt();
                         throw new IllegalStateException(e);
                       }
-                    }));
+                    }),
+            threads);
     assertThat(locked.await(10, TimeUnit.SECONDS)).isTrue();
     try {
       CompletableFuture<Integer> insert =
@@ -137,7 +152,8 @@ class AccountDeletionRaceIntegrationTest extends IntegrationTest {
                       .param("id", UUID.randomUUID())
                       .param("u", userId)
                       .param("hash", UUID.randomUUID().toString().getBytes(UTF_8))
-                      .update());
+                      .update(),
+              threads);
       assertThat(insert.get(5, TimeUnit.SECONDS)).isEqualTo(1);
     } finally {
       release.countDown();

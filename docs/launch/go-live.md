@@ -136,10 +136,13 @@ Die Prüfung im App Store dauert erfahrungsgemäß Tage, die Freischaltung neuer
 | 6. Launch | Web öffentlich, Store-Apps einreichen, Marketing | du |
 | 7. Betrieb | Uptime-Alarme, Backups prüfen, Dependabot-PRs, Händler-Support | du, ich für Code |
 
-Wichtig für Phase 4: In der Produktion gibt es **keinen gemeinsamen Produktkatalog**, die
-erfundenen Demo-Produkte laufen dort nicht. Händler legen ihr Sortiment per CSV-Import oder
-KI-Erfassung an. Admins können gute Produkte in den gemeinsamen Katalog übernehmen
-(Katalogprüfung im Portal).
+Wichtig für Phase 4: Die erfundenen Demo-Produkte laufen in der Produktion nicht. Den
+**gemeinsamen Produktkatalog** füllt ein Admin einmal mit der Startliste: Portal → Katalogprüfung →
+„Gemeinsamen Katalog per CSV füllen“ → `docs/launch/start-katalog.csv` (rund 130 markenlose
+Grundprodukte, Namen auf Deutsch, Englisch und Arabisch) → prüfen → übernehmen. Ein zweiter Import
+überspringt vorhandene Produkte. Händler sehen diese Produkte dann als Vorschläge und passen sie für
+ihren Markt an; eigene Produkte legen sie per CSV oder im Formular an, gute davon übernehmen Admins
+in den Katalog (Katalogprüfung).
 
 ## 5. Checkliste für den Starttag
 

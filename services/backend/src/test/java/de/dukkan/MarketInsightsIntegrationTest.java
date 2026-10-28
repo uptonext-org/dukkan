@@ -10,7 +10,9 @@ import de.dukkan.shared.time.DukkanTime;
 import de.dukkan.support.IntegrationTest;
 import java.sql.Timestamp;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZonedDateTime;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -23,6 +25,13 @@ class MarketInsightsIntegrationTest extends IntegrationTest {
   private void movePlacedAt(String orderId, Duration back) {
     jdbc.sql("UPDATE customer_order SET placed_at = placed_at - make_interval(secs => :seconds) WHERE id = :id")
         .param("seconds", back.toSeconds())
+        .param("id", UUID.fromString(orderId))
+        .update();
+  }
+
+  private void setPlacedAt(String orderId, Instant placedAt) {
+    jdbc.sql("UPDATE customer_order SET placed_at = :placedAt WHERE id = :id")
+        .param("placedAt", Timestamp.from(placedAt))
         .param("id", UUID.fromString(orderId))
         .update();
   }
@@ -100,9 +109,11 @@ class MarketInsightsIntegrationTest extends IntegrationTest {
     String customer = registerUser();
     String earlier = orderPickup(customer, market, ayran, 1);
     String later = orderPickup(customer, market, ayran, 1);
-    // A week ago, one hour before and one hour after the current time of day.
-    movePlacedAt(earlier, Duration.ofDays(7).plusHours(1));
-    movePlacedAt(later, Duration.ofDays(7).minusHours(1));
+    // A week ago, one hour before and one hour after the current time of day. Local time, not
+    // 168 hours: in the week after a daylight saving change the two differ by an hour.
+    ZonedDateTime weekAgo = clock.instant().atZone(DukkanTime.ZONE).minusDays(7);
+    setPlacedAt(earlier, weekAgo.minusHours(1).toInstant());
+    setPlacedAt(later, weekAgo.plusHours(1).toInstant());
 
     // Today is not over, so only the order placed before this time a week ago is compared.
     mvc.perform(auth(get("/api/v1/merchant/markets/" + market + "/insights?days=7"), merchant))

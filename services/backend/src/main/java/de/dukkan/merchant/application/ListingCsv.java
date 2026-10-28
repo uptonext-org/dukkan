@@ -62,6 +62,18 @@ public final class ListingCsv {
 
   /** Parses the file; file-level problems (encoding, header, size) are a 400 for field {@code file}. */
   public static List<Row> parse(byte[] content, Collection<String> locales) {
+    return parse(content, locales, true);
+  }
+
+  /**
+   * A shared catalog file (admins): the same columns without prices; a {@code price} column is
+   * ignored.
+   */
+  public static List<Row> parseCatalog(byte[] content, Collection<String> locales) {
+    return parse(content, locales, false);
+  }
+
+  private static List<Row> parse(byte[] content, Collection<String> locales, boolean withPrices) {
     if (content.length > MAX_BYTES) {
       throw new InvalidRequestException("file", "Size", "the file may have at most 1 MB");
     }
@@ -72,7 +84,12 @@ public final class ListingCsv {
       throw new InvalidRequestException("file", "Empty", "the file has no header line");
     }
     Map<String, Integer> header = header(records.getFirst(), locales);
-    if (!header.containsKey("price") || (!header.containsKey("barcode") && header.keySet().stream().noneMatch(c -> c.startsWith("name_")))) {
+    if (!withPrices) {
+      header.remove("price");
+      if (header.keySet().stream().noneMatch(c -> c.startsWith("name_"))) {
+        throw new InvalidRequestException("file", "Header", "the header needs a name_<language> column, e.g. name_de");
+      }
+    } else if (!header.containsKey("price") || (!header.containsKey("barcode") && header.keySet().stream().noneMatch(c -> c.startsWith("name_")))) {
       throw new InvalidRequestException("file", "Header", "the header needs a price column and a name_<language> or barcode column");
     }
     if (records.size() - 1 > MAX_ROWS) {

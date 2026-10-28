@@ -6,6 +6,7 @@ import { useApi } from '../api/ApiContext';
 import type { CatalogReviewItem, ReviewStatus } from '../api/types';
 import { LANGUAGES } from '../i18n';
 import { errorMessage } from '../ui/errors';
+import { CatalogImportCard } from './CatalogImportCard';
 
 const STATUSES: ReviewStatus[] = ['PENDING', 'KEPT_PRIVATE', 'PROMOTED'];
 
@@ -24,6 +25,7 @@ export function AdminCatalogPage() {
     <section className="stack" aria-labelledby="catalog-title">
       <h1 id="catalog-title">{t('catalog.title')}</h1>
       <p className="muted">{t('catalog.intro')}</p>
+      <CatalogImportCard />
       <div className="row">
         <label className="field" style={{ maxWidth: 260 }}>
           {t('admin.filter')}
