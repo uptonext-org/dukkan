@@ -40,6 +40,13 @@ jobs:
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v6
       - run: npm ci
+      # The release APK talks to the production API (app.json keeps null for the local backend).
+      # Override with the repository variable DUKKAN_API_BASE_URL.
+      - name: Point the app at the production API
+        working-directory: apps/mobile
+        env:
+          API_BASE_URL: ${{ vars.DUKKAN_API_BASE_URL || 'https://dukkan-backend-g3py.onrender.com/api/v1' }}
+        run: node -e "const f='app.json',j=require('./'+f);j.apiBaseUrl=process.env.API_BASE_URL;require('fs').writeFileSync(f,JSON.stringify(j,null,2)+'\n')"
       # compileSdk 37, build tools 37.0.0 and NDK 27.1 are installed by the Android Gradle plugin
       # on first use; the runner's SDK has the licences accepted.
       - name: Assemble release APK
