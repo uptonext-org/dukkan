@@ -270,7 +270,7 @@ function MarketProfileForm({ route, navigation, initial }: RootStackScreenProps<
         </Section>
 
         <Section title={t('merchant.imprint')}>
-          <TextField label={t('merchant.legalName')} {...text('legalName')} />
+          <TextField label={t('merchant.legalName')} {...text('legalName')} hint={t('merchant.legalNameHint')} />
           <TextField label={t('merchant.registerInfo')} {...text('registerInfo')} hint={t('merchant.optional')} />
         </Section>
       </ScrollView>

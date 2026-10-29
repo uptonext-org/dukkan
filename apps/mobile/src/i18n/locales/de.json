@@ -696,7 +696,8 @@
     "weekdays": "Wochentage",
     "allDay": "Ganztägig",
     "dailyFrom": "Täglich ab (HH:MM)",
-    "dailyUntil": "Täglich bis (HH:MM)"
+    "dailyUntil": "Täglich bis (HH:MM)",
+    "legalNameHint": "Vor- und Nachname oder Firma mit Rechtsform, z. B. „Alosh Alrifai“ oder „Alosh Dukkan GmbH“. Erscheint im Impressum."
   },
   "allergen": {
     "gluten": "Gluten",
@@ -865,7 +866,7 @@
     "suspend": "Sperren",
     "backToReview": "Zurück in Prüfung",
     "check": {
-      "LEGAL_NAME": "Vollständiger Name oder Firma",
+      "LEGAL_NAME": "Vor- und Nachname oder Firma mit Rechtsform (mind. zwei Wörter)",
       "POSTAL_ADDRESS": "Anschrift mit Postleitzahl",
       "PHONE": "Telefonnummer",
       "REGISTER_INFO": "Handelsregister"
