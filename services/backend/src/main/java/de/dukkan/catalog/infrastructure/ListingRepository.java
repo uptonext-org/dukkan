@@ -204,8 +204,12 @@ public class ListingRepository {
     return bind(jdbc.sql(sql.toString()), search).param("limit", limit).query((rs, i) -> rs.getString(1)).list();
   }
 
-  /** Available listings matching the term in the given markets (capped), with ranking keys. */
-  public List<Hit> searchMarkets(Collection<UUID> marketIds, String term, List<String> locales, int cap, Instant now) {
+  /**
+   * Available listings matching the term in the given markets, with ranking keys. Capped after
+   * sorting by {@code sort} (price_asc, distance: markets in {@code marketIds} order, otherwise
+   * relevance), so the cap never cuts off the cheapest or nearest offers.
+   */
+  public List<Hit> searchMarkets(List<UUID> marketIds, String term, List<String> locales, int cap, Instant now, String sort) {
     if (marketIds.isEmpty()) {
       return List.of();
     }
@@ -219,11 +223,18 @@ public class ListingRepository {
             + LOCALIZED
             + " WHERE mp.market_id IN (:marketIds) AND mp.deleted_at IS NULL AND mp.available"
             + " AND (cp.search_text ILIKE :pattern ESCAPE '\\' OR mp.search_text ILIKE :pattern ESCAPE '\\')"
-            + " ORDER BY tier, len, loc.name, mp.id LIMIT :cap";
+            + " ORDER BY "
+            + switch (sort) {
+              case "price_asc" -> "3, tier, len, loc.name, mp.id";
+              case "distance" -> "array_position(CAST(:ordered AS text[]), mp.market_id::text), tier, len, loc.name, mp.id";
+              default -> "tier, len, loc.name, mp.id";
+            }
+            + " LIMIT :cap";
     MarketSearch search =
         new MarketSearch(new UUID(0, 0), term, null, null, null, false, true, "relevance", locales, now);
     return bind(jdbc.sql(sql), search)
         .param("marketIds", List.copyOf(marketIds))
+        .param("ordered", new SqlTextArray(marketIds.stream().map(UUID::toString).toList()))
         .param("cap", cap)
         .param("now", Timestamp.from(now))
         .query(

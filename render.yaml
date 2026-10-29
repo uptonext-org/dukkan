@@ -68,6 +68,9 @@ services:
         value: https://dukkan.uptonext.de
       - key: DUKKAN_WEB_URL
         value: https://dukkan.uptonext.de
+      # Photo URLs are stored absolute: always https, whatever headers the proxy chain sends.
+      - key: DUKKAN_MEDIA_PUBLIC_BASE_URL
+        value: https://dukkan-backend-g3py.onrender.com/api/v1/media
       - key: DUKKAN_PASSWORD_RESET_URL
         value: https://dukkan.uptonext.de/reset-password
       - key: DUKKAN_EMAIL_VERIFICATION_URL

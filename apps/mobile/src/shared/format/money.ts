@@ -59,9 +59,18 @@ export function formatMoneyForAccessibility(money: Money): string {
   return `${decimal2.format(money.amountCents / 100)} ${unit}`;
 }
 
-/** Parses user input like `2,49`, `2.49` or `2` into cents; null when invalid. */
+/** Arabic-Indic and Persian digits and separators (٠-٩, ۰-۹, ٫ ٬) as Latin digits, `,` and `.`. */
+export function latinDigits(input: string): string {
+  return input
+    .replace(/[\u0660-\u0669]/g, (d) => String(d.charCodeAt(0) - 0x0660))
+    .replace(/[\u06F0-\u06F9]/g, (d) => String(d.charCodeAt(0) - 0x06f0))
+    .replace(/\u066B/g, ',')
+    .replace(/\u066C/g, '.');
+}
+
+/** Parses user input like `2,49`, `2.49`, `2` or `٢٫٤٩` into cents; null when invalid. */
 export function parseMoneyInput(input: string): number | null {
-  const normalized = input.trim().replace(/\s|€/g, '').replace(',', '.');
+  const normalized = latinDigits(input).trim().replace(/\s|€/g, '').replace(',', '.');
   if (!/^\d+(\.\d{1,2})?$/.test(normalized)) {
     return null;
   }

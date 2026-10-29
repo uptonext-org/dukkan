@@ -14,10 +14,14 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.DefaultCorsProcessor;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.util.UrlPathHelper;
 
@@ -39,10 +43,13 @@ public final class AuthRateLimitFilter extends OncePerRequestFilter {
   private final DukkanProperties.RateLimit limits;
   private final Clock clock;
   private final RateLimitStore store;
+  private final CorsConfigurationSource cors;
   private final Map<String, Rule> rules;
 
-  public AuthRateLimitFilter(DukkanProperties properties, Clock clock, RateLimitStore store) {
+  public AuthRateLimitFilter(
+      DukkanProperties properties, Clock clock, RateLimitStore store, @Qualifier("corsConfigurationSource") CorsConfigurationSource cors) {
     this.limits = properties.security().rateLimit();
+    this.cors = cors;
     this.clock = clock;
     this.store = store;
     Rule login = new Rule("login", Duration.ofMinutes(1), limits.loginsPerMinute());
@@ -88,6 +95,12 @@ public final class AuthRateLimitFilter extends OncePerRequestFilter {
     if (count > limit) {
       SecurityEvents.rateLimited("auth-" + rule.name(), request.getRemoteAddr(), endpoint(request));
       long retryAfter = Math.max(1, start + length - now);
+      // This filter answers before Spring Security's CORS filter: without the CORS headers a web app
+      // on another origin sees a network error instead of RATE_LIMITED and Retry-After.
+      CorsConfiguration corsConfig = cors.getCorsConfiguration(request);
+      if (corsConfig != null) {
+        new DefaultCorsProcessor().processRequest(corsConfig, request, response);
+      }
       response.setStatus(429);
       response.setHeader("Retry-After", Long.toString(retryAfter));
       response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);

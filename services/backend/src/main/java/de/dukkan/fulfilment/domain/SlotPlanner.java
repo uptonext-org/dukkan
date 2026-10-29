@@ -14,16 +14,16 @@ import java.util.List;
 /**
  * Pure slot calendar: for today and the following {@code daysAhead - 1} days (Europe/Berlin),
  * Monday to Saturday, consecutive windows of {@code slotLength} inside each opening interval. Only
- * windows that start after {@code now} are planned. The order cutoff is {@code cutoff} before the
- * window starts.
+ * windows that start after {@code now} are planned; yesterday's overnight interval still counts
+ * after midnight. The order cutoff is {@code cutoff} before the window starts.
  */
 public final class SlotPlanner {
 
   /** An opening interval on a weekday. */
   public record OpeningWindow(DayOfWeek day, LocalTime opens, LocalTime closes) {}
 
-  /** A slot that should exist. */
-  public record PlannedSlot(Instant startsAt, Instant endsAt, Instant orderCutoffAt) {}
+  /** A slot that should exist; {@code openingDay} is the day its interval opened (holidays apply to it). */
+  public record PlannedSlot(Instant startsAt, Instant endsAt, Instant orderCutoffAt, LocalDate openingDay) {}
 
   /** The longest horizon a market can choose. */
   public static final int MAX_DAYS_AHEAD = 14;
@@ -40,7 +40,8 @@ public final class SlotPlanner {
     LocalDate today = LocalDate.ofInstant(now, DukkanTime.ZONE);
     Instant horizon = horizonEnd(now);
     List<PlannedSlot> slots = new ArrayList<>();
-    for (int day = 0; day < daysAhead; day++) {
+    // From yesterday: an interval that opened yesterday evening may still have slots after midnight.
+    for (int day = -1; day < daysAhead; day++) {
       LocalDate date = today.plusDays(day);
       if (date.getDayOfWeek() == DayOfWeek.SUNDAY) {
         continue;
@@ -56,7 +57,7 @@ public final class SlotPlanner {
         while (!start.plus(slotLength).isAfter(close)) {
           ZonedDateTime end = start.plus(slotLength);
           if (start.toInstant().isAfter(now) && start.toInstant().isBefore(horizon)) {
-            slots.add(new PlannedSlot(start.toInstant(), end.toInstant(), start.toInstant().minus(cutoff)));
+            slots.add(new PlannedSlot(start.toInstant(), end.toInstant(), start.toInstant().minus(cutoff), date));
           }
           start = end;
         }

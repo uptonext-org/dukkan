@@ -17,6 +17,13 @@ public interface OrderRepository extends JpaRepository<CustomerOrder, UUID> {
 
   Optional<CustomerOrder> findByUserIdAndIdempotencyKey(UUID userId, String idempotencyKey);
 
+  /**
+   * Serialises placements with the same customer and Idempotency-Key until the transaction ends,
+   * so a concurrent repeat finds the first order instead of failing on the unique key.
+   */
+  @Query(value = "SELECT 1 FROM pg_advisory_xact_lock(hashtextextended(CAST(:userId AS text) || '|' || :idempotencyKey, 0))", nativeQuery = true)
+  Integer lockIdempotencyKey(UUID userId, String idempotencyKey);
+
   List<CustomerOrder> findByUserIdOrderByPlacedAtDescOrderNumberDesc(UUID userId);
 
   boolean existsByUserIdAndStatusIn(UUID userId, Collection<OrderStatus> statuses);

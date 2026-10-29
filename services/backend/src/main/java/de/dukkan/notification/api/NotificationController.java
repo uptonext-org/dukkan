@@ -32,9 +32,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 final class NotificationController {
 
-  record DeviceRequest(@NotBlank @Size(max = 4096) String token, @Pattern(regexp = "IOS|ANDROID") @NotBlank String platform) {}
+  record DeviceRequest(@NotBlank @Size(max = 2048) String token, @Pattern(regexp = "IOS|ANDROID") @NotBlank String platform) {}
 
-  record DeviceTokenRequest(@NotBlank @Size(max = 4096) String token) {}
+  record DeviceTokenRequest(@NotBlank @Size(max = 2048) String token) {}
 
   /** Contract schema {@code Notification}. */
   record NotificationResponse(

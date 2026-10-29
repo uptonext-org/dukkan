@@ -15,8 +15,9 @@ Gradle needs no separate install: `services/backend/gradlew` downloads Gradle 9.
 ## 1. Database
 
 ```bash
-cp .env.example .env                    # then set DUKKAN_JWT_SECRET (>= 32 bytes): openssl rand -base64 48
-docker compose -f infrastructure/docker/compose.yaml up -d postgres
+cp .env.example .env                    # in the repo root; then set DUKKAN_JWT_SECRET (>= 32 bytes): openssl rand -base64 48
+# Compose reads .env next to the compose file by default, hence --env-file .env below.
+docker compose --env-file .env -f infrastructure/docker/compose.yaml up -d postgres
 ```
 
 ## 2. Backend
@@ -52,7 +53,7 @@ Feature flags (`application.yml`, under `dukkan.features`):
 | `dukkan.media.storage` | `DUKKAN_MEDIA_STORAGE` | `filesystem`; `s3` for an S3-compatible bucket (needed for several instances) |
 | `dukkan.media.s3.*` | `DUKKAN_MEDIA_S3_ENDPOINT`, `_REGION`, `_BUCKET`, `_ACCESS_KEY`, `_SECRET_KEY`, `_PATH_STYLE`, `_CREATE_BUCKET` | endpoint empty = AWS; keys empty = AWS default credentials chain |
 
-To try S3 locally: `docker compose -f infrastructure/docker/compose.yaml --profile s3 up -d s3` (Adobe S3Mock on
+To try S3 locally: `docker compose --env-file .env -f infrastructure/docker/compose.yaml --profile s3 up -d s3` (Adobe S3Mock on
 port 9090), then start the backend with `DUKKAN_MEDIA_STORAGE=s3 DUKKAN_MEDIA_S3_ENDPOINT=http://localhost:9090
 DUKKAN_MEDIA_S3_BUCKET=dukkan-media DUKKAN_MEDIA_S3_PATH_STYLE=true DUKKAN_MEDIA_S3_CREATE_BUCKET=true
 DUKKAN_MEDIA_S3_ACCESS_KEY=dev DUKKAN_MEDIA_S3_SECRET_KEY=dev`.
@@ -128,7 +129,7 @@ rotate on every use; the app renews tokens by itself.
 
 **Order events and notifications** (B-37, ADR 0012): order changes become inbox entries for merchants and
 customers. By default the events are handled in-process (no broker). For several instances use RabbitMQ:
-`docker compose -f infrastructure/docker/compose.yaml --profile events up -d rabbitmq` (management UI on
+`docker compose --env-file .env -f infrastructure/docker/compose.yaml --profile events up -d rabbitmq` (management UI on
 http://localhost:15672, user `dukkan` / `dukkan`) and start the backend with `DUKKAN_EVENTS_TRANSPORT=rabbitmq`
 (`DUKKAN_RABBITMQ_URI`, default `amqp://dukkan:dukkan@localhost:5672`).
 
@@ -155,7 +156,7 @@ Without it, notifications still appear under Profil → Mitteilungen.
 
 To run the full stack in containers:
 ```bash
-docker compose -f infrastructure/docker/compose.yaml --profile app up --build
+docker compose --env-file .env -f infrastructure/docker/compose.yaml --profile app up --build
 ```
 The `docker` profile requires `DUKKAN_JWT_SECRET` and exits if it is missing
 or too short. It logs ECS JSON.

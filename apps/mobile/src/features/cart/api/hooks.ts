@@ -42,12 +42,23 @@ export function useStoreCart(marketId: string) {
   );
 }
 
+/**
+ * Sets a cart line. `change` (+1, -1) is applied to the quantity in the cart when the request runs,
+ * so quick taps add up; `quantity` sets it outright. Requests of one market run one after another
+ * (scope), so an older answer never overwrites a newer cart.
+ */
 export function useSetCartQuantity(marketId: string) {
   const api = useApi();
+  const lang = useLang();
+  const queryClient = useQueryClient();
   const store = useStoreCart(marketId);
   return useMutation({
-    mutationFn: ({ productId, quantity }: { productId: string; quantity: number }) =>
-      quantity <= 0 ? api.removeCartItem(marketId, productId) : api.setCartItemQuantity(marketId, productId, quantity),
+    scope: { id: `cart:${marketId}` },
+    mutationFn: ({ productId, quantity, change }: { productId: string; quantity: number; change?: number }) => {
+      const current = queryClient.getQueryData<Cart>(queryKeys.cart(lang, marketId))?.items.find((item) => item.productId === productId)?.quantity;
+      const next = change !== undefined && current !== undefined ? Math.max(0, current + change) : quantity;
+      return next <= 0 ? api.removeCartItem(marketId, productId) : api.setCartItemQuantity(marketId, productId, next);
+    },
     onSuccess: store,
   });
 }
@@ -87,7 +98,7 @@ export function useCartQuantities(marketId: string) {
   const setQuantity = useCallback(
     (productId: string, quantity: number) => {
       if (status === 'signedIn') {
-        mutate({ productId, quantity });
+        mutate({ productId, quantity, change: quantity - (quantities.get(productId) ?? 0) });
         return;
       }
       // A guest's tap is a change (+1 / -1) to the cart they will have once signed in, which may
@@ -95,7 +106,7 @@ export function useCartQuantities(marketId: string) {
       const change = quantity - (quantities.get(productId) ?? 0);
       requireAuth('cart', () => {
         void queryClient
-          .fetchQuery({ queryKey: queryKeys.cart(lang, marketId), queryFn: ({ signal }) => api.getCart(marketId, signal) })
+          .query({ queryKey: queryKeys.cart(lang, marketId), queryFn: ({ signal }) => api.getCart(marketId, signal) })
           .then((server) => {
             const current = server.items.find((item) => item.productId === productId)?.quantity ?? 0;
             mutate({ productId, quantity: Math.max(0, current + change) });

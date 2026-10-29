@@ -80,6 +80,11 @@ class OrderMailHandler implements EventHandler {
     if (kind.isEmpty() || identity.isDeleted(order.customerId())) {
       return;
     }
+    // A confirmation delivered late (mail retries) must not follow the rejection or cancellation
+    // mail and promise an order that is already over: that mail tells the customer instead.
+    if (kind.get() == Kind.PLACED && orderIsOver(order)) {
+      return;
+    }
     if (!mailer.enabled()) {
       LOG.debug("No SMTP server: order mail for {} skipped", order.orderNumber());
       return;
@@ -99,5 +104,10 @@ class OrderMailHandler implements EventHandler {
                 platform,
                 platform.webUrl()));
     mailer.send(customer.email(), mail.subject(), mail.body());
+  }
+
+  private boolean orderIsOver(OrderEvent order) {
+    String status = orders.get(order.customerId(), order.orderId(), ContentLocale.of(ContentLocale.DEFAULT)).status();
+    return "REJECTED".equals(status) || "CANCELLED".equals(status);
   }
 }

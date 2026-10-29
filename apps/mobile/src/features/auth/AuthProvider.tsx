@@ -59,9 +59,15 @@ export function AuthProvider({
       if (token === null) {
         // Session ended (logout or 401): drop user data, keep browsing data usable.
         queryClient.removeQueries({ queryKey: queryKeys.me });
-        for (const key of ['notifications', 'carts', 'cart', 'addresses', 'orders', 'order', 'marketFavorites', 'favoriteMarkets', 'recentMarkets', 'myMarkets', 'listings', 'myPromotions', 'marketOrders']) {
+        for (const key of [
+          'notifications', 'notificationSettings', 'carts', 'cart', 'slots', 'addresses', 'orders', 'order', 'marketFavorites',
+          'favoriteMarkets', 'recentMarkets', 'myMarkets', 'listings', 'myPromotions', 'marketOrders', 'orderSettings',
+          'merchantFeedback', 'adminMarkets',
+        ]) {
           queryClient.removeQueries({ queryKey: [key] });
         }
+        // Public content still carries the previous account's `favorite` flags: load it again.
+        void queryClient.invalidateQueries();
         setStatus('signedOut');
       } else {
         setStatus('signedIn');

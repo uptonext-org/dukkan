@@ -27,7 +27,8 @@ import org.springframework.test.context.TestPropertySource;
       "dukkan.security.rate-limit.logins-per-minute=3",
       "dukkan.security.rate-limit.registrations-per-hour=2",
       "dukkan.media.uploads-per-hour=2",
-      "dukkan.security.rate-limit.password-resets-per-hour=2"
+      "dukkan.security.rate-limit.password-resets-per-hour=2",
+      "dukkan.security.cors.allowed-origins=https://web.example"
     })
 class RateLimitIntegrationTest extends IntegrationTest {
 
@@ -37,9 +38,11 @@ class RateLimitIntegrationTest extends IntegrationTest {
     for (int i = 0; i < 3; i++) {
       mvc.perform(json(post("/api/v1/auth/login"), body).with(r -> ip(r, "203.0.113.7"))).andExpect(status().isUnauthorized());
     }
-    mvc.perform(json(post("/api/v1/auth/login"), body).with(r -> ip(r, "203.0.113.7")))
+    mvc.perform(json(post("/api/v1/auth/login"), body).header("Origin", "https://web.example").with(r -> ip(r, "203.0.113.7")))
         .andExpect(status().isTooManyRequests())
         .andExpect(header().exists("Retry-After"))
+        // The web app on another origin can read the answer (not a network error).
+        .andExpect(header().string("Access-Control-Allow-Origin", "https://web.example"))
         .andExpect(jsonPath("$.code").value("RATE_LIMITED"));
     // Other clients are unaffected, and the window resets.
     mvc.perform(json(post("/api/v1/auth/login"), body).with(r -> ip(r, "203.0.113.8"))).andExpect(status().isUnauthorized());

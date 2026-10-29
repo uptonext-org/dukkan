@@ -13,7 +13,13 @@
 set -eu
 cd "$(dirname "$0")"
 
-source="${1:-}"; what="${2:-}"; shift 2 2>/dev/null || { sed -n '2,13p' "$0"; exit 1; }
+source="${1:-}"; what="${2:-}"
+# `shift` of missing arguments ends a POSIX shell before `||` could run: check first.
+if [ -z "$source" ] || [ -z "$what" ]; then
+  sed -n '2,13p' "$0"
+  exit 1
+fi
+shift 2
 with_media=0; with_journal=0
 for option in "$@"; do
   case "$option" in

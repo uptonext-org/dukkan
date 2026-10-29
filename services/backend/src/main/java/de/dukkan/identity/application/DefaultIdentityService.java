@@ -158,6 +158,11 @@ class DefaultIdentityService implements IdentityService {
       throw invalidRefresh();
     }
     User user = users.findById(row.userId()).orElseThrow(DefaultIdentityService::invalidRefresh);
+    if (user.isDeleted()) {
+      // A refresh that raced the deletion may have left a token behind: the account is gone.
+      sessions.revokeFamily(row.familyId(), now);
+      throw invalidRefresh();
+    }
     UserView view = view(user);
     String next = OpaqueTokens.generate();
     UUID nextId = UUID.randomUUID();

@@ -23,7 +23,8 @@ export function useFavoriteMarkets() {
   const { status } = useAuth();
   const { place } = useChosenPlace();
   return useQuery({
-    queryKey: queryKeys.favoriteMarkets(lang),
+    // Distances depend on the chosen place: a new place is a new query.
+    queryKey: [...queryKeys.favoriteMarkets(lang), place?.location ?? null],
     queryFn: ({ signal }) => api.listFavoriteMarkets(place?.location, signal),
     enabled: status === 'signedIn',
   });

@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { ScrollView, TextInput, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
-import { forSpeech } from '../../../shared/format';
+import { forSpeech, latinDigits } from '../../../shared/format';
 import type { RootStackScreenProps } from '../../../navigation/types';
 import { errorMessageKey, type MarketTag, type Place } from '../../../shared/api';
 import { LANGUAGES, useLanguage } from '../../../shared/i18n';
@@ -222,9 +222,9 @@ function MarketProfileForm({ route, navigation, initial }: RootStackScreenProps<
                   day.intervals.map((range, r) => (
                     <View key={r} style={styles.rangeRow}>
                       <View style={styles.times}>
-                        <TextInput value={range.opensAt} onChangeText={(opensAt) => setRange(r, { opensAt })} style={styles.time} accessibilityLabel={forSpeech(t('merchant.opensAt', { day: weekday }))} keyboardType="numbers-and-punctuation" maxLength={5} testID={`hours-${index + 1}-${r}-opens`} />
+                        <TextInput value={range.opensAt} onChangeText={(opensAt) => setRange(r, { opensAt: latinDigits(opensAt) })} style={styles.time} accessibilityLabel={forSpeech(t('merchant.opensAt', { day: weekday }))} keyboardType="numbers-and-punctuation" maxLength={5} testID={`hours-${index + 1}-${r}-opens`} />
                         <AppText variant="body">–</AppText>
-                        <TextInput value={range.closesAt} onChangeText={(closesAt) => setRange(r, { closesAt })} style={styles.time} accessibilityLabel={forSpeech(t('merchant.closesAt', { day: weekday }))} keyboardType="numbers-and-punctuation" maxLength={5} testID={`hours-${index + 1}-${r}-closes`} />
+                        <TextInput value={range.closesAt} onChangeText={(closesAt) => setRange(r, { closesAt: latinDigits(closesAt) })} style={styles.time} accessibilityLabel={forSpeech(t('merchant.closesAt', { day: weekday }))} keyboardType="numbers-and-punctuation" maxLength={5} testID={`hours-${index + 1}-${r}-closes`} />
                       </View>
                       {endsNextDay(range) && (
                         <AppText variant="caption" color="textSecondary" testID={`hours-${index + 1}-${r}-next-day`}>

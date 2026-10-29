@@ -33,8 +33,10 @@ export function useSaveMarket(marketId?: string) {
     mutationFn: (request: MarketProfileRequest) =>
       marketId !== undefined ? api.updateMyMarket(marketId, request) : api.createMyMarket(request),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['myMarkets'] });
-      void queryClient.invalidateQueries({ queryKey: ['markets'] });
+      // The market shows in lists, its own page and home, and in the admins' review.
+      for (const key of ['myMarkets', 'markets', 'market', 'marketHome', 'adminMarkets']) {
+        void queryClient.invalidateQueries({ queryKey: [key] });
+      }
     },
   });
 }

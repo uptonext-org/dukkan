@@ -2417,13 +2417,13 @@ components:
       type: object
       required: [token, platform]
       properties:
-        token: { type: string, minLength: 1, maxLength: 4096, description: FCM registration token. }
+        token: { type: string, minLength: 1, maxLength: 2048, description: "FCM registration token (real ones are about 160 characters; the limit stays below the database index limit)." }
         platform: { type: string, enum: [IOS, ANDROID] }
     DeviceTokenRequest:
       type: object
       required: [token]
       properties:
-        token: { type: string, minLength: 1, maxLength: 4096 }
+        token: { type: string, minLength: 1, maxLength: 2048 }
     Notification:
       type: object
       required: [id, kind, title, body, createdAt, read]

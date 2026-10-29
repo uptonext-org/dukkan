@@ -10,6 +10,7 @@ import de.dukkan.identity.application.IdentityService;
 import de.dukkan.market.application.MarketService;
 import de.dukkan.shared.ai.AiBudget;
 import de.dukkan.shared.ai.ModelImages;
+import de.dukkan.shared.api.PageResponse;
 import de.dukkan.shared.config.DukkanProperties;
 import de.dukkan.shared.error.BusinessRuleException;
 import de.dukkan.shared.error.ErrorCodes;
@@ -152,12 +153,19 @@ public class ShoppingListService {
   private Line match(UUID marketId, ListItem item, ContentLocale locale, UUID userId) {
     List<ProductSummary> found = List.of();
     for (String term : item.searchTerms()) {
+      // Unavailable listings take places in a page: read further pages (at most three) until there
+      // are enough available ones to rank, instead of filtering only the first page.
+      List<ProductSummary> available = new ArrayList<>();
+      for (int page = 0; page < 3 && available.size() < CANDIDATES; page++) {
+        PageResponse<ProductSummary> result =
+            catalog.searchMarket(marketId, new MarketProductQuery(term, null, false, false, false, false, "relevance", page, CANDIDATES), locale, userId);
+        result.items().stream().filter(ProductSummary::available).forEach(available::add);
+        if (page + 1 >= result.totalPages()) {
+          break;
+        }
+      }
       found =
-          catalog
-              .searchMarket(marketId, new MarketProductQuery(term, null, false, false, false, false, "relevance", 0, CANDIDATES), locale, userId)
-              .items()
-              .stream()
-              .filter(ProductSummary::available)
+          available.stream()
               .sorted(Comparator.comparingInt(p -> MatchRanking.score(term, p.name())))
               .limit(ALTERNATIVES + 1L)
               .toList();

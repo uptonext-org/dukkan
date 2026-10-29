@@ -18,12 +18,12 @@ import de.dukkan.shared.error.ConflictException;
 import de.dukkan.shared.error.ErrorCodes;
 import de.dukkan.shared.error.NotFoundException;
 import de.dukkan.shared.error.UnauthorizedException;
-import de.dukkan.shared.time.DukkanTime;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
 import java.time.Clock;
 import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.LocalDate;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -45,14 +45,17 @@ public class FulfilmentService {
   private final AddressService addresses;
   private final Clock clock;
   private final Duration slotLength;
+  private final EntityManager entityManager;
 
   public FulfilmentService(
       FulfilmentSlotRepository slots,
       MarketService markets,
       AddressService addresses,
       Clock clock,
-      DukkanProperties properties) {
+      DukkanProperties properties,
+      EntityManager entityManager) {
     this.slots = slots;
+    this.entityManager = entityManager;
     this.markets = markets;
     this.addresses = addresses;
     this.clock = clock;
@@ -121,8 +124,15 @@ public class FulfilmentService {
    * {@code SLOT_TYPE_MISMATCH}, {@code SLOT_CUTOFF_PASSED} or {@code SLOT_FULL}.
    */
   public SlotView reserveCapacity(UUID slotId, MarketInfo market, FulfilmentType type) {
-    FulfilmentSlot slot = slots.findByIdForUpdate(slotId).orElseThrow(FulfilmentService::slotNotFound);
     Instant now = clock.instant();
+    // The merchant may have changed capacity, lead time or hours since anyone listed the slots:
+    // apply the current rules first, then lock.
+    if (market.acceptsOrders(now)) {
+      ensureSlots(market, type, now);
+    }
+    // ensureSlots may already hold the slot unlocked: lock it and reload its current row.
+    FulfilmentSlot slot = slots.findById(slotId).orElseThrow(FulfilmentService::slotNotFound);
+    entityManager.refresh(slot, LockModeType.PESSIMISTIC_WRITE);
     checkUsable(slot, market, type, now);
     if (slot.remainingCapacity() <= 0) {
       throw new ConflictException(ErrorCodes.SLOT_FULL, "This slot is fully booked.");
@@ -174,14 +184,15 @@ public class FulfilmentService {
       throw slotNotFound();
     }
     requireAcceptsOrders(market, now);
-    if (market.ordering().closedOn(LocalDate.ofInstant(slot.getStartsAt(), DukkanTime.ZONE))) {
-      throw new BusinessRuleException(ErrorCodes.SLOT_UNAVAILABLE, "The market is closed on this day.");
-    }
     if (slot.getType() != type) {
       throw new BusinessRuleException(ErrorCodes.SLOT_TYPE_MISMATCH, "The slot is not a " + type + " slot.");
     }
     if (slot.isCutoffPassed(now)) {
       throw new BusinessRuleException(ErrorCodes.SLOT_CUTOFF_PASSED, "The order cutoff for this slot has passed.");
+    }
+    // Holidays (for the whole opening interval, also after midnight) and changed hours.
+    if (!planned(market, type, now).containsKey(slot.getStartsAt())) {
+      throw new BusinessRuleException(ErrorCodes.SLOT_UNAVAILABLE, "The market does not offer this slot (closed or changed hours).");
     }
   }
 
@@ -197,19 +208,8 @@ public class FulfilmentService {
    */
   private Set<Instant> ensureSlots(MarketInfo market, FulfilmentType type, Instant now) {
     MarketInfo.Ordering ordering = market.ordering();
-    Duration cutoff = Duration.ofMinutes(type == FulfilmentType.DELIVERY ? ordering.deliveryLeadMinutes() : ordering.pickupLeadMinutes());
     int capacity = type == FulfilmentType.DELIVERY ? ordering.deliveryCapacity() : ordering.pickupCapacity();
-    List<SlotPlanner.OpeningWindow> hours =
-        (type == FulfilmentType.DELIVERY ? ordering.deliveryHours() : market.openingHours()).stream()
-            .map(h -> new SlotPlanner.OpeningWindow(DayOfWeek.of(h.dayOfWeek()), h.opensAt(), h.closesAt()))
-            .toList();
-    SlotPlanner planner = planner(market);
-    Map<Instant, SlotPlanner.PlannedSlot> planned = new HashMap<>();
-    for (SlotPlanner.PlannedSlot slot : planner.plan(now, hours, cutoff)) {
-      if (!ordering.closedOn(LocalDate.ofInstant(slot.startsAt(), DukkanTime.ZONE))) {
-        planned.put(slot.startsAt(), slot);
-      }
-    }
+    Map<Instant, SlotPlanner.PlannedSlot> planned = planned(market, type, now);
     // The longest possible horizon, so that slots of a shortened one are tidied up too.
     Instant horizon = new SlotPlanner(SlotPlanner.MAX_DAYS_AHEAD, slotLength).horizonEnd(now);
     Set<Instant> existing = new HashSet<>();
@@ -232,6 +232,23 @@ public class FulfilmentService {
       }
     }
     return planned.keySet();
+  }
+
+  /** The slots the market's current settings offer, by start; a holiday closes the whole opening interval. */
+  private Map<Instant, SlotPlanner.PlannedSlot> planned(MarketInfo market, FulfilmentType type, Instant now) {
+    MarketInfo.Ordering ordering = market.ordering();
+    Duration cutoff = Duration.ofMinutes(type == FulfilmentType.DELIVERY ? ordering.deliveryLeadMinutes() : ordering.pickupLeadMinutes());
+    List<SlotPlanner.OpeningWindow> hours =
+        (type == FulfilmentType.DELIVERY ? ordering.deliveryHours() : market.openingHours()).stream()
+            .map(h -> new SlotPlanner.OpeningWindow(DayOfWeek.of(h.dayOfWeek()), h.opensAt(), h.closesAt()))
+            .toList();
+    Map<Instant, SlotPlanner.PlannedSlot> planned = new HashMap<>();
+    for (SlotPlanner.PlannedSlot slot : planner(market).plan(now, hours, cutoff)) {
+      if (!ordering.closedOn(slot.openingDay())) {
+        planned.put(slot.startsAt(), slot);
+      }
+    }
+    return planned;
   }
 
   private static SlotView view(FulfilmentSlot slot, MarketInfo market, Instant now) {

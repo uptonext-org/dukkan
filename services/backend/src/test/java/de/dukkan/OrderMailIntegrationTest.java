@@ -89,6 +89,7 @@ class OrderMailIntegrationTest extends IntegrationTest {
     String customer = register(email, "CUSTOMER");
     mvc.perform(json(auth(patch("/api/v1/me"), customer), "{\"preferredLocale\":\"en\"}")).andExpect(status().isOk());
     String order = orderPickup(customer, market, tea, 4);
+    awaitMails(email, 1);
 
     mvc.perform(json(auth(post("/api/v1/merchant/orders/" + order + "/status"), merchant), toJson(Map.of("status", "REJECTED"))))
         .andExpect(status().isOk());

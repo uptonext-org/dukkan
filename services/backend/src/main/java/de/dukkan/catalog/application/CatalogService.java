@@ -235,7 +235,8 @@ public class CatalogService {
     }
     Map<UUID, Double> distance = new HashMap<>();
     nearby.forEach(m -> distance.put(m.marketId(), m.distanceMeters()));
-    List<Hit> hits = new ArrayList<>(listings.searchMarkets(distance.keySet(), term, locale.chain(null), NEARBY_CAP, clock.instant()));
+    List<UUID> byNearest = nearby.stream().sorted(Comparator.comparingDouble(MarketDistance::distanceMeters)).map(MarketDistance::marketId).toList();
+    List<Hit> hits = new ArrayList<>(listings.searchMarkets(byNearest, term, locale.chain(null), NEARBY_CAP, clock.instant(), sort));
     Comparator<Hit> relevance =
         Comparator.comparingInt(Hit::tier).thenComparingInt(Hit::nameLength).thenComparing(Hit::name);
     Comparator<Hit> byDistance = Comparator.comparing(h -> distance.get(h.marketId()));
@@ -511,6 +512,13 @@ public class CatalogService {
           errors.add(new ListingImport.RowError(row.barcode() != null ? "barcode" : "name_" + primary, "Duplicate", "the same product as line " + first));
         }
       }
+      // Two new products with different names may still carry the same barcode.
+      if (row.barcode() != null && (key == null || !key.equals(productId == null ? null : productId.toString()))) {
+        Integer first = seen.putIfAbsent("barcode|" + row.barcode(), row.line());
+        if (first != null && !errors.stream().anyMatch(e -> e.code().equals("Duplicate"))) {
+          errors.add(new ListingImport.RowError("barcode", "Duplicate", "the same barcode as line " + first));
+        }
+      }
       String label = name != null ? name : row.names().values().stream().findFirst().orElseGet(row::barcode);
       if (errors.isEmpty()) {
         plans.add(new Planned(row, action, productId, listingId, product));
@@ -610,6 +618,11 @@ public class CatalogService {
       Integer first = seen.putIfAbsent(searchName + "|" + unitSize.toLowerCase(Locale.ROOT), row.line());
       if (first != null) {
         errors.add(new ListingImport.RowError("name_" + SHARED_CATALOG_LOCALE, "Duplicate", "the same product as line " + first));
+      } else if (row.barcode() != null) {
+        Integer sameBarcode = seen.putIfAbsent("barcode|" + row.barcode(), row.line());
+        if (sameBarcode != null) {
+          errors.add(new ListingImport.RowError("barcode", "Duplicate", "the same barcode as line " + sameBarcode));
+        }
       }
       if (errors.isEmpty()) {
         plans.add(new Planned(row, product));

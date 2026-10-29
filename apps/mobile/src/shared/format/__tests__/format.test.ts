@@ -2,7 +2,8 @@ import { createI18n } from '../../i18n';
 import { forSpeech, isolate, isolateValue, LRI, FSI, PDI } from '../bidi';
 import { needsOrganicPrefix, withOrganicPrefix } from '../text';
 import { formatDateTime, formatShortDate, formatTimeRange, isoWeekday } from '../dates';
-import { centsToInput, formatAmount, formatMoney, formatMoneyForAccessibility, formatMoneyShort, parseMoneyInput, splitMoney } from '../money';
+import { centsToInput, formatAmount, formatMoney, formatMoneyForAccessibility, formatMoneyShort, latinDigits,
+  parseMoneyInput, splitMoney } from '../money';
 import { formatDistance, formatPercent } from '../numbers';
 import { ALLERGEN_CODES, allergenLabel, isAllergenCode } from '../allergens';
 
@@ -101,5 +102,11 @@ describe('allergens', () => {
     expect(allergenLabel(de.t, 'Senf')).toBe('Senf');
     expect(isAllergenCode('nuts')).toBe(true);
     expect(isAllergenCode('glitter')).toBe(false);
+  });
+
+  it('reads prices typed with Arabic-Indic digits', () => {
+    expect(parseMoneyInput('٢٫٤٩')).toBe(249);
+    expect(parseMoneyInput('۳,۵')).toBe(350);
+    expect(latinDigits('٠٨:٣٠')).toBe('08:30');
   });
 });

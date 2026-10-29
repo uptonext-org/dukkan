@@ -326,8 +326,14 @@ public class MarketService {
 
   @Transactional
   public MerchantMarket update(UUID marketId, MarketProfile profile, ContentLocale locale) {
-    row(marketId);
+    MarketRow current = row(marketId);
     validate(profile);
+    // An approved market keeps the seller information its approval required (imprint, Art. 30 DSA).
+    if (ACTIVE.equals(current.status())
+        && !MarketReview.of(profile.legalName(), profile.addressLine(), profile.phone(), profile.registerInfo()).complete()) {
+      throw new BusinessRuleException(
+          "MARKET_INCOMPLETE", "An approved market needs complete seller information; see the market review rules.");
+    }
     markets.update(marketId, profile, clock.instant());
     return merchantView(marketId, locale);
   }

@@ -112,4 +112,15 @@ class SlotPlannerTest {
     List<PlannedSlot> lastDay = oneDay.plan(MONDAY_10, List.of(new OpeningWindow(DayOfWeek.MONDAY, LocalTime.of(23, 0), LocalTime.of(2, 0))), PICKUP_CUTOFF);
     assertThat(lastDay).extracting(PlannedSlot::startsAt).containsExactly(berlin("2026-10-19T23:00"));
   }
+
+  @Test
+  void yesterdaysOvernightIntervalStillHasItsSlotsAfterMidnight() {
+    List<OpeningWindow> saturday = List.of(new OpeningWindow(DayOfWeek.SATURDAY, LocalTime.of(20, 0), LocalTime.of(3, 0)));
+    // Sunday 00:30: the Saturday-night interval is still open.
+    List<PlannedSlot> slots = planner.plan(berlin("2026-10-18T00:30"), saturday, PICKUP_CUTOFF);
+
+    assertThat(slots).extracting(PlannedSlot::startsAt).startsWith(berlin("2026-10-18T01:00"), berlin("2026-10-18T02:00"));
+    // The interval opened on Saturday: a Saturday holiday closes these slots, a Sunday one does not.
+    assertThat(slots.getFirst().openingDay()).isEqualTo(java.time.LocalDate.of(2026, 10, 17));
+  }
 }

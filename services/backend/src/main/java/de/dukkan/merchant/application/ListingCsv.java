@@ -78,8 +78,16 @@ public final class ListingCsv {
       throw new InvalidRequestException("file", "Size", "the file may have at most 1 MB");
     }
     String text = decode(content);
-    List<List<String>> records = records(text, delimiter(text));
-    records.removeIf(r -> r.stream().allMatch(String::isBlank));
+    // Blank rows are skipped, but rows keep their number in the spreadsheet for error messages.
+    List<List<String>> all = records(text, delimiter(text));
+    List<List<String>> records = new ArrayList<>();
+    List<Integer> spreadsheetRows = new ArrayList<>();
+    for (int i = 0; i < all.size(); i++) {
+      if (!all.get(i).stream().allMatch(String::isBlank)) {
+        records.add(all.get(i));
+        spreadsheetRows.add(i + 1);
+      }
+    }
     if (records.isEmpty()) {
       throw new InvalidRequestException("file", "Empty", "the file has no header line");
     }
@@ -100,7 +108,7 @@ public final class ListingCsv {
     }
     List<Row> rows = new ArrayList<>();
     for (int i = 1; i < records.size(); i++) {
-      rows.add(row(i + 1, records.get(i), header, locales));
+      rows.add(row(spreadsheetRows.get(i), records.get(i), header, locales));
     }
     return rows;
   }

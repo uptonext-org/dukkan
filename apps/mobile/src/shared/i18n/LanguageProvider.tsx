@@ -1,7 +1,7 @@
 import { createContext, use, useCallback, useEffect, useMemo, useSyncExternalStore, type ReactNode } from 'react';
 import type { i18n as I18n } from 'i18next';
 import { I18nextProvider } from 'react-i18next';
-import { I18nManager } from 'react-native';
+import { I18nManager, Platform } from 'react-native';
 
 import type { LanguageStore } from './languageStore';
 import { directionOf, type Direction, type Language } from './languages';
@@ -46,7 +46,8 @@ export function LanguageProvider({
       // Persist the direction for native components on the next launch.
       I18nManager.allowRTL(rtl);
       I18nManager.forceRTL(rtl);
-      return I18nManager.isRTL !== rtl;
+      // A restart is needed only for native layout; the browser switches direction right away.
+      return Platform.OS !== 'web' && I18nManager.isRTL !== rtl;
     },
     [i18n, store],
   );

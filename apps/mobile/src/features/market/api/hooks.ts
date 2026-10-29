@@ -9,7 +9,8 @@ export function useMarket(marketId: string) {
   const lang = useLang();
   const { place } = useChosenPlace();
   return useQuery({
-    queryKey: queryKeys.market(lang, marketId),
+    // Distance and "delivers here" depend on the chosen place.
+    queryKey: [...queryKeys.market(lang, marketId), place?.location ?? null],
     queryFn: ({ signal }) => api.getMarket(marketId, place?.location, signal),
   });
 }

@@ -17,6 +17,11 @@ export function useSetMarketStatus() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ marketId, status }: { marketId: string; status: MarketStatus }) => api.adminSetMarketStatus(marketId, status),
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ['adminMarkets'] }),
+    onSettled: () => {
+      // An approved or suspended market appears in or leaves the public lists.
+      for (const key of ['adminMarkets', 'myMarkets', 'markets', 'market']) {
+        void queryClient.invalidateQueries({ queryKey: [key] });
+      }
+    },
   });
 }

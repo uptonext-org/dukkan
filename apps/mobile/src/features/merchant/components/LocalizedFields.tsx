@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
@@ -42,7 +42,9 @@ export function LocalizedFields({
   const prefix = testIDPrefix ?? 'localized';
   // The translation answers later: fill in what is empty then, not what was empty when it started.
   const latest = useRef(values);
-  latest.current = values;
+  useEffect(() => {
+    latest.current = values;
+  }, [values]);
 
   const run = () => {
     if (translateKind === undefined) {

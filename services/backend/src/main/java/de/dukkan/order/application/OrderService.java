@@ -87,6 +87,7 @@ public class OrderService {
   public OrderView placeOrder(UUID userId, UUID marketId, @Nullable String idempotencyKey, ContentLocale locale) {
     identity.requireVerifiedEmail(userId);
     if (idempotencyKey != null) {
+      orders.lockIdempotencyKey(userId, idempotencyKey);
       Optional<CustomerOrder> existing = orders.findByUserIdAndIdempotencyKey(userId, idempotencyKey);
       if (existing.isPresent()) {
         CustomerOrder stored = existing.orElseThrow();
