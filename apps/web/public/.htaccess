@@ -1,8 +1,0 @@
-# Single-page app on Apache/LiteSpeed hosting (Hostinger): every path that is not a real file
-# (/verify-email, /reset-password, /profile, ...) is answered by index.html.
-<IfModule mod_rewrite.c>
-  RewriteEngine On
-  RewriteCond %{REQUEST_FILENAME} !-f
-  RewriteCond %{REQUEST_FILENAME} !-d
-  RewriteRule ^ /index.html [L]
-</IfModule>
