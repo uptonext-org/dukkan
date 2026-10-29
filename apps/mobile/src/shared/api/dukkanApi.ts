@@ -59,6 +59,7 @@ import type {
   ShoppingListRequest,
   ShoppingListResult,
   UpdateListingRequest,
+  ListingDetails,
   UpdateUserRequest,
   UploadFile,
   User,
@@ -172,6 +173,8 @@ export interface DukkanApi {
   ): Promise<Page<Listing>>;
   createListing(marketId: string, request: CreateListingRequest): Promise<Listing>;
   updateListing(marketId: string, productId: string, request: UpdateListingRequest): Promise<Listing>;
+  /** A listing with every detail of its product, for the edit form. */
+  getListingDetails(marketId: string, productId: string, signal?: Signal): Promise<ListingDetails>;
   deleteListing(marketId: string, productId: string): Promise<void>;
   listMyPromotions(marketId: string, signal?: Signal): Promise<Promotion[]>;
   createPromotion(marketId: string, request: PromotionRequest): Promise<Promotion>;
@@ -353,6 +356,8 @@ export function createDukkanApi(client: ApiClient): DukkanApi {
       get(`/merchant/markets/${enc(marketId)}/listings`, { ...params }, signal),
     createListing: (marketId, body) =>
       client.request({ method: 'POST', path: `/merchant/markets/${enc(marketId)}/listings`, body }),
+    getListingDetails: (marketId, productId, signal) =>
+      get(`/merchant/markets/${enc(marketId)}/listings/${enc(productId)}/details`, undefined, signal),
     updateListing: (marketId, productId, body) =>
       client.request({
         method: 'PUT',

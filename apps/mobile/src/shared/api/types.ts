@@ -669,6 +669,15 @@ export interface UpdateListingRequest {
   imageUrl?: string | null;
   /** Replaces the market's own details; all empty = the catalog values again. */
   overrides?: ListingOverrides;
+  /** Replaces every detail of the market's own product (privateProduct only; its imageUrl is ignored). */
+  product?: NewCatalogProduct;
+}
+
+/** A listing and every detail of its product, for the edit form (contract ListingDetails). */
+export interface ListingDetails {
+  listing: Listing;
+  /** The product's values in every language; for a shared catalog product they are read-only. */
+  product: NewCatalogProduct;
 }
 
 export type MediaPurpose = 'LOGO' | 'COVER' | 'BANNER' | 'PRODUCT';

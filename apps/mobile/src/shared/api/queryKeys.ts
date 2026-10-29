@@ -49,6 +49,7 @@ export const queryKeys = {
   merchantFeedback: (marketId: string) => ['merchantFeedback', marketId] as const,
   catalog: (lang: string, params: Omit<SearchCatalogParams, 'page'>) => ['catalog', lang, params] as const,
   listings: (lang: string, marketId: string, q: string) => ['listings', lang, marketId, q] as const,
+  listingDetails: (lang: string, marketId: string, listingId: string) => ['listings', 'details', lang, marketId, listingId] as const,
   myPromotions: (lang: string, marketId: string) => ['myPromotions', lang, marketId] as const,
   marketOrders: (lang: string, marketId: string, status: OrderStatus | undefined) =>
     ['marketOrders', lang, marketId, status ?? null] as const,

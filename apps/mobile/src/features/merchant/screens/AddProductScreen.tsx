@@ -4,19 +4,16 @@ import { useTranslation } from 'react-i18next';
 
 import type { RootStackScreenProps } from '../../../navigation/types';
 import { errorMessageKey, type CatalogProduct, type ProductDraft } from '../../../shared/api';
-import { ALLERGEN_CODES, centsToInput, withOrganicPrefix } from '../../../shared/format';
+import { centsToInput, withOrganicPrefix } from '../../../shared/format';
 import { useDebouncedValue } from '../../../shared/hooks/useDebouncedValue';
 import { isLanguage, type Language } from '../../../shared/i18n';
 import { makeStyles } from '../../../shared/theme';
 import { AppText, Button, Chip, ChipScroller, EmptyState, ErrorState, ImageTile, LoadingState, Screen, ScreenHeader, SearchField, SegmentedControl, TextField, ToggleSwitch, placeholderProps } from '../../../shared/ui';
 import { hasErrors } from '../../auth/validation';
-import { useAllCategories } from '../../catalog/api/hooks';
 import { useCuisines } from '../../marketplace/api/hooks';
-import { toggle } from '../../marketplace/model';
 import { useCatalogSearch, useCreateListing, useMyMarkets } from '../api/hooks';
 import { CapturePanel } from '../components/CapturePanel';
-import { LocalizedFields } from '../components/LocalizedFields';
-import { PhotoField } from '../components/PhotoField';
+import { ProductFields } from '../components/ProductFields';
 import {
   emptyNewProduct,
   fromDraft,
@@ -110,8 +107,6 @@ function CatalogRow({ product, marketId, onAdded, initialPrice = '' }: { product
 function NewProductForm({ marketId, primaryLocale, onAdded }: { marketId: string; primaryLocale: Language; onAdded: () => void }) {
   const styles = useStyles();
   const { t } = useTranslation();
-  const categories = useAllCategories();
-  const cuisines = useCuisines();
   const create = useCreateListing(marketId);
   const [values, setValues] = useState<NewProductValues>(emptyNewProduct);
   const [errors, setErrors] = useState<Errors<NewProductField>>({});
@@ -150,52 +145,7 @@ function NewProductForm({ marketId, primaryLocale, onAdded }: { marketId: string
           ))}
         </View>
       )}
-      <LocalizedFields label={t('merchant.productName')} values={values.name} primary={primaryLocale} error={err('name')} onChange={(lang, text) => set('name', { ...values.name, [lang]: text })} testIDPrefix="new-name" translateKind="PRODUCT_NAME" />
-      <LocalizedFields label={t('merchant.description')} values={values.description} primary={primaryLocale} error={err('description')} onChange={(lang, text) => set('description', { ...values.description, [lang]: text })} multiline testIDPrefix="new-description" translateKind="PRODUCT_DESCRIPTION" />
-      <TextField label={t('merchant.keywords')} value={values.keywords} onChangeText={(v) => set('keywords', v)} error={err('keywords')} hint={t('merchant.keywordsHint')} />
-      <TextField label={t('merchant.brand')} value={values.brand} onChangeText={(v) => set('brand', v)} error={err('brand')} hint={t('merchant.optional')} />
-      <TextField label={t('merchant.unitSize')} value={values.unitSize} onChangeText={(v) => set('unitSize', v)} error={err('unitSize')} placeholder="500 g" testID="new-unit" />
-      <AppText variant="subhead" color="textSecondary">
-        {t('merchant.category')}
-      </AppText>
-      <View style={styles.wrap}>
-        {(categories.data ?? []).map((c) => (
-          <Chip key={c.id} label={c.name} selected={values.categoryId === c.id} onPress={() => set('categoryId', c.id)} />
-        ))}
-      </View>
-      {err('categoryId') !== undefined && (
-        <AppText variant="caption" color="accent" accessibilityRole="alert">
-          {err('categoryId')}
-        </AppText>
-      )}
-      <AppText variant="subhead" color="textSecondary" style={styles.gapTop}>
-        {t('merchant.cuisines')}
-      </AppText>
-      <View style={styles.wrap}>
-        {(cuisines.data ?? []).map((c) => (
-          <Chip key={c.code} label={c.name} selected={values.cuisineCodes.includes(c.code)} onPress={() => set('cuisineCodes', toggle(values.cuisineCodes, c.code))} />
-        ))}
-      </View>
-      <View style={styles.switchRow}>
-        <AppText variant="body" style={styles.flex}>
-          {t('merchant.organic')}
-        </AppText>
-        <ToggleSwitch value={values.organic} onValueChange={(v) => set('organic', v)} accessibilityLabel={t('merchant.organic')} />
-      </View>
-      <AppText variant="subhead" color="textSecondary" style={styles.gapTop}>
-        {t('merchant.allergens')}
-      </AppText>
-      <AppText variant="caption" color="textSecondary">
-        {t('merchant.allergensHint')}
-      </AppText>
-      <View style={styles.wrap} testID="new-allergens">
-        {ALLERGEN_CODES.map((code) => (
-          <Chip key={code} label={t(`allergen.${code}`)} selected={values.allergens.includes(code)} onPress={() => set('allergens', toggle(values.allergens, code))} testID={`allergen-${code}`} />
-        ))}
-      </View>
-      <PhotoField label={t('merchant.productPhoto')} marketId={marketId} purpose="PRODUCT" value={values.imageUrl} onChange={(url) => set('imageUrl', url)} placeholderIcon="package" testID="new-photo" />
-      <TextField label={t('merchant.price')} value={values.price} onChangeText={(v) => set('price', v)} error={err('price')} keyboardType="decimal-pad" inputDirection="ltr" testID="new-price" />
-      <TextField label={t('merchant.maxQuantity')} value={values.maxOrderQuantity} onChangeText={(v) => set('maxOrderQuantity', v)} error={err('maxOrderQuantity')} keyboardType="number-pad" inputDirection="ltr" />
+      <ProductFields marketId={marketId} primaryLocale={primaryLocale} values={values} onChange={set} error={err} idPrefix="new" />
       {create.isError && (
         <AppText variant="subhead" color="accent" accessibilityRole="alert">
           {t(errorMessageKey(create.error))}

@@ -13,6 +13,7 @@ import { AddProductScreen } from '../features/merchant/screens/AddProductScreen'
 import { FeedbackScreen } from '../features/merchant/screens/FeedbackScreen';
 import { ListingsScreen } from '../features/merchant/screens/ListingsScreen';
 import { AdminMarketsScreen } from '../features/admin/screens/AdminMarketsScreen';
+import { EditListingScreen } from '../features/merchant/screens/EditListingScreen';
 import { MarketHubScreen } from '../features/merchant/screens/MarketHubScreen';
 import { MarketProfileFormScreen } from '../features/merchant/screens/MarketProfileFormScreen';
 import { MerchantMarketsScreen } from '../features/merchant/screens/MerchantMarketsScreen';
@@ -71,6 +72,7 @@ export function RootNavigator() {
           <Stack.Screen name="MerchantMarketForm" component={MarketProfileFormScreen} />
           <Stack.Screen name="MerchantMarketHub" component={MarketHubScreen} />
           <Stack.Screen name="MerchantListings" component={ListingsScreen} />
+          <Stack.Screen name="MerchantEditListing" component={EditListingScreen} />
           <Stack.Screen name="MerchantAddProduct" component={AddProductScreen} />
           <Stack.Screen name="MerchantPromotions" component={PromotionsScreen} />
           <Stack.Screen name="MerchantFeedback" component={FeedbackScreen} />

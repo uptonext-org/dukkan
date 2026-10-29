@@ -112,7 +112,8 @@
     "dailyWindow": "Times like 08:00; “until” must be after “from”.",
     "addressPostcode": "The address needs a postcode (5 digits). Please pick a more precise address from the search.",
     "phoneDigits": "Please enter a phone number with at least 6 digits.",
-    "legalNameWords": "Please enter first and last name, or the company with its legal form (at least two words)."
+    "legalNameWords": "Please enter first and last name, or the company with its legal form (at least two words).",
+    "barcode": "A barcode has 8 to 14 digits."
   },
   "language": {
     "button": "Change language",
@@ -700,7 +701,15 @@
     "allDay": "All day",
     "dailyFrom": "Daily from (HH:MM)",
     "dailyUntil": "Daily until (HH:MM)",
-    "legalNameHint": "First and last name, or company with legal form, e.g. “Alosh Alrifai” or “Alosh Dukkan GmbH”. Shown in the imprint."
+    "legalNameHint": "First and last name, or company with legal form, e.g. “Alosh Alrifai” or “Alosh Dukkan GmbH”. Shown in the imprint.",
+    "barcode": "Barcode (EAN)",
+    "editProduct": "Edit {{name}}",
+    "editTitle": "Edit product",
+    "catalogHint": "This product comes from the shared catalog. Your details apply to your market only; empty fields show the catalog value.",
+    "catalogValue": "Catalog: {{value}}",
+    "ownName": "Own name",
+    "ownDescription": "Own description",
+    "saved": "Saved."
   },
   "allergen": {
     "gluten": "Gluten",

@@ -667,6 +667,12 @@ public class CatalogService {
       }
       saveOverrides(listingId, overrides, now);
     }
+    if (update.product() != null) {
+      if (row.ownerMarketId() == null) {
+        throw new InvalidRequestException("product", "PrivateProductOnly", "a shared catalog product is adjusted with overrides");
+      }
+      updatePrivateProduct(marketId, row.catalogProductId(), update.product(), now);
+    }
     if (update.changeImage()) {
       if (row.ownerMarketId() != null) {
         // A private product belongs to this market: its own image is the product image.
@@ -678,6 +684,25 @@ public class CatalogService {
       }
     }
     return listing(listingId, locale);
+  }
+
+  /** Replaces the details of the market's own product and lets the translator fill missing languages again. */
+  private void updatePrivateProduct(UUID marketId, UUID productId, NewProduct product, Instant now) {
+    validate(product, markets.info(marketId));
+    String searchText = SearchText.build(product.name().values(), product.brand(), product.keywords());
+    if (!products.updatePrivate(productId, marketId, product, searchText, now)) {
+      throw productNotFound();
+    }
+    product.name().forEach((code, name) -> products.updateSearchName(productId, code, TextNormalizer.normalize(name)));
+    outbox.append(PrivateProductCreated.TYPE, productId, new PrivateProductCreated(productId, marketId));
+  }
+
+  /** A listing of the market with every detail of its product, for the merchant's edit form. */
+  @Transactional(readOnly = true)
+  public ListingDetails listingDetails(UUID marketId, UUID listingId, ContentLocale locale) {
+    ListingRow row = ownedListing(marketId, listingId);
+    NewProduct product = products.details(row.catalogProductId()).orElseThrow(CatalogService::productNotFound);
+    return new ListingDetails(listing(listingId, locale), product);
   }
 
   @Transactional

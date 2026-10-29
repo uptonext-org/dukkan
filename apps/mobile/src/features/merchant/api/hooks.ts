@@ -113,6 +113,16 @@ function useInvalidateListings() {
   };
 }
 
+/** Every detail of a listing's product for the edit form (cleared with the listings after a change). */
+export function useListingDetails(marketId: string, listingId: string) {
+  const api = useApi();
+  const lang = useLang();
+  return useQuery({
+    queryKey: queryKeys.listingDetails(lang, marketId, listingId),
+    queryFn: ({ signal }) => api.getListingDetails(marketId, listingId, signal),
+  });
+}
+
 export function useCreateListing(marketId: string) {
   const api = useApi();
   const invalidate = useInvalidateListings();

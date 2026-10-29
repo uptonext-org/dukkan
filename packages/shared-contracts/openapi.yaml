@@ -1537,6 +1537,25 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
+  /merchant/markets/{marketId}/listings/{productId}/details:
+    parameters:
+      - { $ref: '#/components/parameters/MarketId' }
+      - { $ref: '#/components/parameters/ProductId' }
+    get:
+      tags: [merchant]
+      operationId: getListingDetails
+      summary: A listing with every detail of its product, for the edit form
+      parameters:
+        - { $ref: '#/components/parameters/AcceptLanguage' }
+      responses:
+        '200':
+          description: The listing and its product's details in every language.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ListingDetails' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
   /merchant/markets/{marketId}/listings/{productId}:
     parameters:
       - { $ref: '#/components/parameters/MarketId' }
@@ -1544,7 +1563,7 @@ paths:
     put:
       tags: [merchant]
       operationId: updateListing
-      summary: Change price, availability or limits of a listing
+      summary: Change price, availability, limits, photo or details of a listing
       requestBody:
         required: true
         content:
@@ -3469,6 +3488,23 @@ components:
         overrides:
           description: Replaces the market's own details (all fields empty = the catalog values again). Absent = unchanged.
           $ref: '#/components/schemas/ListingOverrides'
+        product:
+          description: |
+            Replaces every detail of the market's own product (`privateProduct`): names and
+            descriptions in every language, keywords, brand, pack size, category, cuisines, organic,
+            allergens, barcode. Missing languages are machine-translated again. Its `imageUrl` is
+            ignored (use `imageUrl`). Absent = unchanged. For a shared catalog product → 400
+            `PrivateProductOnly` (use `overrides`).
+          $ref: '#/components/schemas/NewCatalogProduct'
+    ListingDetails:
+      type: object
+      required: [listing, product]
+      description: |
+        A listing and every detail of its product, as the edit form shows them. For a shared catalog
+        product the details are the catalog's (read-only; the market changes its own with `overrides`).
+      properties:
+        listing: { $ref: '#/components/schemas/Listing' }
+        product: { $ref: '#/components/schemas/NewCatalogProduct' }
     Listing:
       allOf:
         - $ref: '#/components/schemas/ProductSummary'

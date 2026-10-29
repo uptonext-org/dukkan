@@ -200,6 +200,100 @@ public class CatalogProductRepository {
         .param("searchText", searchText)
         .param("now", Timestamp.from(now))
         .update();
+    insertTexts(id, p);
+  }
+
+  /**
+   * Replaces the details of a market's own product: columns, texts (machine translations too, the
+   * translator fills missing languages again) and cuisines. False when it is not that market's.
+   */
+  public boolean updatePrivate(UUID id, UUID ownerMarketId, NewProduct p, String searchText, Instant now) {
+    int updated =
+        jdbc.sql(
+                """
+                UPDATE catalog_product
+                   SET category_id = :categoryId, brand = :brand, unit_size = :unitSize, net_quantity = :netQuantity,
+                       net_unit = :netUnit, organic = :organic, allergens = :allergens, keywords = :keywords,
+                       barcode = :barcode, search_text = :searchText, updated_at = :now
+                 WHERE id = :id AND owner_market_id = :owner
+                """)
+            .param("id", id)
+            .param("owner", ownerMarketId)
+            .param("categoryId", p.categoryId())
+            .param("brand", p.brand(), Types.VARCHAR)
+            .param("unitSize", p.unitSize().strip())
+            .param("netQuantity", p.netQuantity(), Types.NUMERIC)
+            .param("netUnit", p.netUnit(), Types.VARCHAR)
+            .param("organic", p.organic())
+            .param("allergens", new SqlTextArray(p.allergens()))
+            .param("keywords", new SqlTextArray(p.keywords()))
+            .param("barcode", p.barcode(), Types.VARCHAR)
+            .param("searchText", searchText)
+            .param("now", Timestamp.from(now))
+            .update();
+    if (updated == 0) {
+      return false;
+    }
+    jdbc.sql("DELETE FROM catalog_product_translation WHERE catalog_product_id = :id").param("id", id).update();
+    jdbc.sql("DELETE FROM catalog_product_cuisine WHERE catalog_product_id = :id").param("id", id).update();
+    insertTexts(id, p);
+    return true;
+  }
+
+  /** Every detail of a product in every language, as a merchant edits it. */
+  public Optional<NewProduct> details(UUID id) {
+    List<NewProduct> found =
+        jdbc.sql(
+                """
+                SELECT category_id, brand, unit_size, net_quantity, net_unit, organic, allergens, keywords, barcode, image_url
+                  FROM catalog_product WHERE id = :id
+                """)
+            .param("id", id)
+            .query(
+                (rs, i) ->
+                    new NewProduct(
+                        new LinkedHashMap<>(),
+                        new LinkedHashMap<>(),
+                        new LinkedHashMap<>(),
+                        SqlTextArray.read(rs.getArray(8)),
+                        rs.getString(2),
+                        rs.getString(3),
+                        rs.getBigDecimal(4),
+                        rs.getString(5),
+                        rs.getObject(1, UUID.class),
+                        new ArrayList<>(),
+                        rs.getBoolean(6),
+                        SqlTextArray.read(rs.getArray(7)),
+                        rs.getString(10),
+                        rs.getString(9)))
+            .list();
+    if (found.isEmpty()) {
+      return Optional.empty();
+    }
+    NewProduct product = found.getFirst();
+    jdbc.sql("SELECT locale, name, description, tagline FROM catalog_product_translation WHERE catalog_product_id = :id ORDER BY locale")
+        .param("id", id)
+        .query(
+            rs -> {
+              String locale = rs.getString(1);
+              product.name().put(locale, rs.getString(2));
+              if (rs.getString(3) != null) {
+                product.description().put(locale, rs.getString(3));
+              }
+              if (rs.getString(4) != null) {
+                product.tagline().put(locale, rs.getString(4));
+              }
+            });
+    product.cuisineCodes()
+        .addAll(
+            jdbc.sql("SELECT cuisine_code FROM catalog_product_cuisine WHERE catalog_product_id = :id ORDER BY cuisine_code")
+                .param("id", id)
+                .query(String.class)
+                .list());
+    return Optional.of(product);
+  }
+
+  private void insertTexts(UUID id, NewProduct p) {
     for (Map.Entry<String, String> name : p.name().entrySet()) {
       String locale = name.getKey();
       jdbc.sql(

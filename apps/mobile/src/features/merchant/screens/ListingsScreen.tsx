@@ -11,7 +11,7 @@ import { AppText, Button, EmptyState, IconButton, ImageTile, Screen, ScreenHeade
 import { useListings, useUpdateListing } from '../api/hooks';
 import { PhotoField } from '../components/PhotoField';
 
-const ListingRow = memo(function ListingRow({ listing, marketId }: { listing: Listing; marketId: string }) {
+const ListingRow = memo(function ListingRow({ listing, marketId, onEdit }: { listing: Listing; marketId: string; onEdit: (listingId: string) => void }) {
   const styles = useStyles();
   const { t } = useTranslation();
   const update = useUpdateListing(marketId);
@@ -32,7 +32,8 @@ const ListingRow = memo(function ListingRow({ listing, marketId }: { listing: Li
           </AppText>
         </View>
         <IconButton icon="camera" label={t('merchant.photo.editFor', { name: listing.name })} onPress={() => setPhoto((p) => !p)} selected={photo} testID={`photo-toggle-${listing.id}`} />
-        <IconButton icon="edit" label={t('merchant.editPrice', { name: listing.name })} onPress={() => setEditing((e) => !e)} />
+        <IconButton icon="tag" label={t('merchant.editPrice', { name: listing.name })} onPress={() => setEditing((e) => !e)} selected={editing} testID={`price-toggle-${listing.id}`} />
+        <IconButton icon="edit" label={t('merchant.editProduct', { name: listing.name })} onPress={() => onEdit(listing.id)} testID={`edit-${listing.id}`} />
         <ToggleSwitch
           value={listing.available}
           disabled={update.isPending}
@@ -85,7 +86,7 @@ const ListingRow = memo(function ListingRow({ listing, marketId }: { listing: Li
   );
 });
 
-/** Listings with an availability toggle and price edit. */
+/** Listings with an availability toggle, a quick price edit and a full edit screen per product. */
 export function ListingsScreen({ route, navigation }: RootStackScreenProps<'MerchantListings'>) {
   const styles = useStyles();
   const { t } = useTranslation();
@@ -106,7 +107,7 @@ export function ListingsScreen({ route, navigation }: RootStackScreenProps<'Merc
           data={query.listings}
           keyExtractor={(l) => l.id}
           contentContainerStyle={styles.list}
-          renderItem={({ item }) => <ListingRow listing={item} marketId={marketId} />}
+          renderItem={({ item }) => <ListingRow listing={item} marketId={marketId} onEdit={(listingId) => navigation.navigate('MerchantEditListing', { marketId, listingId })} />}
           onEndReached={() => {
             if (query.hasNextPage && !query.isFetchingNextPage) {
               void query.fetchNextPage();

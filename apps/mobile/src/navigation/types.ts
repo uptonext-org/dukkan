@@ -52,6 +52,7 @@ export type RootStackParamList = {
   MerchantMarketForm: { marketId?: string } | undefined;
   MerchantMarketHub: { marketId: string };
   MerchantListings: { marketId: string };
+  MerchantEditListing: { marketId: string; listingId: string };
   MerchantAddProduct: { marketId: string };
   MerchantPromotions: { marketId: string };
   MerchantFeedback: { marketId: string };

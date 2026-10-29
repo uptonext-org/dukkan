@@ -1,15 +1,19 @@
 import type {
   CreateListingRequest,
   FulfilmentOptions,
+  Listing,
+  ListingDetails,
   ListingOverrides,
   LocalizedText,
   MarketProfileRequest,
   MarketTag,
   MerchantMarket,
+  NewCatalogProduct,
   OpeningHours,
   PromotionRequest,
   ProductDraft,
   PromotionType,
+  UpdateListingRequest,
 } from '../../shared/api';
 import { centsToInput, parseMoneyInput } from '../../shared/format';
 import type { Language } from '../../shared/i18n';
@@ -20,6 +24,7 @@ export type Errors<K extends string> = Partial<Record<K, ValidationKey>>;
 export const CONTENT_LANGUAGES: readonly Language[] = ['de', 'en', 'ar'];
 
 const TIME = /^([01][0-9]|2[0-3]):[0-5][0-9]$/;
+const BARCODE = /^\d{8,14}$/;
 // The server's seller-information rules (MarketReview): a market cannot be approved without them.
 const POSTCODE = /(^|\D)\d{5}(\D|$)/;
 const TWO_WORDS = /\S+\s+\S+/;
@@ -67,7 +72,7 @@ export interface NewProductValues {
   barcode: string | null;
 }
 
-export type NewProductField = 'name' | 'description' | 'keywords' | 'brand' | 'unitSize' | 'categoryId' | 'price' | 'maxOrderQuantity';
+export type NewProductField = 'name' | 'description' | 'keywords' | 'brand' | 'unitSize' | 'categoryId' | 'price' | 'maxOrderQuantity' | 'barcode';
 
 export function emptyNewProduct(): NewProductValues {
   return {
@@ -175,30 +180,134 @@ export function validateNewProduct(values: NewProductValues, primaryLocale: Lang
   if (max !== undefined) {
     errors.maxOrderQuantity = max;
   }
+  if (values.barcode !== null && !BARCODE.test(values.barcode)) {
+    errors.barcode = 'barcode';
+  }
   return errors;
 }
 
-export function toNewProductListing(values: NewProductValues): CreateListingRequest {
+function toNewCatalogProduct(values: NewProductValues): NewCatalogProduct {
   const brand = values.brand.trim();
   const description = localized(values.description);
   return {
+    name: localized(values.name),
+    ...(Object.keys(description).length > 0 ? { description } : {}),
+    keywords: splitList(values.keywords),
+    brand: brand === '' ? null : brand,
+    unitSize: values.unitSize.trim(),
+    categoryId: values.categoryId ?? '',
+    cuisineCodes: values.cuisineCodes,
+    organic: values.organic,
+    allergens: values.allergens,
+    ...(values.imageUrl !== null ? { imageUrl: values.imageUrl } : {}),
+    ...(values.net !== null ? { netQuantity: values.net.quantity, netUnit: values.net.unit } : {}),
+    ...(values.barcode !== null ? { barcode: values.barcode } : {}),
+  };
+}
+
+export function toNewProductListing(values: NewProductValues): CreateListingRequest {
+  return {
     catalogProductId: null,
-    newProduct: {
-      name: localized(values.name),
-      ...(Object.keys(description).length > 0 ? { description } : {}),
-      keywords: splitList(values.keywords),
-      brand: brand === '' ? null : brand,
-      unitSize: values.unitSize.trim(),
-      categoryId: values.categoryId ?? '',
-      cuisineCodes: values.cuisineCodes,
-      organic: values.organic,
-      allergens: values.allergens,
-      ...(values.imageUrl !== null ? { imageUrl: values.imageUrl } : {}),
-      ...(values.net !== null ? { netQuantity: values.net.quantity, netUnit: values.net.unit } : {}),
-      ...(values.barcode !== null ? { barcode: values.barcode } : {}),
-    },
+    newProduct: toNewCatalogProduct(values),
     price: { amountCents: parseMoneyInput(values.price) ?? 0, currency: 'EUR' },
     available: true,
+    maxOrderQuantity: Number(values.maxOrderQuantity),
+  };
+}
+
+// ---------------------------------------------------------------- edit a listing
+
+function fromLocalized(text: LocalizedText | undefined): Record<Language, string> {
+  return { de: text?.de ?? '', en: text?.en ?? '', ar: text?.ar ?? '' };
+}
+
+/** The edit form of the market's own product, filled with its current details. */
+export function fromListingDetails({ listing, product }: ListingDetails): NewProductValues {
+  return {
+    name: fromLocalized(product.name),
+    description: fromLocalized(product.description),
+    keywords: (product.keywords ?? []).join(', '),
+    brand: product.brand ?? '',
+    unitSize: product.unitSize,
+    categoryId: product.categoryId,
+    cuisineCodes: product.cuisineCodes ?? [],
+    organic: product.organic ?? false,
+    allergens: product.allergens ?? [],
+    price: centsToInput(listing.price.amountCents),
+    maxOrderQuantity: String(listing.maxOrderQuantity),
+    imageUrl: listing.imageUrl ?? null,
+    net: product.netQuantity != null && product.netUnit != null ? { quantity: product.netQuantity, unit: product.netUnit } : null,
+    barcode: product.barcode ?? null,
+  };
+}
+
+/**
+ * When merchants write only in the market's language, the other languages are machine
+ * translations of the old text: drop them when that text changed, so the translator writes new ones.
+ */
+export function withoutOutdatedTranslations(values: NewProductValues, initial: NewProductValues, primary: Language): NewProductValues {
+  const fresh = (field: 'name' | 'description') =>
+    values[field][primary].trim() === initial[field][primary].trim() ? values[field] : { ...emptyLocalized(), [primary]: values[field][primary] };
+  return { ...values, name: fresh('name'), description: fresh('description') };
+}
+
+/** Everything of the market's own product at once: details, photo, price and limit. */
+export function toProductUpdate(values: NewProductValues): UpdateListingRequest {
+  return {
+    product: toNewCatalogProduct(values),
+    imageUrl: values.imageUrl,
+    price: { amountCents: parseMoneyInput(values.price) ?? 0, currency: 'EUR' },
+    maxOrderQuantity: Number(values.maxOrderQuantity),
+  };
+}
+
+/** The market's own details of a catalog product in the edit form; empty = the catalog value. */
+export interface CatalogListingValues extends OwnDetails {
+  price: string;
+  maxOrderQuantity: string;
+  imageUrl: string | null;
+}
+
+export function fromCatalogListing(listing: Listing): CatalogListingValues {
+  return {
+    name: listing.overrides?.name ?? '',
+    description: listing.overrides?.description ?? '',
+    unitSize: listing.overrides?.unitSize ?? '',
+    brand: listing.overrides?.brand ?? '',
+    price: centsToInput(listing.price.amountCents),
+    maxOrderQuantity: String(listing.maxOrderQuantity),
+    imageUrl: listing.imageUrl ?? null,
+  };
+}
+
+export type CatalogListingField = 'name' | 'description' | 'unitSize' | 'brand' | 'price' | 'maxOrderQuantity';
+
+export function validateCatalogListing(values: CatalogListingValues): Errors<CatalogListingField> {
+  const errors: Errors<CatalogListingField> = {};
+  const limits: [CatalogListingField & keyof OwnDetails, number][] = [['name', 200], ['description', 2000], ['unitSize', 40], ['brand', 80]];
+  for (const [field, max] of limits) {
+    if (values[field].trim().length > max) {
+      errors[field] = 'tooLong';
+    }
+  }
+  const price = validatePrice(values.price);
+  if (price !== undefined) {
+    errors.price = price;
+  }
+  const max = validateMaxQuantity(values.maxOrderQuantity);
+  if (max !== undefined) {
+    errors.maxOrderQuantity = max;
+  }
+  return errors;
+}
+
+/** Own details (all empty = the catalog values again), photo, price and limit of a catalog listing. */
+export function toCatalogListingUpdate(values: CatalogListingValues): UpdateListingRequest {
+  const own = (text: string) => (text.trim() === '' ? null : text.trim());
+  return {
+    overrides: { name: own(values.name), description: own(values.description), unitSize: own(values.unitSize), brand: own(values.brand) },
+    imageUrl: values.imageUrl,
+    price: { amountCents: parseMoneyInput(values.price) ?? 0, currency: 'EUR' },
     maxOrderQuantity: Number(values.maxOrderQuantity),
   };
 }

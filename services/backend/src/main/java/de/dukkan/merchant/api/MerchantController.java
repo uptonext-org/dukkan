@@ -3,6 +3,7 @@ package de.dukkan.merchant.api;
 import de.dukkan.capture.application.ProductDraftResult;
 import de.dukkan.catalog.application.CatalogProduct;
 import de.dukkan.catalog.application.Listing;
+import de.dukkan.catalog.application.ListingDetails;
 import de.dukkan.catalog.application.ListingImport;
 import de.dukkan.feedback.application.FeedbackService;
 import de.dukkan.i18n.application.ContentLocale;
@@ -202,6 +203,15 @@ final class MerchantController {
       @RequestBody @Valid UpdateListingRequest request,
       @RequestAttribute(ContentLocale.REQUEST_ATTRIBUTE) ContentLocale locale) {
     return merchant.updateListing(CurrentUser.id(security), marketId, productId, request.toUpdate(), locale);
+  }
+
+  @GetMapping("/markets/{marketId}/listings/{productId}/details")
+  ListingDetails listingDetails(
+      @CurrentSecurityContext SecurityContext security,
+      @PathVariable UUID marketId,
+      @PathVariable UUID productId,
+      @RequestAttribute(ContentLocale.REQUEST_ATTRIBUTE) ContentLocale locale) {
+    return merchant.listingDetails(CurrentUser.id(security), marketId, productId, locale);
   }
 
   @DeleteMapping("/markets/{marketId}/listings/{productId}")

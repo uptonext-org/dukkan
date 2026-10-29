@@ -144,6 +144,7 @@ final class MerchantRequests {
     private @Nullable @Size(max = 500) @URL String imageUrl;
     private boolean imageUrlPresent;
     private @Nullable @Valid ListingOverrides overrides;
+    private @Nullable @Valid NewCatalogProductRequest product;
 
     @JsonSetter("price")
     void setPrice(@Nullable Money price) {
@@ -171,9 +172,20 @@ final class MerchantRequests {
       this.overrides = overrides;
     }
 
+    @JsonSetter("product")
+    void setProduct(@Nullable NewCatalogProductRequest product) {
+      this.product = product;
+    }
+
     ListingUpdate toUpdate() {
       return new ListingUpdate(
-          price == null ? null : euroCents(price, "price"), available, maxOrderQuantity, imageUrlPresent, imageUrl, overrides);
+          price == null ? null : euroCents(price, "price"),
+          available,
+          maxOrderQuantity,
+          imageUrlPresent,
+          imageUrl,
+          overrides,
+          product == null ? null : product.toNewProduct());
     }
   }
 

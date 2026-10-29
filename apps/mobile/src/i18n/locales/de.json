@@ -112,7 +112,8 @@
     "dailyWindow": "Uhrzeiten wie 08:00; „bis“ muss nach „ab“ liegen.",
     "addressPostcode": "Die Anschrift braucht eine Postleitzahl (5 Ziffern). Bitte eine genauere Adresse aus der Suche wählen.",
     "phoneDigits": "Bitte eine Telefonnummer mit mindestens 6 Ziffern eingeben.",
-    "legalNameWords": "Bitte Vor- und Nachname oder Firma mit Rechtsform eingeben (mindestens zwei Wörter)."
+    "legalNameWords": "Bitte Vor- und Nachname oder Firma mit Rechtsform eingeben (mindestens zwei Wörter).",
+    "barcode": "Ein Barcode hat 8 bis 14 Ziffern."
   },
   "language": {
     "button": "Sprache ändern",
@@ -700,7 +701,15 @@
     "allDay": "Ganztägig",
     "dailyFrom": "Täglich ab (HH:MM)",
     "dailyUntil": "Täglich bis (HH:MM)",
-    "legalNameHint": "Vor- und Nachname oder Firma mit Rechtsform, z. B. „Alosh Alrifai“ oder „Alosh Dukkan GmbH“. Erscheint im Impressum."
+    "legalNameHint": "Vor- und Nachname oder Firma mit Rechtsform, z. B. „Alosh Alrifai“ oder „Alosh Dukkan GmbH“. Erscheint im Impressum.",
+    "barcode": "Barcode (EAN)",
+    "editProduct": "{{name}} bearbeiten",
+    "editTitle": "Produkt bearbeiten",
+    "catalogHint": "Dieses Produkt kommt aus dem gemeinsamen Katalog. Deine Angaben gelten nur für deinen Markt; leere Felder zeigen den Katalogwert.",
+    "catalogValue": "Katalog: {{value}}",
+    "ownName": "Eigener Name",
+    "ownDescription": "Eigene Beschreibung",
+    "saved": "Gespeichert."
   },
   "allergen": {
     "gluten": "Gluten",

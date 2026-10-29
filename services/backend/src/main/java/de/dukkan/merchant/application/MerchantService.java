@@ -6,6 +6,7 @@ import de.dukkan.capture.application.ProductDraftResult;
 import de.dukkan.catalog.application.CatalogProduct;
 import de.dukkan.catalog.application.CatalogService;
 import de.dukkan.catalog.application.Listing;
+import de.dukkan.catalog.application.ListingDetails;
 import de.dukkan.catalog.application.ListingDraft;
 import de.dukkan.catalog.application.ListingImport;
 import de.dukkan.catalog.application.ListingInfo;
@@ -172,6 +173,12 @@ public class MerchantService {
   public Listing updateListing(UUID userId, UUID marketId, UUID listingId, ListingUpdate update, ContentLocale locale) {
     requireOwner(userId, marketId);
     return catalog.updateListing(marketId, listingId, update, locale);
+  }
+
+  @Transactional(readOnly = true)
+  public ListingDetails listingDetails(UUID userId, UUID marketId, UUID listingId, ContentLocale locale) {
+    requireOwner(userId, marketId);
+    return catalog.listingDetails(marketId, listingId, locale);
   }
 
   public void deleteListing(UUID userId, UUID marketId, UUID listingId) {
