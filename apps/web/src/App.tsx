@@ -43,12 +43,15 @@ export interface AppDependencies {
   alerts?: { intervalMs?: number; signals?: AlertSignals; enabled?: boolean };
 }
 
+declare const __DUKKAN_API_BASE_URL__: string;
+
 export function App({ dependencies = {} }: { dependencies?: AppDependencies }) {
   const { i18n } = useTranslation();
   const [{ api, queryClient, subscribe }] = useState(() => {
     const listeners = new Set<() => void>();
     const client = dependencies.queryClient ?? new QueryClient({ defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: true } } });
     const created = createApi({
+      ...(__DUKKAN_API_BASE_URL__ !== '' ? { baseUrl: __DUKKAN_API_BASE_URL__.replace(/\/+$/, '') } : {}),
       ...(dependencies.fetch !== undefined ? { fetch: dependencies.fetch } : {}),
       ...(dependencies.store !== undefined ? { store: dependencies.store } : {}),
       language: () => i18n.language,
