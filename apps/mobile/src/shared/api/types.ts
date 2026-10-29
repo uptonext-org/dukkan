@@ -585,8 +585,16 @@ export interface MarketProfileRequest {
   registerInfo?: string | null;
 }
 
+/** Whether the seller information is complete enough to approve the market (contract MarketReview). */
+export interface MarketReview {
+  complete: boolean;
+  items: { code: string; ok: boolean; required: boolean }[];
+}
+
 export interface MerchantMarket extends MarketDetail {
   status: MarketStatus;
+  /** Seller-information checklist; older servers omit it. */
+  review?: MarketReview;
   /** The description in every language; older servers omit it. */
   descriptions?: LocalizedText;
 }

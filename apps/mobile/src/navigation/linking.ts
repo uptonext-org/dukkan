@@ -42,6 +42,7 @@ export const SCREEN_PATHS: PathConfigMap<RootStackParamList> = {
   AddressForm: 'addresses/edit',
   Orders: 'orders',
   OrderDetail: 'orders/:orderId',
+  AdminMarkets: 'admin/markets',
   MerchantMarkets: 'merchant',
   MerchantMarketForm: 'merchant/market',
   MerchantMarketHub: 'merchant/markets/:marketId',

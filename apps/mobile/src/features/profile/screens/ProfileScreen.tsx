@@ -9,7 +9,7 @@ import { LANGUAGES, useLanguage } from '../../../shared/i18n';
 import { useChosenPlace } from '../../../shared/location';
 import { makeStyles } from '../../../shared/theme';
 import { AppText, Button, ListRow, LoadingState } from '../../../shared/ui';
-import { useIsMerchant, useMe } from '../../auth/api/useMe';
+import { useIsAdmin, useIsMerchant, useMe } from '../../auth/api/useMe';
 import { useAuth } from '../../auth/AuthProvider';
 import { AuthForm } from '../../auth/components/AuthForm';
 import { LegalLinks } from '../../legal/LegalLinks';
@@ -27,6 +27,7 @@ export function ProfileScreen({ navigation }: ShellTabScreenProps<'Profile'>) {
   const { place } = useChosenPlace();
   const me = useMe();
   const merchant = useIsMerchant();
+  const admin = useIsAdmin();
   const [languageOpen, setLanguageOpen] = useState(false);
   const languageName = LANGUAGES.find((l) => l.code === language)?.nativeName ?? language;
 
@@ -85,6 +86,7 @@ export function ProfileScreen({ navigation }: ShellTabScreenProps<'Profile'>) {
               <ListRow title={t('auth.changePassword')} icon="lock" onPress={() => navigation.navigate('ChangePassword')} testID="profile-change-password" />
               <ListRow title={t('account.title')} icon="user" onPress={() => navigation.navigate('AccountData')} testID="profile-account-data" />
               {merchant && <ListRow title={t('profile.myMarket')} icon="store" onPress={() => navigation.navigate('MerchantMarkets')} testID="profile-my-market" />}
+              {admin && <ListRow title={t('admin.title')} icon="shield" onPress={() => navigation.navigate('AdminMarkets')} testID="profile-admin-markets" />}
             </View>
             <LegalLinks />
             <Button title={t('profile.logout')} variant="danger" icon="logout" onPress={() => void logout()} style={styles.logout} />

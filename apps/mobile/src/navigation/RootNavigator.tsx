@@ -12,6 +12,7 @@ import { NotificationsScreen } from '../features/notifications/screens/Notificat
 import { AddProductScreen } from '../features/merchant/screens/AddProductScreen';
 import { FeedbackScreen } from '../features/merchant/screens/FeedbackScreen';
 import { ListingsScreen } from '../features/merchant/screens/ListingsScreen';
+import { AdminMarketsScreen } from '../features/admin/screens/AdminMarketsScreen';
 import { MarketHubScreen } from '../features/merchant/screens/MarketHubScreen';
 import { MarketProfileFormScreen } from '../features/merchant/screens/MarketProfileFormScreen';
 import { MerchantMarketsScreen } from '../features/merchant/screens/MerchantMarketsScreen';
@@ -65,6 +66,7 @@ export function RootNavigator() {
           <Stack.Screen name="AddressForm" component={AddressFormScreen} />
           <Stack.Screen name="Orders" component={OrderListScreen} />
           <Stack.Screen name="OrderDetail" component={OrderDetailScreen} />
+          <Stack.Screen name="AdminMarkets" component={AdminMarketsScreen} />
           <Stack.Screen name="MerchantMarkets" component={MerchantMarketsScreen} />
           <Stack.Screen name="MerchantMarketForm" component={MarketProfileFormScreen} />
           <Stack.Screen name="MerchantMarketHub" component={MarketHubScreen} />

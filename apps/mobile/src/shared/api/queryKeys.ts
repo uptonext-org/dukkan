@@ -43,6 +43,7 @@ export const queryKeys = {
   orders: (lang: string) => ['orders', lang] as const,
   order: (lang: string, orderId: string) => ['order', lang, orderId] as const,
   myMarkets: (lang: string) => ['myMarkets', lang] as const,
+  adminMarkets: (lang: string, status: string | null) => ['adminMarkets', lang, status] as const,
   orderSettings: (marketId: string) => ['orderSettings', marketId] as const,
   feedbackAvailability: (marketId: string) => ['feedbackAvailability', marketId] as const,
   merchantFeedback: (marketId: string) => ['merchantFeedback', marketId] as const,

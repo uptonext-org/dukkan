@@ -13,6 +13,11 @@ export function useMe() {
   });
 }
 
+export function useIsAdmin(): boolean {
+  const { data } = useMe();
+  return data?.roles.includes('ADMIN') === true;
+}
+
 export function useIsMerchant(): boolean {
   const { data } = useMe();
   return data?.roles.includes('MERCHANT') === true;

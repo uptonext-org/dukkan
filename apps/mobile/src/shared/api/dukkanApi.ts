@@ -25,6 +25,7 @@ import type {
   MarketSummary,
   MediaPurpose,
   MediaUpload,
+  MarketStatus,
   MerchantMarket,
   MerchantOrderSettings,
   OrderSettings,
@@ -150,6 +151,11 @@ export interface DukkanApi {
   cancelOrder(orderId: string): Promise<Order>;
   /** Puts the products of a past order into its market's cart again (skipped ones are reported). */
   reorder(orderId: string): Promise<ReorderResult>;
+  // admin
+  /** Markets of a status (all when null), newest first. Role ADMIN. */
+  adminListMarkets(status: MarketStatus | null, signal?: Signal): Promise<MerchantMarket[]>;
+  /** Approve (ACTIVE), suspend or return to review; MARKET_INCOMPLETE when approving incomplete seller information. */
+  adminSetMarketStatus(marketId: string, status: MarketStatus): Promise<MerchantMarket>;
   // merchant
   listMyMarkets(signal?: Signal): Promise<MerchantMarket[]>;
   createMyMarket(request: MarketProfileRequest): Promise<MerchantMarket>;
@@ -327,6 +333,10 @@ export function createDukkanApi(client: ApiClient): DukkanApi {
     getOrder: (orderId, signal) => get(`/orders/${enc(orderId)}`, undefined, signal),
     cancelOrder: (orderId) => client.request({ method: 'POST', path: `/orders/${enc(orderId)}/cancel` }),
     reorder: (orderId) => client.request({ method: 'POST', path: `/orders/${enc(orderId)}/reorder` }),
+
+    adminListMarkets: (status, signal) => get('/admin/markets', status !== null ? { status } : undefined, signal),
+    adminSetMarketStatus: (marketId, status) =>
+      client.request({ method: 'POST', path: `/admin/markets/${enc(marketId)}/status`, body: { status } }),
 
     listMyMarkets: (signal) => get('/merchant/markets', undefined, signal),
     createMyMarket: (body) => client.request({ method: 'POST', path: '/merchant/markets', body }),

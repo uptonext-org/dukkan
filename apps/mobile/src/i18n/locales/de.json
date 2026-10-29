@@ -74,7 +74,8 @@
     "TERMS_NOT_ACCEPTED": "Bitte akzeptiere die AGB und die Datenschutzerklärung.",
     "ORDERS_NOT_ACCEPTED": "Dieser Markt nimmt gerade keine Bestellungen an.",
     "SLOT_UNAVAILABLE": "An diesem Tag ist der Markt geschlossen. Bitte wähle eine andere Zeit.",
-    "FEEDBACK_DISABLED": "Dieser Markt nimmt gerade kein Feedback an."
+    "FEEDBACK_DISABLED": "Dieser Markt nimmt gerade kein Feedback an.",
+    "MARKET_INCOMPLETE": "Die Verkäuferangaben sind unvollständig. Der Händler muss sie zuerst im Marktprofil ergänzen."
   },
   "validation": {
     "required": "Bitte ausfüllen.",
@@ -849,5 +850,25 @@
     "emptyMessage": "Nachrichten deiner Kunden erscheinen hier.",
     "rating": "{{n}} von 5 Sternen",
     "more": "Mehr laden"
+  },
+  "admin": {
+    "title": "Marktprüfung",
+    "filterLabel": "Status",
+    "all": "Alle",
+    "empty": "Keine Märkte mit diesem Status.",
+    "legal": "Betreiber",
+    "phone": "Telefon",
+    "checklist": "Verkäuferangaben",
+    "optional": "optional",
+    "incomplete": "Unvollständig: Der Händler muss die fehlenden Angaben im Marktprofil ergänzen, bevor der Markt freigegeben werden kann.",
+    "approve": "Freigeben",
+    "suspend": "Sperren",
+    "backToReview": "Zurück in Prüfung",
+    "check": {
+      "LEGAL_NAME": "Vollständiger Name oder Firma",
+      "POSTAL_ADDRESS": "Anschrift mit Postleitzahl",
+      "PHONE": "Telefonnummer",
+      "REGISTER_INFO": "Handelsregister"
+    }
   }
 }

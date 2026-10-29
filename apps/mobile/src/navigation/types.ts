@@ -47,6 +47,7 @@ export type RootStackParamList = {
   AddressForm: { addressId?: string } | undefined;
   Orders: undefined;
   OrderDetail: { orderId: string };
+  AdminMarkets: undefined;
   MerchantMarkets: undefined;
   MerchantMarketForm: { marketId?: string } | undefined;
   MerchantMarketHub: { marketId: string };

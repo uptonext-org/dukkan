@@ -74,7 +74,8 @@
     "TERMS_NOT_ACCEPTED": "Please accept the terms and the privacy notice.",
     "ORDERS_NOT_ACCEPTED": "This market is not taking orders right now.",
     "SLOT_UNAVAILABLE": "The market is closed on that day. Please choose another time.",
-    "FEEDBACK_DISABLED": "This market is not taking feedback at the moment."
+    "FEEDBACK_DISABLED": "This market is not taking feedback at the moment.",
+    "MARKET_INCOMPLETE": "The seller information is incomplete. The merchant has to complete the market profile first."
   },
   "validation": {
     "required": "Please fill this in.",
@@ -849,5 +850,25 @@
     "emptyMessage": "Messages from your customers appear here.",
     "rating": "{{n}} of 5 stars",
     "more": "Load more"
+  },
+  "admin": {
+    "title": "Market review",
+    "filterLabel": "Status",
+    "all": "All",
+    "empty": "No markets with this status.",
+    "legal": "Operator",
+    "phone": "Phone",
+    "checklist": "Seller information",
+    "optional": "optional",
+    "incomplete": "Incomplete: the merchant has to add the missing details to the market profile before it can be approved.",
+    "approve": "Approve",
+    "suspend": "Suspend",
+    "backToReview": "Back to review",
+    "check": {
+      "LEGAL_NAME": "Full name or company",
+      "POSTAL_ADDRESS": "Address with postcode",
+      "PHONE": "Phone number",
+      "REGISTER_INFO": "Commercial register"
+    }
   }
 }
