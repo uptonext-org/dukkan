@@ -11,8 +11,11 @@ public interface IdentityService {
   /** Creates an account and signs it in; fails with {@code EMAIL_TAKEN} if the email exists. */
   AuthResult register(RegisterCommand command);
 
-  /** Signs in; fails with {@code INVALID_CREDENTIALS} without revealing whether the email exists. */
-  AuthResult login(String email, String password);
+  /**
+   * Signs in; fails with {@code INVALID_CREDENTIALS} without revealing whether the email exists.
+   * {@code clientIp} keys the per-account limits, so one client cannot lock others out of an account.
+   */
+  AuthResult login(String email, String password, String clientIp);
 
   /**
    * Exchanges a refresh token for new tokens and revokes it (rotation). Presenting a token that was
@@ -24,7 +27,7 @@ public interface IdentityService {
   void logout(String refreshToken);
 
   /** Sends a reset link if the account exists; never reveals whether it does. */
-  void requestPasswordReset(String email);
+  void requestPasswordReset(String email, String clientIp);
 
   /** Sets a new password with a reset token and signs out everywhere; fails with {@code INVALID_RESET_TOKEN}. */
   void resetPassword(String token, String newPassword);

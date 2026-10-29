@@ -33,6 +33,10 @@ public class User extends AuditedEntity {
   @Column(name = "password_hash", nullable = false)
   private String passwordHash;
 
+  /** False while the password is a random one nobody knows (Apple/Google sign-up, deleted account). */
+  @Column(name = "password_set", nullable = false)
+  private boolean passwordSet = true;
+
   @Column(name = "first_name", nullable = false)
   private String firstName;
 
@@ -94,8 +98,20 @@ public class User extends AuditedEntity {
     }
   }
 
+  /** A password the owner chose (registration, reset, change). */
   public void changePasswordHash(String passwordHash) {
     this.passwordHash = passwordHash;
+    this.passwordSet = true;
+  }
+
+  /** A random password nobody knows: the account signs in with Apple/Google until a reset sets one. */
+  public void replaceWithUnknownPassword(String randomPasswordHash) {
+    this.passwordHash = randomPasswordHash;
+    this.passwordSet = false;
+  }
+
+  public boolean hasOwnPassword() {
+    return passwordSet;
   }
 
   /**
@@ -106,6 +122,7 @@ public class User extends AuditedEntity {
     this.deletedAt = now;
     this.email = placeholderEmail;
     this.passwordHash = unusablePasswordHash;
+    this.passwordSet = false;
     this.firstName = "Gelöschtes";
     this.lastName = "Konto";
     this.preferredLocale = null;

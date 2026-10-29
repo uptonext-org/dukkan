@@ -16,6 +16,7 @@ import de.dukkan.identity.application.RegisterCommand;
 import de.dukkan.identity.application.SocialSignInCommand;
 import de.dukkan.identity.application.UserView;
 import de.dukkan.shared.security.CurrentUser;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.CurrentSecurityContext;
@@ -55,8 +56,8 @@ final class AuthController {
   }
 
   @PostMapping("/auth/login")
-  AuthResponse login(@RequestBody @Valid LoginRequest request) {
-    return AuthResponse.from(identity.login(request.email(), request.password()));
+  AuthResponse login(@RequestBody @Valid LoginRequest request, HttpServletRequest http) {
+    return AuthResponse.from(identity.login(request.email(), request.password(), http.getRemoteAddr()));
   }
 
   @PostMapping("/auth/refresh")
@@ -73,8 +74,8 @@ final class AuthController {
   /** Always 202, whether or not the account exists. */
   @PostMapping("/auth/password-reset")
   @ResponseStatus(HttpStatus.ACCEPTED)
-  void requestPasswordReset(@RequestBody @Valid PasswordResetRequest request) {
-    identity.requestPasswordReset(request.email());
+  void requestPasswordReset(@RequestBody @Valid PasswordResetRequest request, HttpServletRequest http) {
+    identity.requestPasswordReset(request.email(), http.getRemoteAddr());
   }
 
   /** Confirms the email address with the token from the verification mail (B-39b). */

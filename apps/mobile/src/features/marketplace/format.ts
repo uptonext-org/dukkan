@@ -3,11 +3,33 @@ import type { TFunction } from 'i18next';
 import type { MarketSummary } from '../../shared/api';
 import { formatDistance, formatMoneyShort, formatTime, isolate } from '../../shared/format';
 
+const BERLIN_TIME = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Berlin', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+
+/**
+ * Closing time of today's interval that is open at `now` (Berlin time), from `todayHours` like
+ * "08:00–13:00, 14:00–18:30" or "20:00–02:00". Undefined when none contains it (e.g. after midnight
+ * in yesterday's overnight interval, which today's hours do not list).
+ */
+export function closesAt(todayHours: string | null | undefined, now: Date): string | undefined {
+  const time = BERLIN_TIME.format(now);
+  for (const interval of (todayHours ?? '').split(',')) {
+    const [opens, closes] = interval.split(/[–-]/).map((part) => part.trim());
+    if (opens === undefined || closes === undefined || !/^\d{2}:\d{2}$/.test(opens) || !/^\d{2}:\d{2}$/.test(closes)) {
+      continue;
+    }
+    const overnight = closes <= opens;
+    if (overnight ? time >= opens : time >= opens && time < closes) {
+      return closes;
+    }
+  }
+  return undefined;
+}
+
 /** "Geöffnet bis 20:00" / "Geschlossen · öffnet 08:00" / "Geschlossen". */
-export function openingLabel(t: TFunction, market: Pick<MarketSummary, 'openNow' | 'todayHours' | 'nextOpeningAt'>): string {
+export function openingLabel(t: TFunction, market: Pick<MarketSummary, 'openNow' | 'todayHours' | 'nextOpeningAt'>, now: Date = new Date()): string {
   if (market.openNow) {
-    const closes = market.todayHours?.split(/[–-]/).pop()?.trim();
-    return closes !== undefined && closes !== '' ? t('market.openUntil', { time: closes }) : t('market.open');
+    const closes = closesAt(market.todayHours, now);
+    return closes !== undefined ? t('market.openUntil', { time: closes }) : t('market.open');
   }
   if (market.nextOpeningAt != null) {
     return t('market.closedOpensAt', { time: formatTime(market.nextOpeningAt) });

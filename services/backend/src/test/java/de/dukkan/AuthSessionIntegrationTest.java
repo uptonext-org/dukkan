@@ -1,6 +1,7 @@
 package de.dukkan;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -12,6 +13,7 @@ import de.dukkan.support.IntegrationTest;
 import de.dukkan.support.OidcStub;
 import de.dukkan.support.OpenApiContract;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -183,6 +185,48 @@ class AuthSessionIntegrationTest extends IntegrationTest {
         .andExpect(status().isUnauthorized())
         .andExpect(jsonPath("$.code").value("INVALID_SOCIAL_TOKEN"));
     social("APPLE", token, Map.of()).andExpect(status().isUnauthorized()).andExpect(jsonPath("$.code").value("INVALID_SOCIAL_TOKEN"));
+  }
+
+  @Test
+  void namesCannotCarryTextOrLinksIntoTheMails() throws Exception {
+    for (String name : List.of("Max\n\nIhr Konto wird gesperrt", "Max https://evil.example", "www.evil.example", "evil.example", "Max@evil")) {
+      mvc.perform(
+              json(
+                  post("/api/v1/auth/register"),
+                  toJson(Map.of("email", uniqueEmail(), "password", PASSWORD, "firstName", name, "lastName", "Muster"))))
+          .andExpect(status().isBadRequest());
+    }
+    for (String name : List.of("Dr. Ali", "J.R.", "Anne-Marie", "عبد الرحمن", "O'Brien")) {
+      mvc.perform(
+              json(
+                  post("/api/v1/auth/register"),
+                  toJson(Map.of("email", uniqueEmail(), "password", PASSWORD, "firstName", name, "lastName", "Muster"))))
+          .andExpect(status().isCreated());
+    }
+  }
+
+  @Test
+  void anAccountWithItsOwnPasswordNeedsItForDeletionEvenWithGoogleLinked() throws Exception {
+    String email = uniqueEmail();
+    String token = register(email, "CUSTOMER");
+    confirmEmail(token);
+    social("GOOGLE", googleToken("google-" + UUID.randomUUID(), Map.of("email", email, "email_verified", true)), Map.of())
+        .andExpect(status().isOk());
+
+    // A stolen session alone must not erase the account.
+    mvc.perform(json(auth(delete("/api/v1/me"), token), "{}"))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.errors[0].code").value("Incorrect"));
+    mvc.perform(json(auth(delete("/api/v1/me"), token), toJson(Map.of("password", PASSWORD)))).andExpect(status().isNoContent());
+
+    // An account created by Google sign-in has no password of its own and is deleted without one.
+    String googleOnly =
+        read(
+            social("GOOGLE", googleToken("google-" + UUID.randomUUID(), Map.of("email", uniqueEmail(), "email_verified", true)), Map.of())
+                .andExpect(status().isOk())
+                .andReturn(),
+            "$.accessToken");
+    mvc.perform(json(auth(delete("/api/v1/me"), googleOnly), "{}")).andExpect(status().isNoContent());
   }
 
   @Test

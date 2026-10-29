@@ -5,13 +5,20 @@ import type { RootStackScreenProps } from '../../../navigation/types';
 import { errorMessageKey, knownFieldError, useApi } from '../../../shared/api';
 import { makeStyles } from '../../../shared/theme';
 import { AppText, Button, Screen, ScreenHeader, TextField } from '../../../shared/ui';
+import { useAuth } from '../AuthProvider';
+import { useMe } from '../api/useMe';
 import { validateNewPassword } from '../validation';
 
-/** Profil → "Passwort ändern". Other devices are signed out by the server. */
+/**
+ * Profil → "Passwort ändern". The server ends every sign-in, this device's too; the screen signs in
+ * again with the new password so that only the other devices are signed out.
+ */
 export function ChangePasswordScreen({ navigation }: RootStackScreenProps<'ChangePassword'>) {
   const styles = useStyles();
   const { t } = useTranslation();
   const api = useApi();
+  const { login } = useAuth();
+  const email = useMe().data?.email;
   const [current, setCurrent] = useState('');
   const [next, setNext] = useState('');
   const [errors, setErrors] = useState<{ current?: string; next?: string }>({});
@@ -33,6 +40,10 @@ export function ChangePasswordScreen({ navigation }: RootStackScreenProps<'Chang
     setSaving(true);
     try {
       await api.changePassword(current, next);
+      if (email !== undefined) {
+        // Best effort: if this fails, the next request simply asks to sign in again.
+        await login({ email, password: next }).catch(() => undefined);
+      }
       setDone(true);
     } catch (e) {
       const field = knownFieldError(e);

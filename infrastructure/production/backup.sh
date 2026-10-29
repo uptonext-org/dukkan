@@ -25,7 +25,11 @@ restore_test() {
   dropdb --if-exists restore_check
   createdb restore_check
   if pg_restore --no-owner --exit-on-error -d restore_check "$dump"; then
-    counts=$(psql -d restore_check -tAc "select (select count(*) from app_user)||' accounts, '||(select count(*) from market)||' markets, '||(select count(*) from customer_order)||' orders, schema '||(select max(version::int) from flyway_schema_history where version is not null)")
+    if ! counts=$(psql -d restore_check -tAc "select (select count(*) from app_user)||' accounts, '||(select count(*) from market)||' markets, '||(select count(*) from customer_order)||' orders, schema '||(select max(version::int) from flyway_schema_history where version is not null)") || [ -z "$counts" ]; then
+      echo "restore test FAILED: the restored database cannot be read ($dump)" >&2
+      dropdb --if-exists restore_check
+      return 1
+    fi
     echo "restore test ok: $counts"
     dropdb restore_check
     return 0

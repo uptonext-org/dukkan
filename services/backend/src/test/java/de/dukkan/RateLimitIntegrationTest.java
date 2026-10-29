@@ -126,4 +126,26 @@ class RateLimitIntegrationTest extends IntegrationTest {
     clock.advance(Duration.ofHours(1));
     mvc.perform(json(post("/api/v1/auth/password-reset"), body).with(r -> ip(r, "203.0.113.20"))).andExpect(status().isAccepted());
   }
+
+  @Test
+  void anotherClientsFailedSignInsDoNotLockTheOwnerOut() throws Exception {
+    String email = uniqueEmail();
+    mvc.perform(
+            json(post("/api/v1/auth/register"), toJson(Map.of("email", email, "password", "correct-horse-42", "firstName", "Opfer", "lastName", "Konto")))
+                .with(r -> ip(r, "192.0.2.60")))
+        .andExpect(status().isCreated());
+    String wrong = toJson(Map.of("email", email, "password", "wrong-password-123"));
+    // The attacker stays under the per-IP limit (3 per minute here) and uses up its attempts for this account.
+    for (int i = 0; i < 10; i++) {
+      clock.advance(Duration.ofSeconds(61));
+      mvc.perform(json(post("/api/v1/auth/login"), wrong).with(r -> ip(r, "203.0.113.30"))).andExpect(status().isUnauthorized());
+    }
+    clock.advance(Duration.ofSeconds(61));
+    mvc.perform(json(post("/api/v1/auth/login"), wrong).with(r -> ip(r, "203.0.113.30"))).andExpect(status().isTooManyRequests());
+
+    // The owner, from their own address, still signs in.
+    mvc.perform(
+            json(post("/api/v1/auth/login"), toJson(Map.of("email", email, "password", "correct-horse-42"))).with(r -> ip(r, "198.51.100.61")))
+        .andExpect(status().isOk());
+  }
 }

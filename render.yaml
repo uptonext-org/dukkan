@@ -21,7 +21,9 @@ services:
     dockerfilePath: ./services/backend/Dockerfile
     dockerContext: ./services/backend
     branch: main
-    autoDeploy: true
+    # Deploy only commits whose GitHub checks (CI) passed. With a disk, each deploy has a short
+    # downtime (one instance), so failing builds must not get that far.
+    autoDeployTrigger: checksPass
     buildFilter:
       paths: ["services/backend/**"]
     healthCheckPath: /api/v1/locales

@@ -28,19 +28,20 @@ ping() {
 }
 
 run_once() {
-  restic cat config >/dev/null 2>&1 || restic init
+  restic cat config >/dev/null 2>&1 || restic init || return 1
   # The nightly dump must be fresh: a stale one means the database backup itself stopped, and
   # this run's health check then reports that too.
   if [ -z "$(find /backups/latest.dump -mmin -1560 2>/dev/null)" ]; then
     echo "offsite: /backups/latest.dump is missing or older than 26 hours" >&2
     return 1
   fi
-  restic backup --host dukkan --tag nightly /backups/latest.dump /data/media /data/erasures
+  # Called as an `if` condition, where `set -e` does not apply: every step checks its own status.
+  restic backup --host dukkan --tag nightly /backups/latest.dump /data/media /data/erasures || return 1
   restic forget --host dukkan --prune \
-    --keep-daily "${RESTIC_KEEP_DAILY:-7}" --keep-weekly "${RESTIC_KEEP_WEEKLY:-4}" --keep-monthly "${RESTIC_KEEP_MONTHLY:-3}"
+    --keep-daily "${RESTIC_KEEP_DAILY:-7}" --keep-weekly "${RESTIC_KEEP_WEEKLY:-4}" --keep-monthly "${RESTIC_KEEP_MONTHLY:-3}" || return 1
   if [ "$(date +%u)" = "$TEST_WEEKDAY" ]; then
     # Reads back a part of the stored data every week; corrupted or missing packs fail the run.
-    restic check --read-data-subset="${RESTIC_CHECK_SUBSET:-10%}"
+    restic check --read-data-subset="${RESTIC_CHECK_SUBSET:-10%}" || return 1
   fi
 }
 

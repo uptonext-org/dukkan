@@ -19,6 +19,10 @@ spring:
       mail.smtp.auth: true
       mail.smtp.starttls.enable: true
       mail.smtp.starttls.required: true
+      # A hanging mail server must not block the outbox publisher (and the scheduled jobs after it).
+      mail.smtp.connectiontimeout: 10000
+      mail.smtp.timeout: 15000
+      mail.smtp.writetimeout: 15000
 
 server:
   # Behind Caddy / the ingress: client IP (rate limits per client, not per proxy), https scheme

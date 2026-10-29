@@ -123,6 +123,8 @@ public class OrderService {
           ErrorCodes.MAX_QUANTITY_EXCEEDED, "Some products exceed their maximum order quantity; please adjust the cart.");
     }
     fulfilment.requireOffered(market, reservation.type());
+    // The reservation may be days old: a holiday set since then closes that day (SLOT_UNAVAILABLE).
+    fulfilment.checkHeldSlot(reservation.slot().id(), market, reservation.type());
     if (!cart.meetsMinimumOrderValue()) {
       throw new BusinessRuleException(
           ErrorCodes.MINIMUM_ORDER_NOT_MET,

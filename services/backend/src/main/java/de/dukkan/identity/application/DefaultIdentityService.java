@@ -60,7 +60,10 @@ class DefaultIdentityService implements IdentityService {
   private final String dummyHash;
   /** Per account, across all client IPs (a botnet trying one account, or mailing one address). */
   private final FixedWindowRateLimiter<String> loginsPerAccount;
+  private final FixedWindowRateLimiter<String> loginsPerAccountAndClient;
   private final FixedWindowRateLimiter<UUID> resetMailsPerAccount;
+  private final FixedWindowRateLimiter<String> resetMailsPerAccountAndClient;
+  private final FixedWindowRateLimiter<UUID> passwordChangeAttempts;
   private final boolean accountLimits;
 
   DefaultIdentityService(
@@ -88,11 +91,20 @@ class DefaultIdentityService implements IdentityService {
     this.dummyHash = passwordEncoder.encode("dummy-password-for-timing");
     DukkanProperties.RateLimit limits = properties.security().rateLimit();
     this.accountLimits = limits.enabled();
-    // 10 per 15 minutes with the production defaults; the local profile's raised limits raise it too.
-    this.loginsPerAccount =
-        new FixedWindowRateLimiter<>("login-account", Math.max(10, limits.loginsPerMinute() / 2), Duration.ofMinutes(15), clock, rateLimits);
+    // Per account and client: 10 per 15 minutes with the production defaults (the local profile's raised
+    // limits raise it too). Per account across all clients ten times that, so guessing from many
+    // addresses stays limited while a single client cannot lock the owner out.
+    int loginsPerClient = Math.max(10, limits.loginsPerMinute() / 2);
+    this.loginsPerAccountAndClient =
+        new FixedWindowRateLimiter<>("login-account-client", loginsPerClient, Duration.ofMinutes(15), clock, rateLimits);
+    this.loginsPerAccount = new FixedWindowRateLimiter<>("login-account", loginsPerClient * 10, Duration.ofMinutes(15), clock, rateLimits);
+    int resetMailsPerClient = Math.max(3, limits.passwordResetsPerHour() / 2);
+    this.resetMailsPerAccountAndClient =
+        new FixedWindowRateLimiter<>("reset-mail-account-client", resetMailsPerClient, Duration.ofHours(1), clock, rateLimits);
     this.resetMailsPerAccount =
-        new FixedWindowRateLimiter<>("reset-mail-account", Math.max(3, limits.passwordResetsPerHour() / 2), Duration.ofHours(1), clock, rateLimits);
+        new FixedWindowRateLimiter<>("reset-mail-account", resetMailsPerClient * 3, Duration.ofHours(1), clock, rateLimits);
+    // Like account deletion: the current-password check must not let a stolen session guess the password.
+    this.passwordChangeAttempts = new FixedWindowRateLimiter<>("password-change", 5, Duration.ofHours(1), clock, rateLimits);
   }
 
   @Override
@@ -112,10 +124,12 @@ class DefaultIdentityService implements IdentityService {
   }
 
   @Override
-  public AuthResult login(String email, String password) {
+  public AuthResult login(String email, String password, String clientIp) {
     // Counted for every address, existing or not, so the limit reveals nothing about accounts.
     if (accountLimits) {
-      loginsPerAccount.acquire(User.normalizeEmail(email), "sign-in attempts for this account");
+      String account = User.normalizeEmail(email);
+      loginsPerAccountAndClient.acquire(account + "|" + clientIp, "sign-in attempts for this account");
+      loginsPerAccount.acquire(account, "sign-in attempts for this account");
     }
     Optional<User> user = users.findByEmail(User.normalizeEmail(email));
     String hash = user.map(User::getPasswordHash).orElse(dummyHash);
@@ -158,7 +172,7 @@ class DefaultIdentityService implements IdentityService {
   }
 
   @Override
-  public void requestPasswordReset(String email) {
+  public void requestPasswordReset(String email, String clientIp) {
     Optional<User> found = users.findByEmail(User.normalizeEmail(email));
     if (found.isEmpty()) {
       // Same answer either way (the mail is sent in the background); the caller never learns whether the account exists.
@@ -167,6 +181,7 @@ class DefaultIdentityService implements IdentityService {
     User user = found.get();
     try {
       if (accountLimits) {
+        resetMailsPerAccountAndClient.acquire(user.getId() + "|" + clientIp, "reset mails");
         resetMailsPerAccount.acquire(user.getId(), "reset mails");
       }
     } catch (RateLimitedException e) {
@@ -196,6 +211,9 @@ class DefaultIdentityService implements IdentityService {
 
   @Override
   public void changePassword(UUID userId, String currentPassword, String newPassword) {
+    if (accountLimits) {
+      passwordChangeAttempts.acquire(userId, "password changes");
+    }
     User user = user(userId);
     String candidate = currentPassword.getBytes(UTF_8).length > MAX_PASSWORD_BYTES ? "" : currentPassword;
     if (!passwordEncoder.matches(candidate, user.getPasswordHash()) || !candidate.equals(currentPassword)) {
@@ -235,6 +253,7 @@ class DefaultIdentityService implements IdentityService {
                   // No password: a random one nobody knows; "forgot password" can set a real one later.
                   String unusable = passwordEncoder.encode(OpaqueTokens.generate());
                   User created = new User(email, unusable, clip(first), clip(last), roles, validLocale(command.preferredLocale()));
+                  created.replaceWithUnknownPassword(unusable);
                   termsVersion.ifPresent(version -> created.acceptTerms(version, now));
                   return users.saveAndFlush(created);
                 });
@@ -242,7 +261,7 @@ class DefaultIdentityService implements IdentityService {
       // Someone registered this address with a password but never confirmed it. The provider has now
       // proven who owns the address: end that password and every session of it, so an account
       // created in advance by someone else cannot be taken over this way (pre-hijacking).
-      user.changePasswordHash(passwordEncoder.encode(OpaqueTokens.generate()));
+      user.replaceWithUnknownPassword(passwordEncoder.encode(OpaqueTokens.generate()));
       sessions.revokeAllForUser(user.getId(), now);
     }
     sessions.insertIdentity(provider, token.subject(), user.getId(), email, now);
@@ -297,7 +316,9 @@ class DefaultIdentityService implements IdentityService {
   @Transactional(readOnly = true)
   public void confirmAccountOwner(UUID userId, @Nullable String password) {
     User user = user(userId);
-    if (password == null && !sessions.identityProviders(userId).isEmpty()) {
+    // Only accounts that never had a password of their own (Apple/Google sign-up) may omit it; a
+    // linked provider alone is not enough: a stolen session must not delete a password account.
+    if (password == null && !user.hasOwnPassword() && !sessions.identityProviders(userId).isEmpty()) {
       return;
     }
     String candidate = password == null || password.getBytes(UTF_8).length > MAX_PASSWORD_BYTES ? "" : password;

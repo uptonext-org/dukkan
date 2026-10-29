@@ -136,6 +136,30 @@ class MarketOrderSettingsIntegrationTest extends IntegrationTest {
   }
 
   @Test
+  void aHolidaySetAfterTheReservationStopsTheCheckout() throws Exception {
+    String merchant = registerMerchant();
+    UUID market = createMarket(merchant, "Spaeter Urlaub Markt");
+    UUID listing = addListing(merchant, market, "Ayran", 400);
+    LocalDate tomorrow = LocalDate.ofInstant(clock.instant(), MutableClock.BERLIN).plusDays(1);
+    String customer = registerUser();
+    setQuantity(customer, market, listing, 2);
+    String slot =
+        (String)
+            slots(null, market, "PICKUP", null).stream()
+                .filter(s -> ZonedDateTime.parse((String) s.get("startsAt")).withZoneSameInstant(MutableClock.BERLIN).toLocalDate().equals(tomorrow))
+                .findFirst()
+                .orElseThrow()
+                .get("id");
+    assertThat(reserve(customer, market, "PICKUP", slot, null).getResponse().getStatus()).isEqualTo(200);
+
+    updateOrderSettings(merchant, market, Map.of("closedFrom", tomorrow.toString(), "closedUntil", tomorrow.toString()));
+
+    MvcResult placed = placeOrder(customer, market);
+    assertThat(placed.getResponse().getStatus()).isEqualTo(422);
+    assertThat(placed.getResponse().getContentAsString()).contains("SLOT_UNAVAILABLE");
+  }
+
+  @Test
   void capacityLeadTimeDeliveryHoursAndHorizonShapeTheSlots() throws Exception {
     String merchant = registerMerchant();
     UUID market = createMarket(merchant, "Takt Markt");

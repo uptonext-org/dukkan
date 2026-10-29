@@ -12,13 +12,20 @@ import org.jspecify.annotations.Nullable;
 /** Request and response bodies of the auth endpoints. */
 final class AuthDtos {
 
+  /**
+   * Names go into mails Dukkan sends to the address entered (verification, orders): no control
+   * characters (line breaks), no links ("://", "www.", "example.com") and no "@", so a sign-up
+   * cannot put its own text or a phishing link into a genuine Dukkan mail.
+   */
+  static final String PERSON_NAME = "^(?!.*(?i:://|www\\.|\\p{L}\\.\\p{L}{2,}))[^\\p{Cntrl}@<>/\\\\]*$";
+
   private AuthDtos() {}
 
   record RegisterRequest(
       @Email @NotBlank @Size(max = 254) String email,
       @NotNull @Size(min = 10, max = 128) @MaxUtf8Bytes(72) String password,
-      @NotBlank @Size(min = 1, max = 100) String firstName,
-      @NotBlank @Size(min = 1, max = 100) String lastName,
+      @NotBlank @Size(min = 1, max = 100) @Pattern(regexp = PERSON_NAME, message = "must be a name (no line breaks, links or @)") String firstName,
+      @NotBlank @Size(min = 1, max = 100) @Pattern(regexp = PERSON_NAME, message = "must be a name (no line breaks, links or @)") String lastName,
       @Nullable @Pattern(regexp = "CUSTOMER|MERCHANT", message = "must be CUSTOMER or MERCHANT") String accountType,
       @Nullable String preferredLocale,
       @Nullable @Size(max = 40) String acceptedTermsVersion) {
@@ -42,8 +49,8 @@ final class AuthDtos {
   }
 
   record UpdateUserRequest(
-      @Nullable @Size(min = 1, max = 100) String firstName,
-      @Nullable @Size(min = 1, max = 100) String lastName,
+      @Nullable @Size(min = 1, max = 100) @Pattern(regexp = PERSON_NAME, message = "must be a name (no line breaks, links or @)") String firstName,
+      @Nullable @Size(min = 1, max = 100) @Pattern(regexp = PERSON_NAME, message = "must be a name (no line breaks, links or @)") String lastName,
       @Nullable String preferredLocale) {}
 
   record AuthResponse(String accessToken, String tokenType, long expiresIn, String refreshToken, long refreshExpiresIn, UserView user) {
@@ -90,8 +97,8 @@ final class AuthDtos {
       @NotNull @Pattern(regexp = "APPLE|GOOGLE", message = "must be APPLE or GOOGLE") String provider,
       @NotBlank @Size(max = 8192) String idToken,
       @Nullable @Size(max = 256) String nonce,
-      @Nullable @Size(min = 1, max = 100) String firstName,
-      @Nullable @Size(min = 1, max = 100) String lastName,
+      @Nullable @Size(min = 1, max = 100) @Pattern(regexp = PERSON_NAME, message = "must be a name (no line breaks, links or @)") String firstName,
+      @Nullable @Size(min = 1, max = 100) @Pattern(regexp = PERSON_NAME, message = "must be a name (no line breaks, links or @)") String lastName,
       @Nullable @Pattern(regexp = "CUSTOMER|MERCHANT", message = "must be CUSTOMER or MERCHANT") String accountType,
       @Nullable String preferredLocale,
       @Nullable @Size(max = 40) String acceptedTermsVersion) {

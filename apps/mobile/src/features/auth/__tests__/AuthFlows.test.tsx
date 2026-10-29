@@ -124,6 +124,8 @@ describe('Neues Passwort und Passwort ändern', () => {
         }
         return undefined;
       },
+      'GET /me': ada,
+      'POST /auth/login': signedIn,
     });
     await renderScreen('ChangePassword', fake);
     const user = userEvent.setup();
@@ -134,6 +136,8 @@ describe('Neues Passwort und Passwort ändern', () => {
     expect(await screen.findByText('Das aktuelle Passwort stimmt nicht.')).toBeOnTheScreen();
     await user.press(screen.getByTestId('change-submit'));
     expect(await screen.findByTestId('change-done')).toBeOnTheScreen();
-    expect(fake.calls.at(-1)?.body).toEqual({ currentPassword: 'falsch', newPassword: 'neues-passwort-123' });
+    expect(fake.calls.find((c) => c.method === 'PUT' && c.body !== undefined && (c.body as { currentPassword: string }).currentPassword === 'falsch')).toBeDefined();
+    // The server ended every sign-in; this device signs in again with the new password.
+    expect(fake.calls.find((c) => c.path === '/auth/login')?.body).toEqual({ email: ada.email, password: 'neues-passwort-123' });
   });
 });

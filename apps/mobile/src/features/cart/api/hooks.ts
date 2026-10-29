@@ -72,6 +72,10 @@ export function useCartQuantities(marketId: string) {
   const { data: cart } = useCart(marketId);
   const mutation = useSetCartQuantity(marketId);
   const { requireAuth } = useAuthGate();
+  const { status } = useAuth();
+  const api = useApi();
+  const lang = useLang();
+  const queryClient = useQueryClient();
   const quantities = useMemo(() => {
     const map = new Map<string, number>();
     for (const item of cart?.items ?? []) {
@@ -82,9 +86,24 @@ export function useCartQuantities(marketId: string) {
   const { mutate } = mutation;
   const setQuantity = useCallback(
     (productId: string, quantity: number) => {
-      requireAuth('cart', () => mutate({ productId, quantity }));
+      if (status === 'signedIn') {
+        mutate({ productId, quantity });
+        return;
+      }
+      // A guest's tap is a change (+1 / -1) to the cart they will have once signed in, which may
+      // already hold the product: apply the change to that cart instead of overwriting it.
+      const change = quantity - (quantities.get(productId) ?? 0);
+      requireAuth('cart', () => {
+        void queryClient
+          .fetchQuery({ queryKey: queryKeys.cart(lang, marketId), queryFn: ({ signal }) => api.getCart(marketId, signal) })
+          .then((server) => {
+            const current = server.items.find((item) => item.productId === productId)?.quantity ?? 0;
+            mutate({ productId, quantity: Math.max(0, current + change) });
+          })
+          .catch(() => mutate({ productId, quantity }));
+      });
     },
-    [requireAuth, mutate],
+    [status, quantities, requireAuth, queryClient, lang, marketId, api, mutate],
   );
   const busyProductId = mutation.isPending ? mutation.variables.productId : null;
   return { cart, quantities, setQuantity, busyProductId, error: mutation.error, reset: mutation.reset };
