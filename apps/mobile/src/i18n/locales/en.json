@@ -109,7 +109,10 @@
     "tiers": "For every tier a quantity from 2 to 99 (each only once) and a price like 4.99.",
     "offerBelowPrice": "Enter an offer price below the regular price for every selected product.",
     "weekdaysRequired": "Please select at least one weekday.",
-    "dailyWindow": "Times like 08:00; “until” must be after “from”."
+    "dailyWindow": "Times like 08:00; “until” must be after “from”.",
+    "addressPostcode": "The address needs a postcode (5 digits). Please pick a more precise address from the search.",
+    "phoneDigits": "Please enter a phone number with at least 6 digits.",
+    "legalNameWords": "Please enter first and last name, or the company with its legal form (at least two words)."
   },
   "language": {
     "button": "Change language",

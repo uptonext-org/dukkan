@@ -25,7 +25,7 @@ const uploaded: MediaUpload = { key: `${'a'.repeat(64)}.jpg`, url: PHOTO_URL, wi
 function baseHandlers(listing: { current: Listing }) {
   return {
     'GET /me': { id: 'm1', email: 'merchant@example.de', firstName: 'Mert', lastName: 'K', roles: ['MERCHANT'] },
-    'GET /merchant/markets': [{ ...marketDetail({ logoUrl: null, coverImageUrl: null }), status: 'ACTIVE' as const }],
+    'GET /merchant/markets': [{ ...marketDetail({ logoUrl: null, coverImageUrl: null, phone: '+49 40 1234567' }), status: 'ACTIVE' as const }],
     'GET /cuisines': [{ code: 'TURKISH', name: 'Türkisch' }],
     'GET /market-types': [{ code: 'GROCERY', name: 'Lebensmittel' }],
     'GET /categories': [{ id: 'cat-fruit', parentId: null, slug: 'obst', name: 'Obst', sortOrder: 1, productCount: null }],

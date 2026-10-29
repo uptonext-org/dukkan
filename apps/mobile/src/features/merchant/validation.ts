@@ -20,6 +20,9 @@ export type Errors<K extends string> = Partial<Record<K, ValidationKey>>;
 export const CONTENT_LANGUAGES: readonly Language[] = ['de', 'en', 'ar'];
 
 const TIME = /^([01][0-9]|2[0-3]):[0-5][0-9]$/;
+// The server's seller-information rules (MarketReview): a market cannot be approved without them.
+const POSTCODE = /(^|\D)\d{5}(\D|$)/;
+const TWO_WORDS = /\S+\s+\S+/;
 
 function localized(values: Record<Language, string>): LocalizedText {
   const result: LocalizedText = {};
@@ -373,9 +376,16 @@ export function validateMarketProfile(values: MarketProfileValues): Errors<Marke
   }
   if (values.location === null || values.addressLine.trim().length < 5) {
     errors.addressLine = 'addressFromSearch';
+  } else if (!POSTCODE.test(values.addressLine)) {
+    errors.addressLine = 'addressPostcode';
   }
-  if (values.phone.trim().length > 30) {
+  const phone = values.phone.trim();
+  if (phone === '') {
+    errors.phone = 'required';
+  } else if (phone.length > 30) {
     errors.phone = 'tooLong';
+  } else if (phone.replace(/\D/g, '').length < 6) {
+    errors.phone = 'phoneDigits';
   }
   for (const field of ['logoUrl', 'coverImageUrl'] as const) {
     const url = values[field].trim();
@@ -412,10 +422,12 @@ export function validateMarketProfile(values: MarketProfileValues): Errors<Marke
     errors.hours = 'hoursOverlap';
   }
   const legal = values.legalName.trim();
-  if (legal.length < 2) {
-    errors.legalName = legal === '' ? 'required' : 'tooShort';
+  if (legal === '') {
+    errors.legalName = 'required';
   } else if (legal.length > 120) {
     errors.legalName = 'tooLong';
+  } else if (!TWO_WORDS.test(legal)) {
+    errors.legalName = 'legalNameWords';
   }
   if (values.registerInfo.trim().length > 120) {
     errors.registerInfo = 'tooLong';

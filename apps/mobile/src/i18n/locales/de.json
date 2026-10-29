@@ -109,7 +109,10 @@
     "tiers": "Je Stufe eine Stückzahl von 2 bis 99 (jede nur einmal) und einen Preis wie 4,99.",
     "offerBelowPrice": "Für jedes gewählte Produkt einen Angebotspreis unter dem normalen Preis eingeben.",
     "weekdaysRequired": "Bitte mindestens einen Wochentag wählen.",
-    "dailyWindow": "Uhrzeiten wie 08:00; „bis“ muss nach „ab“ liegen."
+    "dailyWindow": "Uhrzeiten wie 08:00; „bis“ muss nach „ab“ liegen.",
+    "addressPostcode": "Die Anschrift braucht eine Postleitzahl (5 Ziffern). Bitte eine genauere Adresse aus der Suche wählen.",
+    "phoneDigits": "Bitte eine Telefonnummer mit mindestens 6 Ziffern eingeben.",
+    "legalNameWords": "Bitte Vor- und Nachname oder Firma mit Rechtsform eingeben (mindestens zwei Wörter)."
   },
   "language": {
     "button": "Sprache ändern",

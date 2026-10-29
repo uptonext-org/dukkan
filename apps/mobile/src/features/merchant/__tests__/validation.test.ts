@@ -233,3 +233,29 @@ describe('fromMerchantMarket', () => {
     expect(fromMerchantMarket(market, 'en').description.en).toBe('Fresh simit');
   });
 });
+
+describe('validateMarketProfile: seller information needed for approval', () => {
+  const valid = () => ({
+    ...emptyMarketProfile('de'),
+    name: 'Anatolia',
+    typeCode: 'SUPERMARKET',
+    addressLine: 'Steindamm 30, 20099 Hamburg',
+    location: { lat: 53.55, lng: 10.01 },
+    phone: '+49 40 1234567',
+    pickup: true,
+    minimumOrderValue: '0',
+    legalName: 'Anatolia GmbH',
+  });
+
+  it('asks for first and last name or a company with legal form', () => {
+    expect(validateMarketProfile({ ...valid(), legalName: 'Alosh' }).legalName).toBe('legalNameWords');
+    expect(validateMarketProfile({ ...valid(), legalName: 'Alosh Alrifai' }).legalName).toBeUndefined();
+  });
+
+  it('needs a postcode in the address and a phone number', () => {
+    expect(validateMarketProfile({ ...valid(), addressLine: 'Hamburg (Hamm)' }).addressLine).toBe('addressPostcode');
+    expect(validateMarketProfile({ ...valid(), phone: '' }).phone).toBe('required');
+    expect(validateMarketProfile({ ...valid(), phone: '040 12' }).phone).toBe('phoneDigits');
+    expect(validateMarketProfile({ ...valid(), addressLine: '20535 Hamburg (Hamm)', phone: '01575298254' })).not.toHaveProperty('phone');
+  });
+});
