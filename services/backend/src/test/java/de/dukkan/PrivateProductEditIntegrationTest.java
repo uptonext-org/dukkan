@@ -91,6 +91,43 @@ class PrivateProductEditIntegrationTest extends IntegrationTest {
   }
 
   @Test
+  void anEditGoesBackToReviewAndKeepsTheOtherLanguagesAndTaglines() throws Exception {
+    String merchant = registerMerchant();
+    UUID market = createMarket(merchant, "Zweisprachiger Markt");
+    Map<String, Object> created = product("Linsensuppe", "400 ml", "deli");
+    created.put("name", Map.of("de", "Linsensuppe", "ar", "شوربة عدس"));
+    created.put("tagline", Map.of("de", "wie bei Oma"));
+    String listing =
+        read(
+            mvc.perform(
+                    json(
+                        auth(post("/api/v1/merchant/markets/" + market + "/listings"), merchant),
+                        toJson(Map.of("newProduct", created, "price", Map.of("amountCents", 250, "currency", "EUR")))))
+                .andExpect(status().isCreated())
+                .andReturn(),
+            "$.id");
+    UUID productId =
+        jdbc.sql("SELECT catalog_product_id FROM market_product WHERE id = :id").param("id", UUID.fromString(listing)).query(UUID.class).single();
+    jdbc.sql("UPDATE catalog_product SET review_status = 'KEPT_PRIVATE', reviewed_at = now() WHERE id = :id").param("id", productId).update();
+
+    // The merchant writes in German only (single-language mode) and renames the product.
+    mvc.perform(
+            json(
+                auth(put("/api/v1/merchant/markets/" + market + "/listings/" + listing), merchant),
+                toJson(Map.of("product", product("Rote Linsensuppe", "400 ml", "deli")))))
+        .andExpect(status().isOk());
+
+    assertThat(jdbc.sql("SELECT review_status FROM catalog_product WHERE id = :id").param("id", productId).query(String.class).single())
+        .isEqualTo("PENDING");
+    mvc.perform(auth(get("/api/v1/merchant/markets/" + market + "/listings/" + listing + "/details"), merchant))
+        .andExpect(jsonPath("$.product.name.de").value("Rote Linsensuppe"))
+        .andExpect(jsonPath("$.product.name.ar").value("شوربة عدس"))
+        .andExpect(jsonPath("$.product.tagline.de").value("wie bei Oma"));
+    assertThat(strings(mvc.perform(get("/api/v1/markets/" + market + "/products").param("q", "عدس")).andReturn(), "$.items[*].id"))
+        .containsExactly(listing);
+  }
+
+  @Test
   void sharedCatalogProductsAreAdjustedWithOverridesNotChanged() throws Exception {
     String merchant = registerMerchant();
     UUID market = createMarket(merchant, "Katalog Markt");

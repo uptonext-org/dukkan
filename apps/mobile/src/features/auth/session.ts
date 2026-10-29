@@ -52,7 +52,18 @@ export function createAuthSession(storage: TokenStorage): AuthSession {
   };
 
   const doRefresh = async (): Promise<RefreshOutcome> => {
-    const refreshToken = credentials?.refreshToken ?? null;
+    // Another tab of the web app shares the storage and may have rotated the tokens already:
+    // presenting the spent refresh token would end the whole sign-in (reuse detection).
+    const stored = await storage.get();
+    if (stored === null) {
+      credentials = null;
+      return 'expired';
+    }
+    if (stored.refreshToken !== credentials?.refreshToken) {
+      credentials = stored;
+      return 'refreshed';
+    }
+    const refreshToken = stored.refreshToken;
     if (refreshToken === null || refresher === null) {
       return 'expired';
     }
@@ -65,6 +76,13 @@ export function createAuthSession(storage: TokenStorage): AuthSession {
       // 401/400 from the server: the sign-in is over. Anything else (offline, timeout, 5xx): try later.
       return isApiError(error) && (error.status === 401 || error.status === 400) ? 'expired' : 'unavailable';
     }
+  };
+
+  /** Tabs of the web app refresh one after another (Web Locks); native apps have one instance anyway. */
+  const exclusive = (task: () => Promise<RefreshOutcome>): Promise<RefreshOutcome> => {
+    const locks = (globalThis as { navigator?: { locks?: { request: (name: string, callback: () => Promise<RefreshOutcome>) => Promise<RefreshOutcome> } } })
+      .navigator?.locks;
+    return locks !== undefined ? locks.request('dukkan-session-refresh', task) : task();
   };
 
   return {
@@ -84,7 +102,7 @@ export function createAuthSession(storage: TokenStorage): AuthSession {
       end().catch(() => undefined);
     },
     refresh() {
-      inflight ??= doRefresh().finally(() => {
+      inflight ??= exclusive(doRefresh).finally(() => {
         inflight = null;
       });
       return inflight;

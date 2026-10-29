@@ -131,6 +131,14 @@ public class MarketService {
     return detail(row, reference, locale);
   }
 
+  /**
+   * Details of a market of any status, for what concerns an existing order (e.g. its mails): a
+   * market suspended after the order was placed still has to be named in them.
+   */
+  public MarketDetail detailAnyStatus(UUID marketId, ContentLocale locale) {
+    return detail(row(marketId), null, locale);
+  }
+
   /** Summaries of the given markets (any status), keyed by id. */
   public Map<UUID, MarketSummary> summaries(Collection<UUID> marketIds, @Nullable GeoPoint reference, ContentLocale locale) {
     Map<UUID, MarketRow> rows = markets.findByIds(marketIds);

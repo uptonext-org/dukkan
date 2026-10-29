@@ -40,7 +40,17 @@ class OutboxRetentionJob {
   public void deleteOld() {
     Timestamp cutoff = Timestamp.from(clock.instant().minus(retention));
     int events = jdbc.sql("DELETE FROM outbox_event WHERE published_at IS NOT NULL AND published_at < :cutoff").param("cutoff", cutoff).update();
-    int processed = jdbc.sql("DELETE FROM processed_event WHERE processed_at < :cutoff").param("cutoff", cutoff).update();
+    // Markers of events still waiting for a retry stay: without them, handlers that already
+    // succeeded would run again (duplicate notifications) when the event is finally delivered.
+    int processed =
+        jdbc.sql(
+                """
+                DELETE FROM processed_event p
+                 WHERE p.processed_at < :cutoff
+                   AND NOT EXISTS (SELECT 1 FROM outbox_event e WHERE e.id = p.event_id AND e.published_at IS NULL)
+                """)
+            .param("cutoff", cutoff)
+            .update();
     if (events + processed > 0) {
       LOG.info("Deleted {} published event(s) and {} processing record(s) older than {}", events, processed, cutoff);
     }

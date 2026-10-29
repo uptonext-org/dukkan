@@ -200,6 +200,17 @@ describe('Mein Markt: Schnell erfassen', () => {
     expect(fake.calls.filter((c) => c.path === '/merchant/translations')).toHaveLength(1);
   });
 
+  it('fills every empty language at once, not only the last one', async () => {
+    const { dependencies } = setup(aiDraft, () => ({ fields: [{ key: 'text', values: { en: 'Ayran yoghurt drink', ar: 'عيران' } }] }));
+    const user = await openNewProduct(dependencies);
+    await user.type(await screen.findByTestId('new-name-de'), 'Ayran');
+    await user.press(screen.getByTestId('new-name-translate'));
+
+    await waitFor(() => expect(screen.getByTestId('new-name-ar')).toHaveDisplayValue('عيران'));
+    expect(screen.getByTestId('new-name-en')).toHaveDisplayValue('Ayran yoghurt drink');
+    expect(screen.getByTestId('new-name-de')).toHaveDisplayValue('Ayran');
+  });
+
   it('explains when machine translation is unavailable', async () => {
     const { dependencies } = setup(aiDraft, () => {
       throw new ApiError({ kind: 'http', status: 422, code: 'TRANSLATION_UNAVAILABLE', detail: 'not configured' });

@@ -32,7 +32,17 @@ const ListingRow = memo(function ListingRow({ listing, marketId, onEdit }: { lis
           </AppText>
         </View>
         <IconButton icon="camera" label={t('merchant.photo.editFor', { name: listing.name })} onPress={() => setPhoto((p) => !p)} selected={photo} testID={`photo-toggle-${listing.id}`} />
-        <IconButton icon="tag" label={t('merchant.editPrice', { name: listing.name })} onPress={() => setEditing((e) => !e)} selected={editing} testID={`price-toggle-${listing.id}`} />
+        <IconButton
+          icon="tag"
+          label={t('merchant.editPrice', { name: listing.name })}
+          onPress={() => {
+            // Start from the current price: it may have changed on the edit screen since this row mounted.
+            setPrice(centsToInput(listing.price.amountCents));
+            setEditing((e) => !e);
+          }}
+          selected={editing}
+          testID={`price-toggle-${listing.id}`}
+        />
         <IconButton icon="edit" label={t('merchant.editProduct', { name: listing.name })} onPress={() => onEdit(listing.id)} testID={`edit-${listing.id}`} />
         <ToggleSwitch
           value={listing.available}

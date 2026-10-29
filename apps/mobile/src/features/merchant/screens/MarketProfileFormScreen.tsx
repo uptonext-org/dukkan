@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { forSpeech } from '../../../shared/format';
 import type { RootStackScreenProps } from '../../../navigation/types';
 import { errorMessageKey, type MarketTag, type Place } from '../../../shared/api';
-import { LANGUAGES, useLanguage, type Language } from '../../../shared/i18n';
+import { LANGUAGES, useLanguage } from '../../../shared/i18n';
 import { PlaceSearch } from '../../../shared/location';
 import { makeStyles } from '../../../shared/theme';
 import { AppText, Button, Chip, IconButton, queryState, Screen, ScreenHeader, TextField, ToggleSwitch } from '../../../shared/ui';
@@ -152,7 +152,7 @@ function MarketProfileForm({ route, navigation, initial }: RootStackScreenProps<
             multiline
             testIDPrefix="market-description"
             translateKind="MARKET_DESCRIPTION"
-            onChange={(lang: Language, value) => set('description', { ...values.description, [lang]: value })}
+            onChange={(texts) => set('description', texts)}
           />
         </Section>
 

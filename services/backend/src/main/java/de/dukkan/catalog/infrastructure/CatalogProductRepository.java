@@ -204,8 +204,11 @@ public class CatalogProductRepository {
   }
 
   /**
-   * Replaces the details of a market's own product: columns, texts (machine translations too, the
-   * translator fills missing languages again) and cuisines. False when it is not that market's.
+   * Changes the details of a market's own product. The product goes back to the admins' review
+   * queue (its texts may now say anything). Texts: the languages sent are written (a machine
+   * translation stays marked as one while its text is unchanged; a tagline not sent is kept); a
+   * language not sent keeps the merchant's own text, while its machine translation is dropped when a
+   * name changed, so the translator writes a new one. False when the product is not that market's.
    */
   public boolean updatePrivate(UUID id, UUID ownerMarketId, NewProduct p, String searchText, Instant now) {
     int updated =
@@ -214,7 +217,8 @@ public class CatalogProductRepository {
                 UPDATE catalog_product
                    SET category_id = :categoryId, brand = :brand, unit_size = :unitSize, net_quantity = :netQuantity,
                        net_unit = :netUnit, organic = :organic, allergens = :allergens, keywords = :keywords,
-                       barcode = :barcode, search_text = :searchText, updated_at = :now
+                       barcode = :barcode, search_text = :searchText, review_status = 'PENDING', reviewed_at = NULL,
+                       updated_at = :now
                  WHERE id = :id AND owner_market_id = :owner
                 """)
             .param("id", id)
@@ -234,9 +238,48 @@ public class CatalogProductRepository {
     if (updated == 0) {
       return false;
     }
-    jdbc.sql("DELETE FROM catalog_product_translation WHERE catalog_product_id = :id").param("id", id).update();
+    Map<String, String> before = new HashMap<>();
+    jdbc.sql("SELECT locale, name FROM catalog_product_translation WHERE catalog_product_id = :id")
+        .param("id", id)
+        .query(rs -> {
+          before.put(rs.getString(1), rs.getString(2));
+        });
+    boolean renamed = p.name().entrySet().stream().anyMatch(e -> !e.getValue().strip().equals(before.get(e.getKey())));
+    for (Map.Entry<String, String> name : p.name().entrySet()) {
+      String locale = name.getKey();
+      jdbc.sql(
+              """
+              INSERT INTO catalog_product_translation (catalog_product_id, locale, name, description, tagline,
+                                                       ingredients, search_name, machine_translated)
+              VALUES (:id, :locale, :name, :description, :tagline, NULL, NULL, false)
+              ON CONFLICT (catalog_product_id, locale) DO UPDATE
+                 SET machine_translated = catalog_product_translation.machine_translated
+                                          AND catalog_product_translation.name = EXCLUDED.name
+                                          AND catalog_product_translation.description IS NOT DISTINCT FROM EXCLUDED.description,
+                     name = EXCLUDED.name,
+                     description = EXCLUDED.description,
+                     tagline = COALESCE(EXCLUDED.tagline, catalog_product_translation.tagline)
+              """)
+          .param("id", id)
+          .param("locale", locale)
+          .param("name", name.getValue().strip())
+          .param("description", p.description().get(locale), Types.VARCHAR)
+          .param("tagline", p.tagline().get(locale), Types.VARCHAR)
+          .update();
+    }
+    if (renamed) {
+      jdbc.sql("DELETE FROM catalog_product_translation WHERE catalog_product_id = :id AND machine_translated AND NOT (locale = ANY(:sent))")
+          .param("id", id)
+          .param("sent", new SqlTextArray(List.copyOf(p.name().keySet())))
+          .update();
+    }
     jdbc.sql("DELETE FROM catalog_product_cuisine WHERE catalog_product_id = :id").param("id", id).update();
-    insertTexts(id, p);
+    for (String cuisine : Set.copyOf(p.cuisineCodes())) {
+      jdbc.sql("INSERT INTO catalog_product_cuisine (catalog_product_id, cuisine_code) VALUES (:id, :code)")
+          .param("id", id)
+          .param("code", cuisine)
+          .update();
+    }
     return true;
   }
 

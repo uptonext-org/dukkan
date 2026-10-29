@@ -106,7 +106,7 @@ describe('Mein Markt: Produkt bearbeiten', () => {
     expect(sentUpdate(fake)?.product?.name).toEqual({ de: 'Matbucha' });
     expect(sentUpdate(fake)).toMatchObject({
       product: {
-        // The Arabic machine translation of the old name is dropped; the translator writes a new one.
+        // Only the market's language is sent; the server keeps or rewrites the others.
         name: { de: 'Matbucha' },
         brand: 'Hausgemacht',
         unitSize: '400 g',

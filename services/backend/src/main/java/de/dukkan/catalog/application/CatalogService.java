@@ -694,6 +694,10 @@ public class CatalogService {
       throw productNotFound();
     }
     product.name().forEach((code, name) -> products.updateSearchName(productId, code, TextNormalizer.normalize(name)));
+    // Languages not sent may have been kept: the search text covers every name the product has now.
+    products
+        .texts(productId)
+        .ifPresent(t -> products.updateSearchText(productId, SearchText.build(t.names().values(), product.brand(), product.keywords())));
     outbox.append(PrivateProductCreated.TYPE, productId, new PrivateProductCreated(productId, marketId));
   }
 

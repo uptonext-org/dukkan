@@ -18,7 +18,7 @@ import {
   toProductUpdate,
   validateCatalogListing,
   validateNewProduct,
-  withoutOutdatedTranslations,
+  onlyLanguage,
   type CatalogListingField,
   type CatalogListingValues,
   type Errors,
@@ -62,8 +62,7 @@ function OwnProductForm({ details, marketId, primaryLocale, onSaved }: FormProps
   const { t } = useTranslation();
   const update = useUpdateListing(marketId);
   const { multilingual } = useMerchantLanguages(primaryLocale);
-  const [initial] = useState<NewProductValues>(() => fromListingDetails(details));
-  const [values, setValues] = useState<NewProductValues>(initial);
+  const [values, setValues] = useState<NewProductValues>(() => fromListingDetails(details));
   const [errors, setErrors] = useState<Errors<NewProductField>>({});
   const set = <K extends keyof NewProductValues>(key: K, value: NewProductValues[K]) => setValues((v) => ({ ...v, [key]: value }));
   const err = (field: NewProductField) => {
@@ -74,7 +73,7 @@ function OwnProductForm({ details, marketId, primaryLocale, onSaved }: FormProps
     const found = validateNewProduct(values, primaryLocale);
     setErrors(found);
     if (!hasErrors(found)) {
-      const sent = multilingual ? values : withoutOutdatedTranslations(values, initial, primaryLocale);
+      const sent = multilingual ? values : onlyLanguage(values, primaryLocale);
       update.mutate({ productId: details.listing.id, request: toProductUpdate(sent) }, { onSuccess: onSaved });
     }
   };

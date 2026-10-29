@@ -1,7 +1,40 @@
-# Single-page app on Apache/LiteSpeed hosting (Hostinger): every path that is not a real file
-# (/verify-email, /reset-password, /profile, ...) is answered by index.html.
+# Dukkan web app on Apache/LiteSpeed static hosting (Hostinger). The same rules as the nginx image
+# (deploy/default.conf.template): security headers, caching, client-side routes.
+
+# The API runs on another origin (config.js apiBaseUrl); keep connect-src in step with it.
+<IfModule mod_headers.c>
+  Header always set Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; media-src 'self' blob:; font-src 'self'; connect-src 'self' https://dukkan-backend-g3py.onrender.com; manifest-src 'self'; worker-src 'none'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests"
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set X-Frame-Options "DENY"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set Permissions-Policy "camera=(self), microphone=(self), geolocation=(self), payment=(), usb=()"
+  Header always set Cross-Origin-Opener-Policy "same-origin"
+  Header always set Strict-Transport-Security "max-age=31536000"
+
+  # The page and its runtime settings are checked on every visit; bundles have hashed names.
+  <FilesMatch "^(index\.html|config\.js)$">
+    Header set Cache-Control "no-cache"
+  </FilesMatch>
+  <FilesMatch "\.(js|css|ttf|woff2?|png|svg)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+  <FilesMatch "^config\.js$">
+    Header set Cache-Control "no-cache"
+  </FilesMatch>
+</IfModule>
+
+<IfModule mod_mime.c>
+  AddType application/manifest+json .webmanifest
+</IfModule>
+
 <IfModule mod_rewrite.c>
   RewriteEngine On
+  # Source maps stay private (they contain the whole source).
+  RewriteRule \.map$ - [R=404,L]
+  # A missing bundle (e.g. an old page after a deploy) is a 404, not the HTML page.
+  RewriteRule ^assets/ - [L]
+  # Client-side routes (/verify-email, /reset-password, /markets/…) load the app; the app shell
+  # itself is not cached, so a route answered by index.html gets the no-cache header too.
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
   RewriteRule ^ /index.html [L]

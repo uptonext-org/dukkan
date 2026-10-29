@@ -98,4 +98,22 @@ class OrderMailIntegrationTest extends IntegrationTest {
     assertThat(mails.get(1).subject()).startsWith("Absage-Markt cannot accept your order");
     assertThat(mails.get(1).body()).contains("You will not be charged").doesNotContain("Payment:");
   }
+
+  @Test
+  void stillTellsTheCustomerWhenTheMarketWasSuspendedMeanwhile() throws Exception {
+    String merchant = registerMerchant();
+    UUID market = createMarket(merchant, "Gesperrter Markt");
+    UUID tea = addListing(merchant, market, "Schwarzer Tee Rize", 400);
+    String email = uniqueEmail();
+    String customer = register(email, "CUSTOMER");
+    String order = orderPickup(customer, market, tea, 4);
+    awaitMails(email, 1);
+    jdbc.sql("UPDATE market SET status = 'SUSPENDED' WHERE id = :id").param("id", market).update();
+
+    mvc.perform(json(auth(post("/api/v1/merchant/orders/" + order + "/status"), merchant), toJson(Map.of("status", "REJECTED"))))
+        .andExpect(status().isOk());
+
+    List<Sent> mails = awaitMails(email, 2);
+    assertThat(mails.get(1).subject()).startsWith("Gesperrter Markt");
+  }
 }

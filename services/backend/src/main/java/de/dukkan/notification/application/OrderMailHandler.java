@@ -94,7 +94,8 @@ class OrderMailHandler implements EventHandler {
                 locale,
                 customer.firstName(),
                 orders.get(order.customerId(), order.orderId(), content),
-                markets.detail(order.marketId(), null, content),
+                // Any status: a market suspended after the order still sends the rejection or cancellation mail.
+                markets.detailAnyStatus(order.marketId(), content),
                 platform,
                 platform.webUrl()));
     mailer.send(customer.email(), mail.subject(), mail.body());

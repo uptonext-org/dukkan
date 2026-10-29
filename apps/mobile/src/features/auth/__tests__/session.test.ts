@@ -31,6 +31,32 @@ describe('auth session (B-39)', () => {
     expect(await session.refresh()).toBe('expired');
   });
 
+  it('lets two tabs share one sign-in: a tab takes over tokens another tab already rotated', async () => {
+    const storage = createMemoryTokenStorage();
+    const tabA = createAuthSession(storage);
+    const tabB = createAuthSession(storage);
+    await tabA.start(tokens(1));
+    await tabB.restore();
+    const used: string[] = [];
+    const refresher = (refreshToken: string) => {
+      used.push(refreshToken);
+      return Promise.resolve(tokens(Number(refreshToken.split('-')[1]) + 1));
+    };
+    tabA.setRefresher(refresher);
+    tabB.setRefresher(refresher);
+
+    expect(await tabA.refresh()).toBe('refreshed');
+    // Tab B still holds refresh-1 in memory; presenting it would revoke the whole sign-in.
+    expect(await tabB.refresh()).toBe('refreshed');
+    expect(used).toEqual(['refresh-1']);
+    expect(tabB.getToken()).toBe('access-2');
+
+    // When tab A signs out, tab B's next refresh ends its session without calling the server.
+    await tabA.end();
+    expect(await tabB.refresh()).toBe('expired');
+    expect(used).toEqual(['refresh-1']);
+  });
+
   it('reads sessions saved by older app versions (a bare JWT, no refresh token)', async () => {
     expect(parseStoredCredentials('eyJ.jwt')).toEqual({ accessToken: 'eyJ.jwt', refreshToken: null });
     expect(parseStoredCredentials('{"accessToken":"a","refreshToken":"r"}')).toEqual({ accessToken: 'a', refreshToken: 'r' });

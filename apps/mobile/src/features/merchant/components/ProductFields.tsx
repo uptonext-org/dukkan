@@ -31,8 +31,8 @@ export function ProductFields({ marketId, primaryLocale, values, onChange: set, 
   const cuisines = useCuisines();
   return (
     <>
-      <LocalizedFields label={t('merchant.productName')} values={values.name} primary={primaryLocale} error={err('name')} onChange={(lang, text) => set('name', { ...values.name, [lang]: text })} testIDPrefix={`${idPrefix}-name`} translateKind="PRODUCT_NAME" />
-      <LocalizedFields label={t('merchant.description')} values={values.description} primary={primaryLocale} error={err('description')} onChange={(lang, text) => set('description', { ...values.description, [lang]: text })} multiline testIDPrefix={`${idPrefix}-description`} translateKind="PRODUCT_DESCRIPTION" />
+      <LocalizedFields label={t('merchant.productName')} values={values.name} primary={primaryLocale} error={err('name')} onChange={(texts) => set('name', texts)} testIDPrefix={`${idPrefix}-name`} translateKind="PRODUCT_NAME" />
+      <LocalizedFields label={t('merchant.description')} values={values.description} primary={primaryLocale} error={err('description')} onChange={(texts) => set('description', texts)} multiline testIDPrefix={`${idPrefix}-description`} translateKind="PRODUCT_DESCRIPTION" />
       <TextField label={t('merchant.keywords')} value={values.keywords} onChangeText={(v) => set('keywords', v)} error={err('keywords')} hint={t('merchant.keywordsHint')} />
       <TextField label={t('merchant.brand')} value={values.brand} onChangeText={(v) => set('brand', v)} error={err('brand')} hint={t('merchant.optional')} testID={`${idPrefix}-brand`} />
       <TextField label={t('merchant.unitSize')} value={values.unitSize} onChangeText={(v) => set('unitSize', v)} error={err('unitSize')} placeholder="500 g" testID={`${idPrefix}-unit`} />

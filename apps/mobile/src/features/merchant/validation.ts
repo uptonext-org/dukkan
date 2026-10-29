@@ -242,13 +242,12 @@ export function fromListingDetails({ listing, product }: ListingDetails): NewPro
 }
 
 /**
- * When merchants write only in the market's language, the other languages are machine
- * translations of the old text: drop them when that text changed, so the translator writes new ones.
+ * When merchants write only in the market's language, send only that language: the server keeps the
+ * other languages (the merchant's own texts) and has outdated machine translations rewritten.
  */
-export function withoutOutdatedTranslations(values: NewProductValues, initial: NewProductValues, primary: Language): NewProductValues {
-  const fresh = (field: 'name' | 'description') =>
-    values[field][primary].trim() === initial[field][primary].trim() ? values[field] : { ...emptyLocalized(), [primary]: values[field][primary] };
-  return { ...values, name: fresh('name'), description: fresh('description') };
+export function onlyLanguage(values: NewProductValues, language: Language): NewProductValues {
+  const one = (texts: Record<Language, string>) => ({ ...emptyLocalized(), [language]: texts[language] });
+  return { ...values, name: one(values.name), description: one(values.description) };
 }
 
 /** Everything of the market's own product at once: details, photo, price and limit. */

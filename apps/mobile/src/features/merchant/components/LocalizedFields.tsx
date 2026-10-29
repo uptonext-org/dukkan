@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
@@ -25,7 +26,8 @@ export function LocalizedFields({
 }: {
   label: string;
   values: Record<Language, string>;
-  onChange: (language: Language, text: string) => void;
+  /** All languages at once (a translation fills several in one go). */
+  onChange: (texts: Record<Language, string>) => void;
   primary: Language;
   error?: string | undefined;
   multiline?: boolean;
@@ -38,6 +40,9 @@ export function LocalizedFields({
   const filled = LANGUAGES.filter((l) => values[l.code].trim() !== '');
   const canTranslate = multilingual && translateKind !== undefined && filled.length > 0 && filled.length < LANGUAGES.length;
   const prefix = testIDPrefix ?? 'localized';
+  // The translation answers later: fill in what is empty then, not what was empty when it started.
+  const latest = useRef(values);
+  latest.current = values;
 
   const run = () => {
     if (translateKind === undefined) {
@@ -49,13 +54,15 @@ export function LocalizedFields({
       {
         onSuccess: (result) => {
           const suggestions = result.fields.find((f) => f.key === 'text')?.values ?? {};
+          const next = { ...latest.current };
           for (const l of LANGUAGES) {
             const text = suggestions[l.code];
             // The merchant may have typed meanwhile: only fill what is still empty.
-            if (text !== undefined && text !== '' && values[l.code].trim() === '') {
-              onChange(l.code, text);
+            if (text !== undefined && text !== '' && next[l.code].trim() === '') {
+              next[l.code] = text;
             }
           }
+          onChange(next);
         },
       },
     );
@@ -68,7 +75,7 @@ export function LocalizedFields({
           key={l.code}
           label={multilingual ? `${label} · ${l.nativeName}${l.code === primary ? ` (${t('merchant.primary')})` : ''}` : label}
           value={values[l.code]}
-          onChangeText={(text) => onChange(l.code, text)}
+          onChangeText={(text) => onChange({ ...values, [l.code]: text })}
           error={l.code === primary ? error : undefined}
           multiline={multiline}
           {...(testIDPrefix !== undefined ? { testID: `${testIDPrefix}-${l.code}` } : {})}

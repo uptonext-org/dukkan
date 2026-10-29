@@ -39,6 +39,11 @@ class OutboxRetentionIntegrationTest extends IntegrationTest {
         .param("now", java.sql.Timestamp.from(clock.instant()))
         .param("later", java.sql.Timestamp.from(clock.instant().plus(Duration.ofDays(400))))
         .update();
+    // One of its handlers already succeeded: that marker must stay while the event waits for a retry.
+    jdbc.sql("INSERT INTO processed_event (event_id, handler, processed_at) VALUES (:id, 'done-handler', :now)")
+        .param("id", stuck)
+        .param("now", java.sql.Timestamp.from(clock.instant()))
+        .update();
 
     clock.advance(Duration.ofDays(13));
     retention.deleteOld();
@@ -47,6 +52,7 @@ class OutboxRetentionIntegrationTest extends IntegrationTest {
     clock.advance(Duration.ofDays(2));
     retention.deleteOld();
     assertThat(count(events, order)).isEqualTo(1);
+    assertThat(jdbc.sql("SELECT count(*) FROM processed_event WHERE event_id = :id").param("id", stuck).query(Long.class).single()).isEqualTo(1);
     assertThat(jdbc.sql("SELECT count(*) FROM processed_event p WHERE NOT EXISTS (SELECT 1 FROM outbox_event e WHERE e.id = p.event_id) AND p.processed_at < :cutoff")
             .param("cutoff", java.sql.Timestamp.from(clock.instant().minus(Duration.ofDays(14))))
             .query(Long.class)
