@@ -1,0 +1,106 @@
+barcode;brand;name_de;name_en;name_ar;unit_size;category;cuisines;keywords;allergens;organic
+4027394003246;Yayla;Çiftlik-Käse (Weißkäse);Çiftlik white cheese;جبنة بيضاء تشيفتليك;1500 g;dairy;TURKISH;çiftlik peyniri|beyaz peynir;milk;false
+4027394005370;Yayla;Sucuk (Knoblauchwurst);Sucuk (garlic sausage);سجق تركي (سوجوق);200 g;meat;TURKISH;sucuk|sucuk wurst;mustard;false
+4027394003741;Yayla;Köy Ayranı (Joghurtgetränk);Village-style ayran (yoghurt drink);عيران بلدي;1 l;drinks;TURKISH;köy ayranı|ayran;milk;false
+4027394003635;Yayla;Ayran (Joghurtgetränk);Ayran (yoghurt drink);عيران (لبن شنينة);1 l;drinks;TURKISH;ayran;milk;false
+4027394003161;Yayla;Joghurt;Yoghurt;لبن زبادي;1 kg;dairy;TURKISH;yoğurt|yogurt;milk;false
+4027394034400;Yayla;Büffelkäse in Salzlake gereift;Buffalo cheese ripened in brine;جبنة جاموس منقوعة في محلول ملحي;150 g;dairy;TURKISH;manda peyniri;milk;false
+4027394005424;Yayla;Sucuk (Knoblauchwurst);Sucuk (garlic sausage);سجق تركي (سوجوق);80 g;meat;TURKISH;sucuk;mustard;false
+4027394004335;Yayla;Geflügelwiener (Sosis);Poultry wieners (sosis);نقانق دجاج (سوسيس);680 g;meat;TURKISH;sosis|wiener;;false
+4027394005707;Yayla;Sucuk Knoblauchwurst vom Rind;Beef sucuk (garlic sausage);سجق بقري بالثوم (سوجوق);250 g;meat;TURKISH;sucuk|dana sucuk;mustard;false
+8690635260140;Tat;Scharfe Chilisauce;Hot chilli sauce;صلصة فلفل حار;100 ml;spices;TURKISH;acı sos|chili sos;;false
+8690635060450;Tat;Okraschoten mit Tomaten;Okra with tomatoes;بامية بالطماطم;370 g;deli;TURKISH;bamya|okra;;false
+8690565330289;Pinar;Ayran (Joghurtgetränk);Ayran (yoghurt drink);عيران (لبن شنينة);250 ml;drinks;TURKISH;ayran;milk;false
+8690123212507;Pinar;Nussmischung (Kuruyemiş);Mixed nuts (kuruyemiş);مكسرات مشكلة;200 g;sweets;TURKISH;kuruyemiş|karışık kuruyemiş;gluten|sesame;false
+8690565023648;Pinar;Labneh mit Tomate;Labneh with tomato;لبنة بالطماطم;180 g;dairy;TURKISH;labne|labneh;milk;false
+8690504018650;Ülker;Halley Schokoladen-Keks mit Marshmallow;Halley chocolate marshmallow biscuit;بسكويت هالي بالشوكولاتة والمارشملو;30 g;sweets;TURKISH;halley;eggs|gluten|milk|nuts|soy;false
+8690504186557;Ülker;Halley Schokoladen-Kekse mit Marshmallow;Halley chocolate marshmallow biscuits;بسكويت هالي بالشوكولاتة والمارشملو;150 g;sweets;TURKISH;halley;eggs|gluten|milk|nuts|soy|sulphites;false
+8690840173181;Ülker;Gefüllte Weichbonbons Cola;Filled chewy sweets, cola flavour;حلوى طرية محشوة بنكهة الكولا;350 g;sweets;TURKISH;şeker|cola;gluten;false
+8690504018568;Ülker;Clip Sesam-Sticks;Clip sesame sticks;أصابع كليب بالسمسم;200 g;sweets;TURKISH;clip|susamlı çubuk;gluten|sesame;false
+8690504034674;Ülker;Albeni Schokoriegel mit Karamell;Albeni caramel chocolate bar;ألبيني لوح شوكولاتة بالكراميل;200 g;sweets;TURKISH;albeni;gluten|milk;false
+8690504185642;Ülker;Clip Sesam-Sticks;Clip sesame sticks;أصابع كليب بالسمسم;50 g;sweets;TURKISH;clip|susamlı çubuk;gluten|sesame|soy;false
+8690504010104;Ülker;İkram Kekse mit Cremefüllung;İkram cream-filled biscuits;بسكويت إكرام بالكريمة;84 g;sweets;TURKISH;ikram|kremalı bisküvi;eggs|gluten|milk|soy;false
+8690504157984;Ülker;Milchschokolade;Milk chocolate;شوكولاتة بالحليب;65 g;sweets;TURKISH;çikolata;milk|nuts|soy;false
+8690504118039;Ülker;Hanımeller Kekse;Hanımeller biscuits;بسكويت هانيم إلير;70 g;sweets;TURKISH;hanımeller;gluten|milk|nuts|soy;false
+8690533034010;Eti;Crax Salzstangen-Cracker;Crax stick crackers;مقرمشات كراكس أصابع;40 g;sweets;TURKISH;crax|çubuk kraker;gluten;false
+8690526057767;Eti;Karam Zartbitterschokolade;Karam dark chocolate;شوكولاتة كرم داكنة;60 g;sweets;TURKISH;karam|bitter çikolata;milk|nuts;false
+8691440301004;Duru;Bulgur;Bulgur;برغل;1 kg;grains;TURKISH;bulgur;gluten;false
+8691440710172;Duru;Midyat Bulgur, mittelgrob;Midyat bulgur, medium;برغل مديات وسط;1000 g;grains;TURKISH;bulgur|midyat bulgur|pilavlık;gluten;false
+8691440101000;Duru;Bulgur, grob;Bulgur, coarse;برغل خشن;1000 g;grains;TURKISH;bulgur|pilavlık bulgur;gluten;false
+8691440307457;Duru;Augenbohnen, gekocht;Black-eyed beans, cooked;لوبيا مسلوقة;400 g;deli;TURKISH;börülce|haşlanmış börülce;;false
+4002566031128;Gazi;Tofu gegrillt;Grilled tofu;توفو مشوي;200 g (4 × 50 g);deli;TURKISH;tofu;gluten|soy;true
+4002566031111;Gazi;Tofu natur;Plain tofu;توفو سادة;200 g (2 × 100 g);deli;TURKISH;tofu;soy;true
+4002566031173;Gazi;Tofu-Omelett mit Tomaten;Tofu omelette with tomatoes;عجة توفو بالطماطم;180 g (2 × 90 g);deli;TURKISH;tofu;soy;true
+4002566003149;Gazi;Joghurt;Yoghurt;لبن زبادي;1000 g;dairy;TURKISH;yoğurt;milk;false
+4002566031258;Gazi;Grillkäse mit Kräutern;Grilling cheese with herbs;جبنة للشوي بالأعشاب;2 × 80 g;dairy;TURKISH;ızgara peyniri;milk;false
+4002566011397;Gazi;Feta;Feta;جبنة فيتا;150 g;dairy;TURKISH;feta|beyaz peynir;milk;true
+4002566010109;Gazi;Halloumi natur;Halloumi, plain;جبنة حلوم سادة;250 g;dairy;TURKISH;hellim|halloumi;milk;false
+4002566031142;Gazi;Tofu Basilikum;Basil tofu;توفو بالريحان;200 g (2 × 100 g);deli;TURKISH;tofu;soy;true
+4002566005396;Gazi;Ziegenkäse traditionelle Art;Traditional goat's cheese;جبنة ماعز تقليدية;180 g;dairy;TURKISH;keçi peyniri;milk;false
+4002566010758;Gazi;Grill- und Pfannenkäse Curry;Grilling and frying cheese, curry;جبنة للشوي والقلي بالكاري;200 g;dairy;TURKISH;ızgara peyniri;milk;false
+4002566006362;Gazi;Schafkäse in Salzlake;Sheep's milk cheese in brine;جبنة غنم في محلول ملحي;750 g;dairy;TURKISH;koyun peyniri|beyaz peynir;milk;false
+4002566031180;Gazi;Tofu-Omelett mit Gemüse;Tofu omelette with vegetables;عجة توفو بالخضار;180 g (2 × 90 g);deli;TURKISH;tofu;celery|soy;true
+4002566031159;Gazi;Tempeh gegrillt;Grilled tempeh;تمبيه مشوي;200 g (4 × 50 g);deli;TURKISH;tempeh;gluten|soy;true
+4002566011922;Gazi;Bio-Schafkäse;Organic sheep's milk cheese;جبنة غنم عضوية;150 g;dairy;TURKISH;koyun peyniri;milk;true
+4002566006119;Gazi;Hirtenkäse traditionelle Art;Traditional white cheese;جبنة بيضاء تقليدية;1500 g;dairy;TURKISH;beyaz peynir|hirtenkäse;milk;false
+4002566010673;Gazi;Bio Grill- und Pfannenkäse natur;Organic grilling and frying cheese;جبنة عضوية للشوي والقلي;160 g;dairy;TURKISH;ızgara peyniri;milk;true
+4002566011915;Gazi;Bio-Ziegenkäse;Organic goat's cheese;جبنة ماعز عضوية;150 g;dairy;TURKISH;keçi peyniri;milk;true
+4002566031166;Gazi;Seitan gegrillt;Grilled seitan;سيتان مشوي;200 g (4 × 50 g);deli;TURKISH;seitan;gluten|soy;true
+4002566114029;Gazi;Ziegenkäse;Goat's cheese;جبنة ماعز;150 g;dairy;TURKISH;keçi peyniri;milk;false
+4002566010666;Gazi;Grill- und Pfannenkäse Kräuter;Grilling and frying cheese, herbs;جبنة للشوي والقلي بالأعشاب;160 g;dairy;TURKISH;ızgara peyniri;milk;true
+4002566010079;Gazi;Halloumi Basilikum;Halloumi with basil;جبنة حلوم بالريحان;225 g;dairy;TURKISH;hellim|halloumi;milk;false
+4002566031135;Gazi;Räuchertofu;Smoked tofu;توفو مدخن;200 g (4 × 50 g);deli;TURKISH;tofu;soy;true
+4002566003378;Gazi;Schafkäse;Sheep's milk cheese;جبنة غنم;200 g;dairy;TURKISH;koyun peyniri;milk;false
+4002566003002;Gazi;Hirtenkäse traditionelle Art;Traditional white cheese;جبنة بيضاء تقليدية;200 g;dairy;TURKISH;beyaz peynir;milk;false
+4002566003118;Gazi;Joghurt natur;Plain yoghurt;لبن زبادي سادة;1 kg;dairy;TURKISH;yoğurt;milk;false
+4002566003194;Gazi;Ayran (Joghurtgetränk);Ayran (yoghurt drink);عيران (لبن شنينة);330 ml;drinks;TURKISH;ayran;milk;false
+4002566010727;Gazi;Grillkäse;Grilling cheese;جبنة للشوي;100 g;dairy;TURKISH;ızgara peyniri;milk;false
+4002566031197;Gazi;Linsen-Burger;Lentil burger;برغر عدس;150 g;deli;TURKISH;mercimek;gluten|soy;false
+4002566010710;Gazi;Grill- und Pfannenkäse natur;Grilling and frying cheese, plain;جبنة للشوي والقلي سادة;200 g;dairy;TURKISH;ızgara peyniri;milk;false
+4002566006331;Gazi;Ziegenkäse in Salzlake;Goat's cheese in brine;جبنة ماعز في محلول ملحي;800 g;dairy;TURKISH;keçi peyniri;milk;false
+4002566010178;Gazi;Hellim Grill- und Pfannenkäse;Hellim grilling and frying cheese;جبنة حلوم للشوي والقلي;250 g;dairy;TURKISH;hellim|halloumi;milk;false
+8690508302311;Tukas;Weiße Bohnen in Tomatensauce;White beans in tomato sauce;فاصولياء بيضاء بصلصة الطماطم;400 g;deli;TURKISH;kuru fasulye;;false
+8690508101426;Tukas;Tomatenmark;Tomato paste;معجون طماطم;830 g;spices;TURKISH;domates salçası|salça;;false
+8690508403414;Tukas;Kichererbsen, gekocht;Chickpeas, cooked;حمص حب مسلوق;800 g;deli;TURKISH;nohut|haşlanmış nohut;;false
+8690508600028;Tukas;Zuckermais;Sweet corn;ذرة حلوة;280 g;deli;TURKISH;mısır;;false
+8690710030323;Koska;Tahin (Sesampaste);Tahini (sesame paste);طحينة;300 g;spices;TURKISH;tahin|tahini;sesame;false
+8690710137411;Koska;Pişmaniye (Zuckerwatte-Süßigkeit);Pişmaniye (Turkish floss halva);حلاوة بشمانيه;250 g;sweets;TURKISH;pişmaniye;gluten;false
+8690710141197;Koska;Lokum mit Granatapfel;Turkish delight with pomegranate;راحة الحلقوم بالرمان;500 g;sweets;TURKISH;lokum|nar lokum;;false
+8690710009060;Koska;Lokum mit Haselnuss;Turkish delight with hazelnut;راحة الحلقوم بالبندق;500 g;sweets;TURKISH;lokum|fındıklı lokum;nuts;false
+8690710030347;Koska;Tahin (Sesampaste);Tahini (sesame paste);طحينة;620 g;spices;TURKISH;tahin|tahini;sesame;false
+8681506011251;Dogus;Patos Tortilla-Chips;Patos tortilla chips;رقائق باتوس;120 g;sweets;TURKISH;patos|cips;gluten|milk|soy;false
+4017979018000;Egetürk;Putensalami;Turkey salami;سلامي ديك رومي;200 g;meat;TURKISH;hindi salam;;false
+4017979021000;Egeturk;Sucuk Parmak;Sucuk, finger-style;سجق تركي أصابع (سوجوق);1 kg;meat;TURKISH;sucuk|parmak sucuk;;false
+4017979038008;Egetürk;Putenkeule gepökelt und gegart, in Scheiben;Cured and cooked turkey leg, sliced;فخذ ديك رومي مملح ومطبوخ، شرائح;100 g;meat;TURKISH;hindi füme|bereket;;false
+8690777653008;Sera;Ajvar scharf;Ajvar, hot;أجفار حار (معجون فلفل);690 g;spices;TURKISH;ajvar|acı ajvar;;false
+8690777014205;Sera;Gefüllte Paprika in Öl;Stuffed peppers in oil;فلفل محشي بالزيت;300 g;deli;TURKISH;biber dolması|dolma;;false
+8690777652001;Sera;Ajvar mild;Ajvar, mild;أجفار خفيف (معجون فلفل);690 g;spices;TURKISH;ajvar;;false
+8690777564618;Sera;Riesenbohnen;Giant beans;فاصولياء عملاقة;400 g;deli;TURKISH;barbunya|iri fasulye;;false
+8690777207720;Sera;Schwarze Oliven ohne Stein;Pitted black olives;زيتون أسود منزوع النوى;360 g;deli;TURKISH;siyah zeytin|zeytin;;false
+8690777066181;Sera;Brauner Bulgur, fein;Brown bulgur, fine;برغل أسمر ناعم;900 g;grains;TURKISH;bulgur|köftelik bulgur;gluten;false
+8690777020145;Sera;Gewürzgurken;Pickled gherkins;خيار مخلل;700 g;deli;TURKISH;turşu|salatalık turşusu;;false
+8690777524704;Sera;Helva mit Kakao;Halva with cocoa;حلاوة طحينية بالكاكاو;350 g;sweets;TURKISH;helva|kakaolu helva;sesame;false
+8690777014199;Sera;Gefüllte Kohlblätter;Stuffed cabbage leaves;ملفوف محشي;300 g;deli;TURKISH;lahana sarması|sarma;;false
+8690777014151;Sera;Gefüllte Auberginen;Stuffed aubergines;باذنجان محشي;300 g;deli;TURKISH;patlıcan dolması|dolma;;false
+8690777206051;Sera;Geröstetes Auberginenpüree;Roasted aubergine purée;متبل باذنجان مشوي;650 g;deli;TURKISH;közlenmiş patlıcan|patlıcan;;false
+8690105000429;Caykur;Earl Grey Tee;Earl Grey tea;شاي إيرل غراي;125 g;tea-coffee;TURKISH;çay|earl grey|çaykur;;false
+8690103114531;Marmarabirlik;Natürliche schwarze Oliven;Natural black olives;زيتون أسود طبيعي;500 g;deli;TURKISH;siyah zeytin|gemlik;;false
+8690103113534;Marmarabirlik;Schwarze Oliven mit Kern;Black olives with stone;زيتون أسود بالنوى;500 g;deli;TURKISH;siyah zeytin|gemlik;;false
+4056546011853;Tadim;Sonnenblumenkerne geröstet, ungesalzen;Roasted sunflower seeds, unsalted;بذور دوار الشمس محمصة بدون ملح;270 g;sweets;TURKISH;ay çekirdeği|çekirdek|بزر;;false
+4056546351010;Tadim;Mandeln;Almonds;لوز;150 g;sweets;TURKISH;badem|لوز;nuts;false
+4056546141024;Tadim;Gelbe Kichererbsen, doppelt geröstet;Yellow chickpeas, double roasted;قضامة صفراء محمصة مرتين;200 g;sweets;TURKISH;leblebi|sarı leblebi|قضامة;;false
+6251136020989;Durra;Tamarinde;Tamarind;تمر هندي;500 g;spices;ARABIC;tamarind|تمر هندي;;false
+6210241395139;Durra;Hummus mit Tahina;Hummus with tahini;حمص بالطحينة;370 g;deli;ARABIC;hummus|حمص;sesame;false
+6210244055160;Durra;Favabohnen mit Kreuzkümmel (sudanesische Art);Fava beans with cumin (Sudanese style);فول مدمس بالكمون (على الطريقة السودانية);400 g;deli;ARABIC;foul|ful medames|فول;;false
+6210241014276;Durra;Tomatenmark;Tomato paste;معجون طماطم;800 g;spices;ARABIC;tomato paste|رب البندورة;;false
+6251136010980;Durra;Flüssiges Jameed (Joghurt für Mansaf);Liquid jameed (yoghurt for mansaf);جميد سائل;450 g;deli;ARABIC;jameed|جميد|mansaf;milk;false
+7351430009631;Cortas;Halva;Halva;حلاوة طحينية;454 g;sweets;ARABIC;halva|حلاوة;nuts|sesame;false
+3205247621095;Chtoura Fields;Tahina (Sesampaste);Tahini (sesame paste);طحينة;400 g;spices;ARABIC;tahina|طحينة;sesame;false
+5285001620463;Chtoura Fields;Falafel-Mischung;Falafel mix;خلطة فلافل;200 g;deli;ARABIC;falafel|فلافل;;false
+8681506266736;Baladna;Favabohnen klassisch;Fava beans, classic;فول مدمس;400 g;deli;ARABIC;foul|فول;;false
+5287000098175;Al Yaman;Tahina (Sesamcreme);Tahini (sesame cream);طحينة;445 g;spices;ARABIC;tahina|طحينة;sesame;false
+0617241003488;Kasih;Hummus mit Tahina;Hummus with tahini;حمص بالطحينة;135 g;deli;ARABIC;hummus|حمص;sesame;false
+5283003200010;Chtaura;Favabohnen (Foul Moudammas);Fava beans (foul moudammas);فول مدمس;400 g;deli;ARABIC;foul|فول مدمس;;false
+0052851140350;Sadaf;Bulgur;Bulgur;برغل;567 g;grains;PERSIAN;bulgur|برغل;gluten;false
+0054881008006;Ahmad Tea;Assam Tee;Assam tea;شاي أسام;100 g;tea-coffee;PERSIAN;assam|شاي;;false
+6260336000974;Baraka;Schoko-Kekse;Chocolate biscuits;بسكويت بالشوكولاتة;400 g;sweets;PERSIAN;biscuit|بسكويت;milk;false

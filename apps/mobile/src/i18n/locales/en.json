@@ -831,7 +831,9 @@
     "consent": "I accept the terms and have read the privacy notice.",
     "readTerms": "Read the terms",
     "readPrivacy": "Read the privacy notice",
-    "acceptRequired": "Please accept the terms and the privacy notice."
+    "acceptRequired": "Please accept the terms and the privacy notice.",
+    "productData": "Product data",
+    "productDataSource": "Open Food Facts, licence ODbL"
   },
   "feedback": {
     "title": "Feedback to the market",

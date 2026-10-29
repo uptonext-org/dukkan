@@ -65,12 +65,15 @@ describe('Rechtliches: Impressum, Datenschutz, AGB', () => {
     );
   });
 
-  it('shows no consent and no legal section while the operator has set nothing', async () => {
+  it('shows no consent and only the product data source while the operator has set nothing', async () => {
     const none: Platform = { legal: { imprintUrl: null, privacyUrl: null, termsUrl: null, termsVersion: null }, supportEmail: null, payment: 'SIMULATED' };
     await renderApp(createTestDependencies(createFakeApiClient({ ...base, 'GET /platform': none }).client));
     const user = await openProfile();
     await user.press(await screen.findByRole('tab', { name: 'Registrieren' }));
     expect(screen.queryByTestId('terms-consent')).not.toBeOnTheScreen();
-    expect(screen.queryByTestId('legal-links')).not.toBeOnTheScreen();
+    expect(screen.queryByTestId('legal-imprint')).not.toBeOnTheScreen();
+    expect(screen.queryByTestId('legal-privacy')).not.toBeOnTheScreen();
+    // The ODbL requires naming the source of the shared product catalog.
+    expect(screen.getByTestId('legal-product-data')).toBeOnTheScreen();
   });
 });

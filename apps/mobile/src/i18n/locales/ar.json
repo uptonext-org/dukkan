@@ -923,7 +923,9 @@
     "consent": "أوافق على الشروط والأحكام وقد قرأت سياسة الخصوصية.",
     "readTerms": "قراءة الشروط",
     "readPrivacy": "قراءة سياسة الخصوصية",
-    "acceptRequired": "يرجى الموافقة على الشروط وسياسة الخصوصية."
+    "acceptRequired": "يرجى الموافقة على الشروط وسياسة الخصوصية.",
+    "productData": "بيانات المنتجات",
+    "productDataSource": "Open Food Facts، رخصة ODbL"
   },
   "feedback": {
     "title": "ملاحظات للمتجر",

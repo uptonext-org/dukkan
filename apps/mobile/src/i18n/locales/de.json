@@ -831,7 +831,9 @@
     "consent": "Ich akzeptiere die AGB und habe die Datenschutzerklärung gelesen.",
     "readTerms": "AGB lesen",
     "readPrivacy": "Datenschutzerklärung lesen",
-    "acceptRequired": "Bitte akzeptiere die AGB und die Datenschutzerklärung."
+    "acceptRequired": "Bitte akzeptiere die AGB und die Datenschutzerklärung.",
+    "productData": "Produktdaten",
+    "productDataSource": "Open Food Facts, Lizenz ODbL"
   },
   "feedback": {
     "title": "Feedback an den Markt",
