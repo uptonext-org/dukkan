@@ -56,6 +56,13 @@ try {
   });
   // Map tiles come from a third party; the smoke test does not depend on them.
   await context.route(/tile\.openstreetmap\.org/, (route) => route.fulfill({ status: 204 }));
+  // public/config.js points static hosting at the hosted backend; the test talks to the local one
+  // through the preview server's /api proxy, as the container does with an empty apiBaseUrl.
+  if (server !== null) {
+    await context.route('**/config.js', (route) =>
+      route.fulfill({ contentType: 'text/javascript', body: 'window.DUKKAN_CONFIG = {};' }),
+    );
+  }
   const page = await context.newPage();
   page.on('pageerror', (error) => pageErrors.push(error.message));
   const visible = (selector) => page.locator(`${selector}:visible`).first();
